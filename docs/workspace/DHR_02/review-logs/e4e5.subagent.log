@@ -1,0 +1,11 @@
+E4 VERDICT: approved（P0/P1=0；P2×3 F-1~F-3、P3×5 F-4~F-8 → 主控登记 findings F-003~F-010）
+复核者：Claude subagent（fresh·只读·general-purpose·需求+教训视角）·亲跑 run-relay-tests 11 套件 RELAY ALL PASS（41/29/89/19/16/42/40/50/18/23/47 码）·DONE 自报与亲跑一致·SHA 一致·replay-signatures.txt 22 行与亲跑一致
+E4 关键发现：
+- F-1 P2 K-8 replan 6 谓词仅 1 条被断言（删 Test-RelayReplanCompatible L39~42 任一行全绿）
+- F-2 P2 Runner 入口 schema 拒收/proposal-immutable 无 Runner 级断言；reason 守卫前缀归一化对 proposal-rejected:* 子码全盲
+- F-3 P2 Apply-RelayObservation probe_error 无 final_committed 守卫：blocked 节点 probe 连败→paused/probe-lost→replan 无法复位（fake on_stop 全 exited、ignore 分支从未走过；DHR_03 前置风险）
+- F-4~F-8 P3：子序列非全等 / launching 无直接断言 / adapters 未扫+Open-RelayRun 无测试+tick 遍历无序 / resume_from.attempt_id 未校验+ack-stop 顺序断言弱 / decision 挂起不判 stalled 与挂起期 probe 连败无 Runner 级断言
+口径漂移：无（60 文件全在允许路径；contracts 其余零改动；无 .dh-runtime/Get-Date/UtcNow）
+E4 条件逐条证明表：5 条均有对应断言（详见 subagent 原文；条件 1 缺口 F-1/F-2，条件 4 缺口 F-3，条件 5 缺口 F-5/F-6）
+E5 教训复核：候选-1/L-002「分支无断言钉住+守卫兜底」部分命中（F-1/F-2·守卫粒度<分支粒度）；oneshot seam / 自证循环 / L-010 自报不符 / 大小写 / 悬空引用 / 原子写 均未命中
+E5 新候选 3 条：①守卫粒度要对齐分支粒度（同前缀多谓词按完整码比对或每谓词一反例）②确定性回放要断全等不断子序列 ③已提交 final 的节点后续观测只记账不改投影，on_stop=ignore+probe_error 形态先在 fake 层演一遍

@@ -6,6 +6,11 @@ $suites = @(
   'relay-contract-transitions.ps1',
   'relay-contract-redaction.ps1',
   'relay-contract-failures.ps1',
+  'relay-runner-authority.ps1',
+  'relay-runner-ingest.ps1',
+  'relay-runner-failures.ps1',
+  'relay-runner-replay-blocked.ps1',
+  'relay-runner-replay-decision.ps1',
   'relay-contract-reason-coverage.ps1'
 )
 $failed = 0

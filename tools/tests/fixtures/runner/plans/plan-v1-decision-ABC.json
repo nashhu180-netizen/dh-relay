@@ -1,0 +1,8 @@
+{
+  "schema_version":"relay/v1","plan_version":1,"plan_hash":"d11188dfcbc754eae42fd156d8ebaf54ac6741c43fa51a5542b592baeb3722aa","run_id":"RUN-FAKE-DHR02-DEC","proposed_by":"orchestrator","proposed_at":"2026-08-15T09:00:00Z",
+  "nodes":[
+    {"node_id":"A","role":"worker","brief_ref":"fixtures/FAKE-A.md","depends_on":[],"next_action":"review"},
+    {"node_id":"B","role":"worker","brief_ref":"fixtures/FAKE-B.md","depends_on":[],"next_action":"none"},
+    {"node_id":"C","role":"worker","brief_ref":"fixtures/FAKE-C.md","depends_on":["A"],"next_action":"next_stage"}
+  ]
+}

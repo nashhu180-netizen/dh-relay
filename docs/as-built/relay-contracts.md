@@ -6,7 +6,7 @@
 
 | 类别 | 路径 |
 |------|------|
-| 契约参数（唯一冻结点） | `tools/relay/contracts/relay-params.psd1`：`SchemaVersion=relay/v1`、`SessionTailMaxBytes=65536`、`ProbeMaxConsecutiveFailures=3`、`StallThresholdSeconds=1800` |
+| 契约参数（唯一冻结点） | `tools/relay/contracts/relay-params.psd1`：`SchemaVersion=relay/v1`、`SessionTailMaxBytes=65536`、`ProbeMaxConsecutiveFailures=3`、`StallThresholdSeconds=1800`；DHR_02 追加 `LaunchDeadlineSeconds=120`（有界启动期限） |
 | 转换矩阵（唯一冻结点） | `tools/relay/contracts/transition-matrix.json`：terminal 6 态 / result 6 态，边带 `guard` + `p1` 布尔 |
 | schema 校验器 | `tools/relay/contracts/relay-schema.ps1`：`Test-RelayPlanProposal / Test-RelayActivePlan / Test-RelayAuthority / Test-RelayLaunchReceipt / Test-RelayResult / Test-RelayCheckpoint / Test-RelayEvent / Test-RelayHandoffHeader`、`Get-RelayPlanHash` |
 | 身份链判定 | `tools/relay/contracts/relay-identity.ps1`：`Get-RelayResultVerdict / Get-RelayCheckpointVerdict / Get-RelayResultFileVerdict / New-RelayEvent / Get-RelayNodeFreezeSet` |

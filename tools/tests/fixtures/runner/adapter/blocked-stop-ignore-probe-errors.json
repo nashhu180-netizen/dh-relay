@@ -1,0 +1,6 @@
+{
+  "launches": [
+    { "launch_result": "ok", "probes": ["running", "running", {"probe_error": true}, {"probe_error": true}, {"probe_error": true}], "on_stop": "ignore", "host_observations": [] },
+    { "launch_result": "ok", "probes": ["running", "running"], "on_stop": "ignore", "host_observations": [] }
+  ]
+}

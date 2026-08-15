@@ -1,0 +1,6 @@
+{
+  "schema_version":"relay/v1","plan_version":1,"plan_hash":"ee4754d77ab53bd60aad19ff8078390d8f5478f8692ee2ad34fd5f895591d72e","authority_generation":1,
+  "node_id":"A","attempt_id":1,"launch_id":"L-0001","session_id":"S-0001","result_status":"interrupted_unknown","next_action":"none",
+  "summary":"FAKE interrupted","handoff_ref":"attempts/A/1/handoff.md","changed_paths":[],"tests_run":[],
+  "git_snapshot":{"commit":"FAKE-COMMIT","changed_paths":[],"diff_stat":"0 files changed"},"interruption_reason":"unknown","written_at":"2026-08-15T09:10:00Z"
+}

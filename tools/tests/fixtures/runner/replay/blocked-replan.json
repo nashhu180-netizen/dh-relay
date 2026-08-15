@@ -1,0 +1,8 @@
+{"run_id":"RUN-FAKE-DHR02","tick_seconds":60,"max_ticks":20,"adapter_script":"adapter/blocked-replan.json","steps":[
+  {"at_tick":1,"action":"submit_proposal","fixture":"plans/plan-v1-single-A.json","expected_generation":0},
+  {"at_tick":2,"action":"submit_result","node":"A","fixture":"results/result-A1-blocked.json"},
+  {"at_tick":3,"action":"submit_proposal","fixture":"plans/plan-v2-replan-B-before-A.json","expected_generation":1},
+  {"at_tick":5,"action":"submit_result","node":"B","fixture":"results/result-B1-succeeded.json"},
+  {"at_tick":7,"action":"submit_result","node":"A","fixture":"results/result-A2-succeeded.json"},
+  {"at_tick":8,"action":"submit_result","node":"A","fixture":"results/result-A1-late.json"}
+]}

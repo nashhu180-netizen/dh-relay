@@ -1,0 +1,17 @@
+"deepseek-v4-flash" is not a model this version of Claude Code recognizes, so auto-compact will keep this session within 200k tokens (the context window it assumes). If the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; to make it recognized, map it in the modelOverrides setting or update Claude Code; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"deepseek-v4-flash","query_source":"generate_session_title"}
+复核完成，结论已写入 `docs/modules/dh-relay/workspace/DHR_02/review-logs/review-round2.account9.md`，`tools/` 工作树干净。
+
+**VERDICT: changes-requested**
+
+**A 段**：F-003～F-012 中 10 条「真修+锁住」（含 4 支 P2 变异探针：P-A1a 红 2、P-A2 红 1、P-A3 红 5、P-A4 红 2，均已复原）；**F-003 判「修了未锁」**——删 L40「旧 depends_on 被删」校验后套件全绿，该分支零断言；F-013 未修（预期 open，守卫触发条件仍为 `(?i)verdict|reason`）。
+
+**B 段**（3 条新发现 + 2 条 P3）：
+- **P1**：空文件 result/checkpoint 提交抛 `RuntimeException`（$null 穿过 `Read-RelayJson` 到 relay-schema.ps1:18 的 ContainsKey），违反 brief B-4 明示的 fail-closed「不抛出+有拒收事件」；无事件、无状态变化。
+- **P2**：外部改坏 state 后 accept 路径先写 authority/active-plan/proposal 再在 `Save-RelayState` 抛 `state-invalid` → 磁盘三方不一致（authority 说 gen=1，state 说 gen=0，事件 0 条），run 永久卡死且回放无法复现。
+- **P2**：事件追加与状态 CAS 无事务边界——B-6a 证「state 已存事件缺失」、B-6b 证「事件已追加 state 未存」双向半态，违反可重放承诺。
+- **P3**：paused 依赖者永久 waiting 无断言；fake adapter 对 stopped session 仍吐 host 事件。
+
+**C 段**：亲跑 `run-relay-tests.ps1` 两遍，11 套件 `RELAY ALL PASS`、exit 0、393 条 PASS；authority 53 / ingest 42 / failures 62 / blocked 18 / decision 23、reason 48 码，与 E-006 一致。
+
+B 段 9 个角度全覆盖：确定性、重开等价、receipt 绑定、坏路径、外部破坏、半态、paused 依赖、adapter 越界、越界卫生全部核过；探针均在临时目录执行，`git status --short tools/` 为空。

@@ -1,0 +1,1 @@
+{ "launches": [ { "launch_result": "fail", "probes": ["running"], "on_stop": "exited", "host_observations": [] } ] }

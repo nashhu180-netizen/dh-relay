@@ -1,0 +1,1 @@
+{"schema_version":"relay/v1","plan_version":1,"plan_hash":"5d3142e797b95a72e0339f1a131151f7cf170093dfec96be0fc7765c6abdd3ab","run_id":"RUN-FAKE-DHR02","proposed_by":"orchestrator","proposed_at":"2026-08-15T09:01:00Z","nodes":[{"node_id":"A","role":"worker","brief_ref":"fixtures/FAKE-A.md","depends_on":[],"next_action":"review"}]}

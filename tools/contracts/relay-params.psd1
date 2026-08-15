@@ -3,4 +3,5 @@
   SessionTailMaxBytes = 65536
   ProbeMaxConsecutiveFailures = 3
   StallThresholdSeconds = 1800
+  LaunchDeadlineSeconds = 120
 }

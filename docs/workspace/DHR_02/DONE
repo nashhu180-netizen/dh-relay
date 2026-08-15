@@ -1,0 +1,19 @@
+status: done
+commit: 5b6ceb9
+rework_round: 2
+final_test: pwsh tools/relay/tests/run-relay-tests.ps1 -> RELAY ALL PASS (exit 0)
+suite_assertions:
+- relay-contract-schema.ps1: 41
+- relay-contract-identity.ps1: 29
+- relay-contract-transitions.ps1: 89
+- relay-contract-redaction.ps1: 19
+- relay-contract-failures.ps1: 16
+- relay-runner-authority.ps1: 59
+- relay-runner-ingest.ps1: 45
+- relay-runner-failures.ps1: 65
+- relay-runner-replay-blocked.ps1: 18
+- relay-runner-replay-decision.ps1: 23
+- relay-contract-reason-coverage.ps1: 1
+reason_codes_covered: 55
+reason_guard_mutation: proposal-rejected:wrong-run-zzz -> uncovered-reason (expected fail), restored
+replay_signatures: docs/modules/dh-relay/workspace/DHR_02/review-logs/replay-signatures.txt

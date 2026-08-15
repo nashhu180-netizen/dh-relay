@@ -1,0 +1,21 @@
+"deepseek-v4-flash" is not a model this version of Claude Code recognizes, so auto-compact will keep this session within 200k tokens (the context window it assumes). If the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; to make it recognized, map it in the modelOverrides setting or update Claude Code; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"deepseek-v4-flash","query_source":"generate_session_title"}
+复核完成，结论已写入 `docs/modules/dh-relay/workspace/DHR_02/review-logs/review-round2b.fresh.md`。
+
+**VERDICT: approved**
+
+要点：
+
+- **F-014~F-018 七项全部「真修+锁住」**，逐条证据齐全（代码行 + 断言行 + 夹具）。
+- **变异探针 5 支全红**（删除修复必红，复原后干净）：
+  - P2B-01（删 F-014 守卫）→ ingest 崩溃，与 P1 原签名逐字节同号
+  - P2B-02a/02b（删 F-015 Open 校验 / 候选态校验）→ 红 1 条 / 崩溃于部分写路径（B-5b 原样复现）
+  - P2B-03（删 F-003 残余 L43）→ 红 1 条（轮1 P-A1b 全绿的盲区已闭合）
+  - P2B-04（F-013 守卫改名）→ `uncovered-reason` 必红（轮1 盲区已闭合）
+  - 每次探针后 `git checkout -- tools/relay` 复原，`git status --short tools/` 干净
+- **亲跑 6 次全量套件**：第 1 次 `RELAY TESTS FAIL (1)`（ingest 在 F-014 空文件断言处崩溃，签名与 P1 相同），第 2~6 次全部 `RELAY ALL PASS`（authority 59 / ingest 45 / failures 65 / replay-blocked 18 / replay-decision 23 / reason 55，与 DONE 一致）；另有 ingest 15 连跑全绿。
+- **新发现 N-01（P2）**：上述首跑偶发崩溃——pristine 树上发生、40+ 次后续执行未复现、机制未定位、静态分析显示当前代码无该崩溃路径（指向环境瞬态）。已按 P2 报告并写明判据：若复现即回升 P1 F-014 回归。
+- 对抗回归检查：F-016 顺序统一仅翻转 Save/Add 次序、事件序列与旧版逐项一致；`json-not-object` 只影响损坏文件（fail-closed，符合意图），正常路径与 `Read-RelayEvents` 均不受波及。
+- 附注：DONE 自报 SHA `5b6ceb9` 为笔误，以 git log `ffbaf92` 为准（F-019 已记录）。
+
+任务结束。

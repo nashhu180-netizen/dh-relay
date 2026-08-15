@@ -1,0 +1,5 @@
+{"launches":[
+  {"launch_result":"ok","probes":["running","running"],"on_stop":"exited","host_observations":[]},
+  {"launch_result":"ok","probes":["running","running"],"on_stop":"exited","host_observations":[]},
+  {"launch_result":"ok","probes":["running","running"],"on_stop":"exited","host_observations":[]}
+]}

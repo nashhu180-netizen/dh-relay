@@ -1,0 +1,11 @@
+"glm-5.2" is not a model this version of Claude Code recognizes, so auto-compact will keep this session within 200k tokens (the context window it assumes). If the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; to make it recognized, map it in the modelOverrides setting or update Claude Code; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.2","query_source":"sdk"}
+复核完成，结论已写入 `docs/modules/dh-relay/workspace/DHR_02/review-logs/review-round1.account4.md`。
+
+**VERDICT: approved**（3 条非阻塞发现，无 P0/P1）
+
+- **P2**：事件 `occurred_at` 的确定性无断言覆盖——探针 P-04 把注入时钟换成 `UtcNow` 后套件仍全绿（实现本身正确，纯测试牙口缺口；task_plan A6⑯ 本要求断言它）
+- **P3**：K-8 的 `resume_from` 校验只查 node_id 指向自己，不校验 attempt_id 也不限 blocked 节点
+- **P3**：blocked 后 `adapter.stop` 失败被静默丢弃，计划要求的“只记 findings”未实现（fake 下不可触发）
+
+做了 5 支与主控不重叠的变异探针：K-5 同态跳过、K-2 stale 分类、`replan_required` 置位、事件序号偏移 4 支真红，`occurred_at` 一支未红（升格为 P2）；每支探针后均已 `git checkout -- tools/relay` 复原，最终 `git status --short tools/` 干净。亲跑 `run-relay-tests.ps1`：11 套件 `RELAY ALL PASS` exit 0，断言数（41/29/89/19/16/42/40/50/18/23/47 码）与 DONE 自报逐一套一致。越界检查：contracts 只追加一键，DHR_01 既有资产零触碰，夹具全 FAKE 无凭据，`.ps1` 全无 BOM。
