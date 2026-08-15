@@ -6,7 +6,7 @@
 | ID | 级别 | 问题 | 证据 | 处理 | 状态 |
 |----|------|------|------|------|------|
 | F-001 | P3 | v1 event kind 枚举无 `plan_rejected`，proposal 被拒只能借 `plan_proposed`+reason 落账（task_plan K-1）；目标形态可考虑扩枚举（属 DHR_01 契约变更，需重新过契约测试） | 主控 Code Scout | 记录·不在本卡改契约 | open（backlog 候选） |
-| F-002 | P3 | `LaunchDeadlineSeconds` 是本卡追加进 `relay-params.psd1` 的第五键（DHR_01 未冻结该值）；as-built/relay-contracts.md 收口时补记 | task_plan A1 | 收口时更新 as-built | open |
+| F-002 | P3 | `LaunchDeadlineSeconds` 是本卡追加进 `relay-params.psd1` 的第五键（DHR_01 未冻结该值）；as-built/relay-contracts.md 收口时补记 | task_plan A1 | as-built/relay-contracts.md 参数行 + relay-runner.md 已补 | resolved（收口 699555a） |
 | F-003 | P2 | （轮2 复验：修了未锁——「旧 depends_on 被删」分支删 L40 仍全绿，其余 3 分支已锁）K-8 replan 兼容 6 谓词只有「丢旧节点」被断言；role/brief_ref/next_action 改变、旧 depends_on 被删、新增指向旧节点的依赖、resume_from 指向别节点 4 分支零断言（删 `Test-RelayReplanCompatible` L39~42 任一行全绿），reason 同码守卫看不见 | E4（subagent）| reopen（轮2 P-A1b·返工轮2 补 plan-v2-bad-drop-dep 夹具+断言） | resolved（返工轮2 ffbaf92） |
 | F-004 | P2 | Runner 入口 schema 拒收分支（`proposal-rejected:<schema reason>`）与 `proposal-immutable` 无 Runner 级断言（删 L48-49 全绿）；根因 reason 守卫把 `a:b` 归一到前缀 `a`，`proposal-rejected:*` 子码全盲 | E4 | resolved（返工轮1 39425b2） | resolved（返工轮1 39425b2） |
 | F-005 | P2 | `Apply-RelayObservation` probe_error 路径无 `final_committed` 守卫：blocked 节点（final 已提交、stop 后等 exited）连续 3 次 probe_error→`dependency_blocked→interrupted_unknown` 无边→节点 paused/`probe-lost`；后续 replan 只复位 `scheduling='blocked'`，该节点永久卡 paused、fresh A 拉不起。fake 夹具 on_stop 全 exited、`ignore` 分支从未走过，真实 psmux 停掉的 session 很可能返 probe_error | E4 | resolved（返工轮1 39425b2） | resolved（返工轮1 39425b2） |

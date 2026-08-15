@@ -18,6 +18,7 @@
 | 2026-08-15 | worker(Codex) | 返工轮2按 F-003 残余与 F-013～F-018 完成非对象 JSON fail-closed、state 校验前置、proposal 候选副本校验、reason 守卫触发、state→event 顺序统一、依赖 waiting 与 fake stop 回归锁定 | E-008 | 写 DONE 后结束 |
 | 2026-08-15 | 主控(Claude) | 返工轮2 回收：ffbaf92（DONE 自报 5b6ceb9 笔误→F-019）；亲跑 11 套件 RELAY ALL PASS（authority 59/ingest 45/failures 65·55 码）；探针 P1（删 json-not-object 守卫）→ingest 崩溃 exit 1（原 null 异常复现）、P2（删旧依赖被删检查）→authority FAIL 1、P3（删 state 前置校验）→authority 崩溃 exit 1（原部分写复现）、P4（改名子码）→守卫 `uncovered-reason: proposal-rejected:wrong-run-zzz` 红；均复原；派 fresh 会话（account9 新实例）复验 | E-008 | 复验 approved→E9/E10 |
 | 2026-08-15 | 主控(Claude) | 轮2b fresh 复验 approved（F-014~F-018 全真修+锁住·5 探针红·N-01 偶发归因编排并发→F-020）；填 review 全部收口区、findings SHA 纠正、as-built relay-runner.md 首份 + relay-contracts 补参数；主控终跑 E-010；dh-check → E9 七段汇报 + E10 证据展示 → 等用户 E11 | E-009/E-010 | E11 用户确认→E12 squash+verify→E13 销户 |
+| 2026-08-15 | 主控(Claude) | 阶段汇报@E9（收口·codex 施工 4 批 + 2 轮返工·三轮复核收敛·dh-check 0 失败）+ E10 证据展示已发对话；用户 E11 点选「认可，执行本地收口」→ E12 squash f34e212 + master 集成复跑 RELAY ALL PASS 405/0 + dh-check 0 失败 → verify(dh-relay) 代签 → E13 销户/删树 | E-011 | DHR_03（待用户授权·开工前 preflight） |
 
 ## 证据账本 (Evidence Ledger)
 
@@ -39,3 +40,4 @@
 | E-008 | session-run | 主控亲跑返工轮2 后 `pwsh tools/relay/tests/run-relay-tests.ps1`（HEAD ffbaf92）+ 探针 P1~P4（均复原·树干净） | pass：11 套件 SUITE PASS + RELAY ALL PASS（59/45/65/18/23·55 码）；探针 4/4 真红 | F-014/F-015/F-003 残余/F-013 返工有机器证据 |
 | E-009 | review-dispatch | headless claude CLAUDE_CONFIG_DIR=~/.claude-account9（**新实例·会话≠轮2**）· 轮2 返工复验 · log:review-logs/review-round2b.fresh.md | observed：approved——F-014~F-018 七项真修+锁住（P2B-01~04 探针红后复原）；N-01 偶发首跑崩溃 1/40+ 未复现（主控归因并发探针·F-020）；亲跑 6 次（第 2~6 次 RELAY ALL PASS 59/45/65/18/23·55 码）+ ingest 15 连跑全绿 | 轮2 返工复验·0 open P0/P1 |
 | E-010 | test | 主控终跑 `pwsh tools/relay/tests/run-relay-tests.ps1`（任务树根·HEAD ffbaf92·tools/ 干净） | pass：11 套件 SUITE PASS + `RELAY ALL PASS` exit 0；405 PASS 行 / 0 FAIL；contract 41/29/89/19/16 · runner authority 59 / ingest 45 / failures 65 / replay-blocked 18 / replay-decision 23 · reason 守卫 55 码；replay-signatures.txt 24 行（两回放各 11 行签名） | 本卡全部机器证的一键复跑入口 |
+| E-011 | test | master 合并态（squash f34e212）主控亲跑 `pwsh tools/relay/tests/run-relay-tests.ps1` + `dh dh-relay` | pass：11 套件 SUITE PASS + RELAY ALL PASS exit 0（405 PASS/0 FAIL·55 码）；dh-check 0 失败 | 集成复验·主干态全绿 |

@@ -10,6 +10,6 @@
 | 批C 回放驱动器+blocked/decision 端到端回放 | 100 | 两回放套件 SUITE PASS + review-logs/replay-signatures.txt + commit 6a3d368 | present |
 | 批D 守卫扩围+runner 清单+README | 100 | 守卫扩围 PASS（55 码）+ RELAY ALL PASS 11 套件 + commit 55819a0 | present |
 | 批次小审（轮1 前移） | 100 | 轮1 account4 全面复核 + E4/E5 subagent 登记 review.md | present |
-| 收口两轮复核+E 段 | 90 | 轮2 account9 + 返工轮1/2 + 轮2b fresh approved；主控探针 E-003/E-006/E-008；dh-check → 待 E11 用户确认 | present |
+| 收口两轮复核+E 段 | 100 | 轮2 account9 + 返工轮1/2 + 轮2b fresh approved；主控探针 E-003/E-006/E-008；dh-check 0 失败；E11 用户确认；squash f34e212 + verify | present |
 
 > 证据状态四态：`missing / partial / present / waived`
