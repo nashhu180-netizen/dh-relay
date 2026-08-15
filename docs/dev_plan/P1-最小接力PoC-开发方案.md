@@ -79,7 +79,7 @@
   - **机器证**：[产品设计与验收 A4/A6](../design/01-产品设计与验收.md#61-ai-自动验收栏)：冻结 `decision_required` 非终态 checkpoint 与 final result 的边界；checkpoint 后只冻结依赖节点、无依赖并行节点继续，同一 authority/launch/session/attempt 的后续 checkpoint/final result 可更新投影，错 session/generation 与旧 attempt 均拒绝；Runner 不读取、转发人工回答，也不调用 resume；quota P1 降级为 `interrupted_unknown` 兜底，不实现独立可信恢复事件通道（目标形态再补）。
   - **机器证**：[产品设计与验收 A5/A6](../design/01-产品设计与验收.md#61-ai-自动验收栏)：`succeeded` 不等于完成；final result 不可改写；半写、坏 JSON、probe error、无进展和无结果退出均有反例夹具。
   - **机器证**：[产品设计与验收 A8](../design/01-产品设计与验收.md#61-ai-自动验收栏)：交接自足；credential-shaped detector 至少覆盖 `api_key/private_key/password` 三类代表性凭据（jwt/env_secret/bearer_token 等其余类别随目标形态补齐），命中值完整替换、不保留前缀，handoff/result/event/session-tail 任一 final 工件残留即失败；PII/内部主机名不纳入本卡 detector。
-- **变更范围**：`tools/relay/contracts/`、`tools/relay/tests/fixtures/`、本卡 `workspace/DHR_01/`；开工 Code Scout 只可收窄，不得扩大到旧 controller/loop。
+- **变更范围**：`tools/relay/contracts/`、`tools/relay/tests/`（fixtures + 契约测试套件 + 独立 runner `run-relay-tests.ps1`，不进 dh-crew `run-all`；2026-08-15 收口期同步字面：原写 `tests/fixtures/`，验收口径本就要求"由测试证明"，套件落 `tests/` 是其必然承载，非扩大到旧 controller/loop——见 workspace/DHR_01/findings F-010）、本卡 `workspace/DHR_01/`；开工 Code Scout 只可收窄，不得扩大到旧 controller/loop。
 - **档位**：标准（接力状态与终端组件接线的基础契约）。
 - **实施提示**：复用 canonical runtime 与精确 session 的安全原则；authority generation 在首个 active-plan CAS 成功时从 1 开始，proposal 不自带 generation；控制事件的 nonce/防重放仅冻结字段定义，P1 不做逐项重放攻击测试；冻结 `session_tail_max_bytes` 默认值与合法覆盖入口，处理顺序固定为先脱敏、再限长，session tail 只作诊断证据；Git snapshot 只含提交、changed paths 与 diff stat 元数据。
 
