@@ -4,12 +4,12 @@
 <!-- dh:planning-event:v1 id=DHR-B-01 stage=B-new artifact=dev_plan/P1-最小接力PoC-开发方案.md review=../design/evidence/01-交叉审核记录-接力方案.md#review-b understanding=../design/evidence/01-交叉审核记录-接力方案.md#understanding-b -->
 
 <!-- dh:status
-汇报: DHR_01 已收口销户——dh-relay v1 契约（schema/身份链/穷举矩阵/脱敏）+ fixtures + 独立 runner 合入 master，全机器证 RELAY ALL PASS，两轮换人复核 + 三轮返工收敛，用户 E11 确认后 verify(dh-relay) 代签
-现状: DHR_01 已完成（squash 0c0cc42）；DHR_02（最小 Runner + fake replay）/ DHR_03（真实 psmux dogfood）未开始
-进行到: P1 ▸ 批次 1 第一卡完成，等待 DHR_02 开工授权
-下一步: 用户明确开工 DHR_02 后按 D 动作建独立 worktree/workspace（依赖 DHR_01 已满足）；DHR_03 开工前先做 psmux/orca 后端 preflight 对比
-看什么: as-built/relay-contracts.md（契约现状）+ workspace/DHR_01/review.md（复核账）+ knowledge/教训库-候选.md（5 条待裁决）
-阻塞: 无（DHR_02 仅待用户授权）
+汇报: DHR_02 已获用户开工授权并落户开工，codex headless 按 task_plan 批A~批D 施工最小 Runner + fake adapter + 两条确定性回放 + 异常矩阵
+现状: DHR_01 已完成（squash 0c0cc42）；DHR_02 进行中（工作区 workspace/DHR_02/ · worktree wt/DHR_02）；DHR_03 未开始
+进行到: P1 ▸ 批次 1 第二卡施工阶段（S3），批次小审前移，收口走标准档两轮换人复核
+下一步: codex 完成批A~批D 后主控核 DONE、派批次小审与两轮复核，进 E 段收口；DHR_03 开工前先做 psmux/orca 后端 preflight 对比
+看什么: workspace/DHR_02/task_plan.md（K-1～K-10 决策 + 施工步骤）+ workspace/DHR_02/progress.md
+阻塞: 无
 -->
 
 ## 0. B 方案审核与理解确认
@@ -64,7 +64,7 @@
 | 任务 ID | 一句话 | 档位（轻/标准） | 状态 | 依赖 | 工作区 | 验收时间 / verify SHA |
 |---|---|---|---|---|---|---|
 | DHR_01 | 冻结接力权威、双维状态与异常契约 | 标准 | 已完成 | - | [workspace/DHR_01/](../workspace/DHR_01/brief.md) | 2026-08-15 / squash 0c0cc42 · verify 见 `git log --grep="^verify(dh-relay): DHR_01"` |
-| DHR_02 | 实现最小 Runner 与确定性 fake replay | 标准 | 未开始 | DHR_01 | 开工时回填 `workspace/DHR_02/` | |
+| DHR_02 | 实现最小 Runner 与确定性 fake replay | 标准 | 进行中 | DHR_01 | [workspace/DHR_02/](../workspace/DHR_02/brief.md) | |
 | DHR_03 | 接真实可见 psmux 并完成阻塞接力 dogfood | 标准 | 未开始 | DHR_02 | 开工时回填 `workspace/DHR_03/` | |
 
 ### 3.2 任务卡
