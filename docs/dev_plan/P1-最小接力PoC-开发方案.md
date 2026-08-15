@@ -4,12 +4,12 @@
 <!-- dh:planning-event:v1 id=DHR-B-01 stage=B-new artifact=dev_plan/P1-最小接力PoC-开发方案.md review=../design/evidence/01-交叉审核记录-接力方案.md#review-b understanding=../design/evidence/01-交叉审核记录-接力方案.md#understanding-b -->
 
 <!-- dh:status
-汇报: 接力执行模块的设计与拆卡修订稿已收敛，decision 由原 session 自然继续，Runner 只做依赖调度
-现状: 三张 PoC 任务均未开始；A/B 行为口径已获用户确认
-进行到: P1 ▸ 已删除 Runner 输入桥，明确依赖节点冻结、无依赖并行节点继续
-下一步: 如需实施，另按 dev-harness D 动作申请 DHR_01 开工并建立独立 worktree/workspace
-看什么: design/01-产品设计与验收.md + design/evidence/01-交叉审核记录-接力方案.md
-阻塞: 无规划阻塞；尚未获得 DHR_01 开工授权
+汇报: DHR_01 已获用户开工授权并落户开工，codex headless 按 task_plan 批A~批D 施工契约与 fixtures
+现状: DHR_01 进行中（工作区 workspace/DHR_01/ · worktree wt/DHR_01）；DHR_02/03 未开始
+进行到: P1 ▸ DHR_01 施工阶段（S3），批次小审前移，收口走标准档两轮换人复核
+下一步: codex 完成批A~批D 后主控核 DONE、派批次小审与两轮复核，进 E 段收口
+看什么: workspace/DHR_01/task_plan.md + workspace/DHR_01/progress.md
+阻塞: 无
 -->
 
 ## 0. B 方案审核与理解确认
@@ -63,7 +63,7 @@
 
 | 任务 ID | 一句话 | 档位（轻/标准） | 状态 | 依赖 | 工作区 | 验收时间 / verify SHA |
 |---|---|---|---|---|---|---|
-| DHR_01 | 冻结接力权威、双维状态与异常契约 | 标准 | 未开始 | - | 开工时回填 `workspace/DHR_01/` | |
+| DHR_01 | 冻结接力权威、双维状态与异常契约 | 标准 | 进行中 | - | [workspace/DHR_01/](../workspace/DHR_01/brief.md) | |
 | DHR_02 | 实现最小 Runner 与确定性 fake replay | 标准 | 未开始 | DHR_01 | 开工时回填 `workspace/DHR_02/` | |
 | DHR_03 | 接真实可见 psmux 并完成阻塞接力 dogfood | 标准 | 未开始 | DHR_02 | 开工时回填 `workspace/DHR_03/` | |
 
