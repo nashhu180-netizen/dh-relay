@@ -1,0 +1,5 @@
+FAKE terminal output
+-----BEGIN FAKE PRIVATE KEY-----
+RkFLRUZBS0VQUklWQVRFS0VZ
+-----END FAKE PRIVATE KEY-----
+end FAKE output

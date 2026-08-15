@@ -37,6 +37,77 @@ if ($script:failed -gt 0) { Write-Host "SUITE FAIL ($script:failed)"; exit 1 } e
 
 ## 施工步骤 (Steps)　★详细级
 
+### 【schema 冻结表】（v1 字段白名单·四类对象 + result/checkpoint/event；未列字段一律 `unknown-field`）
+
+> 主控 2026-08-15 补录（首派时漏写，codex 正确 blocked；见 progress）。类型记法：`str`=非空字符串、`int+`=正整数、`iso`=ISO-8601 字符串、`enum[]`、`obj`、`arr[]`。必填=R、可选=O。所有对象顶层都必带 `schema_version: "relay/v1"`（R，非此值→`bad-value:schema_version`）。
+
+**身份链 7 字段（identity）**——result/checkpoint/handoff 头/launch receipt 复用：`plan_version int+ R`、`plan_hash str(64位hex) R`、`authority_generation int+ R`、`node_id str R`、`attempt_id int+ R`、`launch_id str R`、`session_id str R`。
+
+| 对象 | 字段 | 类型 | R/O | 说明 |
+|---|---|---|---|---|
+| **RelayPlan proposal** | schema_version | str | R | 见上 |
+| | plan_version | int+ | R | 提案版本，从 1 起 |
+| | plan_hash | str 64hex | R | Get-RelayPlanHash 重算须一致 |
+| | run_id | str | R | 哪一场接力 |
+| | proposed_by | enum[orchestrator, replanner] | R | 编排/重编排 agent |
+| | proposed_at | iso | R | |
+| | nodes | arr[node] | R | ≥1；node_id 全局唯一（重复→`duplicate-node:<id>`） |
+| | ~~authority_generation~~ | — | 禁 | proposal 不自带 generation → `unknown-field:authority_generation` |
+| **node（nodes[] 元素）** | node_id | str | R | |
+| | role | enum[worker, reviewer, replanner] | R | P1 只用 worker |
+| | brief_ref | str | R | brief 的仓库相对路径 |
+| | depends_on | arr[str] | R | 可为空数组；引用须存在、无环 |
+| | next_action | enum[review, next_stage, none] | R | succeeded 后去向 |
+| | resume_from | obj[node_id str, attempt_id int+] | O | fresh 恢复要注入的交接来源（v2 用） |
+| **active-plan pointer** | schema_version | str | R | |
+| | plan_version | int+ | R | |
+| | plan_hash | str 64hex | R | |
+| | authority_generation | int+ | R | 晋级时的届次 |
+| | activated_at | iso | R | |
+| **authority** | schema_version | str | R | |
+| | run_id | str | R | |
+| | authority_generation | int+ | R | 从 1 起；0→`bad-value:authority_generation` |
+| | plan_version | int+ | R | 与 active-plan 一致 |
+| | plan_hash | str 64hex | R | |
+| | granted_at | iso | R | |
+| **launch receipt** | schema_version | str | R | |
+| | identity 7 字段 | 见上 | R | receipt 就是身份链的出生证 |
+| | role | enum[worker, reviewer, replanner] | R | |
+| | backend | enum[fake, psmux] | R | |
+| | issued_at | iso | R | |
+| | launch_deadline_at | iso | R | 有界启动期限（超时未 running→launch_failed） |
+| **final result** | schema_version | str | R | |
+| | identity 7 字段 | 见上 | R | |
+| | result_status | enum[succeeded, dependency_blocked, interrupted_unknown, quota_exhausted] | R | working/decision_required→`illegal-final-status:<值>` |
+| | next_action | enum[review, next_stage, none] | R | |
+| | summary | str | R | |
+| | handoff_ref | str | R | handoff.md 相对路径 |
+| | changed_paths | arr[str] | R | 可空 |
+| | tests_run | arr[str] | R | 可空 |
+| | git_snapshot | obj[commit str, changed_paths arr[str], diff_stat str] | R | 三键白名单，多余键→`unknown-field:<键>` |
+| | interruption_reason | enum[stopped_by_user, host_lost, unknown] | O | 仅 interrupted_unknown 可带 |
+| | written_at | iso | R | |
+| **checkpoint** | schema_version | str | R | |
+| | identity 7 字段 | 见上 | R | |
+| | status | enum[working, decision_required] | R | |
+| | progress_note | str | R | |
+| | question | str | 条件 R | status=decision_required 时必填，working 时禁带（`unknown-field:question`） |
+| | options | arr[str] | 条件 R | 同上，非空 |
+| | tried | arr[str] | O | 已尝试内容 |
+| | written_at | iso | R | |
+| **event（events.jsonl 一行）** | schema_version | str | R | |
+| | event_id | str | R | |
+| | kind | enum[plan_proposed, plan_activated, launch_receipt, observation, checkpoint_accepted, checkpoint_rejected, result_accepted, result_stale, result_rejected, control, launch_failed, diagnosis] | R | |
+| | occurred_at | iso | R | |
+| | identity | obj | O | 可含身份链 7 字段的**子集**（事件发生时已知多少写多少）；子集内每个键仍按类型校验，未知键拒 |
+| | reason | str | O | stale/rejected/failed 的原因码 |
+| | actor / source / nonce | str / enum[runner, host, user] / str | 条件 R | kind=control 三者必填；其它 kind 出现任一→`unknown-field:<名>` |
+| | probe_error | bool | O | 仅 kind=observation 可带 |
+| | consecutive_probe_failures | int(≥0) | O | 仅 kind=observation 可带 |
+| | terminal_state | enum 6 态 | O | 仅 kind=observation 可带 |
+
+**handoff.md 头**（批B B1）：文件首行形如 `<!-- dh:relay-handoff v1 plan_version=1 plan_hash=<64hex> authority_generation=1 node_id=A attempt_id=1 launch_id=L-0001 session_id=S-0001 -->`；`Test-RelayHandoffHeader` 只解析这一行。
+
 ### 批A：契约参数 + 计划/权威/回执 schema（A1 前半 + A2 地基）
 
 | # | 改动文件 | 怎么改 | 怎么验 |

@@ -1,0 +1,10 @@
+{
+  "schema_version": "relay/v1", "plan_version": 1,
+  "plan_hash": "651c85300cfb1fbef091837fb4965866661a1eb9c87ee0e64f05e09f56833c89",
+  "authority_generation": 1, "node_id": "A", "attempt_id": 2,
+  "launch_id": "L-0002", "session_id": "S-WRONG-FAKE",
+  "result_status": "succeeded", "next_action": "review", "summary": "FAKE wrong session",
+  "handoff_ref": "attempts/A/2/handoff.md", "changed_paths": [], "tests_run": [],
+  "git_snapshot": { "commit": "FAKE-SESSION", "changed_paths": [], "diff_stat": "0 files" },
+  "written_at": "2026-08-15T09:20:03Z"
+}

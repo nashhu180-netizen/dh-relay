@@ -1,0 +1,4 @@
+FAKE terminal output
+api_key = "sk-FAKE0000000000000000"
+X-Api-Key: FAKEKEY12345678
+end FAKE output

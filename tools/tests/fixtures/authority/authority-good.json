@@ -1,0 +1,8 @@
+{
+  "schema_version": "relay/v1",
+  "run_id": "RUN-FAKE-001",
+  "authority_generation": 1,
+  "plan_version": 1,
+  "plan_hash": "651c85300cfb1fbef091837fb4965866661a1eb9c87ee0e64f05e09f56833c89",
+  "granted_at": "2026-08-15T09:10:01Z"
+}

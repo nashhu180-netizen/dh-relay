@@ -1,0 +1,14 @@
+status: done
+commit: a1846d375dd1b04e9e539437853425b45dc6afb9
+message: fix(dh-relay): DHR_01 返工轮3——reason 覆盖守卫精度（F-021）
+suites:
+- relay-contract-schema.ps1: SUITE PASS（41 assertions，exit 0）
+- relay-contract-identity.ps1: SUITE PASS（29 assertions，exit 0）
+- relay-contract-transitions.ps1: SUITE PASS（89 assertions，exit 0）
+- relay-contract-redaction.ps1: SUITE PASS（19 assertions，exit 0）
+- relay-contract-failures.ps1: SUITE PASS（16 assertions，exit 0）
+- relay-contract-reason-coverage.ps1: SUITE PASS（1 assertion，P=25，exit 0）
+- run-relay-tests.ps1: RELAY ALL PASS（exit 0）
+self_test:
+- 临时向 relay-schema.ps1 加 `New-RelayValidationError $someVar`：守卫 FAIL `non-literal-reason:relay-schema.ps1:9`，exit 1；已复原。
+- 临时删除 bad-handoff-header 的 Assert 行、仅留同码注释：守卫 FAIL `uncovered-reason: bad-handoff-header`，exit 1；已复原。

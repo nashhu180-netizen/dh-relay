@@ -1,0 +1,52 @@
+VERDICT: changes-requested
+
+F-016：真修+锁住——wrong-launch 夹具断言精确锁定 `identity-mismatch:launch_id`，result 与 checkpoint 两侧均覆盖。
+F-017：真修+锁住——夹具为 A←B←C←D 三跳链及独立 E；覆盖 FreezeSet(A/C/E)，直接依赖变异后 `chain A freezes B C D transitively` 红。
+F-018：真修+锁住——wrong-hash 保持版本不变并变异 hash，精确断言 `stale-plan`。
+F-019：真修+锁住——`bad-handoff-header` 与 `illegal-final-status:working` 均有独立断言。
+F-020：修了未锁——守卫已进 runner，能抓直接字面及 `reason='…'`，但会静默漏掉 `"$prefix:$x"` 这类全变量插值；测试侧任意引用 reason 字面即可算覆盖，并不要求行为断言。无白名单；当前无合理豁免需求。
+
+新发现:
+P2 - reason coverage 守卫存在漏抓与假覆盖：变量构造的 reason 不进入 productionReasons，而测试注释、夹具或无关字符串中的同名 kebab 字面也会被视作已覆盖。
+
+探针记录:
+FreezeSet 改为仅直接依赖 → identity 套件红 1（`chain A freezes B C D transitively`）→ 已 `git checkout -- .` 复原。
+contracts 末尾加入 `New-RelayValidationError 'zzz-never'`（进场时该临时变异已存在）→ 守卫红并点名 `uncovered-reason: zzz-never` → 已 `git checkout -- .` 复原。
+
+亲跑 `pwsh tools/relay/tests/run-relay-tests.ps1`：RELAY ALL PASS，exit 0。
+PASS 计数：schema 41；identity 29；transitions 89；redaction 19；failures 16；reason-coverage 1（覆盖 25 个生产 reason code）。
+结束时 `git status --short` 无输出，worktree 干净。
+diff --git a/tools/relay/contracts/relay-identity.ps1 b/tools/relay/contracts/relay-identity.ps1
+index 058ce273bd9bd83ba6df37d1cb0c9e1dabea43c6..591cb88ad55d7863610c27cd9961ab254e926821
+--- a/tools/relay/contracts/relay-identity.ps1
++++ b/tools/relay/contracts/relay-identity.ps1
+@@ -53,7 +53,7 @@
+     $changed = $false
+     foreach ($node in $Plan.nodes) {
+       if ($node.node_id -ceq $NodeId -or $frozen.Contains($node.node_id)) { continue }
+-      if ($NodeId -cin $node.depends_on -or @($node.depends_on | Where-Object { $frozen.Contains($_) }).Count -gt 0) {
++      if ($NodeId -cin $node.depends_on) {
+         $changed = $frozen.Add($node.node_id) -or $changed
+       }
+     }
+
+tokens used
+50,314
+VERDICT: changes-requested
+
+F-016：真修+锁住——wrong-launch 夹具断言精确锁定 `identity-mismatch:launch_id`，result 与 checkpoint 两侧均覆盖。
+F-017：真修+锁住——夹具为 A←B←C←D 三跳链及独立 E；覆盖 FreezeSet(A/C/E)，直接依赖变异后 `chain A freezes B C D transitively` 红。
+F-018：真修+锁住——wrong-hash 保持版本不变并变异 hash，精确断言 `stale-plan`。
+F-019：真修+锁住——`bad-handoff-header` 与 `illegal-final-status:working` 均有独立断言。
+F-020：修了未锁——守卫已进 runner，能抓直接字面及 `reason='…'`，但会静默漏掉 `"$prefix:$x"` 这类全变量插值；测试侧任意引用 reason 字面即可算覆盖，并不要求行为断言。无白名单；当前无合理豁免需求。
+
+新发现:
+P2 - reason coverage 守卫存在漏抓与假覆盖：变量构造的 reason 不进入 productionReasons，而测试注释、夹具或无关字符串中的同名 kebab 字面也会被视作已覆盖。
+
+探针记录:
+FreezeSet 改为仅直接依赖 → identity 套件红 1（`chain A freezes B C D transitively`）→ 已 `git checkout -- .` 复原。
+contracts 末尾加入 `New-RelayValidationError 'zzz-never'`（进场时该临时变异已存在）→ 守卫红并点名 `uncovered-reason: zzz-never` → 已 `git checkout -- .` 复原。
+
+亲跑 `pwsh tools/relay/tests/run-relay-tests.ps1`：RELAY ALL PASS，exit 0。
+PASS 计数：schema 41；identity 29；transitions 89；redaction 19；failures 16；reason-coverage 1（覆盖 25 个生产 reason code）。
+结束时 `git status --short` 无输出，worktree 干净。

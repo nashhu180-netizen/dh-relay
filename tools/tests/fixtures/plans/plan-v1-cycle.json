@@ -1,0 +1,12 @@
+{
+  "schema_version": "relay/v1",
+  "plan_version": 1,
+  "plan_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "run_id": "RUN-FAKE-CYCLE",
+  "proposed_by": "replanner",
+  "proposed_at": "2026-08-15T09:01:00Z",
+  "nodes": [
+    { "node_id": "A", "role": "worker", "brief_ref": "fixtures/FAKE-A.md", "depends_on": ["B"], "next_action": "none" },
+    { "node_id": "B", "role": "worker", "brief_ref": "fixtures/FAKE-B.md", "depends_on": ["A"], "next_action": "none" }
+  ]
+}

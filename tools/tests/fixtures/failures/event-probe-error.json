@@ -1,0 +1,10 @@
+{
+  "schema_version": "relay/v1",
+  "event_id": "E-FAKE-PROBE-3",
+  "kind": "observation",
+  "occurred_at": "2026-08-15T10:01:00Z",
+  "probe_error": true,
+  "consecutive_probe_failures": 3,
+  "terminal_state": "unknown",
+  "reason": "FAKE-probe-error"
+}

@@ -1,0 +1,22 @@
+"glm-5.2" is not a model this version of Claude Code recognizes, so auto-compact will keep this session within 200k tokens (the context window it assumes). If the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; to make it recognized, map it in the modelOverrides setting or update Claude Code; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.2","query_source":"sdk"}
+复核完毕。所有探针均已复原；`tools/relay/**` 下 git 状态干净。
+
+VERDICT: approved
+
+发现清单：
+
+1. P2 - 穷举转换测试以矩阵自身为期望来源（自证循环），矩阵与 design §3.1 的逐条一致只靠约 7 条定向断言钉住——删掉/错加一条合法边套件仍全绿 - transition-matrix.json / relay-contract-transitions.ps1 `Assert-Exhaustive` - 变异探针实证：删除 `running→idle` 边后套件 84 条全 PASS、exit 0（`running -> idle unlisted` 变成合法断言）；对称地，若往矩阵加一条 design 未列的边（如 `running→launching`）穷举也会当合法放行，仅 exited 出边/自环/unknown guard/quota 四类有独立锚
+2. P3 - `decision_required→quota_exhausted` 边完全缺失（连 p1=false 留位都没有），而 design §3.1 说 working 可形成“四种结束/暂停结果”、decision_required 可经 final result 转其终态 - transition-matrix.json result_status.edges - 现矩阵只有 `working→quota_exhausted`(p1=false) 与 `quota_exhausted→working`(p1=false)；该缺失组合走 `edge-not-listed` 而非 `reserved-target-form`，与 quota 留位口径不对称
+3. P3 - `Get-RelayProbeVerdict` 硬编码 `from='running'/'working'`，不覆盖 design §4.4「decision_required 挂起期间连续 probe 失败→unknown/interrupted_unknown」路径；矩阵里 `decision_required→interrupted_unknown(probe-lost)` 这条合法边没有任何生产函数或测试能产生它 - relay-transitions.ps1 `Get-RelayProbeVerdict`
+4. P3 - `attempt_id` 大于 Current 的结果（同 launch/session）会被 accept：身份链只拒“严格小于”，不拒不相等；attempt 与 launch/session 交叉矛盾的链不被拒收 - relay-identity.ps1 `Get-RelayIdentityVerdict`（`$Value.attempt_id -lt $Current.attempt_id`）
+5. P3 - 断言名与断言体不符：`'checkpoint stale attempt rejected'` 实际断言 `verdict -eq 'stale'`；task_plan B4⑩ 原文写 ckpt 旧 attempt→rejected，实现给了 stale（语义上更合理，但计划-实现-命名三者不一致且无 progress 记录） - relay-contract-identity.ps1 该断言行
+
+逐项核对结果（无发现项的专挑点）：转换矩阵内容逐条对 design §3.1 核过（terminal 18 边、exited 零出边、无自环、unknown 4 出边全 trusted-probe-or-diagnosis、quota 双边 p1=false）；穷举确为程序化 6×6×2=72 组合非手写；身份链判定顺序与 task_plan B2 完全一致且 stale/rejected 分得清；FreezeSet 传递闭包、排除自身、无依赖节点不在集合（B4⑬~⑮钉住）；脱敏顺序“先脱敏再限长”被边界夹具真实证明（见探针 1）；三类 detector 值整体替换、夹具假值全带 FAKE；五类失败夹具齐且断言到 interrupted_unknown/unknown 及正确原因码；`task_state` 拒收（A5）已钉；所有 .ps1 无 BOM；四笔提交未越 tools/relay 与 workspace/DHR_01 范围；`run-relay-tests.ps1` 亲跑 5 套件 SUITE PASS + RELAY ALL PASS、exit 0。
+
+探针记录：
+- 探针 1（脱敏顺序）：把 `Invoke-RelayTailSanitize` 改成先截断后脱敏 → `sanitize before truncate removes boundary residue` 断言真红（SUITE FAIL 1），证明顺序断言有效；`git checkout --` 已复原。
+- 探针 2（final 不可改写）：删除 `final-immutable` 守卫行 → `duplicate final rejected` 真红；已复原。第一次用 PowerShell `Set-Content -NoNewline` 写入失败（参数错误、未变异即跑了套件），改用 python 重做并经 `git diff --stat` 确认变异生效后才采信结果。
+- 探针 3a（矩阵删边）：删除 `running→idle` 合法边 → 套件仍全绿（即发现 1 的实证）；已复原。
+- 探针 3b（guard 放松）：把 `unknown→exited` 的 guard 改成 `probe-guess` → `unknown edges require trusted probe or diagnosis` 真红；已复原。
+- 环境异常报告：会话期间 `git status` 出现 4 个非我产生的变更（`workspace/DHR_01/review.md`、`findings.md`、`lesson_candidates.md` 修改 + 未跟踪 `review-logs/e4e5.subagent.log`，时间戳 12:34）——是另一个并行复核 subagent 在同一 worktree 写的落账（内容自称 “Claude subagent fresh·只读”）。我只动过 `tools/relay/` 下的文件且全部复原；他人文件未触碰、不代为清理，`tools/relay/**` 当前干净。

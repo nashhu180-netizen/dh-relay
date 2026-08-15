@@ -1,0 +1,22 @@
+DHR_01 · E4 需求复核 + E5 教训复核 · Claude subagent（fresh 只读）· 2026-08-15
+
+需求复核结论: approved（带 4 条 P2/P3 补证/写边界项，无 P0/P1，无范围漂移）
+
+逐条事实：
+- P2 relay-identity.ps1 L6/L8：完成条件 2 "错版本结果被拒"——stale-plan / wrong-node 分支无夹具无断言，删掉套件仍全绿（同 F-002 类）。→ F-005
+- P2 relay-contract-redaction.ps1 末段：四类工件残留断言是同一字符串换标签循环，非四类工件形态夹具；Test-RelayArtifactClean 判 kind 用 hunter 关键字启发式。→ F-006
+- P3 A4 "不读回答/不 resume" 仅缺席证明，无显式断言（kind=user_answered 拒 / checkpoint 带 answer 拒 / idle→running guard 值）。→ F-007
+- P3 relay-transitions.ps1 L60/L70 Get-RelayStallVerdict `-in`、Get-RelayExitWithoutResultVerdict `-ne` 大小写不敏感残留。→ F-008
+- P3 DevPlan 变更范围 fixtures/ vs brief tests/。→ F-010
+- P3 DONE/E-010 自报 transitions 85 实跑 84；SHA 一致；RELAY ALL PASS 亲跑复现。→ F-009
+
+范围：44 文件全在 tools/relay/** 与 workspace/DHR_01/；无越界；无非目标；quota/nonce/jwt 三处降级按降级处理留位齐全。
+
+完成条件→承接：#1 schema 39 + transitions 72 穷举+12 定向；#2 identity（缺 stale-plan/wrong-node）；#3 identity+schema+transitions+failures（不读回答仅缺席证明）；#4 failures 五类夹具+identity final-immutable；#5 redaction（四类工件为标签循环）。
+
+教训复核结论: 命中 2 条均已被流程兜住（L-013 主控悬空引用→worker blocked→补表；L-010 自报计数笔误·以亲跑为准）+ F-002 同类残余（F-005）。未命中 L-001/L-016/L-007/oneshot/sweep。
+
+新教训候选：
+1. 主控 task_plan 内部引用（见下方 XX 表/§X）派活前机械核存在性。
+2. 判定函数每个 reason 码/分支至少一条断言；可加静态守卫扫源码 reason 集合 vs 测试出现集合。
+3. 验收口径写"多类工件任一残留即失败"时，不能同函数换标签冒充多类覆盖；每类真实夹具或 review 明写边界。

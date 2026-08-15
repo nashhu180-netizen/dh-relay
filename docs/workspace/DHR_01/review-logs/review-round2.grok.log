@@ -1,0 +1,41 @@
+"grok" is not a model this version of Claude Code recognizes, so auto-compact will keep this session within 200k tokens (the context window it assumes). If the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; to make it recognized, map it in the modelOverrides setting or update Claude Code; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"grok","query_source":"sdk"}
+VERDICT: changes-requested
+
+对第一轮结论的核验
+F-001 → 真修+锁住（`Test-RelayEnumValue` 已 `-cnotin`；断言 `enum tokens are case sensitive` / `result enum is case sensitive` / `event kind is case sensitive`）
+F-002 → 真修+锁住（node role/next_action/未知字段/resume/depends_on 类型/duplicate-node/unknown-dep 均有反例）
+F-003 → 真修+锁住（ISO 须 `yyyy-MM-ddTHH:mm:ss` 前缀；断言 `date without time is not ISO timestamp`）
+F-004 → 真修+锁住（badhash 由 `651c…` 改首位为 `751c…`；`plan-v1-unknown-field.json` 仍全零 hash + 断言 `unknown-field:extra`，hash 若先判会变成 `plan-hash-mismatch`）
+F-005 → 真修+锁住（`result-wrong-plan.json` plan_version=2 → `stale-plan`；`result-wrong-node.json` → `wrong-node`；探针①去掉该分支恰好 1 红）
+F-006 → 真修+锁住（handoff/result/event 三类真实夹具 + session-tail 残留反查；`Test-RelayArtifactClean` 按传入 Secrets 扫原值）
+F-007 → 真修+锁住（`kind=user_answered`→`unknown-enum:kind`；checkpoint 带 `answer`→`unknown-field:answer`；`idle→running` guard=`host-observed-new-turn` 且 idle 出边无 resume）
+F-008 → 真修+锁住（stall/exit 已 `-cin`/`-cne`；断言 `stall snapshot state is case sensitive` / `exit snapshot state is case sensitive`）
+F-009 → 真修+锁住（记录类；本轮亲跑 transitions=89，不再是 84/85 自报争议）
+F-010 → 仍 open，不在 resolved 核验集（本分支 DevPlan 仍写 `tests/fixtures/`；master `81e546d` 已改字面，属基线超前，非本分支改动）
+F-011 → 真修+锁住（测试内硬编码 18+11 边 oracle + `Assert-EdgeSetEqual`；删 `running→idle` 现红 2 条）
+F-012 → 真修+锁住（矩阵 `decision_required→quota_exhausted` p1=false；断言 `decision required quota edge reserved`）
+F-013 → 真修+锁住（`Get-RelayProbeVerdict` 增 `-CurrentTerminal/-CurrentResult`；断言 `decision required probe loss suggests fail-closed pair` 且过 TransitionPair）
+F-014 → 真修+锁住（同 launch/session 且 attempt≠Current → `identity-mismatch:attempt_id`；断言 `future attempt with current launch and session rejected`）
+F-015 → 真修+锁住（断言名已改 `checkpoint stale attempt -> stale`）
+附：第一轮 account4「FreezeSet 传递闭包已钉」过满——现有 B4⑬~⑮只覆盖 1 跳（见新发现）。
+
+新发现:
+P2 - A2 launch 绑定 / `identity-mismatch:launch_id` 零夹具零断言；去掉 launch_id 检查套件仍全绿 - tools/relay/contracts/relay-identity.ps1:13 - 无对应断言名；identity 20 + failures 16 全绿
+P2 - FreezeSet 传递闭包未被 2 跳钉住；改成只冻直接依赖后「B/A freezes transitive dependent C」仍绿 - tools/relay/contracts/relay-identity.ps1:49-62 / `B freezes transitive dependent C` - plan-v1-good 仅 C→A/B 一层
+P3 - stale-plan 的 hash 半边无独立夹具（`result-wrong-plan.json` 只改 plan_version=2，hash 仍等于 active）- tools/relay/contracts/relay-identity.ps1:6 / `wrong plan rejected as stale plan`
+P3 - `bad-handoff-header` 原因码无断言（只锁了缺 session_id）- tools/relay/contracts/relay-schema.ps1:289 / 仅有 `handoff missing session rejected`
+P3 - `illegal-final-status:working` 无独立夹具（只锁了 decision_required）- tools/relay/contracts/relay-schema.ps1:208 / `non-final result status rejected`
+
+探针记录（均在独立 worktree `DHR_01_r2probe` detached 5916fc5；每轮 checkout 复原；已 `git worktree remove --force`）
+1. 去掉 stale-plan 分支 → `wrong plan rejected as stale plan` 红 1 / SUITE FAIL(1) → 已复原
+2. `sk-` 正则 `{10,}`→`{50,}` → `event fixture sanitize leaves no residue` 红 1（tail 的 `api_key=` 第一路 detector 仍吃掉，sk 独立路径由 event 夹具钉住）→ 已复原
+3. `Test-RelayTransitionPair` 终端非法改为不 fail-closed → `terminal failure closes pair` 红 1，`result failure closes pair` 仍绿 → 已复原
+4. foreach 去掉 `launch_id` 只留 `session_id` → identity 20 + failures 16 全绿 → 已复原
+4b. FreezeSet 改为仅直接依赖 → identity 20 全绿 → 已复原
+附核 F-011：矩阵删 `running→idle` → `terminal matrix edge set equals design oracle` + `running -> idle legal P1 edge` 红 2 → 已复原
+
+亲跑 `pwsh tools/relay/tests/run-relay-tests.ps1` → RELAY ALL PASS exit 0
+schema 41 / identity 20 / transitions 89（oracle 2 + 穷举 72 + 定向 15）/ redaction 19 / failures 16
+oracle 与 design §3.1 一致：terminal 18 边、exited 零出边、无自环、unknown 4 出边 guard 全 `trusted-probe-or-diagnosis`、result 含 working 四终态/decision_required 回 working+三终态+probe-lost、quota 三边 p1=false
+.git：本轮未改本 worktree 任何文件；`tools/relay/**` 干净；与进场一致仅既有未跟踪 `docs/modules/dh-relay/as-built/`（不在 master..HEAD 提交内）。本分支相对 master 的文件集除 master 超前的 DevPlan 字面外，提交均在 `tools/relay/**` 与 `workspace/DHR_01/`。全部 .ps1 UTF-8 无 BOM。fixtures 值均带 FAKE/fake，未见非 FAKE 凭据形状。

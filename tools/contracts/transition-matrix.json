@@ -1,0 +1,43 @@
+{
+  "schema_version": "relay/v1",
+  "terminal_state": {
+    "states": ["launching", "running", "idle", "stopped", "exited", "unknown"],
+    "terminal": ["exited"],
+    "edges": [
+      { "from": "launching", "to": "running", "guard": "session-observed", "p1": true },
+      { "from": "launching", "to": "exited", "guard": "trusted-probe-or-diagnosis", "p1": true },
+      { "from": "launching", "to": "unknown", "guard": "probe-lost", "p1": true },
+      { "from": "running", "to": "idle", "guard": "host-observed-turn-closed", "p1": true },
+      { "from": "running", "to": "stopped", "guard": "trusted-stop", "p1": true },
+      { "from": "running", "to": "exited", "guard": "trusted-probe-or-diagnosis", "p1": true },
+      { "from": "running", "to": "unknown", "guard": "probe-lost", "p1": true },
+      { "from": "idle", "to": "running", "guard": "host-observed-new-turn", "p1": true },
+      { "from": "idle", "to": "stopped", "guard": "trusted-stop", "p1": true },
+      { "from": "idle", "to": "exited", "guard": "trusted-probe-or-diagnosis", "p1": true },
+      { "from": "idle", "to": "unknown", "guard": "probe-lost", "p1": true },
+      { "from": "stopped", "to": "running", "guard": "trusted-resume", "p1": true },
+      { "from": "stopped", "to": "exited", "guard": "trusted-probe-or-diagnosis", "p1": true },
+      { "from": "stopped", "to": "unknown", "guard": "probe-lost", "p1": true },
+      { "from": "unknown", "to": "running", "guard": "trusted-probe-or-diagnosis", "p1": true },
+      { "from": "unknown", "to": "idle", "guard": "trusted-probe-or-diagnosis", "p1": true },
+      { "from": "unknown", "to": "stopped", "guard": "trusted-probe-or-diagnosis", "p1": true },
+      { "from": "unknown", "to": "exited", "guard": "trusted-probe-or-diagnosis", "p1": true }
+    ]
+  },
+  "result_status": {
+    "states": ["working", "decision_required", "succeeded", "dependency_blocked", "interrupted_unknown", "quota_exhausted"],
+    "edges": [
+      { "from": "working", "to": "decision_required", "guard": "checkpoint", "p1": true },
+      { "from": "working", "to": "succeeded", "guard": "final-result", "p1": true },
+      { "from": "working", "to": "dependency_blocked", "guard": "final-result", "p1": true },
+      { "from": "working", "to": "interrupted_unknown", "guard": "final-result", "p1": true },
+      { "from": "decision_required", "to": "working", "guard": "same-chain-working-checkpoint", "p1": true },
+      { "from": "decision_required", "to": "succeeded", "guard": "same-chain-final-result", "p1": true },
+      { "from": "decision_required", "to": "dependency_blocked", "guard": "same-chain-final-result", "p1": true },
+      { "from": "decision_required", "to": "interrupted_unknown", "guard": "probe-lost", "p1": true },
+      { "from": "working", "to": "quota_exhausted", "guard": "trusted-quota-signal", "p1": false },
+      { "from": "decision_required", "to": "quota_exhausted", "guard": "same-chain-final-result", "p1": false },
+      { "from": "quota_exhausted", "to": "working", "guard": "trusted-recovery", "p1": false }
+    ]
+  }
+}
