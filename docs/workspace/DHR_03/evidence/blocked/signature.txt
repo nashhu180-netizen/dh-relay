@@ -1,0 +1,13 @@
+plan_proposed|-|-|-
+plan_activated|-|-|-
+launch_receipt|A|1|-
+checkpoint_accepted|A|1|-
+result_accepted|A|1|-
+plan_proposed|-|-|-
+plan_activated|-|-|-
+launch_receipt|B|1|-
+checkpoint_accepted|B|1|-
+result_accepted|B|1|-
+launch_receipt|A|2|-
+checkpoint_accepted|A|2|-
+result_accepted|A|2|-

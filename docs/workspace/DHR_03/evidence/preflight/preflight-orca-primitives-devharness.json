@@ -1,0 +1,146 @@
+{
+  "all_pass": false,
+  "level": "primitives",
+  "screenshots": [
+    "docs\\modules\\dh-relay\\workspace\\DHR_03\\evidence\\preflight\\shot-orca-visible.png"
+  ],
+  "backend": "orca",
+  "machine": "LAPTOP-P327JFGO",
+  "receipt": {
+    "session_id": "S-PF-20260815190821",
+    "launch_id": "L-PF01"
+  },
+  "schema": "relay-preflight/v1",
+  "extra": {
+    "handle": "term_89f3128a-0e15-4f34-8ac8-48844e56cd56",
+    "worktree": "D:/MyFiles/ai-workflow/dev-harness",
+    "backend_version": "1.4.182"
+  },
+  "checks": [
+    {
+      "informational": false,
+      "raw": {
+        "create": {
+          "exit": 0,
+          "stderr": "",
+          "argv": [
+            "orca",
+            "terminal",
+            "create",
+            "--worktree",
+            "path:D:/MyFiles/ai-workflow/dev-harness",
+            "--title",
+            "RELAY:S-PF-20260815190821",
+            "--command",
+            "pwsh -NoProfile -NoExit -Command Write-Host RELAY-PF-BANNER",
+            "--json"
+          ],
+          "stdout": "{\n  \"id\": \"5761cd41-7d90-4e87-b3fd-5a17bbc7800e\",\n  \"ok\": true,\n  \"result\": {\n    \"terminal\": {\n      \"handle\": \"term_89f3128a-0e15-4f34-8ac8-48844e56cd56\",\n      \"tabId\": \"5cdcccce-613c-430e-9385-33fcdb909d21\",\n      \"paneKey\": \"5cdcccce-613c-430e-9385-33fcdb909d21:fe9efcd1-1cad-4c37-9031-cd451209800f\",\n      \"ptyId\": \"a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness@@ef16ec25\",\n      \"worktreeId\": \"a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness\",\n      \"title\": \"RELAY:S-PF-20260815190821\",\n      \"executionHostId\": \"local\",\n      \"hostPlatform\": \"win32\",\n      \"surface\": \"visible\"\n    }\n  },\n  \"_meta\": {\n    \"runtimeId\": \"1152af97-7813-42d9-9c4e-6decce5f6718\"\n  }\n}\n"
+        },
+        "list": {
+          "exit": 0,
+          "stderr": "",
+          "argv": [
+            "orca",
+            "terminal",
+            "list",
+            "--worktree",
+            "path:D:/MyFiles/ai-workflow/dev-harness",
+            "--json"
+          ],
+          "stdout": "{\n  \"id\": \"4d9d56e5-debc-4cb1-9ba4-abdfaccce158\",\n  \"ok\": true,\n  \"result\": {\n    \"terminals\": [\n      {\n        \"handle\": \"term_c47602ff-35d3-43fa-89c8-68c196e19c2e\",\n        \"ptyId\": \"a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness@@84ced018\",\n        \"incarnationId\": \"fd316276-1e48-4ce9-8e44-61fd0b7c524f\",\n        \"orphaned\": false,\n        \"worktreeId\": \"a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness\",\n        \"worktreePath\": \"D:/MyFiles/ai-workflow/dev-harness\",\n        \"branch\": \"refs/heads/master\",\n        \"tabId\": \"3c038e56-ac34-4360-8c57-573001e5deb4\",\n        \"leafId\": \"9a569df7-7a61-41c8-9a3a-d6a76f7f449c\",\n        \"title\": \"Terminal 1\",\n        \"connected\": true,\n        \"writable\": true,\n        \"lastOutputAt\": null,\n        \"preview\": \"PS D:\\\\MyFiles\\\\ai-workflow\\\\dev-harness> PS D:\\\\MyFiles\\\\-------------------------ai-workflow\\\\dev-harness>\"\n      },\n      {\n        \"handle\": \"term_4b538add-a3a0-40b0-bd0a-a0fb6dd97e79\",\n        \"ptyId\": \"a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness@@70e37c01\",\n        \"incarnationId\": \"9da6ff5e-3dfc-4f74-b03d-b6c0d22c4c81\",\n        \"orphaned\": false,\n        \"worktreeId\": \"a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness\",\n        \"worktreePath\": \"D:/MyFiles/ai-workflow/dev-harness\",\n        \"branch\": \"refs/heads/master\",\n        \"tabId\": \"3c038e56-ac34-4360-8c57-573001e5deb4\",\n        \"leafId\": \"3417c85a-28bf-44f8-a497-e7a57d675b4e\",\n        \"title\": \"Terminal 1\",\n        \"connected\": true,\n        \"writable\": true,\n        \"lastOutputAt\": null,\n        \"preview\": \"PS D:\\\\MyFiles\\\\ai-workflow\\\\dev-harness> PS D:\\\\MyFiles\\\\-------------------------ai-workflow\\\\dev-harness>\"\n      },\n      {\n        \"handle\": \"term_f571d80b-f67e-44f8-9e66-2d28f699b67b\",\n        \"ptyId\": \"a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness@@520606db\",\n        \"incarnationId\": \"374e8ba6-2e8c-46b2-9e00-895eb8876550\",\n        \"orphaned\": false,\n        \"worktreeId\": \"a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness\",\n        \"worktreePath\": \"D:/MyFiles/ai-workflow/dev-harness\",\n        \"branch\": \"refs/heads/master\",\n        \"tabId\": \"d2049a97-9f01-4560-9cfe-35077134d906\",\n        \"leafId\": \"42f5f886-cd42-46d5-8df4-8e4e65844042\",\n        \"title\": \"dev-harness\",\n        \"connected\": true,\n        \"writable\": true,\n        \"lastOutputAt\": 1786758945051,\n        \"preview\": \"前 A/B 仍是未提交 WIP，尚未形成可冻结的新基线。\\n⑦ 收尾\\n项目摘要一句：Topic 15 A-full 与 P18 B-new 已在工作树形成完整一致的 A/B 原子集合，全部并行所有者 WIP 均被保护，但尚未提交且未进入 D。\\n下一步一句：无，等你验收；后续若开 D，需先释放 DC_62 共享路径并另行明确授权。 › Use /skills to list available skills gpt-5.6-sol xhigh · D:\\\\MyFiles\\\\ai-workflow\\\\dev-harness · Context 61% used · 368K used · Fast off\"\n      },\n      {\n        \"handle\": \"term_25a40bbf-d586-4838-9cd1-e204b512f441\",\n        \"ptyId\": \"a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness@@9953a23d\",\n        \"incarnationId\": \"c7cf7416-b1be-4384-9ca8-1ae12c918d50\",\n        \"orphaned\": false,\n        \"worktreeId\": \"a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness\",\n        \"worktreePath\": \"D:/MyFiles/ai-workflow/dev-harness\",\n        \"branch\": \"refs/heads/master\",\n        \"tabId\": \"35b710b3-970f-47ff-b08d-66825ae8aa29\",\n        \"leafId\": \"73fb3dc9-c3c2-4c09-a04e-8aee8e5d62d3\",\n        \"title\": \"dev-harness\",\n        \"connected\": true,\n        \"writable\": true,\n        \"lastOutputAt\": 1786758958445,\n        \"preview\": \"k 撤回后三文件，再撤回根设计中的 P14 内容并恢复 HC-T15 marker。\\n■ Conversation interrupted - tell the model what to do differently. Something went wrong? Hit `/feedback` to report the issue. › Find and fix a bug in @filename gpt-5.6-sol xhigh · D:\\\\MyFiles\\\\ai-workflow\\\\dev-harness · Context 15% used · 559K used · Fast off\"\n      },\n      {\n        \"handle\": \"term_bf126c06-099b-4947-879b-6360b084f27a\",\n        \"ptyId\": \"a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness@@26ef38c5\",\n        \"incarnationId\": \"81f6a4e6-bc03-4ca0-92f8-e7b112509f0d\",\n        \"orphaned\": true,\n        \"worktreeId\": \"a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness\",\n        \"worktreePath\": \"D:/MyFiles/ai-workflow/dev-harness\",\n        \"branch\": \"refs/heads/master\",\n        \"tabId\": \"pty:a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness@@26ef38c5\",\n        \"leafId\": \"pty:a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness@@26ef38c5\",\n        \"title\": null,\n        \"connected\": true,\n        \"writable\": true,\n        \"lastOutputAt\": null,\n        \"preview\": \"\"\n      },\n      {\n        \"handle\": \"term_7539e89c-46ed-4bb8-9335-608a4c8fd0ba\",\n        \"ptyId\": \"a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness@@b8d81a08\",\n        \"incarnationId\": \"ba57e1e2-72aa-4c33-9d45-a6a34e828b8d\",\n        \"orphaned\": true,\n        \"worktreeId\": \"a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness\",\n        \"worktreePath\": \"D:/MyFiles/ai-workflow/dev-harness\",\n        \"branch\": \"refs/heads/master\",\n        \"tabId\": \"pty:a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness@@b8d81a08\",\n        \"leafId\": \"pty:a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness@@b8d81a08\",\n        \"title\": null,\n        \"connected\": true,\n        \"writable\": true,\n        \"lastOutputAt\": null,\n        \"preview\": \"\"\n      },\n      {\n        \"handle\": \"term_79f065a3-e30f-4643-b21d-a36058b33e0e\",\n        \"ptyId\": \"a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness@@ee975508\",\n        \"incarnationId\": \"5fd5736a-d3b9-40c8-a47b-bafcfc4374c8\",\n        \"orphaned\": true,\n        \"worktreeId\": \"a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness\",\n        \"worktreePath\": \"D:/MyFiles/ai-workflow/dev-harness\",\n        \"branch\": \"refs/heads/master\",\n        \"tabId\": \"pty:a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness@@ee975508\",\n        \"leafId\": \"pty:a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness@@ee975508\",\n        \"title\": null,\n        \"connected\": true,\n        \"writable\": true,\n        \"lastOutputAt\": null,\n        \"preview\": \"\"\n      },\n      {\n        \"handle\": \"term_2a8dfa41-46ac-42e0-9a6b-876fba8197e6\",\n        \"ptyId\": \"a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness@@ba373ad3\",\n        \"incarnationId\": \"f04e7dd2-b71a-41eb-9282-f084a667f6c8\",\n        \"orphaned\": true,\n        \"worktreeId\": \"a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness\",\n        \"worktreePath\": \"D:/MyFiles/ai-workflow/dev-harness\",\n        \"branch\": \"refs/heads/master\",\n        \"tabId\": \"pty:a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness@@ba373ad3\",\n        \"leafId\": \"pty:a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness@@ba373ad3\",\n        \"title\": null,\n        \"connected\": true,\n        \"writable\": true,\n        \"lastOutputAt\": null,\n        \"preview\": \"\"\n      },\n      {\n        \"handle\": \"term_89f3128a-0e15-4f34-8ac8-48844e56cd56\",\n        \"ptyId\": \"a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness@@ef16ec25\",\n        \"incarnationId\": \"6e3c314a-8a34-478a-9e48-4cb694f7d2e7\",\n        \"orphaned\": false,\n        \"worktreeId\": \"a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness\",\n        \"worktreePath\": \"D:/MyFiles/ai-workflow/dev-harness\",\n        \"branch\": \"refs/heads/master\",\n        \"tabId\": \"5cdcccce-613c-430e-9385-33fcdb909d21\",\n        \"leafId\": \"fe9efcd1-1cad-4c37-9031-cd451209800f\",\n        \"title\": \"RELAY:S-PF-20260815190821\",\n        \"connected\": true,\n        \"writable\": true,\n        \"lastOutputAt\": 1786792103934,\n        \"preview\": \"\"\n      }\n    ],\n    \"topologyRevisions\": {\n      \"a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness\": 31\n    },\n    \"totalCount\": 9,\n    \"truncated\": false\n  },\n  \"_meta\": {\n    \"runtimeId\": \"1152af97-7813-42d9-9c4e-6decce5f6718\"\n  }\n}\n"
+        }
+      },
+      "pass": true,
+      "id": "P1",
+      "ms": 0,
+      "detail": "create ok=True handle=term_89f3128a-0e15-4f34-8ac8-48844e56cd56 list title-exact rows=1 worktree=D:/MyFiles/ai-workflow/dev-harness (ms)"
+    },
+    {
+      "informational": false,
+      "raw": {
+        "show": {
+          "exit": 0,
+          "stderr": "",
+          "argv": [
+            "orca",
+            "terminal",
+            "show",
+            "--terminal",
+            "term_89f3128a-0e15-4f34-8ac8-48844e56cd56",
+            "--json"
+          ],
+          "stdout": "{\n  \"id\": \"501b4e6e-22b6-4f35-8c0a-7e6f0bb6d241\",\n  \"ok\": true,\n  \"result\": {\n    \"terminal\": {\n      \"handle\": \"term_89f3128a-0e15-4f34-8ac8-48844e56cd56\",\n      \"ptyId\": \"a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness@@ef16ec25\",\n      \"incarnationId\": \"6e3c314a-8a34-478a-9e48-4cb694f7d2e7\",\n      \"orphaned\": false,\n      \"worktreeId\": \"a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness\",\n      \"worktreePath\": \"D:/MyFiles/ai-workflow/dev-harness\",\n      \"branch\": \"refs/heads/master\",\n      \"tabId\": \"5cdcccce-613c-430e-9385-33fcdb909d21\",\n      \"leafId\": \"fe9efcd1-1cad-4c37-9031-cd451209800f\",\n      \"title\": \"RELAY:S-PF-20260815190821\",\n      \"connected\": true,\n      \"writable\": true,\n      \"lastOutputAt\": 1786792108906,\n      \"preview\": \"RELAY-PF-BANNER\\nPS D:\\\\MyFiles\\\\ai-workflow\\\\dev-harness>\",\n      \"paneRuntimeId\": -1,\n      \"rendererGraphEpoch\": 0\n    }\n  },\n  \"_meta\": {\n    \"runtimeId\": \"1152af97-7813-42d9-9c4e-6decce5f6718\"\n  }\n}\n"
+        }
+      },
+      "pass": true,
+      "id": "P2",
+      "ms": 0,
+      "detail": "surface=visible app.desktopWindowStatus=available list-visible=True（无 OS 级窗口标题可证·仅 app 内 tab）"
+    },
+    {
+      "informational": false,
+      "raw": {
+        "read": {
+          "exit": 0,
+          "stderr": "",
+          "argv": [
+            "orca",
+            "terminal",
+            "read",
+            "--terminal",
+            "term_89f3128a-0e15-4f34-8ac8-48844e56cd56",
+            "--json"
+          ],
+          "stdout": "{\n  \"id\": \"ce9f5fe2-056d-4b71-b0a3-beac569c3d3f\",\n  \"ok\": true,\n  \"result\": {\n    \"terminal\": {\n      \"handle\": \"term_89f3128a-0e15-4f34-8ac8-48844e56cd56\",\n      \"status\": \"running\",\n      \"tail\": [\n        \"RELAY-PF-BANNER\",\n        \"PS D:\\\\MyFiles\\\\ai-workflow\\\\dev-harness>Write-Host RELAY-PF-OKWrite-Host RELAY-PF-OKWrite-Host RELAY-PF-OKWrite-Host RELAY-PF-OKWrite-Host RELAY-PF-OKWrite-Host RELAY-PF-OKWrite-Host RELAY-PF-OKWrite-Host RELAY-PF-OKWrite-Host RELAY-PF-OKWrite-Host RELAY-PF-OKWrite-Host RELAY-PF-OKWrite-Host RELAY-PF-OK\",\n        \"RELAY-PF-OK\",\n        \"PS D:\\\\MyFiles\\\\ai-workflow\\\\dev-harness>\"\n      ],\n      \"truncated\": false,\n      \"limited\": false,\n      \"oldestCursor\": \"0\",\n      \"nextCursor\": \"3\",\n      \"latestCursor\": \"3\",\n      \"returnedLineCount\": 4\n    }\n  },\n  \"_meta\": {\n    \"runtimeId\": \"1152af97-7813-42d9-9c4e-6decce5f6718\"\n  }\n}\n"
+        }
+      },
+      "pass": true,
+      "id": "P3",
+      "ms": 0,
+      "detail": "writable=True send→read echo=True"
+    },
+    {
+      "informational": false,
+      "raw": {
+        "probes": [
+          "term_89f3128a-0e15-4f34-8ac8-48844e56cd56|a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness@@ef16ec25|RELAY:S-PF-20260815190821|True",
+          "term_89f3128a-0e15-4f34-8ac8-48844e56cd56|a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness@@ef16ec25|RELAY:S-PF-20260815190821|True",
+          "term_89f3128a-0e15-4f34-8ac8-48844e56cd56|a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness@@ef16ec25|RELAY:S-PF-20260815190821|True"
+        ]
+      },
+      "pass": true,
+      "id": "P4",
+      "ms": 0,
+      "detail": "3 probes identical first=term_89f3128a-0e15-4f34-8ac8-48844e56cd56|a4ac280f-ca60-4eb3-846e-7605452ab060::D:/MyFiles/ai-workflow/dev-harness@@ef16ec25|RELAY:S-PF-20260815190821|True"
+    },
+    {
+      "informational": false,
+      "raw": {
+        "close": {
+          "exit": 1,
+          "stderr": "",
+          "argv": [
+            "orca",
+            "terminal",
+            "close",
+            "--terminal",
+            "term_89f3128a-0e15-4f34-8ac8-48844e56cd56",
+            "--json"
+          ],
+          "stdout": "{\n  \"id\": \"408ae6c6-f5d9-4f87-856b-4f759716582b\",\n  \"ok\": false,\n  \"error\": {\n    \"code\": \"runtime_error\",\n    \"message\": \"tab_not_found\"\n  },\n  \"_meta\": {\n    \"runtimeId\": \"1152af97-7813-42d9-9c4e-6decce5f6718\"\n  }\n}\n"
+        }
+      },
+      "pass": false,
+      "id": "P5",
+      "ms": 2609,
+      "detail": "close ok=False err=tab_not_found read.status=exited=True still_listed=False after 2609ms"
+    }
+  ],
+  "ran_at": "2026-08-15T11:08:47.6953097Z",
+  "deadlines": {
+    "attach_seconds": 10,
+    "stop_seconds": 10
+  },
+  "session_tag": "PF-20260815190821"
+}

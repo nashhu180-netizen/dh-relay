@@ -1,0 +1,66 @@
+[dogfood] scenario=blocked run_id=RELAY-DF-BLOCKED-20260815215218 run_root=D:\MyFiles\ai-workflow\dh-crew\.dh-worktrees\DHR_03\.dh-runtime\relay\RELAY-DF-BLOCKED-20260815215218 evidence=D:\MyFiles\ai-workflow\dh-crew\.dh-worktrees\DHR_03\docs\modules\dh-relay\workspace\DHR_03\evidence\blocked
+[dogfood] spawn orchestrator (headless claude -p) prompt=D:\MyFiles\ai-workflow\dh-crew\.dh-worktrees\DHR_03\.dh-runtime\relay\RELAY-DF-BLOCKED-20260815215218\dogfood\orchestrator-prompt.md log=D:\MyFiles\ai-workflow\dh-crew\.dh-worktrees\DHR_03\.dh-runtime\relay\RELAY-DF-BLOCKED-20260815215218\spawns\orchestrator-1.log
+[dogfood] spawn orchestrator exit=0 in 54s; tail: PROPOSED v1
+[relay-host] tick=1 waiting-for-plan
+[relay-host] tick=2 A=launching/working
+[relay-host] tick=3 A=running/working
+[relay-host] tick=4 A=running/working
+[relay-host] tick=5 A=running/working
+[relay-host] tick=6 A=running/working
+[relay-host] tick=7 A=running/working
+[relay-host] tick=8 A=running/working
+[relay-host] tick=9 A=running/working
+[relay-host] tick=10 A=running/working
+[relay-host] tick=11 A=running/working
+[relay-host] tick=12 A=running/working
+[relay-host] tick=13 A=running/working
+[relay-host] tick=14 A=running/working
+[relay-host] tick=15 A=running/working
+[relay-host] tick=16 A=running/working
+[relay-host] tick=17 A=running/working
+[dogfood] spawn replanner (headless claude -p) prompt=D:\MyFiles\ai-workflow\dh-crew\.dh-worktrees\DHR_03\.dh-runtime\relay\RELAY-DF-BLOCKED-20260815215218\dogfood\replanner-prompt.md log=D:\MyFiles\ai-workflow\dh-crew\.dh-worktrees\DHR_03\.dh-runtime\relay\RELAY-DF-BLOCKED-20260815215218\spawns\replanner-2.log
+[dogfood] spawn replanner exit=0 in 71s; tail: PROPOSED v2
+[relay-host] tick=18 A=exited/dependency_blocked
+[relay-host] tick=19 A=exited/dependency_blocked B=launching/working
+[relay-host] tick=20 A=exited/dependency_blocked B=running/working
+[relay-host] tick=21 A=exited/dependency_blocked B=running/working
+[relay-host] tick=22 A=exited/dependency_blocked B=running/working
+[relay-host] tick=23 A=exited/dependency_blocked B=running/working
+[relay-host] tick=24 A=exited/dependency_blocked B=running/working
+[relay-host] tick=25 A=exited/dependency_blocked B=running/working
+[relay-host] tick=26 A=exited/dependency_blocked B=running/working
+[relay-host] tick=27 A=exited/dependency_blocked B=running/working
+[relay-host] tick=28 A=exited/dependency_blocked B=running/working
+[relay-host] tick=29 A=exited/dependency_blocked B=running/working
+[relay-host] tick=30 A=exited/dependency_blocked B=running/working
+[relay-host] tick=31 A=exited/dependency_blocked B=running/working
+[relay-host] tick=32 A=launching/working B=running/succeeded
+[dogfood] stop succeeded node B session=S-0002 ok=True exited_after_ms=1192
+[relay-host] tick=33 A=running/working B=running/succeeded
+[relay-host] tick=34 A=running/working B=running/succeeded
+[relay-host] tick=35 A=running/working B=running/succeeded
+[relay-host] tick=36 A=running/working B=running/succeeded
+[relay-host] tick=37 A=running/working B=running/succeeded
+[relay-host] tick=38 A=running/working B=running/succeeded
+[relay-host] tick=39 A=running/working B=running/succeeded
+[relay-host] tick=40 A=running/working B=running/succeeded
+[relay-host] tick=41 A=running/working B=running/succeeded
+[relay-host] tick=42 A=running/working B=running/succeeded
+[relay-host] tick=43 A=running/working B=running/succeeded
+[relay-host] tick=44 A=running/working B=running/succeeded
+[relay-host] tick=45 A=running/working B=running/succeeded
+[relay-host] tick=46 A=running/succeeded B=running/succeeded
+[dogfood] stop succeeded node A session=S-0003 ok=True exited_after_ms=729
+[dogfood] evidence -> D:\MyFiles\ai-workflow\dh-crew\.dh-worktrees\DHR_03\docs\modules\dh-relay\workspace\DHR_03\evidence\blocked
+[dogfood] signature:
+  plan_proposed|-|-|-
+  plan_activated|-|-|-
+  launch_receipt|A|1|-
+  result_accepted|A|1|-
+  plan_proposed|-|-|-
+  plan_activated|-|-|-
+  launch_receipt|B|1|-
+  result_accepted|B|1|-
+  launch_receipt|A|2|-
+  result_accepted|A|2|-
+[dogfood] exit=0 run_id=RELAY-DF-BLOCKED-20260815215218

@@ -1,0 +1,1 @@
+{"schema_version":"relay/v1","plan_version":1,"run_id":"FAKE-HOST","proposed_by":"orchestrator","proposed_at":"2026-08-15T00:00:00Z","nodes":[{"node_id":"A","role":"worker","brief_ref":"FAKE/brief-A.md","depends_on":[],"next_action":"none"},{"node_id":"C","role":"worker","brief_ref":"FAKE/brief-C.md","depends_on":["A"],"next_action":"none"}]}

@@ -1,0 +1,1 @@
+{"schema_version":"relay/v1","plan_version":1,"plan_hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","authority_generation":1,"node_id":"A","attempt_id":1,"launch_id":"L-0001","session_id":"S-0001","role":"worker","backend":"fake","issued_at":"2026-08-15T00:00:00Z","launch_deadline_at":"2026-08-15T00:02:00Z"}

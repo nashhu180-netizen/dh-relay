@@ -1,0 +1,65 @@
+{
+  "attempt_id": 1,
+  "checked_at": "2026-08-15T16:29:46.2118357+00:00",
+  "node_id": "A",
+  "checks": [
+    {
+      "id": "L1",
+      "pass": true,
+      "detail": "submit rejected ok=False"
+    },
+    {
+      "id": "L2",
+      "pass": true,
+      "detail": "last event kind=result_stale reason=stale-plan node=A attempt=1"
+    },
+    {
+      "id": "L3",
+      "pass": true,
+      "detail": "events 72 -> 73 (exactly one new event)"
+    },
+    {
+      "id": "L4",
+      "pass": true,
+      "detail": "relay-state/active-plan/authority sha256 unchanged=True/True/True"
+    },
+    {
+      "id": "L5",
+      "pass": true,
+      "detail": "committed result.json of A/1 still dependency_blocked (final immutable)"
+    }
+  ],
+  "hashes_before": {
+    "authority": "22D3F511903FD4D6342BA56ADB2D33CCEC205617A0A1B96AEA7CE9A62D26CDC6",
+    "active_plan": "65ED38EF05DFA7C1BF2CA2BE6A84C207ED9C23E4A93891CB474E3DAE88E03D62",
+    "state": "EE39B820C7BC6DF242660B8A48F156D68D70E389AD9E5BF97A2EAACF91425F8C"
+  },
+  "hashes_after": {
+    "authority": "22D3F511903FD4D6342BA56ADB2D33CCEC205617A0A1B96AEA7CE9A62D26CDC6",
+    "active_plan": "65ED38EF05DFA7C1BF2CA2BE6A84C207ED9C23E4A93891CB474E3DAE88E03D62",
+    "state": "EE39B820C7BC6DF242660B8A48F156D68D70E389AD9E5BF97A2EAACF91425F8C"
+  },
+  "run_id": "RELAY-DF-BLOCKED-20260816001924",
+  "last_event": {
+    "schema_version": "relay/v1",
+    "identity": {
+      "launch_id": "L-0001",
+      "attempt_id": 1,
+      "authority_generation": 1,
+      "node_id": "A",
+      "plan_version": 1,
+      "session_id": "S-0001",
+      "plan_hash": "99e215cacc9669ffbf4c45d3fac00f9f589ec7c61fa1d8523d511e47fbf10886"
+    },
+    "event_id": "EV-RELAY-DF-BLOCKED-20260816001924-000073",
+    "occurred_at": "2026-08-15T16:29:46.1477038+00:00",
+    "reason": "stale-plan",
+    "kind": "result_stale"
+  },
+  "submit": {
+    "ok": false,
+    "reason": "stale-plan",
+    "verdict": "rejected"
+  },
+  "receipt": "D:\\MyFiles\\ai-workflow\\dh-crew\\.dh-worktrees\\DHR_03\\.dh-runtime\\relay\\RELAY-DF-BLOCKED-20260816001924\\launches\\L-0001.json"
+}

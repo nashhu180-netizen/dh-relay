@@ -1,0 +1,65 @@
+{
+  "receipt": "D:\\MyFiles\\ai-workflow\\dh-crew\\.dh-worktrees\\DHR_03\\.dh-runtime\\relay\\RELAY-DF-BLOCKED-20260816003930\\launches\\L-0001.json",
+  "submit": {
+    "ok": false,
+    "verdict": "rejected",
+    "reason": "stale-plan"
+  },
+  "hashes_after": {
+    "state": "6F74D1D92EA2AF40CF79CF4D69C1D90198BBDB594DFEC347A1B7B3DFDBD78669",
+    "active_plan": "6408436725C687D42BE3125487346038ADECE03809BF29253F731CA324B24FA8",
+    "authority": "596BD9BEB63657E16B7743E4AB28FE7E3516C0D0D19A16C57ADFF968CD119B1C"
+  },
+  "checks": [
+    {
+      "id": "L1",
+      "detail": "submit rejected ok=False",
+      "pass": true
+    },
+    {
+      "id": "L2",
+      "detail": "last event kind=result_stale reason=stale-plan node=A attempt=1",
+      "pass": true
+    },
+    {
+      "id": "L3",
+      "detail": "events 75 -> 76 (exactly one new event)",
+      "pass": true
+    },
+    {
+      "id": "L4",
+      "detail": "relay-state/active-plan/authority sha256 unchanged=True/True/True",
+      "pass": true
+    },
+    {
+      "id": "L5",
+      "detail": "committed result.json of A/1 still dependency_blocked (final immutable)",
+      "pass": true
+    }
+  ],
+  "attempt_id": 1,
+  "hashes_before": {
+    "state": "6F74D1D92EA2AF40CF79CF4D69C1D90198BBDB594DFEC347A1B7B3DFDBD78669",
+    "active_plan": "6408436725C687D42BE3125487346038ADECE03809BF29253F731CA324B24FA8",
+    "authority": "596BD9BEB63657E16B7743E4AB28FE7E3516C0D0D19A16C57ADFF968CD119B1C"
+  },
+  "node_id": "A",
+  "last_event": {
+    "identity": {
+      "plan_hash": "c56d6340a83cd96e5985f3247e32aabca7c17e7e423e1aba4a55b3befe8d46fd",
+      "plan_version": 1,
+      "session_id": "S-0001",
+      "attempt_id": 1,
+      "launch_id": "L-0001",
+      "node_id": "A",
+      "authority_generation": 1
+    },
+    "event_id": "EV-RELAY-DF-BLOCKED-20260816003930-000076",
+    "reason": "stale-plan",
+    "kind": "result_stale",
+    "schema_version": "relay/v1",
+    "occurred_at": "2026-08-15T16:49:10.4174149+00:00"
+  },
+  "run_id": "RELAY-DF-BLOCKED-20260816003930",
+  "checked_at": "2026-08-15T16:49:10.4720653+00:00"
+}

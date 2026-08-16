@@ -5,7 +5,7 @@
 
 | 步骤 | 完成% | 要的证据 | 证据状态 |
 |------|------|---------|---------|
-| 批0 终端后端 preflight（psmux + orca 原语级·K-1 闸） | 0 | `evidence/preflight/preflight-{psmux,orca}-primitives.json` + 截图 + 后端定案记录 | missing |
+| 批0 终端后端 preflight（psmux + orca 原语级·K-1 闸） | 100 | `evidence/preflight/preflight-psmux-primitives.json`（5/5）+ `preflight-orca-primitives-{devharness,dhcrew}.json`（4/5）+ 截图 + 后端定案 psmux（progress E-003/E-004） | present |
 | 批A psmux adapter + 离线/真实套件 + adapter 级 preflight（A7） | 0 | `relay-psmux-adapter.ps1` SUITE PASS + `relay-psmux-real.ps1` SUITE PASS（RELAY_REAL_TERMINAL=1）+ `preflight-psmux-adapter.json` 全 pass + commit | missing |
 | 批B 宿主循环 + agent 侧工具 + worker 入口 + fake 套件 | 0 | `relay-host-loop.ps1` + `relay-agent-tool.ps1` SUITE PASS + `RELAY ALL PASS`（15 套件）+ commit | missing |
 | 批C dogfood blocked（A3） | 0 | `evidence/blocked/{events.jsonl,timeline.md,shots/*,relay-state.json,launches/,psmux-handles/}` + 事件签名精确子序列 + 迟到 A1 stale 断言输出 | missing |

@@ -1,0 +1,1 @@
+{"role":"worker","plan_version":1,"schema_version":"relay/v1","authority_generation":1,"launch_id":"L-0001","session_id":"S-0001","node_id":"A","issued_at":"2026-08-15T16:40:27.9496691+00:00","launch_deadline_at":"2026-08-15T16:42:27.9496691+00:00","attempt_id":1,"backend":"psmux","plan_hash":"c56d6340a83cd96e5985f3247e32aabca7c17e7e423e1aba4a55b3befe8d46fd"}

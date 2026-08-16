@@ -1,0 +1,65 @@
+{
+  "hashes_after": {
+    "state": "9C5F347CCCED721D08868B8F875565B2701C1C1455719E55DABD679E9FBE8D4E",
+    "authority": "6068C8994BDAA56329CBE96BD524A1354DB2E426998FCD42E6AA9F23CEBF38A1",
+    "active_plan": "E055864A969A5038384EE7C555657B97FCF7AA9833971F3216237AA00AD78828"
+  },
+  "node_id": "A",
+  "hashes_before": {
+    "state": "9C5F347CCCED721D08868B8F875565B2701C1C1455719E55DABD679E9FBE8D4E",
+    "authority": "6068C8994BDAA56329CBE96BD524A1354DB2E426998FCD42E6AA9F23CEBF38A1",
+    "active_plan": "E055864A969A5038384EE7C555657B97FCF7AA9833971F3216237AA00AD78828"
+  },
+  "checked_at": "2026-08-15T14:01:12.4135166+00:00",
+  "receipt": "D:\\MyFiles\\ai-workflow\\dh-crew\\.dh-worktrees\\DHR_03\\.dh-runtime\\relay\\RELAY-DF-BLOCKED-20260815215218\\launches\\L-0001.json",
+  "attempt_id": 1,
+  "last_event": {
+    "schema_version": "relay/v1",
+    "kind": "result_stale",
+    "event_id": "EV-RELAY-DF-BLOCKED-20260815215218-000052",
+    "occurred_at": "2026-08-15T14:01:12.3137095+00:00",
+    "identity": {
+      "plan_hash": "668d23341b8740f09de5b2c393bfe1784d27a987c5f607bc661265fed014621e",
+      "authority_generation": 1,
+      "node_id": "A",
+      "launch_id": "L-0001",
+      "session_id": "S-0001",
+      "plan_version": 1,
+      "attempt_id": 1
+    },
+    "reason": "stale-plan"
+  },
+  "submit": {
+    "reason": "stale-plan",
+    "ok": false,
+    "verdict": "rejected"
+  },
+  "run_id": "RELAY-DF-BLOCKED-20260815215218",
+  "checks": [
+    {
+      "id": "L1",
+      "detail": "submit rejected ok=False",
+      "pass": true
+    },
+    {
+      "id": "L2",
+      "detail": "last event kind=result_stale reason=stale-plan node=A attempt=1",
+      "pass": true
+    },
+    {
+      "id": "L3",
+      "detail": "events 51 -> 52 (exactly one new event)",
+      "pass": true
+    },
+    {
+      "id": "L4",
+      "detail": "relay-state/active-plan/authority sha256 unchanged=True/True/True",
+      "pass": true
+    },
+    {
+      "id": "L5",
+      "detail": "committed result.json of A/1 still dependency_blocked (final immutable)",
+      "pass": true
+    }
+  ]
+}

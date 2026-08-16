@@ -1,0 +1,8 @@
+plan_proposed|-|-|-
+plan_activated|-|-|-
+launch_receipt|A|1|-
+result_accepted|A|1|-
+plan_proposed|-|-|-
+plan_activated|-|-|-
+launch_receipt|B|1|-
+observation|B|1|transition-rejected:edge-not-listed

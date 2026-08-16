@@ -1,0 +1,46 @@
+[dogfood] scenario=blocked run_id=RELAY-DF-BLOCKED-20260815212003 run_root=D:\MyFiles\ai-workflow\dh-crew\.dh-worktrees\DHR_03\.dh-runtime\relay\RELAY-DF-BLOCKED-20260815212003 evidence=D:\MyFiles\ai-workflow\dh-crew\.dh-worktrees\DHR_03\docs\modules\dh-relay\workspace\DHR_03\evidence\blocked
+[dogfood] spawn orchestrator (headless claude -p) prompt=D:\MyFiles\ai-workflow\dh-crew\.dh-worktrees\DHR_03\.dh-runtime\relay\RELAY-DF-BLOCKED-20260815212003\dogfood\orchestrator-prompt.md log=D:\MyFiles\ai-workflow\dh-crew\.dh-worktrees\DHR_03\.dh-runtime\relay\RELAY-DF-BLOCKED-20260815212003\spawns\orchestrator-1.log
+[dogfood] spawn orchestrator exit=0 in 55s; tail: PROPOSED v1
+[relay-host] tick=1 waiting-for-plan
+[relay-host] tick=2 A=launching/working
+[relay-host] tick=3 A=running/working
+[relay-host] tick=4 A=running/working
+[relay-host] tick=5 A=running/working
+[relay-host] tick=6 A=running/working
+[relay-host] tick=7 A=running/working
+[relay-host] tick=8 A=running/working
+[relay-host] tick=9 A=running/working
+[relay-host] tick=10 A=running/working
+[relay-host] tick=11 A=running/working
+[relay-host] tick=12 A=running/working
+[relay-host] tick=13 A=running/working
+[dogfood] spawn replanner (headless claude -p) prompt=D:\MyFiles\ai-workflow\dh-crew\.dh-worktrees\DHR_03\.dh-runtime\relay\RELAY-DF-BLOCKED-20260815212003\dogfood\replanner-prompt.md log=D:\MyFiles\ai-workflow\dh-crew\.dh-worktrees\DHR_03\.dh-runtime\relay\RELAY-DF-BLOCKED-20260815212003\spawns\replanner-2.log
+[dogfood] spawn replanner exit=0 in 61s; tail: SessionEnd hook [/usr/bin/env node "C:\Users\nash\.tokentracker\bin\notify.cjs" --source=claude] failed: Hook cancelled
+[relay-host] tick=14 A=exited/dependency_blocked
+[relay-host] tick=15 A=exited/dependency_blocked B=launching/working
+[relay-host] tick=16 A=exited/dependency_blocked B=running/working
+[relay-host] tick=17 A=exited/dependency_blocked B=running/working
+[relay-host] tick=18 A=exited/dependency_blocked B=running/working
+[relay-host] tick=19 A=exited/dependency_blocked B=running/working
+[relay-host] tick=20 A=exited/dependency_blocked B=running/working
+[relay-host] tick=21 A=exited/dependency_blocked B=running/working
+[relay-host] tick=22 A=exited/dependency_blocked B=running/working
+[relay-host] tick=23 A=exited/dependency_blocked B=running/working
+[relay-host] tick=24 A=exited/dependency_blocked B=running/working
+[relay-host] tick=25 A=exited/dependency_blocked B=running/working
+[relay-host] tick=26 A=unknown/working B=running/succeeded
+[dogfood] stop succeeded node B session=S-0002 ok=True exited_after_ms=189
+[dogfood] finished with exit=3 unfinished=A=paused/launch-failed
+[dogfood] evidence -> D:\MyFiles\ai-workflow\dh-crew\.dh-worktrees\DHR_03\docs\modules\dh-relay\workspace\DHR_03\evidence\blocked
+[dogfood] signature:
+  plan_proposed|-|-|-
+  plan_activated|-|-|-
+  launch_receipt|A|1|-
+  result_accepted|A|1|-
+  plan_proposed|-|-|-
+  plan_activated|-|-|-
+  launch_receipt|B|1|-
+  result_accepted|B|1|-
+  launch_receipt|A|2|-
+  launch_failed|A|2|adapter-launch-failed:launch-not-attached
+[dogfood] exit=3 run_id=RELAY-DF-BLOCKED-20260815212003

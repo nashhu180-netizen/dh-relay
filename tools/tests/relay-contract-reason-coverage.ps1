@@ -54,8 +54,8 @@ function Test-NonLiteralReasonAllowed([string]$FileName, [string]$Line) {
 
 $productionReasons = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
 $nonLiteralReasons = [Collections.Generic.List[string]]::new()
-$productionRoots = @('../contracts','../runner','../adapters')
-foreach ($file in $productionRoots | ForEach-Object { Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot $_) -Filter '*.ps1' -File }) {
+$productionRoots = @('../contracts','../runner','../adapters','../host')
+foreach ($file in $productionRoots | ForEach-Object { $path=Join-Path $PSScriptRoot $_;if(Test-Path -LiteralPath $path){Get-ChildItem -LiteralPath $path -Filter '*.ps1' -File} }) {
   $lines = @(Get-Content -LiteralPath $file.FullName)
   for ($index = 0; $index -lt $lines.Count; $index++) {
     $line = $lines[$index]

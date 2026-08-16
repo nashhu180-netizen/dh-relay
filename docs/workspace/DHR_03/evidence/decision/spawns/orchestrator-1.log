@@ -1,0 +1,2 @@
+PROPOSED v1
+SessionEnd hook [/usr/bin/env node "C:\Users\nash\.tokentracker\bin\notify.cjs" --source=claude] failed: Hook cancelled

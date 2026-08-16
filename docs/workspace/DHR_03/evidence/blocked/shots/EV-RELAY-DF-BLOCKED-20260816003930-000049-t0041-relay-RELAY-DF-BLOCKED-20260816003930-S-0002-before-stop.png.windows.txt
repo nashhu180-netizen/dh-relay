@@ -1,0 +1,3 @@
+# visible windows total=16 relay=2 (only RELAY:* titles are recorded; png contains only these windows)
+RELAY:relay-RELAY-DF-BLOCKED-20260816003930-S-0003
+RELAY:relay-RELAY-DF-BLOCKED-20260816003930-S-0002

@@ -1,0 +1,29 @@
+
+ 已完成
+-work/B.txt已写，唯一一行：B-DONE-20260815205148
+- attempts/B/1/handoff-body.md已写（说明B.txt位置和首行）
+-交棒调用时 handoff.md 已由工具生成落盘（result 流程先写handoff再校验，这一步是成功的）
+
+卡住的地方：result交棒两次都返回exit4
+ 1. 第一次（按任务单原命令）→ bad-type:changed_paths
+2.按打印原因改正、重试一次加-ChangedPathswork/B.txt→bad-type:tests_run
+
+根因是同一个：relay-agent-tool.ps1里Expand-RelayAgentList返回@()时被PowerShell解包成$null，到
+ New-RelayAgentResult 的 [string[]]$Paths/$Suites再套@(...)就成了@($null)，Test-RelayStringArray
+判它「含非字符串项」而拒收。也就是说当前版本的工具无法提交空的changed_paths/
+tests_run——凡是没跑测试的节点都交不了棒。修法很小（return,@(...)或在调用处@($Paths|Where-Object{$null-ne$_
+})），但我按单子不改仓库文件。
+
+我没有跑任何测试，不能编个套件名硬塞给-TestsRun蒙混过去；重试额度也已用掉。所以我用允许的进度通道写了一条working
+ checkpoint（attempts/B/1/checkpoint.json.tmp），把上面两次失败和原因如实记录，现在安静等着。
+
+ 需要你决定：修工具后让我再交一次，还是接受这次 dogfood 在此处「被工具阻塞」作为本轮发现（这条正好是 result 路径的真
+ bug，值得记进 DHR_03 的 evidence/blocked）。
+
+✻Sautéed for 3m 17s
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Fable5|work[wt/DHR_03]|Ctxleft:93%|5h28%/7d52%
+⏵⏵bypasspermissionson(shift+tabtocycle)·←1 agent

@@ -1,0 +1,3 @@
+FAKE output before secret
+api_key=FAKE1234567890
+FAKE output after secret

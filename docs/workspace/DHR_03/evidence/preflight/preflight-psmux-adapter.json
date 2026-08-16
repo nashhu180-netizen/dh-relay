@@ -1,0 +1,158 @@
+{
+  "checks": [
+    {
+      "id": "P1",
+      "pass": true,
+      "ms": 2341,
+      "informational": false,
+      "detail": "adapter.launch ok=True session_id==receipt=True registry.launch_id==receipt=True handle={\"psmux_session_id\":\"$2772\",\"session_name\":\"relay-RUN-PF-20260816003810-S-PF-20260816003810\",\"window_title\":\"RELAY:relay-RUN-PF-20260816003810-S-PF-20260816003810\",\"client_pid\":29284,\"pane_id\":\"%1\",\"pane_pid\":2908} exact rows=1",
+      "raw": {
+        "launch": {
+          "handle": {
+            "psmux_session_id": "$2772",
+            "session_name": "relay-RUN-PF-20260816003810-S-PF-20260816003810",
+            "window_title": "RELAY:relay-RUN-PF-20260816003810-S-PF-20260816003810",
+            "client_pid": 29284,
+            "pane_id": "%1",
+            "pane_pid": 2908
+          },
+          "ok": true,
+          "session_id": "S-PF-20260816003810"
+        },
+        "registry": {
+          "client_lost": false,
+          "launch_id": "L-PF01",
+          "activity_seen_at": "2026-08-16T00:38:13.6772451+08:00",
+          "client_pid": 29284,
+          "session_id": "S-PF-20260816003810",
+          "session_name": "relay-RUN-PF-20260816003810-S-PF-20260816003810",
+          "launched_at": "2026-08-16T00:38:13.6772451+08:00",
+          "observed_running": false,
+          "pane_pid": 2908,
+          "pane_id": "%1",
+          "psmux_session_id": "$2772",
+          "stopped_at": "",
+          "window_title": "RELAY:relay-RUN-PF-20260816003810-S-PF-20260816003810",
+          "activity_fingerprint": "9047d3c9e902bd9dd8559fe387064df4aa78a58cdfa9874519de213b88cc5ddf"
+        },
+        "list": {
+          "exit": 0,
+          "stdout": "relay-RUN-PF-20260816003810-S-PF-20260816003810|$2772|1\n",
+          "stderr": "",
+          "argv": [
+            "psmux",
+            "list-sessions",
+            "-F",
+            "#{session_name}|#{session_id}|#{session_attached}"
+          ]
+        }
+      }
+    },
+    {
+      "id": "P2",
+      "pass": true,
+      "ms": 0,
+      "informational": false,
+      "detail": "visible window title==RELAY:relay-RUN-PF-20260816003810-S-PF-20260816003810 found=True (adapter waited 2341ms within AttachDeadline)",
+      "raw": {
+        "windows": {
+          "title": "RELAY:relay-RUN-PF-20260816003810-S-PF-20260816003810",
+          "pid": 8488,
+          "hwnd": 2556152
+        }
+      }
+    },
+    {
+      "id": "P3",
+      "pass": true,
+      "ms": 0,
+      "informational": false,
+      "detail": "attached=1 list-clients=True send-keys echo=True (send-keys 仅 preflight 使用)",
+      "raw": {
+        "clients": {
+          "exit": 0,
+          "stdout": "/dev/pts/2: relay-RUN-PF-20260816003810-S-PF-20260816003810: PF [120x29] (utf8) [activity=1s ago]\n\n",
+          "stderr": "",
+          "argv": [
+            "psmux",
+            "list-clients"
+          ]
+        },
+        "capture": {
+          "exit": 0,
+          "stdout": "RELAY-PF-BANNER\nPS D:\\MyFiles\\ai-workflow\\dh-crew\\.dh-worktrees\\DHR_03> Write-Host RELAY-PF-OK\nRELAY-PF-OK\nPS D:\\MyFiles\\ai-workflow\\dh-crew\\.dh-worktrees\\DHR_03>\n",
+          "stderr": "",
+          "argv": [
+            "psmux",
+            "capture-pane",
+            "-p",
+            "-t",
+            "relay-RUN-PF-20260816003810-S-PF-20260816003810"
+          ]
+        }
+      }
+    },
+    {
+      "id": "P4",
+      "pass": true,
+      "ms": 0,
+      "informational": false,
+      "detail": "3 adapter probes ok=True states=running,running,running (running/idle by IdleAfterSeconds)",
+      "raw": {
+        "probes": [
+          "{\"ok\":true,\"probe_error\":false,\"terminal_state\":\"running\"}",
+          "{\"ok\":true,\"probe_error\":false,\"terminal_state\":\"running\"}",
+          "{\"ok\":true,\"probe_error\":false,\"terminal_state\":\"running\"}"
+        ]
+      }
+    },
+    {
+      "id": "P5",
+      "pass": true,
+      "ms": 586,
+      "informational": false,
+      "detail": "adapter.stop ok=True exited_after_ms=136 probe_after=exited client_pid_gone=True (deadline StopDeadlineSeconds)",
+      "raw": {
+        "probe_after": {
+          "ok": true,
+          "probe_error": false,
+          "terminal_state": "exited"
+        },
+        "stop": {
+          "ok": true,
+          "exited_after_ms": 136
+        }
+      }
+    }
+  ],
+  "deadlines": {
+    "stop_seconds": 10,
+    "attach_seconds": 10
+  },
+  "extra": {
+    "adapter_calls": [
+      "launch",
+      "probe",
+      "probe",
+      "probe",
+      "stop",
+      "probe"
+    ],
+    "backend_version": "tmux 3.3.6",
+    "session_name": "relay-RUN-PF-20260816003810-S-PF-20260816003810"
+  },
+  "ran_at": "2026-08-15T16:38:20.4338232Z",
+  "screenshots": [
+    "docs\\modules\\dh-relay\\workspace\\DHR_03\\evidence\\preflight\\shot-psmux-adapter-visible.png"
+  ],
+  "backend": "psmux",
+  "all_pass": true,
+  "level": "adapter",
+  "machine": "LAPTOP-P327JFGO",
+  "receipt": {
+    "launch_id": "L-PF01",
+    "session_id": "S-PF-20260816003810"
+  },
+  "session_tag": "PF-20260816003810",
+  "schema": "relay-preflight/v1"
+}

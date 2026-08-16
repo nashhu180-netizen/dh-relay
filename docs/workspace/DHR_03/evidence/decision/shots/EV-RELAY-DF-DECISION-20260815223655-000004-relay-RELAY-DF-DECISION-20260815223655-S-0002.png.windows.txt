@@ -1,0 +1,3 @@
+# visible windows total=19 relay=2 (only RELAY:* titles are recorded; scrubbed 2026-08-16 per review R1-05)
+RELAY:relay-RELAY-DF-DECISION-20260815223655-S-0002
+RELAY:relay-RELAY-DF-DECISION-20260815223655-S-0001

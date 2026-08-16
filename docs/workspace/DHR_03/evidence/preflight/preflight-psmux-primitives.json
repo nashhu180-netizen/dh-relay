@@ -1,0 +1,175 @@
+{
+  "schema": "relay-preflight/v1",
+  "ran_at": "2026-08-15T11:06:05.1407062Z",
+  "receipt": {
+    "launch_id": "L-PF01",
+    "session_id": "S-PF-20260815190553"
+  },
+  "checks": [
+    {
+      "ms": 0,
+      "id": "P1",
+      "informational": false,
+      "detail": "launch_id=L-PF01 ↔ handle {name=relay-PF-20260815190553-S-PF-20260815190553; psmux_id=$2700} exact rows=1",
+      "pass": true,
+      "raw": {
+        "list": {
+          "stderr": "",
+          "stdout": "relay-PF-20260815190553-S-PF-20260815190553|$2700|0\n",
+          "argv": [
+            "psmux",
+            "list-sessions",
+            "-F",
+            "#{session_name}|#{session_id}|#{session_attached}"
+          ],
+          "exit": 0
+        },
+        "new": {
+          "stderr": "",
+          "stdout": "",
+          "argv": [
+            "psmux",
+            "new-session",
+            "-d",
+            "-s",
+            "relay-PF-20260815190553-S-PF-20260815190553",
+            "-n",
+            "pf",
+            "--",
+            "pwsh",
+            "-NoProfile",
+            "-NoExit",
+            "-Command",
+            "Write-Host RELAY-PF-BANNER; while($true){Start-Sleep 1}"
+          ],
+          "exit": 0
+        }
+      }
+    },
+    {
+      "ms": 1645,
+      "id": "P2",
+      "informational": false,
+      "detail": "visible window title==RELAY:relay-PF-20260815190553-S-PF-20260815190553 found=True after 1645ms (deadline 10s)",
+      "pass": true,
+      "raw": {
+        "windows": {
+          "pid": 8488,
+          "hwnd": 42671442,
+          "title": "RELAY:relay-PF-20260815190553-S-PF-20260815190553"
+        }
+      }
+    },
+    {
+      "ms": 0,
+      "id": "P3",
+      "informational": false,
+      "detail": "attached=1 list-clients=True send-keys echo=True",
+      "pass": true,
+      "raw": {
+        "clients": {
+          "stderr": "",
+          "stdout": "/dev/pts/11: relay-PF-20260815190553-S-PF-20260815190553: pf [120x29] (utf8) [activity=1s ago]\n\n",
+          "argv": [
+            "psmux",
+            "list-clients"
+          ],
+          "exit": 0
+        },
+        "capture": {
+          "stderr": "",
+          "stdout": "RELAY-PF-BANNER\nPS D:\\MyFiles\\ai-workflow\\dh-crew\\.dh-worktrees\\DHR_03> Write-Host RELAY-PF-OK\nRELAY-PF-OK\nPS D:\\MyFiles\\ai-workflow\\dh-crew\\.dh-worktrees\\DHR_03>\n",
+          "argv": [
+            "psmux",
+            "capture-pane",
+            "-p",
+            "-t",
+            "relay-PF-20260815190553-S-PF-20260815190553"
+          ],
+          "exit": 0
+        }
+      }
+    },
+    {
+      "ms": 0,
+      "id": "P4",
+      "informational": false,
+      "detail": "3 probes identical=True first=relay-PF-20260815190553-S-PF-20260815190553|@1|%1|50740|0",
+      "pass": true,
+      "raw": {
+        "probes": [
+          "relay-PF-20260815190553-S-PF-20260815190553|@1|%1|50740|0",
+          "relay-PF-20260815190553-S-PF-20260815190553|@1|%1|50740|0",
+          "relay-PF-20260815190553-S-PF-20260815190553|@1|%1|50740|0"
+        ]
+      }
+    },
+    {
+      "ms": 0,
+      "id": "P6",
+      "informational": true,
+      "detail": "trap: kill-session -t =name exit=0 session_still_exists=True (expected trap: exit 0 yet still exists)",
+      "pass": true,
+      "raw": {
+        "list": {
+          "stderr": "",
+          "stdout": "relay-PF-20260815190553-S-PF-20260815190553\n",
+          "argv": [
+            "psmux",
+            "list-sessions",
+            "-F",
+            "#{session_name}"
+          ],
+          "exit": 0
+        },
+        "kill": {
+          "stderr": "",
+          "stdout": "",
+          "argv": [
+            "psmux",
+            "kill-session",
+            "-t",
+            "=relay-PF-20260815190553-S-PF-20260815190553"
+          ],
+          "exit": 0
+        }
+      }
+    },
+    {
+      "ms": 553,
+      "id": "P5",
+      "informational": false,
+      "detail": "kill exit=0 session_gone=True client_pid_gone=True after 553ms (deadline 10s)",
+      "pass": true,
+      "raw": {
+        "kill": {
+          "stderr": "",
+          "stdout": "",
+          "argv": [
+            "psmux",
+            "kill-session",
+            "-t",
+            "relay-PF-20260815190553-S-PF-20260815190553"
+          ],
+          "exit": 0
+        }
+      }
+    }
+  ],
+  "machine": "LAPTOP-P327JFGO",
+  "screenshots": [
+    "docs\\modules\\dh-relay\\workspace\\DHR_03\\evidence\\preflight\\shot-psmux-visible.png"
+  ],
+  "backend": "psmux",
+  "all_pass": true,
+  "extra": {
+    "session_name": "relay-PF-20260815190553-S-PF-20260815190553",
+    "backend_version": "tmux 3.3.6"
+  },
+  "level": "primitives",
+  "deadlines": {
+    "stop_seconds": 10,
+    "attach_seconds": 10
+  },
+  "session_tag": "PF-20260815190553"
+}

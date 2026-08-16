@@ -1,0 +1,146 @@
+{
+  "all_pass": false,
+  "checks": [
+    {
+      "pass": true,
+      "id": "P1",
+      "ms": 0,
+      "raw": {
+        "create": {
+          "stdout": "{\n  \"id\": \"0a84d136-eaaa-476f-be01-d1956acb31b4\",\n  \"ok\": true,\n  \"result\": {\n    \"terminal\": {\n      \"handle\": \"term_785492e1-5fd7-4311-85f4-8aec0535528b\",\n      \"tabId\": \"ef6b366c-9076-4b87-86b9-5f70cbb60bcb\",\n      \"paneKey\": \"ef6b366c-9076-4b87-86b9-5f70cbb60bcb:ed602b24-b599-407d-9d83-d84c614bb53f\",\n      \"ptyId\": \"f2ec28fb-e772-4774-af50-62d052988c8d::D:/MyFiles/ai-workflow/dh-crew@@a449f4ca\",\n      \"worktreeId\": \"f2ec28fb-e772-4774-af50-62d052988c8d::D:/MyFiles/ai-workflow/dh-crew\",\n      \"title\": \"RELAY:S-PF-20260815190916\",\n      \"executionHostId\": \"local\",\n      \"hostPlatform\": \"win32\",\n      \"surface\": \"visible\"\n    }\n  },\n  \"_meta\": {\n    \"runtimeId\": \"1152af97-7813-42d9-9c4e-6decce5f6718\"\n  }\n}\n",
+          "stderr": "",
+          "exit": 0,
+          "argv": [
+            "orca",
+            "terminal",
+            "create",
+            "--worktree",
+            "path:D:/MyFiles/ai-workflow/dh-crew",
+            "--title",
+            "RELAY:S-PF-20260815190916",
+            "--command",
+            "pwsh -NoProfile -NoExit -Command Write-Host RELAY-PF-BANNER",
+            "--json"
+          ]
+        },
+        "list": {
+          "stdout": "{\n  \"id\": \"83a1d047-80a3-4167-83e2-697623b9fb00\",\n  \"ok\": true,\n  \"result\": {\n    \"terminals\": [\n      {\n        \"handle\": \"term_785492e1-5fd7-4311-85f4-8aec0535528b\",\n        \"ptyId\": \"f2ec28fb-e772-4774-af50-62d052988c8d::D:/MyFiles/ai-workflow/dh-crew@@a449f4ca\",\n        \"incarnationId\": \"2dc8656b-042a-44dc-8979-84244f66d9d5\",\n        \"orphaned\": false,\n        \"worktreeId\": \"f2ec28fb-e772-4774-af50-62d052988c8d::D:/MyFiles/ai-workflow/dh-crew\",\n        \"worktreePath\": \"D:/MyFiles/ai-workflow/dh-crew\",\n        \"branch\": \"refs/heads/master\",\n        \"tabId\": \"ef6b366c-9076-4b87-86b9-5f70cbb60bcb\",\n        \"leafId\": \"ed602b24-b599-407d-9d83-d84c614bb53f\",\n        \"title\": \"RELAY:S-PF-20260815190916\",\n        \"connected\": true,\n        \"writable\": true,\n        \"lastOutputAt\": 1786792159056,\n        \"preview\": \"\"\n      }\n    ],\n    \"topologyRevisions\": {\n      \"f2ec28fb-e772-4774-af50-62d052988c8d::D:/MyFiles/ai-workflow/dh-crew\": 0\n    },\n    \"totalCount\": 1,\n    \"truncated\": false\n  },\n  \"_meta\": {\n    \"runtimeId\": \"1152af97-7813-42d9-9c4e-6decce5f6718\"\n  }\n}\n",
+          "stderr": "",
+          "exit": 0,
+          "argv": [
+            "orca",
+            "terminal",
+            "list",
+            "--worktree",
+            "path:D:/MyFiles/ai-workflow/dh-crew",
+            "--json"
+          ]
+        }
+      },
+      "detail": "create ok=True handle=term_785492e1-5fd7-4311-85f4-8aec0535528b list title-exact rows=1 worktree=D:/MyFiles/ai-workflow/dh-crew (ms)",
+      "informational": false
+    },
+    {
+      "pass": true,
+      "id": "P2",
+      "ms": 0,
+      "raw": {
+        "show": {
+          "stdout": "{\n  \"id\": \"4a7cbb46-a4ea-44f5-bdea-eb9f4a9cab04\",\n  \"ok\": true,\n  \"result\": {\n    \"terminal\": {\n      \"handle\": \"term_785492e1-5fd7-4311-85f4-8aec0535528b\",\n      \"ptyId\": \"f2ec28fb-e772-4774-af50-62d052988c8d::D:/MyFiles/ai-workflow/dh-crew@@a449f4ca\",\n      \"incarnationId\": \"2dc8656b-042a-44dc-8979-84244f66d9d5\",\n      \"orphaned\": false,\n      \"worktreeId\": \"f2ec28fb-e772-4774-af50-62d052988c8d::D:/MyFiles/ai-workflow/dh-crew\",\n      \"worktreePath\": \"D:/MyFiles/ai-workflow/dh-crew\",\n      \"branch\": \"refs/heads/master\",\n      \"tabId\": \"ef6b366c-9076-4b87-86b9-5f70cbb60bcb\",\n      \"leafId\": \"ed602b24-b599-407d-9d83-d84c614bb53f\",\n      \"title\": \"RELAY:S-PF-20260815190916\",\n      \"connected\": true,\n      \"writable\": true,\n      \"lastOutputAt\": 1786792159056,\n      \"preview\": \"\",\n      \"paneRuntimeId\": -1,\n      \"rendererGraphEpoch\": 0\n    }\n  },\n  \"_meta\": {\n    \"runtimeId\": \"1152af97-7813-42d9-9c4e-6decce5f6718\"\n  }\n}\n",
+          "stderr": "",
+          "exit": 0,
+          "argv": [
+            "orca",
+            "terminal",
+            "show",
+            "--terminal",
+            "term_785492e1-5fd7-4311-85f4-8aec0535528b",
+            "--json"
+          ]
+        }
+      },
+      "detail": "surface=visible app.desktopWindowStatus=available list-visible=True（无 OS 级窗口标题可证·仅 app 内 tab）",
+      "informational": false
+    },
+    {
+      "pass": true,
+      "id": "P3",
+      "ms": 0,
+      "raw": {
+        "read": {
+          "stdout": "{\n  \"id\": \"5e75c27c-f2b2-42a2-b23e-f74fb416c52d\",\n  \"ok\": true,\n  \"result\": {\n    \"terminal\": {\n      \"handle\": \"term_785492e1-5fd7-4311-85f4-8aec0535528b\",\n      \"status\": \"running\",\n      \"tail\": [\n        \"RELAY-PF-BANNER\",\n        \"PS D:\\\\MyFiles\\\\ai-workflow\\\\dh-crew>Write-Host RELAY-PF-OKWrite-Host RELAY-PF-OKWrite-Host RELAY-PF-OKWrite-Host RELAY-PF-OKWrite-Host RELAY-PF-OKWrite-Host RELAY-PF-OKWrite-Host RELAY-PF-OKWrite-Host RELAY-PF-OKWrite-Host RELAY-PF-OKWrite-Host RELAY-PF-OKWrite-Host RELAY-PF-OKWrite-Host RELAY-PF-OK\",\n        \"RELAY-PF-OK\",\n        \"PS D:\\\\MyFiles\\\\ai-workflow\\\\dh-crew>\"\n      ],\n      \"truncated\": false,\n      \"limited\": false,\n      \"oldestCursor\": \"0\",\n      \"nextCursor\": \"3\",\n      \"latestCursor\": \"3\",\n      \"returnedLineCount\": 4\n    }\n  },\n  \"_meta\": {\n    \"runtimeId\": \"1152af97-7813-42d9-9c4e-6decce5f6718\"\n  }\n}\n",
+          "stderr": "",
+          "exit": 0,
+          "argv": [
+            "orca",
+            "terminal",
+            "read",
+            "--terminal",
+            "term_785492e1-5fd7-4311-85f4-8aec0535528b",
+            "--json"
+          ]
+        }
+      },
+      "detail": "writable=True send→read echo=True",
+      "informational": false
+    },
+    {
+      "pass": true,
+      "id": "P4",
+      "ms": 0,
+      "raw": {
+        "probes": [
+          "term_785492e1-5fd7-4311-85f4-8aec0535528b|f2ec28fb-e772-4774-af50-62d052988c8d::D:/MyFiles/ai-workflow/dh-crew@@a449f4ca|RELAY:S-PF-20260815190916|True",
+          "term_785492e1-5fd7-4311-85f4-8aec0535528b|f2ec28fb-e772-4774-af50-62d052988c8d::D:/MyFiles/ai-workflow/dh-crew@@a449f4ca|RELAY:S-PF-20260815190916|True",
+          "term_785492e1-5fd7-4311-85f4-8aec0535528b|f2ec28fb-e772-4774-af50-62d052988c8d::D:/MyFiles/ai-workflow/dh-crew@@a449f4ca|RELAY:S-PF-20260815190916|True"
+        ]
+      },
+      "detail": "3 probes identical first=term_785492e1-5fd7-4311-85f4-8aec0535528b|f2ec28fb-e772-4774-af50-62d052988c8d::D:/MyFiles/ai-workflow/dh-crew@@a449f4ca|RELAY:S-PF-20260815190916|True",
+      "informational": false
+    },
+    {
+      "pass": false,
+      "id": "P5",
+      "ms": 1887,
+      "raw": {
+        "close": {
+          "stdout": "{\n  \"id\": \"730c5bf0-27ed-4749-a418-031b452407d9\",\n  \"ok\": false,\n  \"error\": {\n    \"code\": \"runtime_error\",\n    \"message\": \"tab_not_found\"\n  },\n  \"_meta\": {\n    \"runtimeId\": \"1152af97-7813-42d9-9c4e-6decce5f6718\"\n  }\n}\n",
+          "stderr": "",
+          "exit": 1,
+          "argv": [
+            "orca",
+            "terminal",
+            "close",
+            "--terminal",
+            "term_785492e1-5fd7-4311-85f4-8aec0535528b",
+            "--json"
+          ]
+        }
+      },
+      "detail": "close ok=False err=tab_not_found read.status=exited=True still_listed=False after 1887ms",
+      "informational": false
+    }
+  ],
+  "schema": "relay-preflight/v1",
+  "level": "primitives",
+  "extra": {
+    "handle": "term_785492e1-5fd7-4311-85f4-8aec0535528b",
+    "worktree": "D:/MyFiles/ai-workflow/dh-crew",
+    "backend_version": "1.4.182"
+  },
+  "machine": "LAPTOP-P327JFGO",
+  "session_tag": "PF-20260815190916",
+  "backend": "orca",
+  "screenshots": [
+    "docs\\modules\\dh-relay\\workspace\\DHR_03\\evidence\\preflight\\shot-orca-visible.png"
+  ],
+  "deadlines": {
+    "attach_seconds": 10,
+    "stop_seconds": 10
+  },
+  "ran_at": "2026-08-15T11:09:39.5804638Z",
+  "receipt": {
+    "session_id": "S-PF-20260815190916",
+    "launch_id": "L-PF01"
+  }
+}

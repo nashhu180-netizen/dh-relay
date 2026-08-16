@@ -1,0 +1,2 @@
+# visible windows total=20 relay=1 (only RELAY:* titles are recorded; scrubbed 2026-08-16 per review R1-05)
+RELAY:relay-RELAY-DF-BLOCKED-20260815215218-S-0001

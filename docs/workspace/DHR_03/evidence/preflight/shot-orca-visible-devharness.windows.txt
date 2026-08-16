@@ -1,0 +1,1 @@
+# visible windows total=22 relay=0 (only RELAY:* titles are recorded; scrubbed 2026-08-16 per review R1-05)

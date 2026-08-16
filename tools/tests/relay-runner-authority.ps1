@@ -19,7 +19,8 @@ $clock = { [DateTimeOffset]::Parse('2026-08-15T09:00:00Z') }
 $roots = [Collections.Generic.List[string]]::new()
 try {
   $params = Import-PowerShellDataFile (Join-Path $PSScriptRoot '../contracts/relay-params.psd1')
-  Assert-True (($params.Keys.Count -eq 5) -and $params.ContainsKey('LaunchDeadlineSeconds')) 'params have five keys including launch deadline'
+  # DHR_03 K-16：params 由五键扩为八键（追加 IdleAfterSeconds/StopDeadlineSeconds/AttachDeadlineSeconds），守卫同步迁移并逐键点名
+  Assert-True (($params.Keys.Count -eq 8) -and $params.ContainsKey('LaunchDeadlineSeconds') -and $params.ContainsKey('IdleAfterSeconds') -and $params.ContainsKey('StopDeadlineSeconds') -and $params.ContainsKey('AttachDeadlineSeconds')) 'params have eight keys including launch deadline and psmux keys'
   Assert-True ($params.LaunchDeadlineSeconds -is [int] -and $params.LaunchDeadlineSeconds -gt 0) 'launch deadline is positive integer'
 
   $root = New-TestRoot; $roots.Add($root); $adapter = New-RelayFakeAdapter (Read-Fixture 'adapter/launch-ok.json')

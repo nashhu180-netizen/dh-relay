@@ -10,7 +10,7 @@
 | Runner core | `tools/relay/runner/relay-runner.ps1`：`New-RelayRun` / `Open-RelayRun` / `Submit-RelayProposal`（schema→wrong-run→CAS→版本连续→提案人→replan 兼容→proposal 不可变→写 authority→写 active-plan）/ `Get-RelayReadyNodes` / `Start-RelayNodeAttempt`（receipt CreateNew + `launch_receipt` 事件**先于** adapter.launch·句柄精确相等）/ `Invoke-RelayTick`（host 观测→probe→启动期限→停滞）/ `Submit-RelayResultFile` / `Submit-RelayCheckpointFile` |
 | 回放驱动器 | `tools/relay/runner/relay-replay.ps1`：`Invoke-RelayReplay` / `Invoke-RelayReplayTick` / `Get-RelayEventSignature -SkipHeartbeat` |
 | fake adapter | `tools/relay/adapters/fake-adapter.ps1`：`New-RelayFakeAdapter -Script` → 恰好 9 键（backend/launch/probe/suspend/resume/stop/emit_observation/calls/sessions）；剧本磁带驱动 probe；无任何人工输入 API；`adapters/README.md` 六动词契约 |
-| 契约参数追加 | `tools/relay/contracts/relay-params.psd1` 第五键 `LaunchDeadlineSeconds = 120`（有界启动期限唯一冻结点） |
+| 契约参数追加 | `tools/relay/contracts/relay-params.psd1` 第五键 `LaunchDeadlineSeconds = 120`（有界启动期限唯一冻结点）；DHR_03 再追加三键（见 [relay-psmux-host.md](relay-psmux-host.md)），`relay-runner-authority.ps1` 键数守卫已迁为八键 |
 | fixtures | `tools/relay/tests/fixtures/runner/{plans,results,checkpoints,adapter,replay}/`（静态·全 FAKE） |
 | 测试 | `tools/relay/tests/relay-runner-{authority,ingest,failures,replay-blocked,replay-decision}.ps1`；`run-relay-tests.ps1` 11 套件 → `RELAY ALL PASS`；reason 守卫扫描范围扩到 `runner/`+`adapters/`，`proposal-rejected:*` 按完整子码比对 |
 | 说明 | `tools/relay/runner/README.md`（K-1～K-10 决策摘要） |
