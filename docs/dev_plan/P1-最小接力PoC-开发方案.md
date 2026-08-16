@@ -4,12 +4,12 @@
 <!-- dh:planning-event:v1 id=DHR-B-01 stage=B-new artifact=dev_plan/P1-最小接力PoC-开发方案.md review=../design/evidence/01-交叉审核记录-接力方案.md#review-b understanding=../design/evidence/01-交叉审核记录-接力方案.md#understanding-b -->
 
 <!-- dh:status
-汇报: 接力 PoC 三卡已完成两卡——契约层与确定性 Runner 都能一键复跑证明并已收口；最后一卡（接真实可见终端做实机演示）已于 2026-08-15 开工，先做终端后端 preflight 闸
-现状: DHR_01 已完成（squash 0c0cc42）；DHR_02 已完成（squash f34e212）；DHR_03 进行中（用户"继续DHR3"授权·工作区 8 件套已落·主控 psmux 原语实测完成）
-进行到: P1 ▸ 批次 2 DHR_03 ▸ 批0 终端后端 preflight（psmux 默认 + orca 原语级对比·A7 判据）
-下一步: 主控亲跑 preflight 落 evidence → psmux 过闸后派 codex 施工批A（psmux adapter）/批B（宿主循环+agent 工具）→ 主控跑真实套件与两场 dogfood（decision 场景需用户在窗口回答一次）→ 两轮换人复核 → H1/H2 用户判
-看什么: workspace/DHR_03/task_plan.md（K-1～K-15 决策 + 主控实测事实 S1～S6）+ workspace/DHR_03/progress.md + as-built/relay-runner.md
-阻塞: 无（若 psmux preflight 任一判据 fail → 停"待环境"）
+汇报: 接力 PoC 三卡全部完成——契约层、确定性 Runner、真实可见 psmux 终端上的阻塞接力/挂起决策 dogfood 都已实机跑通并经用户人判；H2 方向决策=有条件值得进完整流水（条件：先用一张真实业务任务走一遍接力再定）
+现状: DHR_01 已完成（squash 0c0cc42）；DHR_02 已完成（squash f34e212）；DHR_03 已完成（squash 0d8b627·用户 2026-08-16 对话判 H1 通过 / H2 有条件值得）；P1 全部销户
+进行到: P1 收官；下一步待立项（按 H2 条件：先跑真实业务任务的接力试点，再决定完整流水阶段）
+下一步: A 立项「真实业务任务接力试点」（复用 DHR_03 dogfood 包装，换真卡 brief）；同时消化 backlog F-023（consumed 轮转 / spawner 异步 / Runner 提交 tmp 同名）与 F-019 决策态快照补图
+看什么: as-built/relay-psmux-host.md + workspace/DHR_03/review.md（人验结论与 H2 条件）+ workspace/DHR_03/evidence/H2-对照表.md
+阻塞: 无
 -->
 
 ## 0. B 方案审核与理解确认
@@ -65,7 +65,7 @@
 |---|---|---|---|---|---|---|
 | DHR_01 | 冻结接力权威、双维状态与异常契约 | 标准 | 已完成 | - | [workspace/DHR_01/](../workspace/DHR_01/brief.md) | 2026-08-15 / squash 0c0cc42 · verify 见 `git log --grep="^verify(dh-relay): DHR_01"` |
 | DHR_02 | 实现最小 Runner 与确定性 fake replay | 标准 | 已完成 | DHR_01 | [workspace/DHR_02/](../workspace/DHR_02/brief.md) | 2026-08-15 / squash f34e212 · verify 见 `git log --grep="^verify(dh-relay): DHR_02"` |
-| DHR_03 | 接真实可见 psmux 并完成阻塞接力 dogfood | 标准 | 进行中 | DHR_02 | [workspace/DHR_03/](../workspace/DHR_03/brief.md) | |
+| DHR_03 | 接真实可见 psmux 并完成阻塞接力 dogfood | 标准 | 已完成 | DHR_02 | [workspace/DHR_03/](../workspace/DHR_03/brief.md) | 2026-08-16 / squash 0d8b627 · verify 见 `git log --grep="^verify(dh-relay): DHR_03"` · H1 通过 / H2 有条件值得（先跑真实业务任务再定） |
 
 ### 3.2 任务卡
 
@@ -110,6 +110,7 @@
 - **变更范围**：`tools/relay/adapters/psmux*`、最小 dogfood fixture、`docs/modules/dh-relay/workspace/DHR_03/`；不得把凭据值写入任何证据。
 - **档位**：标准（真实终端组件接线 + 交互人验）。
 - **实施提示**：DHR_03 的第一道闸是 backend preflight：先证明 launch_id/完整 handle 1:1、visible+interactive、全值 probe 与按 handle 有界退出；失败则停在“待环境”，不进入 dogfood。后端选定（2026-08-15 用户定）：开工前用同一 A7 判据对 orca（仅作纯终端宿主候选）加跑一次 preflight 对比实测；psmux 为默认，orca 通过判据且体验更优时方可提议换后端，且须先修订设计决策 7 再实施。精确匹配唯一 session_id；截图与机读事件必须能互相对照。
+- **销户记录（2026-08-16）**：机器项 A3/A4/A7 全绿（现役证据 E-020 blocked run7 / E-014 decision run2 / preflight 5/5），两轮换人复核 approved-with-P2 且返工收敛（F-022/F-024），用户对话判 **H1 通过**、**H2 有条件值得**——**方向决策账**：条件=「先跑真实业务任务再定」，即下一步不直接进完整流水，先立一张真实业务任务的接力试点卡再决定；backlog F-023 三条（consumed 轮转 / spawner 异步 / Runner 提交 tmp 同名竞态）与 F-019/F-024 的 decision 补图挂下一卡。
 
 ### 3.3 标准档共同收口条件
 
@@ -130,7 +131,7 @@
 
 ## 5. 计划完工
 
-- [ ] DHR_01～DHR_03 全部销户，状态=已完成。
+- [x] DHR_01～DHR_03 全部销户，状态=已完成（2026-08-16）。
 - [ ] fake replay 与真实 `psmux` 端到端证据可一键复跑/复查。
 - [ ] A1～A8 机器项全部有等价 pass 证据。
 - [ ] H1～H2 已向用户展示并由用户在对话中判断。
