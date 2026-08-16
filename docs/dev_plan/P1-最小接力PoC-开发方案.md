@@ -4,10 +4,10 @@
 <!-- dh:planning-event:v1 id=DHR-B-01 stage=B-new artifact=dev_plan/P1-最小接力PoC-开发方案.md review=../design/evidence/01-交叉审核记录-接力方案.md#review-b understanding=../design/evidence/01-交叉审核记录-接力方案.md#understanding-b -->
 
 <!-- dh:status
-汇报: 接力 PoC 三卡全部完成——契约层、确定性 Runner、真实可见 psmux 终端上的阻塞接力/挂起决策 dogfood 都已实机跑通并经用户人判；H2 方向决策=有条件值得进完整流水（条件：先用一张真实业务任务走一遍接力再定）
+汇报: 接力 PoC 三卡全部完成；H2 方向决策 2026-08-16 落定=**值得进完整流水**（条件已满足：真实业务任务 IHSR_05 在 relay 上六棒跑通、返工收敛 0 P0/P1；用户对话点选「值得，进完整流水」）
 现状: DHR_01 已完成（squash 0c0cc42）；DHR_02 已完成（squash f34e212）；DHR_03 已完成（squash 0d8b627·用户 2026-08-16 对话判 H1 通过 / H2 有条件值得）；P1 全部销户
-进行到: P1 收官；下一步待立项（按 H2 条件：先跑真实业务任务的接力试点，再决定完整流水阶段）
-下一步: A 立项「真实业务任务接力试点」（复用 DHR_03 dogfood 包装，换真卡 brief）；同时消化 backlog F-023（consumed 轮转 / spawner 异步 / Runner 提交 tmp 同名）与 F-019 决策态快照补图
+进行到: P1 收官；H2 条件已实测——2026-08-16 用户授权以 dh-relay 跑真实业务任务 IHSR_05（infohub-vps-services 仓）：两趟 relay 六棒（build→review1→review2→返工 fix→review3→review4）全部交棒、收敛到 0 P0/P1；试点留痕 workspace/DHR_03/evidence/H2-真实业务试点-IHSR_05.md（含 RB-1~5 backlog）；用户 2026-08-16 12:38 对话点选 H2=「值得，进完整流水」
+下一步: A 立项 P2（完整流水）：优先 RB-1（截图非致命）/RB-2（手动 propose v2 路径）→ 编排 agent 接回 → 通用 plan/brief 输入 → 复核汇合/返工回路进 Runner；下次派活试 codex-ninth 当一棒；backlog F-023/F-019 一并消化
 看什么: as-built/relay-psmux-host.md + workspace/DHR_03/review.md（人验结论与 H2 条件）+ workspace/DHR_03/evidence/H2-对照表.md
 阻塞: 无
 -->
