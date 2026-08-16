@@ -38,6 +38,16 @@
 - **提出人 / 日期**：主控，2026-08-16（DHR_04 stage0 自举首跑实测）
 - **进展**：未立项。当前靠主控手工预置绕过。
 
+### DHR-BL-4 `relay-agent-tool` 套件夹具污染：在 attempt 进程里跑全量回归必然假红
+
+- **需求 / 议题**：`tools/relay/tests/relay-agent-tool.ps1` 的 `propose without receipt and run root fails closed` 用例，`finally` 把 `RELAY_RUN_ROOT` **恢复成调用方原值**，而紧接着的断言假定它为空。改成显式 `Remove-Item Env:RELAY_RUN_ROOT` 即可。
+- **动机**：**P2 后续每张卡的证据命令恰恰要在 relay attempt 进程里跑全量回归**——只要 `RELAY_RUN_ROOT` 被继承，`run-relay-tests.ps1` 就必然 `SUITE FAIL (1)`。这是假红，会让每张卡的施工棒误以为自己踩了回归、浪费一轮排查，或更糟：让真回归被当成"又是那个已知假红"而放过。
+- **现状证据**：`tools/relay/tests/relay-agent-tool.ps1:72-75`。2026-08-16 DHR_04 首跑三方独立复现——施工棒记 `findings.md` F-002；review1 判 P2 并指出影响面比 F-002 自记的更大（R1-05）；review2 在 attempt 进程里直跑全量得到 `SUITE FAIL (1)`、清 env 后 `RELAY ALL PASS (SKIPPED: 1)`。
+- **改动点（预估）**：单个用例的 env 清理方式；一行。**不在 DHR_04 内改**——该卡变更范围是 `tools/relay/policy/` 与新套件，改既有套件属越界（两轮复核一致建议立 backlog）。
+- **优先级**：中高 · **建议在 relay 自举流水铺开前修掉**（每多一张卡就多踩一次）
+- **提出人 / 日期**：DHR_04 施工棒 + 两轮复核，2026-08-16
+- **进展**：未立项。当前绕过办法 = 跑全量回归前先清 `RELAY_RECEIPT` / `RELAY_RUN_ROOT` / `RELAY_ATTEMPT_DIR` / `RELAY_TOOL`。
+
 ### DHR-BL-3 stage0 自举包装通用化（plan 描述文件 + brief 目录）
 
 - **需求 / 议题**：把"用冻结的 relay 驱动 relay 自身开发"的包装脚本与逐棒 brief 抽成通用输入（一份 plan 描述 + 一个 brief 目录 + 逐节点 profile 映射表），换卡只改数据不改代码。
