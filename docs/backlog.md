@@ -24,6 +24,7 @@
 - **消费面分工（用户 2026-08-16 提出）**：常驻看板做进 [`agent-console`](../../../../02-agent-workspace/agent-console)（`D:\MyFiles\ai-workflow\02-agent-workspace\agent-console`）。**边界**：Runner / 宿主留在 relay——"Runner 是运行状态唯一写者"是 relay 地基，不能搬走；agent-console 只做**只读看板 + 提醒**，消费 `~/.dh-relay/runs.json` 与各 run 现场。该分工与 agent-console `AGENTS.md` 硬规则 6（"控制台只做发现、配置、启动、结果接收和调度，不复制业务逻辑"）一致。
 - **先后依赖**：agent-console 要读的跨仓索引 `~/.dh-relay/runs.json` 与 `<repo>/.dh-relay/<run_id>/` **由 `DHR_09` 产出**；P1 现役现场仍在 `.dh-runtime/relay/` 且无跨仓索引。故看板侧要等 DHR_09 落地后再在 agent-console 走 A 立项（挂它的 design/03 项目监控）。agent-console 现行硬规则 3 也只允许设计、不允许实现。
 - **优先级**：中 · 依赖 DHR_09
+- **2026-08-17 补充实证（第二次踩，且这次有代价）**：DHR_04 返工趟 `review4` 棒同时踩到两个"看不见"——① 它因 `DHR-BL-4` 的绕过误删自身 env 而全程无法 checkpoint，② 中途还卡在一个 `rm -rf` 权限确认框上等人半小时。relay 侧只看到 `idle`，30 分钟后判 `stall-threshold-exceeded` 并标 `interrupted_unknown`。**两个问题都指向同一个缺失：宿主分不清"在思考 / 在等人 / 已失联"，只好用一个 30 分钟的静默阈值一刀切，且切错了还把好结果丢掉。**另暴露一条相邻议题：**stall 阈值判据对"复核棒"这类长跑本就不合适**（穷举式扫描天然长时间无交棒动作），心跳纪律靠 brief 里叮嘱太脆——检测层做出来后，应让"活着且在等人/在跑"与"真失联"走不同分支，而不是共用一个阈值。
 - **提出人 / 日期**：用户，2026-08-16（DHR_04 首跑撞到弹窗后当场提出"runner 能不能常驻 + 定时刷新终端状态提醒用户"）
 - **进展**：未立项。主控当时提的"包装脚本里加末屏形态匹配"的短期止血**未采纳**（用户选择记 backlog）。
 - **2026-08-16 更新（Herdr 底座候选出现后）**：若 [design/03](./design/03-完整流水-Herdr底座-产品设计与验收.md)（平行候选，草案未确认）被采纳，本条三层的处置全部改变——① **检测层的主体由宿主免费提供**（herdr 原生 `blocked`，实测覆盖会话内确认框、**不覆盖启动信任弹窗**，见 [evidence/03 E-A8-03](./design/evidence/03-Herdr底座-preflight实测与审核记录.md)），"末屏形态匹配"不必自建；② 常驻状态面仍归 `DHR_09`；③ 消费面与提醒仍落 agent-console，且其**边界被 design/03 `H11` 冻结为「托管守护 relay 宿主进程 + 三条只读契约 + 只允许调 `relay start/resume/stop`」**（用户 2026-08-16 拍板），Runner 写权仍全留 relay。**本条在 design/03 未确认前不动，仍按原样待立项。**
@@ -45,9 +46,18 @@
 - **动机**：**P2 后续每张卡的证据命令恰恰要在 relay attempt 进程里跑全量回归**——只要 `RELAY_RUN_ROOT` 被继承，`run-relay-tests.ps1` 就必然 `SUITE FAIL (1)`。这是假红，会让每张卡的施工棒误以为自己踩了回归、浪费一轮排查，或更糟：让真回归被当成"又是那个已知假红"而放过。
 - **现状证据**：`tools/relay/tests/relay-agent-tool.ps1:72-75`。2026-08-16 DHR_04 首跑三方独立复现——施工棒记 `findings.md` F-002；review1 判 P2 并指出影响面比 F-002 自记的更大（R1-05）；review2 在 attempt 进程里直跑全量得到 `SUITE FAIL (1)`、清 env 后 `RELAY ALL PASS (SKIPPED: 1)`。
 - **改动点（预估）**：单个用例的 env 清理方式；一行。**不在 DHR_04 内改**——该卡变更范围是 `tools/relay/policy/` 与新套件，改既有套件属越界（两轮复核一致建议立 backlog）。
-- **优先级**：中高 · **建议在 relay 自举流水铺开前修掉**（每多一张卡就多踩一次）
+- **优先级**：**高**（2026-08-17 上调）· **必须在 relay 自举流水铺开前修掉**
 - **提出人 / 日期**：DHR_04 施工棒 + 两轮复核，2026-08-16
 - **进展**：未立项。当前绕过办法 = 跑全量回归前先清 `RELAY_RECEIPT` / `RELAY_RUN_ROOT` / `RELAY_ATTEMPT_DIR` / `RELAY_TOOL`。
+- **2026-08-17 升级理由——绕过方案本身是陷阱，已造成一次真实事故**：
+  该绕过必须写进**每一份** worker brief，而它一旦被 worker 用在**自己的 shell**（而非新开子进程）里，就会**摧毁该 worker 的 relay 身份**（`RELAY_RECEIPT` 没了 → `relay-agent-tool.ps1` 按设计 exit 3 → checkpoint 与 result 全部写不出去）。完整事故链：
+  1. DHR_04 返工趟 `review4` 棒（deepseek）把清 env 的命令执行在自己的 shell 里；
+  2. 该棒**一条 checkpoint 都没写成**（attempt 目录 0 文件；同一 run 的 `fix`=9 条、`review3`=6 条 checkpoint 痕迹正常，证明 launch 与 env 注入本身无缺陷）；
+  3. Runner 只认 checkpoint 当进展 → 30 分钟后 `stall-threshold-exceeded` → 节点标 `interrupted_unknown` 挂起；
+  4. **标签是错的**：该 worker 全程活着且在正常工作，最后还产出了一份 39 条路径变体穷举的高质量复核；
+  5. 宿主判"无事可做"退出（`exit=3`），**relay 再也收不回这一棒的结果**（paused 节点要靠重编排新 attempt，等于扔掉重做）；成果只因为 worker 自己 `git commit` 了才留住。
+  **结论**：这不是"讨厌但能忍"的夹具瑕疵——它逼出的绕过会周期性地让 worker 静默失联并丢结果。修 BL-4 本体（一行）比在每份 brief 里反复叮嘱可靠得多。
+  **在修好之前**，brief 里的写法必须明确成「在**新开子进程**里清 env 并跑」，且**禁止** worker 在自己 shell 里执行 `Remove-Item Env:RELAY_*`。
 
 ### DHR-BL-3 stage0 自举包装通用化（plan 描述文件 + brief 目录）
 

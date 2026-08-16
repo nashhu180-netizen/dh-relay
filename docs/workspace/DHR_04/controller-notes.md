@@ -21,6 +21,7 @@
 | C-01 | P2 | **worker 在新工作树里被 Claude Code 的「是否信任此文件夹」启动弹窗挡住**，`--dangerously-skip-permissions` 不覆盖该弹窗。relay 侧看到的只是 `terminal_state=running`（屏幕有输出），**没有任何"我在等人"的信号**——worker 还没跑起来就静默挂着，要等 30 分钟 stall 阈值才会暴露。主控靠 `capture-pane` 肉眼发现，手工在三个账号的 `<CONFIG_DIR>/.claude.json` 预置 `projects["<worktree 路径>"].hasTrustDialogAccepted=true` 后 `send-keys Enter` 解开。 | 一卡一树 = 每张卡的第一棒都必然撞一次；无人值守下会白等半小时 | relay 的 worker 入口应在 launch 前把目标 `WorkDir` 预置为已信任（或 preflight 检查），落 `DHR_08`（profile 执行边界）或 `DHR_09`（宿主生命周期）；先记本条备查 |
 | C-02 | P3 | 心跳纪律必须写进 brief：Runner 只认 `checkpoint` 当进展，屏幕输出不算（`StallThresholdSeconds=1800`）。三份 brief 都加了"每做完一个编号步骤就报一次"。 | 长批次会被误判卡死 | 若进通用 brief 模板，归 `DHR_10`/`DHR_11` |
 | C-03 | P3 | 包装脚本 + 3 份 brief 仍是本卡手写（同 IHSR_05 RB-4）。本次已把"逐节点 profile 映射"抽成 `$profiles` 哈希表，换卡只需改 briefs 与 worktree 路径。 | 每卡固定成本 | `DHR_10`（标准流水节点模板）承接 |
+| C-04 | P2 | **主控 brief 的写法把一棒写失联了（主控自身教训）**：为绕开 `DHR-BL-4` 的假红，三份复核 brief 里都放了「清 `RELAY_*` 再跑全量」的命令。意图是"在新开子进程里跑"，但写法没说死；返工趟 `review4`（deepseek）把 `Remove-Item Env:RELAY_*` 执行在**自己的 shell** 里 → 自毁 relay 身份 → `relay-agent-tool` 按设计 exit 3 → **全程零 checkpoint**（attempt 目录 0 文件；同 run 的 `fix`=9、`review3`=6 正常，证明 launch/env 注入无缺陷）→ 30 分钟后被判 `stall-threshold-exceeded`、标 `interrupted_unknown` 挂起 → 宿主退出，**relay 侧再也收不回这一棒**。该棒实际全程存活并交出了 39 条路径变体穷举的高质量复核，成果只因它自己 `git commit` 才留住。中途它还额外卡在一个 `rm -rf` 权限确认框上（主控核过是删其自建的两个具名 TEMP 目录，放行）。 | 一次白跑 40 分钟 + 结果差点全丢；且这条绕过要写进**每一份** brief，属周期性风险 | 根治=修 `DHR-BL-4` 本体（已上调为高优先级）；在那之前 brief 必须写死"新开子进程执行、禁止在自己 shell 里清 env"。检测/标签问题归 `DHR-BL-1`（已补该实证） |
 
 ## 与验收的关系
 
