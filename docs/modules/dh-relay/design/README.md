@@ -18,3 +18,4 @@
 - [需求讨论与 A/B 交叉审核记录（P1）](./evidence/01-交叉审核记录-接力方案.md)
 - [P2 完整流水 · A 交叉审核记录](./evidence/02-交叉审核记录-完整流水.md)
 - [Herdr 底座 · preflight 实测与审核记录](./evidence/03-Herdr底座-preflight实测与审核记录.md)
+- [DSH 插件化 · 对 05 方案的评估意见（待第三方评估）](./evidence/05-DSH插件化-对05方案的评估意见-待第三方评估.md)
