@@ -44,10 +44,10 @@
 
 ### DHR-BL-4 `relay-agent-tool` 套件夹具污染：在 attempt 进程里跑全量回归必然假红
 
-- **需求 / 议题**：`tools/relay/tests/relay-agent-tool.ps1` 的 `propose without receipt and run root fails closed` 用例，`finally` 把 `RELAY_RUN_ROOT` **恢复成调用方原值**，而紧接着的断言假定它为空。改成显式 `Remove-Item Env:RELAY_RUN_ROOT` 即可。
+- **需求 / 议题**：`tools/tests/relay-agent-tool.ps1` 的 `propose without receipt and run root fails closed` 用例，`finally` 把 `RELAY_RUN_ROOT` **恢复成调用方原值**，而紧接着的断言假定它为空。改成显式 `Remove-Item Env:RELAY_RUN_ROOT` 即可。
 - **动机**：**P2 后续每张卡的证据命令恰恰要在 relay attempt 进程里跑全量回归**——只要 `RELAY_RUN_ROOT` 被继承，`run-relay-tests.ps1` 就必然 `SUITE FAIL (1)`。这是假红，会让每张卡的施工棒误以为自己踩了回归、浪费一轮排查，或更糟：让真回归被当成"又是那个已知假红"而放过。
-- **现状证据**：`tools/relay/tests/relay-agent-tool.ps1:72-75`。2026-08-16 DHR_04 首跑三方独立复现——施工棒记 `findings.md` F-002；review1 判 P2 并指出影响面比 F-002 自记的更大（R1-05）；review2 在 attempt 进程里直跑全量得到 `SUITE FAIL (1)`、清 env 后 `RELAY ALL PASS (SKIPPED: 1)`。
-- **改动点（预估）**：单个用例的 env 清理方式；一行。**不在 DHR_04 内改**——该卡变更范围是 `tools/relay/policy/` 与新套件，改既有套件属越界（两轮复核一致建议立 backlog）。
+- **现状证据**：`tools/tests/relay-agent-tool.ps1:72-75`。2026-08-16 DHR_04 首跑三方独立复现——施工棒记 `findings.md` F-002；review1 判 P2 并指出影响面比 F-002 自记的更大（R1-05）；review2 在 attempt 进程里直跑全量得到 `SUITE FAIL (1)`、清 env 后 `RELAY ALL PASS (SKIPPED: 1)`。
+- **改动点（预估）**：单个用例的 env 清理方式；一行。**不在 DHR_04 内改**——该卡变更范围是 `tools/policy/` 与新套件，改既有套件属越界（两轮复核一致建议立 backlog）。
 - **优先级**：**高**（2026-08-17 上调）· **必须在 relay 自举流水铺开前修掉**
 - **提出人 / 日期**：DHR_04 施工棒 + 两轮复核，2026-08-16
 - **进展**：未立项。当前绕过办法 = 跑全量回归前先清 `RELAY_RECEIPT` / `RELAY_RUN_ROOT` / `RELAY_ATTEMPT_DIR` / `RELAY_TOOL`。
@@ -80,11 +80,23 @@
   2. **摘除**（有影响，必须等）：从 dh-crew 删掉那两个目录。会让在飞卡的基线失效、stage0 驱动器的源消失、机器闸找不到自己。
 - **执行时点（用户 2026-08-17 拍板）**：**等 `DHR_04` 收口销户后再提取**。理由：`wt/DHR_04` 当时领先 master 22 个提交且未收口，提前提取会拿到不含该卡成果的快照，收口后还要跨仓手工同步一次，不划算。
 - **历史处理（用户拍板）**：**保留历史**，走 `git filter-repo`（需另装工具）。
-- **拆时还要动的三件事**：① `AGENTS.md` 分家（现在 dh-relay 宪章条款与 dh-crew 混在一份里）；② `D:\relay-stage0` 冻结驱动器要重新冻（现冻自 `tools/relay/ @34df46a`）；③ 新建 GitHub 私有库（dh-crew 已于 2026-08-17 推到 `nashhu180-netizen/dh-crew`，含 master + 8 个 `wt/*` 分支）。
+- **拆时还要动的三件事**：① `AGENTS.md` 分家（现在 dh-relay 宪章条款与 dh-crew 混在一份里）；② `D:\relay-stage0` 冻结驱动器要重新冻（现冻自 dh-crew `tools/relay/ @34df46a`）；③ 新建 GitHub 私有库（dh-crew 已于 2026-08-17 推到 `nashhu180-netizen/dh-crew`，含 master + 8 个 `wt/*` 分支）。
 - **与流水引擎化的顺序**：二者都是结构性变更，**不同时做**。若引擎化定案要改 12 张卡，建议**先拆仓再引擎化**——拆仓是纯机械搬运（改位置不改内容）风险低，先做完可避免"改完再搬一次"。
 - **优先级**：中 · 阻塞于 `DHR_04` 收口
 - **提出人 / 日期**：用户，2026-08-17
-- **进展**：未立项。可行性已核（见上表），执行时点与历史处理已拍板，等 `DHR_04` 收口后走 A 立项或直接按两步法执行。
+- **进展**：**第 1 步「提取」已于 2026-08-17 执行完毕**（本仓即产物）。第 2 步「摘除」按用户拍板**暂不做**——dh-crew 侧原件原样保留，两仓短期并存。
+- **2026-08-17 提取执行记录**：
+  - 源 = dh-crew `master @bc0be11`（`verify(dh-relay): DHR_04 前置隔离与落点守卫 user-signed`）。
+  - 手法 = `git clone --no-local` 出副本 → `git filter-repo --path docs/modules/dh-relay/ --path tools/relay/ --path-rename docs/modules/dh-relay/:docs/ --path-rename tools/relay/:tools/`。**目录提到仓根**（独立仓里再套一层「模块」是冗余），历史 31 笔全部保留，非 relay 文件在各笔提交里自动剔除。
+  - 落点 = `D:\MyFiles\ai-workflow\dh-relay`。远端仓**尚未建**（三件事之③仍欠）。
+  - 机器证：搬完**未改任何代码**先跑基线 `tools/tests/run-relay-tests.ps1` → `RELAY ALL PASS (SKIPPED: 1)`，证明 `tools/` 与仓库位置解耦；路径适配后复跑仍 ALL PASS。
+  - 路径适配口径：**活代码 + 现役文档改，历史留痕不改**。`docs/workspace/DHR_*/` 与 `docs/design/evidence/` 保持原样（那是当时的事实记录，改了等于篡改证据），里面出现的 `tools/relay/`、`docs/modules/dh-relay/` 一律按「dh-crew 时期的旧地址」读。
+  - 搬迁真踩到的坑（不是纯机械搬运）：两处**仓根解析**写死了退几级目录——`tools/host/run-dogfood.ps1` 的 `$repoRoot` 与 `tools/adapters/preflight/Invoke-RelayBackendPreflight.ps1` 的 orca 工作树默认值，原来都从 `tools/relay/<x>/` 退到仓根，提级后会退到**仓库外面**；已各减一级。教训：「改位置不改内容」低估了相对路径的位置耦合。
+  - `AGENTS.md` 分家（三件事之①）已在本仓重写为单模块宪章；dh-crew 侧的双模块登记**未动**。
+  - 未跟踪文件：`design/drafts/01`、`design/drafts/02`、`design/evidence/04` 三份在 dh-crew 里也是未跟踪状态，已原样复制过来并**保持未跟踪**，是否入仓由用户定。
+  - **SHA 引用两套并存（查证时当心）**：`filter-repo` 会把**提交信息里**的 SHA 引用自动改写成新仓 SHA（例：DHR_04 verify 提交里的 squash 指针，dh-crew 记 `4ac3c1d`，本仓记 `ce586c2`，指的是同一笔），但**文档正文**（DevPlan 状态栏、backlog、workspace 留痕）里的 SHA 它一律不动，仍是 dh-crew 的旧号。**同一笔提交在本仓的两处记录会对不上号**——按 commit message 里的号在本仓 `git show` 得到；按文档里的号只能回 dh-crew 查。未做统一改写：文档里的旧号本身是当时的事实记录，改了就是篡改留痕。
+  - **`dh` 命令有已知摩擦**（模块目录提级导致）：只能传模块目录绝对路径，slug 与相对路径两种调用方式都解析不到。用法与理由见 `AGENTS.md` §`dh` 命令在本仓的用法。
+  - **新蓄水** `DHR-BL-9`：隔离守卫在「仓根即模块根」布局下对根级文件无处安放（拆仓执行中暴露）。
 - **2026-08-17 晚更新（与 `DHR-BL-7` 换语言合并考虑）**：用户当日提出 dh-relay 需在 **WSL / 家用 Linux 笔记本**上跑，并明确「**在 Linux 肯定不会用 PowerShell**」。若换语言成立，**本条与 `DHR-BL-7` 应合成一次 A 立项，不分两次做**——分开做等于「先把 PowerShell 代码搬进新仓，再在新仓把它全删了重写」，白搬一趟。合并后的形态：新建独立仓 → **代码从零用新语言写**，`design/` `dev_plan/` `workspace/` 等**文档与设计演进史仍用 `git filter-repo` 完整迁移**（这部分历史才是真资产；代码历史在全量重写下价值有限，"保留历史"的口径需相应重述，但**不等于放弃历史**）。两条谁先谁后不再是问题——它们是同一件事的两半。
 
 ### DHR-BL-3 stage0 自举包装通用化（plan 描述文件 + brief 目录）
@@ -125,8 +137,8 @@
   - 语言税与范围问题的**成本比约 1:5**（当日语言坑合计约 0.5～1 小时；范围面归属问题吃掉两趟施工 + 四轮复核）——**故换语言解决的是小头，不可当银弹**。
 - **主控当前倾向（供评估，非结论）**：**Go**。单二进制丢到任意机器即跑（对多机器场景每次都省一遍装运行时）、并发原生、写法收敛（多个 AI 轮流施工风格一致、复核 agent 读起来负担小）、编译器中等强度兜底。备选：Rust（正确率上限最高但 AI 迭代慢、复核更费劲；`herdr` 底座为 Rust 写，若深度集成有加分）、Python（语料最大但部署与并发两个硬伤、无编译期检查）、TypeScript（语料大、异步好，但类型是后贴的、仍需 runtime）。
 - **不换的选项也要一并评**：**PowerShell 7 本身可在 Linux 运行**（需自行安装）。真正的跨平台成本不在语言，而在被操作对象：`icacls`（受限写取证）、`Get-CimInstance Win32_Process`、`PrintWindow` 截图（GDI+）、`psmux`、散落各处写死的 `D:\` 盘符与 `projects["D:/…"]` 配置键——**这些换成任何语言都要逐项映射**。保 pwsh + 把平台差异全部逼进 adapter 层，是一条必须被公平对照的路线。
-- **时间窗口（本条最要紧的一句）**：P2 共 19 张卡，**现在才做完 1 张**（`DHR_04` 待收口）。现在换 = 重写 `tools/relay/` 现有六块 + `DHR_04` 按同一验收口径重证；P2 做完再换 = 18 张卡的实现加其全部机器证。**约差一个数量级。**
-- **卡片受影响面（初判，待评估核实）**：DevPlan 卡片**大部分可原样复用**——变更范围写的是**目录**（`tools/relay/policy/`），验收口径写的是**行为**（`exit 0→pass`、schema 拒未知字段、两条不得误杀反例），均与语言无关。要改的主要是实施提示里点到具体 PowerShell 函数名处，与测试命令（`run-relay-tests.ps1` → 新语言测试入口）。**不是重新拆 19 张卡。**
+- **时间窗口（本条最要紧的一句）**：P2 共 19 张卡，**现在才做完 1 张**（`DHR_04` 待收口）。现在换 = 重写 `tools/` 现有六块 + `DHR_04` 按同一验收口径重证；P2 做完再换 = 18 张卡的实现加其全部机器证。**约差一个数量级。**
+- **卡片受影响面（初判，待评估核实）**：DevPlan 卡片**大部分可原样复用**——变更范围写的是**目录**（`tools/policy/`），验收口径写的是**行为**（`exit 0→pass`、schema 拒未知字段、两条不得误杀反例），均与语言无关。要改的主要是实施提示里点到具体 PowerShell 函数名处，与测试命令（`run-relay-tests.ps1` → 新语言测试入口）。**不是重新拆 19 张卡。**
 - **与其它条目的关系**：与 `DHR-BL-5`（独立仓库）**应合成一次 A 立项**，理由见该条 2026-08-17 晚更新；与 `DHR-BL-8`（流水引擎化）是**两个独立维度**，但都属结构性变更，排期上不宜同时开工。
 - **待评估清单（起 A 立项时按此写评估材料）**：现有 PowerShell 代码规模盘点；Windows 专属依赖逐项清单与新平台对应方案（**截图与 ACL 取证最难，须单列**）；stage0 自举驱动器在重写期间的过渡方案（它冻结的是 PowerShell 版本）；三条路线代价对比（立刻换 / P2 后换 / 保 pwsh 只做 adapter 隔离）；`DHR_04` 是先收口再重写还是作废重来（**主控建议先收口**——该卡真正的资产是被证过的验收意图：85 条断言、四类拒绝码、优先级分层、两条不得误杀反例、受限写取证做法，这些在新语言里是可照搬的测试清单）。
 - **优先级**：高 · 但**不阻塞 `DHR_04` 收口**；须走 A 立项，不得由 AI 自行拍板选型
@@ -160,3 +172,14 @@
 - **优先级**：高 · 待第三方评估回填后走 A 立项
 - **提出人 / 日期**：用户，2026-08-17（另一 session）
 - **进展**：四方案已成文并经两轮交叉审核，**待第三方独立评估**；主会话裁决与用户回答已落 `evidence/04`。
+
+### DHR-BL-9 隔离守卫在「仓根即模块根」布局下对根级文件无处安放
+
+- **需求 / 议题**：`Get-RelayCliDevIsolationPolicy` 是**白名单**式判定——路径既不在 `production_root` 也不在 `doc_roots` 之下，一律判 `dev-isolation-violation:unclassified-path`。2026-08-17 拆独立仓后两个根提级为 `tools/` 与 `docs/`，于是**仓根文件**（`AGENTS.md`、`README.md`、`.gitignore`、将来的 CI 配置）全部落进"无处安放"，改一次就被守卫判违规。
+- **动机**：守卫是 `DHR_04` 刚 verify 签收的成果，其"改动只许落在自己地盘"的意图在独立仓里依然成立；但它设计时的隐含前提是 **relay 住在别人仓的子树里**，仓根不归自己管。前提没了，规则需要重述而不是绕过。
+- **现状证据**：`tools/policy/Invoke-RelayPolicyCheck.ps1` `Get-RelayCliDevIsolationPolicy`；判定逻辑见 `tools/policy/relay-policy.ps1` `Get-RelayDevIsolationVerdict` 第 93~103 行（`$inProd -or $inDoc` 之外只剩两种违规出口）。
+- **拆仓时的处置（已做）**：只把 `production_root` 改 `tools/`、`doc_roots` 改 `docs/`，**`forbidden_roots` 一字未动**。原因有二：① 那四个根里的 `docs/modules/dh-crew/` 被 `mode all multi-verdict reason is policy-violation:multi` 用例锁着，删了会真红；② 重新设计守卫语义超出"搬仓"范围，不该顺手做。搬完全套测试 ALL PASS。
+- **改动点（预估）**：给策略加一层**根级文件白名单**（或允许 `doc_roots` 收单文件条目），并同步 `tools/tests/relay-policy.ps1`；顺带清掉 `forbidden_roots` 里三条独立仓已不存在的 dh-crew 专属根——但必须连同锁着它的用例一起改，别只删数据。
+- **优先级**：中 · 下次真要动仓根文件、或给本仓接 CI 时必须先修
+- **提出人 / 日期**：主控，2026-08-17（拆仓执行中暴露）
+- **进展**：未立项。

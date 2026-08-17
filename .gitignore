@@ -1,0 +1,20 @@
+# worker 派活脚手架（prompt/output/checkpoint），不入仓
+.ai-workspace/
+
+# 本机 Claude Code 现场（权限白名单/session-root 含绝对临时路径，不入仓）
+.claude/
+
+# 本地密钥/环境变量（只留在本机，不入仓）
+.dh-local.env.ps1
+.env
+.env.*
+*.local.ps1
+
+# relay 运行现场（不入仓）
+#   .dh-runtime/  = P1 现役现场根
+#   .dh-relay/    = P2 决策 D21 换根后的现场根（本仓自举时也会用到）
+.dh-runtime/
+.dh-relay/
+
+# 一卡一树（worktree 纪律：收口即删，不入仓）
+.dh-worktrees/
