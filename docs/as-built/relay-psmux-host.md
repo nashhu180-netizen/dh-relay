@@ -14,14 +14,14 @@
 
 | 类别 | 路径 |
 |---|---|
-| psmux adapter | `tools/relay/adapters/psmux-adapter.ps1`；六动词九键、精确 session registry、可见窗口与屏幕指纹 probe |
-| adapter 说明与 preflight | `tools/relay/adapters/README.md`；`adapters/preflight/Invoke-RelayBackendPreflight.ps1`（P1～P6 判据） |
-| 宿主循环 | `tools/relay/host/relay-host.ps1`；tick、状态行、截图、时间线和证据复制 |
-| agent 侧工具 | `tools/relay/host/relay-agent-tool.ps1`；`checkpoint/result/propose` 与两阶段写 |
-| worker 入口 | `tools/relay/host/relay-worker-entry.ps1`；receipt 环境、继承环境清理、CLI 启动 |
-| dogfood 包装 | `tools/relay/host/run-dogfood.ps1`；`blocked|decision` 场景装配与证据落盘 |
-| dogfood 夹具/迟到检查 | `tools/relay/dogfood/{blocked,decision}/`；`Invoke-LateResultCheck.ps1` |
-| 参数冻结点 | `tools/relay/contracts/relay-params.psd1`；新增 `IdleAfterSeconds=5`、`StopDeadlineSeconds=30`、`AttachDeadlineSeconds=90` |
+| psmux adapter | `tools/adapters/psmux-adapter.ps1`；六动词九键、精确 session registry、可见窗口与屏幕指纹 probe |
+| adapter 说明与 preflight | `tools/adapters/README.md`；`adapters/preflight/Invoke-RelayBackendPreflight.ps1`（P1～P6 判据） |
+| 宿主循环 | `tools/host/relay-host.ps1`；tick、状态行、截图、时间线和证据复制 |
+| agent 侧工具 | `tools/host/relay-agent-tool.ps1`；`checkpoint/result/propose` 与两阶段写 |
+| worker 入口 | `tools/host/relay-worker-entry.ps1`；receipt 环境、继承环境清理、CLI 启动 |
+| dogfood 包装 | `tools/host/run-dogfood.ps1`；`blocked|decision` 场景装配与证据落盘 |
+| dogfood 夹具/迟到检查 | `tools/dogfood/{blocked,decision}/`；`Invoke-LateResultCheck.ps1` |
+| 参数冻结点 | `tools/contracts/relay-params.psd1`；新增 `IdleAfterSeconds=5`、`StopDeadlineSeconds=30`、`AttachDeadlineSeconds=90` |
 
 ## 关键实测事实与冻结决策
 

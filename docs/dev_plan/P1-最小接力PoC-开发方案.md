@@ -39,18 +39,18 @@
 
 | 单元 | 职责 | 入口 / 主要文件 | 关联任务 |
 |---|---|---|---|
-| contracts | RelayPlan、authority、receipt、result/handoff、control event schema、机器可读穷举转换矩阵与脱敏规则 | `tools/relay/contracts/` | DHR_01 |
-| replay fixtures | 正常、阻塞、挂起、迟到、半写、异常退出和可信事件夹具 | `tools/relay/tests/fixtures/` | DHR_01 / DHR_02 |
-| Runner core | active-plan CAS、事件消费、合法转换、幂等和 fail-closed | `tools/relay/` | DHR_02 |
-| terminal adapters | fake adapter 与真实 `psmux` adapter | `tools/relay/adapters/` | DHR_02 / DHR_03 |
-| PoC evidence | 真实事件、状态快照、receipt、截图和人验剧本 | `docs/modules/dh-relay/workspace/` | DHR_03 |
+| contracts | RelayPlan、authority、receipt、result/handoff、control event schema、机器可读穷举转换矩阵与脱敏规则 | `tools/contracts/` | DHR_01 |
+| replay fixtures | 正常、阻塞、挂起、迟到、半写、异常退出和可信事件夹具 | `tools/tests/fixtures/` | DHR_01 / DHR_02 |
+| Runner core | active-plan CAS、事件消费、合法转换、幂等和 fail-closed | `tools/` | DHR_02 |
+| terminal adapters | fake adapter 与真实 `psmux` adapter | `tools/adapters/` | DHR_02 / DHR_03 |
+| PoC evidence | 真实事件、状态快照、receipt、截图和人验剧本 | `docs/workspace/` | DHR_03 |
 
 ### 2.2 复用与禁改边界
 
 | 路径 | 禁改 / 扩展 / 新建 | 说明 |
 |---|---|---|
-| `docs/modules/dh-relay/` | 扩展 | 本模块唯一设计、计划与现场根 |
-| `tools/relay/` | 新建 | PoC 代码候选根；开工时经 Code Scout 校准具体文件 |
+| `docs/` | 扩展 | 本模块唯一设计、计划与现场根 |
+| `tools/` | 新建 | PoC 代码候选根；开工时经 Code Scout 校准具体文件 |
 | canonical runtime layout / `psmux` 通用原语 | 复用边界 | 可通过 adapter 调用，不复制或改写 `dh-crew` active state |
 | `docs/modules/dh-crew/dev_plan/`、`workspace/`、active runtime | 禁改 | 新模块不得消费或投影旧模块状态 |
 | 现有 dh-crew controller/loop 代码 | 禁改 | P1 不以“顺手复用”为名改旧控制器 |
@@ -79,7 +79,7 @@
   - **机器证**：[产品设计与验收 A4/A6](../design/01-产品设计与验收.md#61-ai-自动验收栏)：冻结 `decision_required` 非终态 checkpoint 与 final result 的边界；checkpoint 后只冻结依赖节点、无依赖并行节点继续，同一 authority/launch/session/attempt 的后续 checkpoint/final result 可更新投影，错 session/generation 与旧 attempt 均拒绝；Runner 不读取、转发人工回答，也不调用 resume；quota P1 降级为 `interrupted_unknown` 兜底，不实现独立可信恢复事件通道（目标形态再补）。
   - **机器证**：[产品设计与验收 A5/A6](../design/01-产品设计与验收.md#61-ai-自动验收栏)：`succeeded` 不等于完成；final result 不可改写；半写、坏 JSON、probe error、无进展和无结果退出均有反例夹具。
   - **机器证**：[产品设计与验收 A8](../design/01-产品设计与验收.md#61-ai-自动验收栏)：交接自足；credential-shaped detector 至少覆盖 `api_key/private_key/password` 三类代表性凭据（jwt/env_secret/bearer_token 等其余类别随目标形态补齐），命中值完整替换、不保留前缀，handoff/result/event/session-tail 任一 final 工件残留即失败；PII/内部主机名不纳入本卡 detector。
-- **变更范围**：`tools/relay/contracts/`、`tools/relay/tests/`（fixtures + 契约测试套件 + 独立 runner `run-relay-tests.ps1`，不进 dh-crew `run-all`；2026-08-15 收口期同步字面：原写 `tests/fixtures/`，验收口径本就要求"由测试证明"，套件落 `tests/` 是其必然承载，非扩大到旧 controller/loop——见 workspace/DHR_01/findings F-010）、本卡 `workspace/DHR_01/`；开工 Code Scout 只可收窄，不得扩大到旧 controller/loop。
+- **变更范围**：`tools/contracts/`、`tools/tests/`（fixtures + 契约测试套件 + 独立 runner `run-relay-tests.ps1`，不进 dh-crew `run-all`；2026-08-15 收口期同步字面：原写 `tests/fixtures/`，验收口径本就要求"由测试证明"，套件落 `tests/` 是其必然承载，非扩大到旧 controller/loop——见 workspace/DHR_01/findings F-010）、本卡 `workspace/DHR_01/`；开工 Code Scout 只可收窄，不得扩大到旧 controller/loop。
 - **档位**：标准（接力状态与终端组件接线的基础契约）。
 - **实施提示**：复用 canonical runtime 与精确 session 的安全原则；authority generation 在首个 active-plan CAS 成功时从 1 开始，proposal 不自带 generation；控制事件的 nonce/防重放仅冻结字段定义，P1 不做逐项重放攻击测试；冻结 `session_tail_max_bytes` 默认值与合法覆盖入口，处理顺序固定为先脱敏、再限长，session tail 只作诊断证据；Git snapshot 只含提交、changed paths 与 diff stat 元数据。
 
@@ -93,7 +93,7 @@
   - **机器证**：[产品设计与验收 A5](../design/01-产品设计与验收.md#61-ai-自动验收栏)：`succeeded + next_action=review` 后任务仍 active。
   - **机器证**：[产品设计与验收 A6](../design/01-产品设计与验收.md#61-ai-自动验收栏)：错版本、半写、坏结果、进程活但无进展、无可信 stop/quota 原因均 fail-closed。
 - **fake adapter 行为契约**：实现 `launch/probe/suspend/resume/stop/emit_observation` 六个终端动词；消费 DHR_01 的 fixture/观测流，不修改 fixture、不持有业务状态、不判断代码质量。decision fixture 由同一 session 依次发出 `decision_required` 与后续 checkpoint/final result，adapter 不提供人工输入 API；测试断言 Runner 在两者之间没有调用 `resume`，并覆盖依赖节点冻结、无依赖并行节点继续、错身份后续结果拒绝。launch receipt 写入后进入 `launching`；在有界启动期限内未获得绑定 `running` 观测则转 `unknown`、追加 `launch_failed` 事件并停住。
-- **变更范围**：`tools/relay/`、`tools/relay/adapters/fake*`、`tools/relay/tests/`、本卡 `workspace/DHR_02/`。
+- **变更范围**：`tools/`、`tools/adapters/fake*`、`tools/tests/`、本卡 `workspace/DHR_02/`。
 - **档位**：标准（组件接线与状态流转）。
 - **实施提示**：Runner 不读代码质量；所有推进先验身份再验转换；事件追加与状态 CAS 必须可重放。
 - **编排输入边界**：DHR_02 的初始/重编排 proposal 均由 fixture 提供，不拉真实编排 agent；真实一次性编排 agent 只在 DHR_03 dogfood 中验证。
@@ -105,9 +105,9 @@
 - **验收口径**：
   - **机器证**：[产品设计与验收 A3](../design/01-产品设计与验收.md#61-ai-自动验收栏)：事件序列严格为 v1/A attempt1 blocked→handoff ack→exact exit→v2+B→B done→A attempt2 fresh；旧 A result 通过 Runner 真实摄入入口提交，保持内容合法但携带旧身份链，只产生 stale event，不用测试桩直接改 active state。
   - **机器证**：[产品设计与验收 A4](../design/01-产品设计与验收.md#61-ai-自动验收栏)：decision fixture 的原 session 保持可交互；用户在该 session 回答一次后 agent 自然继续，Runner 未读取/转发回答、未调用 resume；依赖节点在后续有效 checkpoint/result 前冻结，无依赖并行节点继续。要求用户再去 Runner 操作则 A4 失败。
-  - **机器证**：[产品设计与验收 A7](../design/01-产品设计与验收.md#61-ai-自动验收栏)：`tools/relay/adapters/psmux*` 自己实现 `launch/probe/suspend/resume/stop/emit_observation`，可组合现有 psmux/tmux 原语但不假定旧 `tools/psmux-launch.ps1` 已提供完整 handle；preflight 证明 receipt.launch_id 与新 adapter 返回的完整唯一 session handle 1:1、界面 `visible=true` 且 `interactive=true`、probe 全值匹配，按该 handle 回收后在 evidence 记录的有界期限内确认为 `exited`。仅后台 session、PID/标题/前缀猜测或平台无关 stop 命令均失败。
+  - **机器证**：[产品设计与验收 A7](../design/01-产品设计与验收.md#61-ai-自动验收栏)：`tools/adapters/psmux*` 自己实现 `launch/probe/suspend/resume/stop/emit_observation`，可组合现有 psmux/tmux 原语但不假定旧 `tools/psmux-launch.ps1` 已提供完整 handle；preflight 证明 receipt.launch_id 与新 adapter 返回的完整唯一 session handle 1:1、界面 `visible=true` 且 `interactive=true`、probe 全值匹配，按该 handle 回收后在 evidence 记录的有界期限内确认为 `exited`。仅后台 session、PID/标题/前缀猜测或平台无关 stop 命令均失败。
   - **人判**：[产品设计与验收 H1/H2](../design/01-产品设计与验收.md#62-人类验收栏)：向用户展示真实截图、checkpoint/状态/receipt 时间线和未覆盖范围；decision 正常路径必须记录人工动作数=1，且时间线证明 Runner 未介入回答。对照表按统一口径记录用户显式确认/回答/重启动作数、面向用户的状态通知数，以及 blocked→fresh A 的可见步骤与事件 hop 数，由用户判断是否符合直觉、是否值得进入完整流水阶段。
-- **变更范围**：`tools/relay/adapters/psmux*`、最小 dogfood fixture、`docs/modules/dh-relay/workspace/DHR_03/`；不得把凭据值写入任何证据。
+- **变更范围**：`tools/adapters/psmux*`、最小 dogfood fixture、`docs/workspace/DHR_03/`；不得把凭据值写入任何证据。
 - **档位**：标准（真实终端组件接线 + 交互人验）。
 - **实施提示**：DHR_03 的第一道闸是 backend preflight：先证明 launch_id/完整 handle 1:1、visible+interactive、全值 probe 与按 handle 有界退出；失败则停在“待环境”，不进入 dogfood。后端选定（2026-08-15 用户定）：开工前用同一 A7 判据对 orca（仅作纯终端宿主候选）加跑一次 preflight 对比实测；psmux 为默认，orca 通过判据且体验更优时方可提议换后端，且须先修订设计决策 7 再实施。精确匹配唯一 session_id；截图与机读事件必须能互相对照。
 - **销户记录（2026-08-16）**：机器项 A3/A4/A7 全绿（现役证据 E-020 blocked run7 / E-014 decision run2 / preflight 5/5），两轮换人复核 approved-with-P2 且返工收敛（F-022/F-024），用户对话判 **H1 通过**、**H2 有条件值得**——**方向决策账**：条件=「先跑真实业务任务再定」，即下一步不直接进完整流水，先立一张真实业务任务的接力试点卡再决定；backlog F-023 三条（consumed 轮转 / spawner 异步 / Runner 提交 tmp 同名竞态）与 F-019/F-024 的 decision 补图挂下一卡。

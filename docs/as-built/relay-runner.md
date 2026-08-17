@@ -6,14 +6,14 @@
 
 | 类别 | 路径 |
 |------|------|
-| 运行现场存储 | `tools/relay/runner/relay-store.ps1`：`Get-RelayRunPaths` / `Write-RelayJsonAtomic`（tmp+Move 覆盖·有界重试）/ `Write-RelayJsonCreateNew`（不可变文件·已存在→`file-exists`）/ `Add-RelayEvent`（确定性 `EV-<run_id>-<6 位序号>`·occurred_at 取注入时钟·先过 `Test-RelayEvent`）/ `Test-RelayStateSnapshot`（relay-state 字段白名单 fail-closed）/ `Save-RelayState` / `Read-RelayActivePlanBody`（核 hash） |
-| Runner core | `tools/relay/runner/relay-runner.ps1`：`New-RelayRun` / `Open-RelayRun` / `Submit-RelayProposal`（schema→wrong-run→CAS→版本连续→提案人→replan 兼容→proposal 不可变→写 authority→写 active-plan）/ `Get-RelayReadyNodes` / `Start-RelayNodeAttempt`（receipt CreateNew + `launch_receipt` 事件**先于** adapter.launch·句柄精确相等）/ `Invoke-RelayTick`（host 观测→probe→启动期限→停滞）/ `Submit-RelayResultFile` / `Submit-RelayCheckpointFile` |
-| 回放驱动器 | `tools/relay/runner/relay-replay.ps1`：`Invoke-RelayReplay` / `Invoke-RelayReplayTick` / `Get-RelayEventSignature -SkipHeartbeat` |
-| fake adapter | `tools/relay/adapters/fake-adapter.ps1`：`New-RelayFakeAdapter -Script` → 恰好 9 键（backend/launch/probe/suspend/resume/stop/emit_observation/calls/sessions）；剧本磁带驱动 probe；无任何人工输入 API；`adapters/README.md` 六动词契约 |
-| 契约参数追加 | `tools/relay/contracts/relay-params.psd1` 第五键 `LaunchDeadlineSeconds = 120`（有界启动期限唯一冻结点）；DHR_03 再追加三键（见 [relay-psmux-host.md](relay-psmux-host.md)），`relay-runner-authority.ps1` 键数守卫已迁为八键 |
-| fixtures | `tools/relay/tests/fixtures/runner/{plans,results,checkpoints,adapter,replay}/`（静态·全 FAKE） |
-| 测试 | `tools/relay/tests/relay-runner-{authority,ingest,failures,replay-blocked,replay-decision}.ps1`；`run-relay-tests.ps1` 11 套件 → `RELAY ALL PASS`；reason 守卫扫描范围扩到 `runner/`+`adapters/`，`proposal-rejected:*` 按完整子码比对 |
-| 说明 | `tools/relay/runner/README.md`（K-1～K-10 决策摘要） |
+| 运行现场存储 | `tools/runner/relay-store.ps1`：`Get-RelayRunPaths` / `Write-RelayJsonAtomic`（tmp+Move 覆盖·有界重试）/ `Write-RelayJsonCreateNew`（不可变文件·已存在→`file-exists`）/ `Add-RelayEvent`（确定性 `EV-<run_id>-<6 位序号>`·occurred_at 取注入时钟·先过 `Test-RelayEvent`）/ `Test-RelayStateSnapshot`（relay-state 字段白名单 fail-closed）/ `Save-RelayState` / `Read-RelayActivePlanBody`（核 hash） |
+| Runner core | `tools/runner/relay-runner.ps1`：`New-RelayRun` / `Open-RelayRun` / `Submit-RelayProposal`（schema→wrong-run→CAS→版本连续→提案人→replan 兼容→proposal 不可变→写 authority→写 active-plan）/ `Get-RelayReadyNodes` / `Start-RelayNodeAttempt`（receipt CreateNew + `launch_receipt` 事件**先于** adapter.launch·句柄精确相等）/ `Invoke-RelayTick`（host 观测→probe→启动期限→停滞）/ `Submit-RelayResultFile` / `Submit-RelayCheckpointFile` |
+| 回放驱动器 | `tools/runner/relay-replay.ps1`：`Invoke-RelayReplay` / `Invoke-RelayReplayTick` / `Get-RelayEventSignature -SkipHeartbeat` |
+| fake adapter | `tools/adapters/fake-adapter.ps1`：`New-RelayFakeAdapter -Script` → 恰好 9 键（backend/launch/probe/suspend/resume/stop/emit_observation/calls/sessions）；剧本磁带驱动 probe；无任何人工输入 API；`adapters/README.md` 六动词契约 |
+| 契约参数追加 | `tools/contracts/relay-params.psd1` 第五键 `LaunchDeadlineSeconds = 120`（有界启动期限唯一冻结点）；DHR_03 再追加三键（见 [relay-psmux-host.md](relay-psmux-host.md)），`relay-runner-authority.ps1` 键数守卫已迁为八键 |
+| fixtures | `tools/tests/fixtures/runner/{plans,results,checkpoints,adapter,replay}/`（静态·全 FAKE） |
+| 测试 | `tools/tests/relay-runner-{authority,ingest,failures,replay-blocked,replay-decision}.ps1`；`run-relay-tests.ps1` 11 套件 → `RELAY ALL PASS`；reason 守卫扫描范围扩到 `runner/`+`adapters/`，`proposal-rejected:*` 按完整子码比对 |
+| 说明 | `tools/runner/README.md`（K-1～K-10 决策摘要） |
 
 ## 运行现场目录（Runner 唯一写者）
 

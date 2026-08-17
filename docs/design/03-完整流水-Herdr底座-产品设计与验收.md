@@ -191,7 +191,7 @@ herdr 订阅面无 pane/会话退出事件（`E-A8-04`）。故：
 注册表新增 `backend ∈ {psmux, herdr, fake}`（run 级选择，默认由注册表定）。`psmux-adapter.ps1` **保留**，新增 `herdr-adapter.ps1` 实现同一组六动词、同样的九键外形。
 
 **为什么并存而不是替换**：
-- 适配器抽象本就是为此存在的（`tools/relay/adapters/README.md` 的六动词契约），不新增架构负担。
+- 适配器抽象本就是为此存在的（`tools/adapters/README.md` 的六动词契约），不新增架构负担。
 - **同一批卡可以在两个后端各跑一遍**，"psmux vs herdr" 的对比决策才有真实数据，而不是靠本文的空载实测拍板。
 - Herdr 是 preview 版、且检测清单会漂（`H6`）；留 psmux 作退路，任一时刻可 `-Backend psmux` 回退，不需要返工。
 - 代价 = 多一份适配器要维护、`B19` 要证两个后端在同一回放下行为等价。这个代价可接受。

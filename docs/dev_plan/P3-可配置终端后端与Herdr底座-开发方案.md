@@ -52,21 +52,21 @@
 
 | 单元 | 承载什么 | 落点 | 归卡 |
 |---|---|---|---|
-| backend 选择 | 后端枚举、注册表/参数解析、未知值 fail-closed、适配器装配 | `tools/relay/adapters/`、`tools/relay/host/` 的装配缝 | DHR_22 |
-| herdr adapter | 六动词、句柄纪律、五态映射、失联判定 | `tools/relay/adapters/herdr-adapter.ps1` | DHR_23 |
-| 后端一致性测试 | 同一回放跨后端行为等价、psmux 零回归 | `tools/relay/tests/` | DHR_22 / DHR_23 |
+| backend 选择 | 后端枚举、注册表/参数解析、未知值 fail-closed、适配器装配 | `tools/adapters/`、`tools/host/` 的装配缝 | DHR_22 |
+| herdr adapter | 六动词、句柄纪律、五态映射、失联判定 | `tools/adapters/herdr-adapter.ps1` | DHR_23 |
+| 后端一致性测试 | 同一回放跨后端行为等价、psmux 零回归 | `tools/tests/` | DHR_22 / DHR_23 |
 | 实战与判定 | 冻结驱动器刷新、真卡跑通、J1～J5 对照表 | 本卡 workspace 与 evidence | DHR_24 |
 
 ### 2.2 复用与禁改边界
 
 | 路径 | 禁改 / 扩展 / 新建 | 说明 |
 |---|---|---|
-| `tools/relay/adapters/psmux-adapter.ps1` | **禁改行为** | 允许纯机械的装配改动（如导出方式），**不得改任何判据、阈值、分支或回参**；零回归由 `P2` 验收 |
-| `tools/relay/adapters/fake-adapter.ps1` | 禁改 | 它是回放基准，改了等价性测试就失去意义 |
-| `tools/relay/contracts/` | **禁改** | 后端属实现层，不进契约（`design/03` `H12`）；本计划不新增/不修改任何 schema、枚举或转换边 |
-| `tools/relay/adapters/herdr-adapter.ps1` | 新建 | 本计划唯一的新增适配器 |
-| `tools/relay/host/` 的适配器装配处 | 最小扩展 | 只把"写死 psmux"改成"按配置取"，不动 tick、摄入、截图、spawner 任何逻辑 |
-| `tools/relay/tests/` | 扩展 | 新增 herdr 适配器套件与跨后端等价性套件；不改现有套件断言 |
+| `tools/adapters/psmux-adapter.ps1` | **禁改行为** | 允许纯机械的装配改动（如导出方式），**不得改任何判据、阈值、分支或回参**；零回归由 `P2` 验收 |
+| `tools/adapters/fake-adapter.ps1` | 禁改 | 它是回放基准，改了等价性测试就失去意义 |
+| `tools/contracts/` | **禁改** | 后端属实现层，不进契约（`design/03` `H12`）；本计划不新增/不修改任何 schema、枚举或转换边 |
+| `tools/adapters/herdr-adapter.ps1` | 新建 | 本计划唯一的新增适配器 |
+| `tools/host/` 的适配器装配处 | 最小扩展 | 只把"写死 psmux"改成"按配置取"，不动 tick、摄入、截图、spawner 任何逻辑 |
+| `tools/tests/` | 扩展 | 新增 herdr 适配器套件与跨后端等价性套件；不改现有套件断言 |
 | `~/.dh-relay/registry/` | 扩展 | 新增 `backend` 字段；只存枚举值与冻结指纹，零凭据 |
 | `D:\relay-stage0`（stage0 冻结驱动器） | 受控刷新 | 仅 `DHR_24` 实战前刷新一次并留证；**不得手改**其内容 |
 | `.dh-worktrees/DHR_04` 及 P2 各卡工作树 | 禁改 | 本计划不写任何 P2 卡的工作树；实战只**驱动** `DHR_04`，不代它施工 |
@@ -105,7 +105,7 @@
   - **机器证 `P2`**：装配点唯一——全仓只有一处根据 `backend` 装配适配器；以静态检查证明不存在第二处后端分支，也不存在绕过装配点直接引用具体适配器的代码路径（反例：新增一处旁路引用即失败）。
   - **机器证 `P3`（本卡核心）**：**默认行为零变化**——未显式配置 `backend` 时，psmux 路径的六动词回参、事件序列与全部现有套件断言与改动前**完全一致**；`P1`/`P2` 现役全部套件绿，且 psmux 相关套件**一条断言都未被修改**（以 diff 证明测试文件未被放宽）。
   - **机器证 `P4`**：`herdr` 枚举值在本卡阶段的处置——配置为 `herdr` 时因适配器尚未实现，须给出**明确的未实现错误**并 fail-closed，不得半启动、不得静默回落 psmux（正反例各一）。
-- **变更范围**：`tools/relay/adapters/`（新增装配/选择模块）、`tools/relay/host/` 的适配器装配缝（最小改动）、`tools/relay/tests/`；本卡 workspace。
+- **变更范围**：`tools/adapters/`（新增装配/选择模块）、`tools/host/` 的适配器装配缝（最小改动）、`tools/tests/`；本卡 workspace。
 - **档位**：标准（改的是所有后端共用的装配点，影响面覆盖全部现役路径）。
 - **实施提示**：
   - 先写 `P3` 的零回归证据再改代码——**基线快照必须在动手前取**，事后补取等于自证。
@@ -121,7 +121,7 @@
   - **机器证 `P6`**：句柄纪律（`design/03` `H2`）——agent 名规范化规则冻结，超长与非法字符**不得静默截断**（各一反例）；每次操作回读 `pane_id` 与 receipt 比对，外部移动 pane 后拒绝继续而非误操作；以静态检查证明不存在以窗口标题、UI 焦点或 pane 序号定向的代码路径。
   - **机器证 `P7`（安全关键）**：**启动信任弹窗不得被误判为启动成功**——全新未信任路径下 launch，即使 herdr 报 `agent_status=idle` 且 `interactive_ready=true`（[E-A8-03](../design/evidence/03-Herdr底座-preflight实测与审核记录.md) 实测形态），也**必须** fail-closed 报 `launch_failed`，不得记成功。**这是本卡最关键的反例**：该形态比 psmux 的"屏幕没变"更容易骗过 Runner。
   - **机器证 `P8`**：跨后端等价——同一份 fake 回放剧本分别以 `psmux` 与 `herdr` 执行，业务事件序列全等；允许差异的字段（宿主指纹、句柄）列白名单并**逐字段断言**，不得用"整体近似"糊过去。`DHR_22` 的 `P4` 未实现反例在本卡转为正例并交接。
-- **变更范围**：新增 `tools/relay/adapters/herdr-adapter.ps1`、`tools/relay/tests/relay-herdr-adapter.ps1`、`tools/relay/tests/relay-backend-equivalence.ps1`；本卡 workspace。
+- **变更范围**：新增 `tools/adapters/herdr-adapter.ps1`、`tools/tests/relay-herdr-adapter.ps1`、`tools/tests/relay-backend-equivalence.ps1`；本卡 workspace。
 - **档位**：标准（引入全新外部宿主依赖 + 一条安全关键的 fail-closed 边界）。
 - **实施提示**：
   - 拓扑按 `design/03` `H1`：一 run 一命名会话、一卡一 tab、一棒一 pane；**不使用** herdr 的 workspace/worktree 原语（树由 dev-harness 管，两套必漂）。
@@ -139,7 +139,7 @@
   - **人判 `HP1`（否决性）**：`design/03` 的前置闸 `H-A8-1` —— 用户亲自用完整一趟后判 **Herdr 交互体验是否可接受**。展示：使用体感 + 宿主侧延迟采样对照（herdr / psmux 同负载）+ 本趟窗口作答次数。**判否 → `design/03` 整份 retire，`DHR_23`/`DHR_24` 按 §0 理解问题的用户回答处置，`DHR_22` 保留。**
   - **人判 `HP2`**：`blocked` 提示的**真阳 / 假阳 / 漏报逐条清单**，用户判是否准到值得依赖。口径写死：**假阳比漏报更坏**——假阳会训练用户忽略提醒，故假阳率单独列示、不与漏报合并计分。
   - **人判 `HP3`**：双后端对照（总耗时、被打断次数与时机、异常与恢复次数、每卡人工动作数），用户判换底座是否**真的减少了等待与巡检**。
-- **变更范围**：本卡 workspace 与 evidence；`D:\relay-stage0` 的一次受控刷新（留证）。**不改 `tools/relay/` 任何生产代码。**
+- **变更范围**：本卡 workspace 与 evidence；`D:\relay-stage0` 的一次受控刷新（留证）。**不改 `tools/` 任何生产代码。**
 - **档位**：标准（真跑真卡 + 否决性人判）。
 - **实施提示**：
   - **实战前必须显式刷新一次 stage0 冻结驱动器并留证**——`DHR_04` 走的是 `D:\relay-stage0`，herdr 适配器不在那份冻结里；直接拿工作树代码驱动真卡会破坏 `DHR_04` 自己立的隔离（跑的代码 == 被改的代码）。

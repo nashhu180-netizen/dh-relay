@@ -1,7 +1,7 @@
 # dh-relay v1 contracts
 
 This directory freezes the P1 `relay/v1` contract defined by
-`docs/modules/dh-relay/design/01-产品设计与验收.md` §3.
+`docs/design/01-产品设计与验收.md` §3.
 
 - `relay-params.psd1` is the unique frozen point for the schema version,
   session-tail byte limit, probe threshold, and stall threshold.
@@ -17,4 +17,4 @@ This directory freezes the P1 `relay/v1` contract defined by
   UTF-8 byte-limited session tail and detects residue in final artifacts.
 
 All files are PowerShell 7 libraries or static machine-readable data. The test
-entrypoint is `tools/relay/tests/run-relay-tests.ps1`.
+entrypoint is `tools/tests/run-relay-tests.ps1`.

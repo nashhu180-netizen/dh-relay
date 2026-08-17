@@ -81,9 +81,9 @@ function Read-RelayPolicySnapshotFile([string]$File) {
 
 function Get-RelayCliDevIsolationPolicy {
   @{
-    production_root = 'tools/relay/'
+    production_root = 'tools/'
     forbidden_roots = @('docs/modules/dh-crew/', 'skills/', 'tools/protocol/', '.dh-runtime/')
-    doc_roots = @('docs/modules/dh-relay/')
+    doc_roots = @('docs/')
   }
 }
 

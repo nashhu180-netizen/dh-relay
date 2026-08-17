@@ -1,20 +1,20 @@
 # as-built · relay-contracts（dh-relay 接力契约层 v1）
 
-> 首份快照：DHR_01（P1 批次 1·冻结接力权威、双维状态与异常契约）。全 greenfield，`tools/relay/` 新命名空间；对 dh-crew 零引用（不点源 `tools/protocol/**`、不读 `.dh-runtime`、不进 dh-crew `run-all`）。
+> 首份快照：DHR_01（P1 批次 1·冻结接力权威、双维状态与异常契约）。全 greenfield，`tools/` 新命名空间；对 dh-crew 零引用（不点源 `tools/protocol/**`、不读 `.dh-runtime`、不进 dh-crew `run-all`）。
 
 ## 落点
 
 | 类别 | 路径 |
 |------|------|
-| 契约参数（唯一冻结点） | `tools/relay/contracts/relay-params.psd1`：`SchemaVersion=relay/v1`、`SessionTailMaxBytes=65536`、`ProbeMaxConsecutiveFailures=3`、`StallThresholdSeconds=1800`；DHR_02 追加 `LaunchDeadlineSeconds=120`（有界启动期限）；DHR_03 追加 `IdleAfterSeconds=5`（屏幕指纹沉默窗）、`StopDeadlineSeconds=30`、`AttachDeadlineSeconds=90`（psmux 真实时延实测定值，见 [relay-psmux-host.md](relay-psmux-host.md)） |
-| 转换矩阵（唯一冻结点） | `tools/relay/contracts/transition-matrix.json`：terminal 6 态 / result 6 态，边带 `guard` + `p1` 布尔 |
-| schema 校验器 | `tools/relay/contracts/relay-schema.ps1`：`Test-RelayPlanProposal / Test-RelayActivePlan / Test-RelayAuthority / Test-RelayLaunchReceipt / Test-RelayResult / Test-RelayCheckpoint / Test-RelayEvent / Test-RelayHandoffHeader`、`Get-RelayPlanHash` |
-| 身份链判定 | `tools/relay/contracts/relay-identity.ps1`：`Get-RelayResultVerdict / Get-RelayCheckpointVerdict / Get-RelayResultFileVerdict / New-RelayEvent / Get-RelayNodeFreezeSet` |
-| 转换判定 | `tools/relay/contracts/relay-transitions.ps1`：`Test-RelayTerminalTransition / Test-RelayResultTransition / Test-RelayTransitionPair / Get-RelayProbeVerdict / Get-RelayStallVerdict / Get-RelayExitWithoutResultVerdict` |
-| 脱敏 | `tools/relay/contracts/relay-redaction.ps1`：`Invoke-RelayTailSanitize`（先脱敏再限长）、`Test-RelayArtifactClean` |
-| fixtures | `tools/relay/tests/fixtures/{plans,authority,results,checkpoints,tails,artifacts,failures}/`（静态文件·全 FAKE 假值） |
-| 测试 | `tools/relay/tests/relay-contract-{schema,identity,transitions,redaction,failures}.ps1`；runner `tools/relay/tests/run-relay-tests.ps1` → `RELAY ALL PASS` |
-| 说明 | `tools/relay/contracts/README.md` |
+| 契约参数（唯一冻结点） | `tools/contracts/relay-params.psd1`：`SchemaVersion=relay/v1`、`SessionTailMaxBytes=65536`、`ProbeMaxConsecutiveFailures=3`、`StallThresholdSeconds=1800`；DHR_02 追加 `LaunchDeadlineSeconds=120`（有界启动期限）；DHR_03 追加 `IdleAfterSeconds=5`（屏幕指纹沉默窗）、`StopDeadlineSeconds=30`、`AttachDeadlineSeconds=90`（psmux 真实时延实测定值，见 [relay-psmux-host.md](relay-psmux-host.md)） |
+| 转换矩阵（唯一冻结点） | `tools/contracts/transition-matrix.json`：terminal 6 态 / result 6 态，边带 `guard` + `p1` 布尔 |
+| schema 校验器 | `tools/contracts/relay-schema.ps1`：`Test-RelayPlanProposal / Test-RelayActivePlan / Test-RelayAuthority / Test-RelayLaunchReceipt / Test-RelayResult / Test-RelayCheckpoint / Test-RelayEvent / Test-RelayHandoffHeader`、`Get-RelayPlanHash` |
+| 身份链判定 | `tools/contracts/relay-identity.ps1`：`Get-RelayResultVerdict / Get-RelayCheckpointVerdict / Get-RelayResultFileVerdict / New-RelayEvent / Get-RelayNodeFreezeSet` |
+| 转换判定 | `tools/contracts/relay-transitions.ps1`：`Test-RelayTerminalTransition / Test-RelayResultTransition / Test-RelayTransitionPair / Get-RelayProbeVerdict / Get-RelayStallVerdict / Get-RelayExitWithoutResultVerdict` |
+| 脱敏 | `tools/contracts/relay-redaction.ps1`：`Invoke-RelayTailSanitize`（先脱敏再限长）、`Test-RelayArtifactClean` |
+| fixtures | `tools/tests/fixtures/{plans,authority,results,checkpoints,tails,artifacts,failures}/`（静态文件·全 FAKE 假值） |
+| 测试 | `tools/tests/relay-contract-{schema,identity,transitions,redaction,failures}.ps1`；runner `tools/tests/run-relay-tests.ps1` → `RELAY ALL PASS` |
+| 说明 | `tools/contracts/README.md` |
 
 ## 契约要点（现状）
 

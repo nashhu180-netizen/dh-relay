@@ -1,6 +1,6 @@
 #requires -Version 7.0
 <#
-  tools/relay/adapters/preflight/Invoke-RelayBackendPreflight.ps1 — DHR_03 批0/A6：终端后端 preflight（A7 判据）
+  tools/adapters/preflight/Invoke-RelayBackendPreflight.ps1 — DHR_03 批0/A6：终端后端 preflight（A7 判据）
 
   同一判据表对 psmux（默认后端）与 orca（纯终端宿主候选）各做一次实测，产出机器可读 JSON + 截图。
   判据（design/01 A7）：
@@ -189,7 +189,7 @@ function Invoke-OrcaPreflightPrimitives {
   if (-not (Get-Command orca -ErrorAction SilentlyContinue)) { Add-Check 'ENV' $false 'orca not found'; return }
   $st = Invoke-Exe orca @('status','--json'); $stj = try { $st.stdout | ConvertFrom-Json } catch { $null }
   if (-not $stj -or -not $stj.ok) { Add-Check 'ENV' $false "orca status not ok: $($st.stdout.Substring(0,[Math]::Min(200,$st.stdout.Length)))"; return }
-  $wt = if ($OrcaWorktree) { $OrcaWorktree } else { (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path -replace '\\','/' }
+  $wt = if ($OrcaWorktree) { $OrcaWorktree } else { (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path -replace '\\','/' }
   $title = "RELAY:$($receipt.session_id)"
   $handle = $null
   try {

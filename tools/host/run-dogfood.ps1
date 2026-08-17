@@ -2,8 +2,8 @@
 .SYNOPSIS
   DHR_03 dogfood 场景包装：真实 psmux adapter + 宿主循环 + headless 编排/重编排 agent + 证据落盘。
 .EXAMPLE
-  pwsh tools/relay/host/run-dogfood.ps1 -Scenario blocked  -ScreenshotOnLaunch -ScreenshotOnStop
-  pwsh tools/relay/host/run-dogfood.ps1 -Scenario decision -ScreenshotOnLaunch -ScreenshotOnStop
+  pwsh tools/host/run-dogfood.ps1 -Scenario blocked  -ScreenshotOnLaunch -ScreenshotOnStop
+  pwsh tools/host/run-dogfood.ps1 -Scenario decision -ScreenshotOnLaunch -ScreenshotOnStop
 .NOTES
   - 运行现场：<Root>/<RunId>/（默认 .dh-runtime/relay/RELAY-DF-<scenario>-<ts>）；夹具渲染到 <run>/dogfood/（替换 {{RUN_ID}} {{RUN_ROOT}} {{DOGFOOD}} {{TOOL}}）。
   - Runner 仍是唯一状态写者；本脚本只做：装 adapter、逐 tick 调宿主、回收 succeeded 会话、截图、拷证据。
@@ -32,10 +32,10 @@ $ErrorActionPreference='Stop';[Console]::OutputEncoding=[Text.Encoding]::UTF8
 # 主控会话残留的 CLAUDE* 标记会被 psmux 会话与 headless 子进程继承（F-012）：本进程先清掉
 foreach($inherited in @('CLAUDECODE','CLAUDE_CODE_CHILD_SESSION','CLAUDE_CODE_ENTRYPOINT','CLAUDE_CODE_SESSION_ID','CLAUDE_PID','PSMUX_SESSION')){Remove-Item "Env:$inherited" -ErrorAction SilentlyContinue}
 if([string]::IsNullOrWhiteSpace($env:CLAUDE_CONFIG_DIR)){Remove-Item Env:CLAUDE_CONFIG_DIR -ErrorAction SilentlyContinue}
-$repoRoot=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../..'))
+$repoRoot=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
 if([string]::IsNullOrWhiteSpace($Root)){$Root=Join-Path $repoRoot '.dh-runtime/relay'}
 if([string]::IsNullOrWhiteSpace($RunId)){$RunId="RELAY-DF-$($Scenario.ToUpperInvariant())-$(Get-Date -Format yyyyMMddHHmmss)"}
-if([string]::IsNullOrWhiteSpace($EvidenceDir)){$EvidenceDir=Join-Path $repoRoot "docs/modules/dh-relay/workspace/DHR_03/evidence/$Scenario"}
+if([string]::IsNullOrWhiteSpace($EvidenceDir)){$EvidenceDir=Join-Path $repoRoot "docs/workspace/DHR_03/evidence/$Scenario"}
 $paths=Get-RelayRunPaths $Root $RunId;$runRoot=$paths.root
 [void](New-Item -ItemType Directory -Path $runRoot -Force)
 $toolPath=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'relay-agent-tool.ps1'))

@@ -1,5 +1,5 @@
 <!-- dh:v1 -->
-# as-built · relay policy 守卫（`tools/relay/policy/`）
+# as-built · relay policy 守卫（`tools/policy/`）
 
 > **阅读对象**：后续每张 P2 卡的施工与复核棒。**本守卫是所有后续卡任务级证据命令的常设机器闸**——不要在自己的卡里另写一套策略。
 > 交付于 `DHR_04`。本文写**实际长成什么样**与**怎么用**，设计意图见 [design/02 B9](../design/02-完整流水-产品设计与验收.md)。
@@ -21,10 +21,10 @@
 
 | 文件 | 是什么 |
 |---|---|
-| `tools/relay/policy/relay-policy.ps1` | 纯函数。无 IO、无全局状态，可被任意宿主 dot-source |
-| `tools/relay/policy/Invoke-RelayPolicyCheck.ps1` | 黑盒 CLI。头部注释是**输入契约与退出码契约的权威处** |
-| `tools/relay/tests/relay-policy.ps1` | 85 条断言，已接进 `run-relay-tests.ps1`（排在 `relay-contract-reason-coverage.ps1` **之前**） |
-| `tools/relay/tests/fixtures/policy/authority-2cards.json` | 合成 authority snapshot 夹具（两卡，含精确文件 scope 与目录 scope 各一） |
+| `tools/policy/relay-policy.ps1` | 纯函数。无 IO、无全局状态，可被任意宿主 dot-source |
+| `tools/policy/Invoke-RelayPolicyCheck.ps1` | 黑盒 CLI。头部注释是**输入契约与退出码契约的权威处** |
+| `tools/tests/relay-policy.ps1` | 85 条断言，已接进 `run-relay-tests.ps1`（排在 `relay-contract-reason-coverage.ps1` **之前**） |
+| `tools/tests/fixtures/policy/authority-2cards.json` | 合成 authority snapshot 夹具（两卡，含精确文件 scope 与目录 scope 各一） |
 
 ## 3. 怎么用（后续卡照抄这一段）
 
@@ -36,7 +36,7 @@ $c = (git -c core.quotePath=false ls-files -z --others --exclude-standard) -join
 [IO.File]::WriteAllText($after, ($a+$b+$c), [Text.UTF8Encoding]::new($false))
 
 # 2. 喂给守卫
-pwsh -NoProfile -File tools/relay/policy/Invoke-RelayPolicyCheck.ps1 `
+pwsh -NoProfile -File tools/policy/Invoke-RelayPolicyCheck.ps1 `
      -Mode dev-isolation -AfterPath $after
 ```
 
