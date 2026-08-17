@@ -7,9 +7,9 @@
 
 - **这是什么**：接力执行范式的 Runner——没有常驻 AI 主控，Runner 按状态给一串终端里的 worker 逐棒交棒。relay 是给**任意业务仓**用的通用工具，它操作的一直是别人的仓。
 - 技术栈：PowerShell 7 脚本 + Markdown 工件；终端后端默认 psmux（PATH 命令，不在本仓）
-- 仓库形态：单仓 · 独立仓（2026-08-17 从 `dh-crew` 用 `git filter-repo` 拆出，保留全部 31 笔历史；拆分始末见 [docs/backlog.md](docs/backlog.md) `DHR-BL-5`）
+- 仓库形态：单仓 · 独立仓（2026-08-17 从 `dh-crew` 用 `git filter-repo` 拆出，保留全部 31 笔历史；拆分始末见 [docs/modules/dh-relay/backlog.md](docs/modules/dh-relay/backlog.md) `DHR-BL-5`）
 - 默认分支：master
-- dev-harness 模块：slug=`dh-relay`，**模块根 = 仓根**（`docs/` 直接就是模块工件根，不再套 `docs/modules/<slug>/` 一层）
+- dev-harness 模块：slug=`dh-relay`，模块根 `docs/modules/dh-relay/`（独立仓里只有这一个模块，但保留 `docs/modules/<slug>/` 这一层——`dh` 工具链按它解析模块）
 
 ## 不可违反的硬规则（宪章）
 
@@ -35,7 +35,7 @@
 2. **规则全在 brief 里**：别自己去加载 dev-harness skill、别自加「先读一下流程规则 / 复核规范」这类步骤——brief（施工）或 review-brief（复核）就是你的**完整**指令集，读它、照做即可。满仓库找不到的"流程框架"不要找，那是主控的事。
 3. **卡住必须落信号、不许憋死**：遇到阻塞 / 有疑问 / 缺信息，不要停在原地等——按 brief 规定的方式把 `blocked` 写出去（relay 流水下 = 写 checkpoint / result；手动派活下 = 写结构化 DONE）。单向憋在交互态里不写任何文件 = 主控在超时前完全看不见你。
 4. **范围外新想法记 findings/backlog，不顺手做**——哪怕看起来只是顺手一行改动。
-5. **禁止在自己的 shell 里 `Remove-Item Env:RELAY_*`**：那会摧毁本棒的 relay 身份（`RELAY_RECEIPT` 一没，`relay-agent-tool.ps1` 按设计 exit 3，checkpoint 与 result 全部写不出去，最终被误判失联并丢结果）。要清 env 跑全量回归，**必须新开子进程**。事故链见 [docs/backlog.md](docs/backlog.md) `DHR-BL-4`。
+5. **禁止在自己的 shell 里 `Remove-Item Env:RELAY_*`**：那会摧毁本棒的 relay 身份（`RELAY_RECEIPT` 一没，`relay-agent-tool.ps1` 按设计 exit 3，checkpoint 与 result 全部写不出去，最终被误判失联并丢结果）。要清 env 跑全量回归，**必须新开子进程**。事故链见 [docs/modules/dh-relay/backlog.md](docs/modules/dh-relay/backlog.md) `DHR-BL-4`。
 
 ### 施工 worker
 
@@ -57,31 +57,31 @@
 | 立项 / 拆计划 | dev-harness `references/动作-A-立项.md` / `references/动作-B-拆计划.md` + `references/查漏-W14.md` |
 | 开工 / 档位判定 | dev-harness `references/动作-D-开工.md` + `references/节点表.md` + 本文件宪章#1 |
 | 收口 / verify / 复核 | dev-harness `references/动作-E-收口.md` + `references/节点表.md` + `references/verify-代签与汇报.md` + 本文件宪章#2~#5 |
-| 恢复现场 / 继续 | dev-harness `references/动作-R-恢复.md` + [docs/dev_plan/](docs/dev_plan/) / [docs/workspace/](docs/workspace/) |
+| 恢复现场 / 继续 | dev-harness `references/动作-R-恢复.md` + [docs/modules/dh-relay/dev_plan/](docs/modules/dh-relay/dev_plan/) / [docs/modules/dh-relay/workspace/](docs/modules/dh-relay/workspace/) |
 | 修 bug / 优化分流 | dev-harness `references/维护任务.md` |
-| 接力执行范式总览 / Runner / RelayPlan | [docs/design/README.md](docs/design/README.md) + [docs/dev_plan/](docs/dev_plan/) |
-| 现役实现是什么样 | [docs/as-built/](docs/as-built/)（contracts / runner / psmux-host / policy 四份快照） |
-| 未排期的需求与已知坑 | [docs/backlog.md](docs/backlog.md) |
-| 踩过的坑 | [docs/knowledge/教训库-候选.md](docs/knowledge/教训库-候选.md) |
+| 接力执行范式总览 / Runner / RelayPlan | [docs/modules/dh-relay/design/README.md](docs/modules/dh-relay/design/README.md) + [docs/modules/dh-relay/dev_plan/](docs/modules/dh-relay/dev_plan/) |
+| 现役实现是什么样 | [docs/modules/dh-relay/as-built/](docs/modules/dh-relay/as-built/)（contracts / runner / psmux-host / policy 四份快照） |
+| 未排期的需求与已知坑 | [docs/modules/dh-relay/backlog.md](docs/modules/dh-relay/backlog.md) |
+| 踩过的坑 | [docs/modules/dh-relay/knowledge/教训库-候选.md](docs/modules/dh-relay/knowledge/教训库-候选.md) |
 
 ## dev-harness 落点 / slug
 
-- 模块工件归 `docs/`（**仓根即模块根**）：`design/` 设计与验收、`dev_plan/` 计划与状态、`workspace/<卡>/` 任务工作区、`as-built/` 实现快照、`knowledge/` 教训、`backlog.md` 需求池。
-- 生产代码落点 `tools/`；测试入口 `tools/tests/run-relay-tests.ps1`（本仓自带，与任何外部 run-all 无关）。
-- verify scope = `dh-relay`；状态以 `docs/dev_plan/` 为权威，本文件只登记不抄状态。
+- 模块工件归 `docs/modules/dh-relay/`：`design/` 设计与验收、`dev_plan/` 计划与状态、`workspace/<卡>/` 任务工作区、`as-built/` 实现快照、`knowledge/` 教训、`backlog.md` 需求池。**与拆分前同路径**——历史留痕里的 doc 路径引用继续有效。
+- 生产代码落点 `tools/`（拆仓时由 `tools/relay/` **提级一层**，独立仓里只有 relay 一份代码，再套 `relay/` 是冗余）；测试入口 `tools/tests/run-relay-tests.ps1`（本仓自带，与任何外部 run-all 无关）。
+- verify scope = `dh-relay`；状态以 `docs/modules/dh-relay/dev_plan/` 为权威，本文件只登记不抄状态。
 - **运行现场不入仓**：P1 现役走 `.dh-runtime/relay/`，P2 决策 D21 换根到 `<repo>/.dh-relay/<run_id>/`；跨仓 run 索引在用户级 `~/.dh-relay/`。三者均已在 `.gitignore` 里锚定或本就在仓外。
 
-### `dh` 命令在本仓的用法（扁平布局的已知摩擦）
+### `dh` 命令
 
-`dh` 全局装在 `AppData\Roaming\npm\dh.cmd`（两个仓都不在）。它按 `docs/modules/<slug>/` 解析模块，**本仓没有那一层**，所以：
+`dh` 全局装在 `AppData\Roaming\npm\dh.cmd`（指向 `D:\MyFiles\ai-workflow\dev-harness\tools\dh-check.mjs`，两个仓都不在）。本仓保留了 `docs/modules/dh-relay/` 这一层，所以它的模块解析正常：
 
-- ✅ 传**模块目录绝对路径**：`dh "D:\MyFiles\ai-workflow\dh-relay\docs"`
-- ❌ 传 slug（`dh dh-relay`）解析不到；传相对路径 `dh docs` 会踩到它内部 `moduleRoot/../../..` 的仓根假定
+- `dh dh-relay` —— 按 slug 解析
+- `dh` —— 不给参数，本仓只有一个模块，自动选中
 
-这是拆仓提级带来的已知摩擦，不是数据问题——体检报出的存量失败项与拆分前在 dh-crew 里跑的结果一致。
+体检报出的存量失败项与拆分前在 dh-crew 里跑的结果一致（不是拆仓引入的）。
 
 ## 与 dh-crew 的关系
 
 - dh-crew 是**另一个仓**（`D:\MyFiles\ai-workflow\dh-crew`），本仓文档里凡提到 `docs/modules/dh-crew/`、dh-crew 的 controller/loop/dispatch/notify、`tools/protocol/`，一律指那个仓，不是本仓路径。
 - 设计上的"禁改 dh-crew"「不消费其 active state」等边界条款**继续有效**——拆仓让它从纪律变成了物理事实。
-- `docs/workspace/DHR_*/` 与 `docs/design/evidence/` 是**历史留痕**（当时的事实记录）。里面出现的 `tools/relay/`、`docs/modules/dh-relay/` 是 dh-crew 时期的旧地址，**按原样读，不要"修正"**。现役文档与活代码的路径已在拆仓时统一改为本仓布局。
+- `docs/modules/dh-relay/workspace/DHR_*/` 与 `docs/modules/dh-relay/design/evidence/` 是**历史留痕**（当时的事实记录），拆仓时未做路径改写。里面的 **doc 路径继续有效**（`docs/modules/dh-relay/` 与拆分前同路径）；只有 **`tools/relay/` 是 dh-crew 时期的旧地址**，本仓对应 `tools/`——**按原样读，不要"修正"**。现役文档与活代码的 `tools/` 路径已在拆仓时改好。

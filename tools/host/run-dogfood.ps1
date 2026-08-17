@@ -35,7 +35,7 @@ if([string]::IsNullOrWhiteSpace($env:CLAUDE_CONFIG_DIR)){Remove-Item Env:CLAUDE_
 $repoRoot=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
 if([string]::IsNullOrWhiteSpace($Root)){$Root=Join-Path $repoRoot '.dh-runtime/relay'}
 if([string]::IsNullOrWhiteSpace($RunId)){$RunId="RELAY-DF-$($Scenario.ToUpperInvariant())-$(Get-Date -Format yyyyMMddHHmmss)"}
-if([string]::IsNullOrWhiteSpace($EvidenceDir)){$EvidenceDir=Join-Path $repoRoot "docs/workspace/DHR_03/evidence/$Scenario"}
+if([string]::IsNullOrWhiteSpace($EvidenceDir)){$EvidenceDir=Join-Path $repoRoot "docs/modules/dh-relay/workspace/DHR_03/evidence/$Scenario"}
 $paths=Get-RelayRunPaths $Root $RunId;$runRoot=$paths.root
 [void](New-Item -ItemType Directory -Path $runRoot -Force)
 $toolPath=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'relay-agent-tool.ps1'))

@@ -14,4 +14,4 @@ pwsh tools/host/run-dogfood.ps1 -Scenario blocked  -ScreenshotOnLaunch -Screensh
 pwsh tools/host/run-dogfood.ps1 -Scenario decision -ScreenshotOnLaunch -ScreenshotOnStop
 ```
 
-证据落 `docs/workspace/DHR_03/evidence/<scenario>/`（events/state/launches/psmux-handles/host-state/timeline.md/signature.txt/shots/spawns/work）。
+证据落 `docs/modules/dh-relay/workspace/DHR_03/evidence/<scenario>/`（events/state/launches/psmux-handles/host-state/timeline.md/signature.txt/shots/spawns/work）。

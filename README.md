@@ -16,20 +16,20 @@ relay 是给**任意业务仓**用的通用工具——它操作的一直是别�
 
 真实业务试点：`IHSR_05` 已在 infohub 仓走六棒跑通并销户。
 
-**三条结构性议题待用户定序**，都在 [docs/backlog.md](docs/backlog.md)：拆独立仓（`DHR-BL-5`，本仓即其产物）、换实现语言（`DHR-BL-7`，用户已明确「在 Linux 肯定不会用 PowerShell」）、流水步骤可扩展性（`DHR-BL-8`）。
+**三条结构性议题待用户定序**，都在 [docs/modules/dh-relay/backlog.md](docs/modules/dh-relay/backlog.md)：拆独立仓（`DHR-BL-5`，本仓即其产物）、换实现语言（`DHR-BL-7`，用户已明确「在 Linux 肯定不会用 PowerShell」）、流水步骤可扩展性（`DHR-BL-8`）。
 
 ## 仓库结构
 
 ```
-docs/                 dev-harness 模块工件（仓根即模块根）
-├─ design/            产品设计与验收（P1/P2/P3）+ evidence/ 交叉审核记录
-├─ dev_plan/          三份开发方案 = 任务表与状态权威
-├─ workspace/DHR_*/   逐卡工作区（brief / progress / findings / review / 证据）
-├─ as-built/          现役实现快照（contracts / runner / psmux-host / policy）
-├─ knowledge/         教训库候选
-└─ backlog.md         需求池（未排期的增强、bug、议题）
+docs/modules/dh-relay/   dev-harness 模块工件（与拆分前同路径）
+├─ design/               产品设计与验收（P1/P2/P3）+ evidence/ 交叉审核记录
+├─ dev_plan/             三份开发方案 = 任务表与状态权威
+├─ workspace/DHR_*/      逐卡工作区（brief / progress / findings / review / 证据）
+├─ as-built/             现役实现快照（contracts / runner / psmux-host / policy）
+├─ knowledge/            教训库候选
+└─ backlog.md            需求池（未排期的增强、bug、议题）
 
-tools/                生产代码
+tools/                生产代码（拆仓时由 tools/relay/ 提级一层）
 ├─ contracts/         relay/v1 契约：schema、身份链、状态机、脱敏
 ├─ runner/            Runner 本体、状态存储、确定性回放
 ├─ host/              宿主循环、worker 入口、agent 工具、dogfood 包装
@@ -64,6 +64,6 @@ pwsh tools/host/run-dogfood.ps1 -Scenario decision -ScreenshotOnLaunch -Screensh
 
 ## 历史
 
-2026-08-17 从 `dh-crew` 仓用 `git filter-repo` 拆出，保留全部 31 笔提交历史，目录由 `docs/modules/dh-relay/` + `tools/relay/` 提级到仓根。拆分的可行性核查、执行记录与踩到的坑见 [docs/backlog.md](docs/backlog.md) `DHR-BL-5`。
+2026-08-17 从 `dh-crew` 仓用 `git filter-repo` 拆出，保留全部 31 笔提交历史。文档 `docs/modules/dh-relay/` **保持原路径**（`dh` 工具链按这一层解析模块）；代码 `tools/relay/` **提级为 `tools/`**（独立仓里只有 relay 一份代码）。拆分的可行性核查、执行记录与踩到的坑见 [docs/modules/dh-relay/backlog.md](docs/modules/dh-relay/backlog.md) `DHR-BL-5`。
 
-`docs/workspace/DHR_*/` 与 `docs/design/evidence/` 是**历史留痕**，拆仓时按原样保留未做路径改写——里面的 `tools/relay/`、`docs/modules/dh-relay/` 指的是 dh-crew 时期的旧地址。
+`docs/modules/dh-relay/workspace/DHR_*/` 与 `docs/modules/dh-relay/design/evidence/` 是**历史留痕**，拆仓时未做路径改写。里面的 doc 路径继续有效；只有 `tools/relay/` 是 dh-crew 时期的旧地址，本仓对应 `tools/`。

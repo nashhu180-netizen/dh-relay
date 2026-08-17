@@ -83,7 +83,7 @@ function Get-RelayCliDevIsolationPolicy {
   @{
     production_root = 'tools/'
     forbidden_roots = @('docs/modules/dh-crew/', 'skills/', 'tools/protocol/', '.dh-runtime/')
-    doc_roots = @('docs/')
+    doc_roots = @('docs/modules/dh-relay/')
   }
 }
 

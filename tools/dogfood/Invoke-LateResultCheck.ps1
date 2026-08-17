@@ -4,7 +4,7 @@
   走真实入口 Submit-RelayResultFile 提交；期望事件 result_stale（stale-plan / stale-generation），且 relay-state.json /
   active-plan.json / authority.json 字节不变。不直接改 state、不用测试桩。
 .EXAMPLE
-  pwsh tools/dogfood/Invoke-LateResultCheck.ps1 -Root .dh-runtime/relay -RunId RELAY-DF-BLOCKED-<ts> -Out docs/workspace/DHR_03/evidence/blocked
+  pwsh tools/dogfood/Invoke-LateResultCheck.ps1 -Root .dh-runtime/relay -RunId RELAY-DF-BLOCKED-<ts> -Out docs/modules/dh-relay/workspace/DHR_03/evidence/blocked
 #>
 [CmdletBinding()]
 param(

@@ -87,16 +87,21 @@
 - **进展**：**第 1 步「提取」已于 2026-08-17 执行完毕**（本仓即产物）。第 2 步「摘除」按用户拍板**暂不做**——dh-crew 侧原件原样保留，两仓短期并存。
 - **2026-08-17 提取执行记录**：
   - 源 = dh-crew `master @bc0be11`（`verify(dh-relay): DHR_04 前置隔离与落点守卫 user-signed`）。
-  - 手法 = `git clone --no-local` 出副本 → `git filter-repo --path docs/modules/dh-relay/ --path tools/relay/ --path-rename docs/modules/dh-relay/:docs/ --path-rename tools/relay/:tools/`。**目录提到仓根**（独立仓里再套一层「模块」是冗余），历史 31 笔全部保留，非 relay 文件在各笔提交里自动剔除。
+  - 手法 = `git clone --no-local` 出副本 → `git filter-repo --path docs/modules/dh-relay/ --path tools/relay/`（历史 31 笔全部保留，非 relay 文件在各笔提交里自动剔除）。
+  - **最终布局（点选两次才定，中间走过一次回头路）**：`docs/modules/dh-relay/` **保持原路径** + `tools/relay/` **提级为 `tools/`**。
+    - 首轮按「两个都提到仓根」执行（理由：独立仓里再套一层「模块」是冗余），落地后用户改口径「docs 下应该还是 docs/dh-relay」；主控指出 `dh` 工具链认死 `docs/modules/<slug>/` 这一层、写成 `docs/dh-relay/` 同样解析不到 → 用户点选 `docs/modules/dh-relay/`、`tools/` 留在根。
+    - **doc 路径与拆分前完全一致**，这是回头路换来的意外收益：`workspace/` 与 `design/evidence/` 里成百上千处 doc 路径引用**自动重新对上号**，历史留痕里只剩 `tools/relay/` 一类地址是旧的（原方案下 doc 与 tools 两类地址都旧）。
+    - `tools/` 不跟着还原的理由：这仓只有 relay 一份代码；`tools/relay/` 那层命名空间在 dh-crew 里是为了跟 `tools/protocol/`、`tools/dispatch.ps1` 区分，独立仓里没有要区分的对象。
+    - **教训**：布局决策要先查工具链的路径假定再拍。`dh` 的 `docs/modules/<slug>/` 与 `path.resolve(moduleRoot,"..","..","..")` 都是硬编码，选布局时它是约束条件、不是可后补的适配项。
   - 落点 = `D:\MyFiles\ai-workflow\dh-relay`。远端仓**尚未建**（三件事之③仍欠）。
   - 机器证：搬完**未改任何代码**先跑基线 `tools/tests/run-relay-tests.ps1` → `RELAY ALL PASS (SKIPPED: 1)`，证明 `tools/` 与仓库位置解耦；路径适配后复跑仍 ALL PASS。
-  - 路径适配口径：**活代码 + 现役文档改，历史留痕不改**。`docs/workspace/DHR_*/` 与 `docs/design/evidence/` 保持原样（那是当时的事实记录，改了等于篡改证据），里面出现的 `tools/relay/`、`docs/modules/dh-relay/` 一律按「dh-crew 时期的旧地址」读。
+  - 路径适配口径：**活代码 + 现役文档改，历史留痕不改**。`docs/modules/dh-relay/workspace/DHR_*/` 与 `docs/modules/dh-relay/design/evidence/` 保持原样（那是当时的事实记录，改了等于篡改证据）。定了最终布局后，它们里面的 doc 路径**本就是对的**，只有 `tools/relay/` 一类按「dh-crew 时期的旧地址」读（本仓对应 `tools/`）。
   - 搬迁真踩到的坑（不是纯机械搬运）：两处**仓根解析**写死了退几级目录——`tools/host/run-dogfood.ps1` 的 `$repoRoot` 与 `tools/adapters/preflight/Invoke-RelayBackendPreflight.ps1` 的 orca 工作树默认值，原来都从 `tools/relay/<x>/` 退到仓根，提级后会退到**仓库外面**；已各减一级。教训：「改位置不改内容」低估了相对路径的位置耦合。
   - `AGENTS.md` 分家（三件事之①）已在本仓重写为单模块宪章；dh-crew 侧的双模块登记**未动**。
-  - 未跟踪文件：`design/drafts/01`、`design/drafts/02`、`design/evidence/04` 三份在 dh-crew 里也是未跟踪状态，已原样复制过来并**保持未跟踪**，是否入仓由用户定。
+  - 未跟踪文件：`design/drafts/01`、`design/drafts/02`、`design/evidence/04` 三份在 dh-crew 里也是未跟踪状态，已原样复制过来，并按用户指示**入仓**（提交 `7adf9d3`）。三份都自带「未生效·不在 designInputs[] 白名单·不作 B 拆计划输入」声明，入仓不改变其未生效状态。
   - **SHA 引用两套并存（查证时当心）**：`filter-repo` 会把**提交信息里**的 SHA 引用自动改写成新仓 SHA（例：DHR_04 verify 提交里的 squash 指针，dh-crew 记 `4ac3c1d`，本仓记 `ce586c2`，指的是同一笔），但**文档正文**（DevPlan 状态栏、backlog、workspace 留痕）里的 SHA 它一律不动，仍是 dh-crew 的旧号。**同一笔提交在本仓的两处记录会对不上号**——按 commit message 里的号在本仓 `git show` 得到；按文档里的号只能回 dh-crew 查。未做统一改写：文档里的旧号本身是当时的事实记录，改了就是篡改留痕。
-  - **`dh` 命令有已知摩擦**（模块目录提级导致）：只能传模块目录绝对路径，slug 与相对路径两种调用方式都解析不到。用法与理由见 `AGENTS.md` §`dh` 命令在本仓的用法。
-  - **新蓄水** `DHR-BL-9`：隔离守卫在「仓根即模块根」布局下对根级文件无处安放（拆仓执行中暴露）。
+  - **`dh` 命令正常可用**：`dh dh-relay` 按 slug 解析，或不给参数（本仓单模块自动选中）。首轮扁平布局下它只能传绝对路径——这正是回头改布局的直接动因。
+  - **新蓄水** `DHR-BL-9`：隔离守卫对仓根文件无处安放（拆仓执行中暴露）。注意最终布局把 `doc_roots` 改回了 `docs/modules/dh-relay/`，但 `production_root` 仍是 `tools/`，**根级文件的缺口依旧存在**，本条不因布局回调而消失。
 - **2026-08-17 晚更新（与 `DHR-BL-7` 换语言合并考虑）**：用户当日提出 dh-relay 需在 **WSL / 家用 Linux 笔记本**上跑，并明确「**在 Linux 肯定不会用 PowerShell**」。若换语言成立，**本条与 `DHR-BL-7` 应合成一次 A 立项，不分两次做**——分开做等于「先把 PowerShell 代码搬进新仓，再在新仓把它全删了重写」，白搬一趟。合并后的形态：新建独立仓 → **代码从零用新语言写**，`design/` `dev_plan/` `workspace/` 等**文档与设计演进史仍用 `git filter-repo` 完整迁移**（这部分历史才是真资产；代码历史在全量重写下价值有限，"保留历史"的口径需相应重述，但**不等于放弃历史**）。两条谁先谁后不再是问题——它们是同一件事的两半。
 
 ### DHR-BL-3 stage0 自举包装通用化（plan 描述文件 + brief 目录）
@@ -173,12 +178,13 @@
 - **提出人 / 日期**：用户，2026-08-17（另一 session）
 - **进展**：四方案已成文并经两轮交叉审核，**待第三方独立评估**；主会话裁决与用户回答已落 `evidence/04`。
 
-### DHR-BL-9 隔离守卫在「仓根即模块根」布局下对根级文件无处安放
+### DHR-BL-9 隔离守卫在独立仓里对仓根文件无处安放
 
-- **需求 / 议题**：`Get-RelayCliDevIsolationPolicy` 是**白名单**式判定——路径既不在 `production_root` 也不在 `doc_roots` 之下，一律判 `dev-isolation-violation:unclassified-path`。2026-08-17 拆独立仓后两个根提级为 `tools/` 与 `docs/`，于是**仓根文件**（`AGENTS.md`、`README.md`、`.gitignore`、将来的 CI 配置）全部落进"无处安放"，改一次就被守卫判违规。
-- **动机**：守卫是 `DHR_04` 刚 verify 签收的成果，其"改动只许落在自己地盘"的意图在独立仓里依然成立；但它设计时的隐含前提是 **relay 住在别人仓的子树里**，仓根不归自己管。前提没了，规则需要重述而不是绕过。
+- **需求 / 议题**：`Get-RelayCliDevIsolationPolicy` 是**白名单**式判定——路径既不在 `production_root` 也不在 `doc_roots` 之下，一律判 `dev-isolation-violation:unclassified-path`。2026-08-17 拆独立仓后，**仓根文件**（`AGENTS.md`、`README.md`、`.gitignore`、将来的 CI 配置）全部落进"无处安放"，改一次就被守卫判违规。
+- **动机**：守卫是 `DHR_04` 刚 verify 签收的成果，其"改动只许落在自己地盘"的意图在独立仓里依然成立；但它设计时的隐含前提是 **relay 住在别人仓的子树里，仓根不归自己管**。独立仓之后仓根归自己了，规则需要重述而不是绕过。
+- **注意：布局回调没有消掉本条**。最终布局把 `doc_roots` 改回 `docs/modules/dh-relay/`，`production_root` 仍是 `tools/`——仓根文件依旧两头不沾。缺口来自「relay 拥有整个仓」这件事本身，与 docs 放哪层无关。
 - **现状证据**：`tools/policy/Invoke-RelayPolicyCheck.ps1` `Get-RelayCliDevIsolationPolicy`；判定逻辑见 `tools/policy/relay-policy.ps1` `Get-RelayDevIsolationVerdict` 第 93~103 行（`$inProd -or $inDoc` 之外只剩两种违规出口）。
-- **拆仓时的处置（已做）**：只把 `production_root` 改 `tools/`、`doc_roots` 改 `docs/`，**`forbidden_roots` 一字未动**。原因有二：① 那四个根里的 `docs/modules/dh-crew/` 被 `mode all multi-verdict reason is policy-violation:multi` 用例锁着，删了会真红；② 重新设计守卫语义超出"搬仓"范围，不该顺手做。搬完全套测试 ALL PASS。
+- **拆仓时的处置（已做）**：只把 `production_root` 改 `tools/`（`doc_roots` 最终维持 `docs/modules/dh-relay/` 原值），**`forbidden_roots` 一字未动**。原因有二：① 那四个根里的 `docs/modules/dh-crew/` 被 `mode all multi-verdict reason is policy-violation:multi` 用例锁着，删了会真红；② 重新设计守卫语义超出"搬仓"范围，不该顺手做。搬完全套测试 ALL PASS。
 - **改动点（预估）**：给策略加一层**根级文件白名单**（或允许 `doc_roots` 收单文件条目），并同步 `tools/tests/relay-policy.ps1`；顺带清掉 `forbidden_roots` 里三条独立仓已不存在的 dh-crew 专属根——但必须连同锁着它的用例一起改，别只删数据。
 - **优先级**：中 · 下次真要动仓根文件、或给本仓接 CI 时必须先修
 - **提出人 / 日期**：主控，2026-08-17（拆仓执行中暴露）

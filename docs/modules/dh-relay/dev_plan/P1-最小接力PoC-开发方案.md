@@ -43,13 +43,13 @@
 | replay fixtures | 正常、阻塞、挂起、迟到、半写、异常退出和可信事件夹具 | `tools/tests/fixtures/` | DHR_01 / DHR_02 |
 | Runner core | active-plan CAS、事件消费、合法转换、幂等和 fail-closed | `tools/` | DHR_02 |
 | terminal adapters | fake adapter 与真实 `psmux` adapter | `tools/adapters/` | DHR_02 / DHR_03 |
-| PoC evidence | 真实事件、状态快照、receipt、截图和人验剧本 | `docs/workspace/` | DHR_03 |
+| PoC evidence | 真实事件、状态快照、receipt、截图和人验剧本 | `docs/modules/dh-relay/workspace/` | DHR_03 |
 
 ### 2.2 复用与禁改边界
 
 | 路径 | 禁改 / 扩展 / 新建 | 说明 |
 |---|---|---|
-| `docs/` | 扩展 | 本模块唯一设计、计划与现场根 |
+| `docs/modules/dh-relay/` | 扩展 | 本模块唯一设计、计划与现场根 |
 | `tools/` | 新建 | PoC 代码候选根；开工时经 Code Scout 校准具体文件 |
 | canonical runtime layout / `psmux` 通用原语 | 复用边界 | 可通过 adapter 调用，不复制或改写 `dh-crew` active state |
 | `docs/modules/dh-crew/dev_plan/`、`workspace/`、active runtime | 禁改 | 新模块不得消费或投影旧模块状态 |
@@ -107,7 +107,7 @@
   - **机器证**：[产品设计与验收 A4](../design/01-产品设计与验收.md#61-ai-自动验收栏)：decision fixture 的原 session 保持可交互；用户在该 session 回答一次后 agent 自然继续，Runner 未读取/转发回答、未调用 resume；依赖节点在后续有效 checkpoint/result 前冻结，无依赖并行节点继续。要求用户再去 Runner 操作则 A4 失败。
   - **机器证**：[产品设计与验收 A7](../design/01-产品设计与验收.md#61-ai-自动验收栏)：`tools/adapters/psmux*` 自己实现 `launch/probe/suspend/resume/stop/emit_observation`，可组合现有 psmux/tmux 原语但不假定旧 `tools/psmux-launch.ps1` 已提供完整 handle；preflight 证明 receipt.launch_id 与新 adapter 返回的完整唯一 session handle 1:1、界面 `visible=true` 且 `interactive=true`、probe 全值匹配，按该 handle 回收后在 evidence 记录的有界期限内确认为 `exited`。仅后台 session、PID/标题/前缀猜测或平台无关 stop 命令均失败。
   - **人判**：[产品设计与验收 H1/H2](../design/01-产品设计与验收.md#62-人类验收栏)：向用户展示真实截图、checkpoint/状态/receipt 时间线和未覆盖范围；decision 正常路径必须记录人工动作数=1，且时间线证明 Runner 未介入回答。对照表按统一口径记录用户显式确认/回答/重启动作数、面向用户的状态通知数，以及 blocked→fresh A 的可见步骤与事件 hop 数，由用户判断是否符合直觉、是否值得进入完整流水阶段。
-- **变更范围**：`tools/adapters/psmux*`、最小 dogfood fixture、`docs/workspace/DHR_03/`；不得把凭据值写入任何证据。
+- **变更范围**：`tools/adapters/psmux*`、最小 dogfood fixture、`docs/modules/dh-relay/workspace/DHR_03/`；不得把凭据值写入任何证据。
 - **档位**：标准（真实终端组件接线 + 交互人验）。
 - **实施提示**：DHR_03 的第一道闸是 backend preflight：先证明 launch_id/完整 handle 1:1、visible+interactive、全值 probe 与按 handle 有界退出；失败则停在“待环境”，不进入 dogfood。后端选定（2026-08-15 用户定）：开工前用同一 A7 判据对 orca（仅作纯终端宿主候选）加跑一次 preflight 对比实测；psmux 为默认，orca 通过判据且体验更优时方可提议换后端，且须先修订设计决策 7 再实施。精确匹配唯一 session_id；截图与机读事件必须能互相对照。
 - **销户记录（2026-08-16）**：机器项 A3/A4/A7 全绿（现役证据 E-020 blocked run7 / E-014 decision run2 / preflight 5/5），两轮换人复核 approved-with-P2 且返工收敛（F-022/F-024），用户对话判 **H1 通过**、**H2 有条件值得**——**方向决策账**：条件=「先跑真实业务任务再定」，即下一步不直接进完整流水，先立一张真实业务任务的接力试点卡再决定；backlog F-023 三条（consumed 轮转 / spawner 异步 / Runner 提交 tmp 同名竞态）与 F-019/F-024 的 decision 补图挂下一卡。
