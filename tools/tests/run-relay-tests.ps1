@@ -15,6 +15,7 @@ $suites = @(
   'relay-psmux-real.ps1',
   'relay-host-loop.ps1',
   'relay-agent-tool.ps1',
+  'relay-policy.ps1',
   'relay-contract-reason-coverage.ps1'
 )
 $failed = 0

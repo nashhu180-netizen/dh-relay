@@ -1,0 +1,16 @@
+{
+  "schema_version": "relay/policy-fixture/v1",
+  "run_id": "RUN-FAKE-DHR04",
+  "cards": [
+    {
+      "card_id": "FAKE_01",
+      "module_slug": "alpha",
+      "change_scopes": ["src/alpha/", "docs/modules/alpha/design/"]
+    },
+    {
+      "card_id": "FAKE_02",
+      "module_slug": "beta",
+      "change_scopes": ["src/beta/util.ts"]
+    }
+  ]
+}
