@@ -81,6 +81,7 @@
 - **执行时点（用户 2026-08-17 拍板）**：**等 `DHR_04` 收口销户后再提取**。理由：`wt/DHR_04` 当时领先 master 22 个提交且未收口，提前提取会拿到不含该卡成果的快照，收口后还要跨仓手工同步一次，不划算。
 - **历史处理（用户拍板）**：**保留历史**，走 `git filter-repo`（需另装工具）。
 - **拆时还要动的三件事**：① `AGENTS.md` 分家（现在 dh-relay 宪章条款与 dh-crew 混在一份里）；② `D:\relay-stage0` 冻结驱动器要重新冻（现冻自 dh-crew `tools/relay/ @34df46a`）；③ 新建 GitHub 私有库（dh-crew 已于 2026-08-17 推到 `nashhu180-netizen/dh-crew`，含 master + 8 个 `wt/*` 分支）。
+  - **2026-08-17 结账**：① ✅ 已重写为单模块宪章；③ ✅ `nashhu180-netizen/dh-relay`（private）已建并推送；② ⏸ **未做且刻意不做**——stage0 冻的是 dh-crew 时期的 `tools/relay/`（老目录层级、且不含 DHR_04 之后的改动），但 `DHR_04` 已收口、当前无自举卡在跑，现在冻等于冻一份马上又要过期的快照。刷新动作已由 `P3-DHR_24` 的变更范围承接（"实战前必须显式刷新一次 stage0 并留证"），**不在本条另记**。
 - **与流水引擎化的顺序**：二者都是结构性变更，**不同时做**。若引擎化定案要改 12 张卡，建议**先拆仓再引擎化**——拆仓是纯机械搬运（改位置不改内容）风险低，先做完可避免"改完再搬一次"。
 - **优先级**：中 · 阻塞于 `DHR_04` 收口
 - **提出人 / 日期**：用户，2026-08-17
@@ -93,7 +94,7 @@
     - **doc 路径与拆分前完全一致**，这是回头路换来的意外收益：`workspace/` 与 `design/evidence/` 里成百上千处 doc 路径引用**自动重新对上号**，历史留痕里只剩 `tools/relay/` 一类地址是旧的（原方案下 doc 与 tools 两类地址都旧）。
     - `tools/` 不跟着还原的理由：这仓只有 relay 一份代码；`tools/relay/` 那层命名空间在 dh-crew 里是为了跟 `tools/protocol/`、`tools/dispatch.ps1` 区分，独立仓里没有要区分的对象。
     - **教训**：布局决策要先查工具链的路径假定再拍。`dh` 的 `docs/modules/<slug>/` 与 `path.resolve(moduleRoot,"..","..","..")` 都是硬编码，选布局时它是约束条件、不是可后补的适配项。
-  - 落点 = `D:\MyFiles\ai-workflow\dh-relay`。远端仓**尚未建**（三件事之③仍欠）。
+  - 落点 = `D:\MyFiles\ai-workflow\dh-relay`；远端 = `https://github.com/nashhu180-netizen/dh-relay`（**private**，2026-08-17 建，`master` 已推、与本地同 SHA）。三件事之③已完成。
   - 机器证：搬完**未改任何代码**先跑基线 `tools/tests/run-relay-tests.ps1` → `RELAY ALL PASS (SKIPPED: 1)`，证明 `tools/` 与仓库位置解耦；路径适配后复跑仍 ALL PASS。
   - 路径适配口径：**活代码 + 现役文档改，历史留痕不改**。`docs/modules/dh-relay/workspace/DHR_*/` 与 `docs/modules/dh-relay/design/evidence/` 保持原样（那是当时的事实记录，改了等于篡改证据）。定了最终布局后，它们里面的 doc 路径**本就是对的**，只有 `tools/relay/` 一类按「dh-crew 时期的旧地址」读（本仓对应 `tools/`）。
   - 搬迁真踩到的坑（不是纯机械搬运）：两处**仓根解析**写死了退几级目录——`tools/host/run-dogfood.ps1` 的 `$repoRoot` 与 `tools/adapters/preflight/Invoke-RelayBackendPreflight.ps1` 的 orca 工作树默认值，原来都从 `tools/relay/<x>/` 退到仓根，提级后会退到**仓库外面**；已各减一级。教训：「改位置不改内容」低估了相对路径的位置耦合。
