@@ -1,0 +1,22 @@
+[
+  {
+    "id": "@personal/dsh-relay-client@0.0.0-pilot.1",
+    "name": "@personal/dsh-relay-client",
+    "version": "0.0.0-pilot.1",
+    "entryCount": 11,
+    "bundled": [],
+    "files": [
+      "README.md",
+      "cordis.patch.yml",
+      "disable.patch.yml",
+      "enable.patch.yml",
+      "index.mjs",
+      "lib/client.js",
+      "package.json",
+      "scripts/build.mjs",
+      "scripts/verify-build.mjs",
+      "src/client/panel.cjs",
+      "src/model.mjs"
+    ]
+  }
+]

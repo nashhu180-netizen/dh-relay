@@ -1,0 +1,16 @@
+$ node --test test/*.test.mjs
+TAP version 13
+ok 1 - preserves first-seen group order and source run order
+ok 2 - changing group moves a run
+ok 3 - changing only run_status leaves grouping and order byte-equivalent
+ok 4 - an unknown group is emitted verbatim as its own section
+ok 5 - selectDetail uses own-key lookup for special run ids
+ok 6 - validator rejects non-JSON and missing detail input
+ok 7 - node half registers one disposable GET/HEAD route and no write method
+ok 8 - client grouping implementation has no run_status dependency
+ok 9 - package declares the rc.7 client discovery contract
+ok 10 - clean build is deterministic and produces a loadable module factory
+1..10
+# tests 10
+# pass 10
+# fail 0

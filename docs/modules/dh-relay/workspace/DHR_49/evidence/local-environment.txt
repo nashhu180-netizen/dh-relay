@@ -1,0 +1,6 @@
+$ node --version
+v22.16.0
+$ npm --version
+10.9.2
+$ uname -a
+Linux 8be64d5d802f 6.18.35 #1 SMP Mon Jul 27 18:07:50 UTC 2026 x86_64 GNU/Linux

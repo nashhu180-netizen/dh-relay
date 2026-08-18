@@ -1,0 +1,6 @@
+- insert:
+    - id: relay-pilot-client
+      name: '@personal/dsh-relay-client'
+      inject: [relayPilot, webServer]
+      config:
+        routePath: /relay-pilot/snapshot

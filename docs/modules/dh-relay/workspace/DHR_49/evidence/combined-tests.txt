@@ -1,0 +1,10 @@
+$ node --test dhr26-host/test/*.test.mjs dhr49-client/test/*.test.mjs
+1..21
+# tests 21
+# pass 21
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+
+This combines the exact Host and Client source sets used for the two transport mirrors in the Linux sandbox. PowerShell materializers were not executable in this sandbox because pwsh was unavailable; they remain target-machine steps.

@@ -1,0 +1,4 @@
+$ node scripts/verify-build.mjs
+CLEAN REBUILD IDENTICAL 59dbd95c583b3ee57c74c69b9eca497147c81687fe3b299bb123a22eb99ff5ae
+
+Builder input line endings are normalized to LF before wrapping, so Windows CRLF checkout does not change the expected bundle bytes.
