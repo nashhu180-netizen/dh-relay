@@ -36,6 +36,7 @@
 - [对 Claude 审核的第三方裁决与阶段主线](./evidence/06-DSH插件化-第三方裁决与阶段主线.md)
 - [Claude 对 P4～P8 阶段计划的评估 + pi 替代 DSH 评估（待第三方评估）](./evidence/07-P4至P8阶段计划评估与pi替代评估-待第三方评估.md)
 - [Pi Agent 替代 DSH 的独立对比评估](./evidence/08-Pi-Agent替代DSH-独立对比评估.md)
+- [P4～P9 阶段计划 · B 交叉审核记录](./evidence/09-P4至P9阶段计划-交叉审核记录.md)
 
 ## 冻结说明
 

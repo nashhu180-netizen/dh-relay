@@ -1,4 +1,5 @@
 <!-- dh:devplan-index:v1 -->
+<!-- dh:planning-no-event:v1 artifact="dev_plan/README.md" reason="2026-08-18 索引措辞对齐：状态列机读枚举 + 备注列记阶段闸、P4~P9 事件与证据落点说明、硬约束#1 改为 CLI 与 DSH 并行可配置替换（非回退）；不改阶段顺序、任务 ID 与闸规则" -->
 # DH Relay DevPlan 入口
 
 ## 当前主线
@@ -27,7 +28,7 @@ Herdr
 当前交付采用严格的阶段闸：
 
 ```text
-P4 DSH 优先的多控制面最小 Pilot
+P4 多控制面最小 Pilot（CLI 必备控制面必过 + DSH 桌面控制面可判否）
   ↓ P4 基线 Gate 通过 + 用户明确放行
 P5 Relay v2 持久内核与多控制面桥接
   ↓ P5 Gate 通过 + 用户明确放行
@@ -40,18 +41,18 @@ P8 多卡编排与多控制面运行治理
 P9 双平台、多控制面与迁移定型
 ```
 
-后一阶段已经落盘，只表示路线和责任边界预先可见。前置阶段未通过时，后一阶段状态一律为 `blocked-by-phase-gate`，不能开工。
+后一阶段已经落盘，只表示路线和责任边界预先可见。前置阶段未通过时，后一阶段任务表的状态列仍填机读枚举「未开始」，阶段闸阻塞记在「备注」列（`blocked-by-phase-gate:Px`），一律不能开工。P4~P9 每份计划文首均带规划事件 marker（事件 `DHR-B-04`~`DHR-B-09`），审核 / 讲解 / 理解问答证据统一落 `design/evidence/09-P4至P9阶段计划-交叉审核记录.md`，该文件在派出 fresh 审核时创建；未审核前 `dh dh-relay` 的 R29 对这六份计划报红属预期状态。
 
 ## 活跃计划
 
 | 计划 | 目标 | 当前状态 | 任务 ID |
 |---|---|---|---|
-| [P4-DSH工作台最小Pilot](./P4-DSH工作台最小Pilot-开发方案.md) | 先证明 Windows/SSH CLI 基线，再评估 DSH 树外工作台增强 | B-adjust 后待 fresh 审核，未授权开工 | DHR_25~27 |
+| [P4-DSH工作台最小Pilot](./P4-DSH工作台最小Pilot-开发方案.md) | 先证明 Windows/SSH CLI 必备控制面独立成立，再评估 DSH 树外桌面控制面（可判否） | B 已审核并由用户确认（2026-08-18），未授权开工 | DHR_25~27 |
 | [P5-Relay-v2持久内核与DSH桥接](./P5-Relay-v2持久内核与DSH桥接-开发方案.md) | 建立客户端中立协议、Detached Runtime、参考 CLI、恢复和 basic-agent-task | blocked-by-phase-gate:P4-CM | DHR_28~31 |
 | [P6-Herdr多账号执行底座](./P6-Herdr多账号执行底座-开发方案.md) | 接入多账号 Codex/Claude Code，验证 DSH-off 和 Linux SSH Herdr 路径 | blocked-by-phase-gate:P5 | DHR_32~35 |
 | [P7-DevHarness单卡完整流水](./P7-DevHarness单卡完整流水-开发方案.md) | 在 DSH 关闭状态下，用 CLI + Herdr 跑通一张标准卡 S0~E13 与 verify | blocked-by-phase-gate:P6 | DHR_36~40 |
 | [P8-多卡编排与运行治理](./P8-多卡编排与运行治理-开发方案.md) | 多卡、重编排、诊断、Outbox、归档和 Oracle，治理对象可由 CLI/DSH/Pi处理 | blocked-by-phase-gate:P7 | DHR_41~45 |
-| [P9-双平台定型与迁移](./P9-双平台定型与迁移-开发方案.md) | Windows DSH 优先与 CLI 回退、Linux SSH Headless、发布和遗留处置 | blocked-by-phase-gate:P8 | DHR_46~48 |
+| [P9-双平台定型与迁移](./P9-双平台定型与迁移-开发方案.md) | Windows DSH 与 CLI 并行可替换、Linux SSH Headless、发布和遗留处置 | blocked-by-phase-gate:P8 | DHR_46~48 |
 
 文件名保留首次落盘时的 DSH/P5/P9 命名，文件内标题和责任已经按 design/06 更新。后续是否重命名路径放到 P9 统一迁移，当前避免产生额外链接和历史噪声。
 
@@ -59,7 +60,7 @@ P9 双平台、多控制面与迁移定型
 
 所有阶段共同遵守：
 
-1. Relay CLI 是必备客户端，DSH 和 Pi 是可选增强客户端。
+1. Relay CLI 是必备客户端，DSH 和 Pi 是可选客户端；CLI 与 DSH 是并行、可配置替换的两种控制面，CLI 不是保底或应急路径。
 2. 客户端断开不能取消 Run。
 3. 没有客户端在线时，自动节点继续；需要用户输入时留下持久 Attention 并暂停。
 4. 必经 Workflow 角色不得只有 DSH-only Executor。
@@ -73,14 +74,14 @@ P9 双平台、多控制面与迁移定型
 P4 分为：
 
 ```text
-P4-CM 基线闸
+P4-CM 必备控制面闸（CLI）
   普通 CLI + Windows + Linux SSH + fake/v1 Read Model
 
-P4-DM DSH 增强轨
+P4-DM 桌面控制面轨（DSH，可判否）
   Host/Client Plugin 与最小 Web 面板
 ```
 
-只有 P4-CM 是 P5 核心主线的硬前置。P4-DM 可以通过、受限或判否。DSH 判否时，P5 以 Relay CLI 为默认控制面继续，后续再决定是否建设 Pi TUI 或其他客户端。
+只有 P4-CM 是 P5 核心主线的硬前置（CM4 跨客户端一致性在 DSH 判否时记 N/A、延后 P5）。P4-DM 可以通过、受限或判否。DSH 判否时，P5 阶段默认控制面为 Relay CLI（阶段默认，不是把 CLI 定位为回退），后续再决定是否建设 Pi TUI 或其他客户端。
 
 ## 冻结计划
 
@@ -101,7 +102,7 @@ P4-DM DSH 增强轨
 3. 未验证项和风险已明确，不用下一阶段掩盖当前失败。
 4. 用户在对话中明确同意进入下一阶段。
 
-增强客户端验收可以是通过、受限或不适用，不能掩盖核心失败，也不能因 DSH 单点失败否决已经证明独立可用的 Relay Runtime 主线。
+可选客户端（DSH / Pi）验收可以是通过、受限或不适用，不能掩盖核心失败，也不能因 DSH 单点失败否决已经证明独立可用的 Relay Runtime 主线。
 
 设计总方向的确认不等于 P4~P9 全部开工授权。每张任务卡仍按 DevHarness 入口闸单独分流、确认和施工。
 

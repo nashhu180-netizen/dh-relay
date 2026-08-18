@@ -1,4 +1,5 @@
 <!-- dh:v1 -->
+<!-- dh:planning-event:v1 id=DHR-A-09 stage=A-full artifact=design/06-多控制面与Headless-SSH运行-设计补充.md review=evidence/09-P4至P9阶段计划-交叉审核记录.md#review-a09 understanding=evidence/09-P4至P9阶段计划-交叉审核记录.md#understanding-a09 -->
 # 多控制面、Headless 与 SSH 运行：设计补充
 
 > 状态：正式设计补充，按阶段闸生效。本文补充并修正 `design/05` 的控制面边界，可以作为 P4～P9 拆计划与 B-adjust 输入；本文不授权任何任务卡直接开工。
@@ -287,7 +288,7 @@ Herdr 闭环必须提供 CLI/SSH 观察和附着路径。DSH 状态页与 pane �
 
 ### P7
 
-单卡完整流水必须在 DSH 关闭状态下完成一次核心路径。Start Preview、Attention、重编排和 E11 Approval 均可由 Relay CLI 完成。DSH 可以在同一 Run 中作为并行只读或增强控制面。
+单卡完整流水必须在 DSH 关闭状态下完成一次核心路径。Start Preview、Attention 和 E11 Approval 均可由 Relay CLI 完成；单卡路径命中依赖阻塞时暂停并留持久 Attention，卡内重编排从 P8 起（2026-08-18 用户拍板，见 evidence/09）。DSH 可以在同一 Run 中作为并行只读或增强控制面。
 
 ### P8
 
@@ -295,7 +296,7 @@ Herdr 闭环必须提供 CLI/SSH 观察和附着路径。DSH 状态页与 pane �
 
 ### P9
 
-Windows 验证 DSH 首选工作台和 CLI 回退；Linux 验证 SSH + Relay CLI/Pi TUI + Herdr 的 Headless 路径。最终发布必须包含无 DSH 运行手册。
+Windows 验证 DSH 工作台与 Relay CLI 两条并行、可配置替换的控制面（含 DSH 关闭 / 卸载后切换到 CLI 继续操作）；Linux 验证 SSH + Relay CLI/Pi TUI + Herdr 的 Headless 路径。最终发布必须包含无 DSH 运行手册。
 
 ## 11. 验收命题
 
