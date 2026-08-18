@@ -78,7 +78,7 @@ export default class RelayPilot extends Service {
     return (await this.readFixture(this.config.detailFixturePath)).json
   }
 
-  /** Return the list Read Model as plain JSON, with no status-derived grouping. */
+  /** Return the list Read Model as plain JSON, without grouping or sorting logic. */
   async list(): Promise<JsonValue> {
     return (await this.readFixture(this.config.listFixturePath)).json
   }
