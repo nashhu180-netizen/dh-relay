@@ -1,47 +1,37 @@
-# findings — DHR_26
+# findings · DHR_26
 
-## 已确认事实
+## 上游 rc.6 / rc.7 已确认事实
 
-### DHR_26 任务边界
+基线：`deepseek-ai/deepseek-harness@99f6f02fecdb7dff40c3fbc9470f5907c29f74ca`。
 
-DHR_26 只负责 Host 半程：树外 Host Plugin、独立 Home、rc.6 到 rc.7 升级留证、Host 侧 `ctx.relayPilot` 调用和 DHR_49 施工输入。Client Plugin、面板 UI、列表屏、详情屏与跨客户端镜像断言验证均归 DHR_49。
+1. DSH rc.7 的 Cordis 包版本为 `4.0.1`，Schemastery 为 `3.18.1`。rc 后缀只属于 DSH 包族，不能机械套到通用 vendor 包。rc.6 发布提交 `fb82698709c39f1860b0ab0ed147e1fa30c1d5d0` 同样携带 Cordis `4.0.1`，因此 Host 的 `^4.0.0` peer 同时覆盖计划允许的 rc.6 续验分支。
+2. Cordis `Service` 构造函数以 `super(ctx, '<serviceName>')` 注册服务，并把 provider 生命周期与 fiber 清理绑定。
+3. rc.6 与 rc.7 的 profile plugin 管理实现一致，均支持 `dsh plugin --profile <name> add <path>` 首次使用时初始化 profile，用 pnpm 安装依赖，并把声明 `dsh.bundle.patch` 的依赖加入 profile bundle stack；remove 后会移出该层。
+4. `--patch` 是单次 invocation overlay。profile bundle 是持久依赖和持久 layer，适合 DHR_26 安装、禁用和卸载验证。
+5. rc.6 与 rc.7 启动器都在挂载树前提供 `ctx.appExit`。one-shot 插件应调用该接口，请求有界清理和退出，避免 profile 的用户配置监听让进程常驻。
+6. 官方 Client 包通过 package manifest 的 `dsh.client` 声明平台/注入/立即加载，通过 `exports["./client"]` 暴露 bundle 与类型。profile 的 `cordis.yml` 所在目录形成 `ctx.baseUrl` 扫描锚点，元数据负缓存需要重启后刷新。
 
-### DSH rc.7 上游形态侦察
+## 施工中发现并修复的问题
 
-基线：`deepseek-ai/deepseek-harness`，`dsh-v0.1.0-rc.7@99f6f02fecdb7dff40c3fbc9470f5907c29f74ca`。
-
-观察到的 Host Service 形态：
-
-- `packages/host/directory-picker/src/index.ts` 使用 `Context` 与 `Service` 来定义 `ctx.directoryPicker`，并通过 `declare module '@deepseek-ai/cordis'` 扩展 `Context`。
-- 具体实现可继承抽象 Service，构造时调用 `super(ctx, '<serviceName>')`。
-- `packages/host/directory-picker-browse/src/index.ts` 展示了带 `Config` 的默认导出插件类写法，并使用 `@deepseek-ai/schemastery` 定义配置。
-- `packages/web/web-fetch-http/src/index.ts` 展示了 function plugin 写法：`export const name`、`export const inject`、`export const Config`、`export function apply(ctx, config)`。
-
-本卡源包选择 Service 类 + `apply()` 双入口：`RelayPilot` 继承 Cordis `Service`，服务名固定为 `relayPilot`，同时导出 `apply(ctx, config)` 便于树外插件加载器按 function plugin 方式调用。
-
-### 源包静态约束
-
-`artifacts/src/dsh-host/` 当前约束：
-
-- 只导入 `@deepseek-ai/cordis`、`@deepseek-ai/schemastery`、Node 标准库。
-- 不导入任何 `@deepseek-ai/dsh-*` 私有类型。
-- `ctx.relayPilot.detail()` 与 `ctx.relayPilot.list()` 返回 JSON parse 后的普通对象。
-- `ctx.relayPilot.snapshot()` 返回 schema version、字节数与 sha256，用于早交付和对证。
-- JSON 递归校验会拒绝函数、`undefined`、非有限数字、循环引用等非普通 JSON 值。
-
-## 待本机补齐事实
-
-| 项 | 状态 | 需要补充 |
+| 级别 | 问题 | 处理 |
 |---|---|---|
-| B-10 预采 rc.6 快照是否仍有效 | 待执行 | 当前 `dsh --version` 与快照文件存在性 |
-| rc.7 安装路径和内置包版本 | 待执行 | 升级后快照与 diff 摘要 |
-| profile 安装边界 | 待执行 | 是否可仅靠 profile 装载 Host Plugin |
-| `--patch` overlay 边界 | 待执行 | 是否可用、如何回滚、是否污染上游 |
-| `dsh.client` 声明形态 | 待执行 | 官方 client 插件声明文件与本机扫描结果 |
-| `exports["./client"]` 产物形态 | 待执行 | 可供 DHR_49 使用的实际包结构 |
-| profile client 扫描锚点 | 待执行 | DSH 从哪里发现 client bundle |
-| 本机类型定义位置 | 待执行 | 用脱敏路径记录 rc.7 可用 d.ts 位置 |
+| P1 | 并发草案把 Cordis/Schemastery 版本写成 `0.1.0-rc.7`，实际包不存在。 | 改用零构建 JS；仅声明 `@deepseek-ai/cordis ^4.0.0` peer。 |
+| P1 | 草案没有 `dsh.bundle.patch`，`dsh plugin add` 只会装普通依赖，Host 行不会加入 profile。 | 新增 `cordis.patch.yml` 和 package `dsh.bundle.patch`。 |
+| P1 | 草案 snapshot 硬编码 rc.7，会把升级失败后的 rc.6 验证误标成 rc.7。 | 移除公开 snapshot 方法；版本由独立快照脚本从 CLI/包现场采集。 |
+| P1 | 普通 profile 会启动配置监听，单纯打印 probe 可能不退出。 | probe 和 absence probe 通过公共 `ctx.appExit` 请求有界退出。 |
+| P1 | 只有正则静态测试，未证明 fixture 原样传输、schema swap 拒绝与服务清理。 | 增加行为测试与 transcript 逐字段对证，当前 18/18 通过。 |
+| P2 | npm 10 在错误的 `--prefix ... pack` 调用下会读取调用目录 manifest。 | 操作器改为 `npm pack <absolute-host-root> --dry-run`。 |
 
-## 当前判断
+## Host 契约
 
-仓内源包具备静态施工价值，但 DHR_26 的核心机器证仍取决于本机 DSH rc.7 进程内调用。现阶段不能将 Host Plugin 记为已加载或已通过。
+- 包名：`@dh-relay/dsh-relay-pilot-host`
+- 服务：`ctx.relayPilot`
+- 方法：`listRuns()`、`inspectRun(runId?)`
+- 配置：`detailFixture`、`listFixture`，操作器通过绝对环境变量传入
+- 返回：只允许普通 JSON object；schema 不匹配立即失败
+- 写权：无文件写 API，无 Relay 写操作
+- DSH 私有类型：无导入
+
+## 待本机确认
+
+实际 rc.6/rc.7 包清单差异、用户当前 DSH 安装方式、profile 安装路径、真实 `dsh.client` manifest 路径、实际类型和 bundle 路径仍需操作器在用户机器采集。当前不对 DHR_49 的 Client 构建可行性作判断。

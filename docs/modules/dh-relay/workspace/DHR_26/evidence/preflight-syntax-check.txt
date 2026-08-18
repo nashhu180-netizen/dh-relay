@@ -1,0 +1,4 @@
+
+> @dh-relay/dsh-relay-pilot-host@0.0.0-dhr26 check
+> node --check index.js && node --check service-factory.js && node --check fixture-store.js && node --check plain-json.js && node --check probe.js && node --check scripts/discover-fixtures.mjs && node --check scripts/verify-transcript.mjs && node --check scripts/snapshot-dsh.mjs && node --check scripts/compare-snapshots.mjs && node --check scripts/service-absence-probe.js && node --check scripts/recon-client.mjs
+

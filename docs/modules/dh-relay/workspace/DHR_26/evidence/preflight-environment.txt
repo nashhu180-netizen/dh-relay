@@ -1,0 +1,5 @@
+v22.16.0
+10.9.2
+pnpm=unavailable
+dsh=unavailable
+pwsh=unavailable

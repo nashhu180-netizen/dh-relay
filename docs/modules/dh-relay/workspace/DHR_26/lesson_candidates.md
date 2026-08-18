@@ -1,11 +1,8 @@
-# lesson_candidates — DHR_26
+# lesson_candidates · DHR_26
 
-## 候选教训
-
-| ID | 候选教训 | 触发证据 | 状态 |
+| ID | 候选教训 | 证据 | 状态 |
 |---|---|---|---|
-| LC-DHR26-01 | 依赖本机 GUI/CLI 状态的任务，GitHub 侧只能先交付工作区与施工包，不能替代机器证。收口前应把“连接器不可执行的本机证据”显式列入 progress/review，避免误标完成。 | 本卡需要 `dsh --version`、rc.7 升级、独立 Home 与 DSH 进程内调用；GitHub 连接器无本机执行能力。 | 待收口复核判断是否入知识库 |
-
-## 暂不入库
-
-本卡尚未完成本机执行与复核，当前只登记候选。是否进入 `knowledge/` 由收口阶段的教训复核决定。
+| LC-DHR26-01 | 版本锁定必须按包逐一核对，不能把应用 rc 版本复制给 vendor 依赖。 | 草案把 Cordis 4.0.1、Schemastery 3.18.1 误写成 rc.7，安装必失败。 | 待收口复核 |
+| LC-DHR26-02 | DSH profile 插件是否会生效由 `dsh.bundle.patch` 决定，只有可安装的 package 仍可能只是普通依赖。 | 上游 `apps/cli/src/plugin.ts` 的 installed-state reconcile。 | 待收口复核 |
+| LC-DHR26-03 | DSH one-shot 自动取证应使用 `ctx.appExit`，避免直接 `process.exit` 跳过清理，也避免 watcher 让脚本挂起。 | 上游 `profile-boot.ts` 与 `dsh-cmdline`。 | 待收口复核 |
+| LC-DHR26-04 | 连接器环境可以交付可执行施工包和预检，不能代替用户机器的版本、GUI/CLI 与生命周期机器证。 | 当前环境无 dsh、pnpm、PowerShell 和 Windows 实验根。 | 待收口复核 |

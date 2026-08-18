@@ -1,35 +1,25 @@
-# execution_strategy — DHR_26
+# execution_strategy · DHR_26
 
-## 执行策略
+## 技术选择
 
-DHR_26 采取“仓内治理工件 + 仓外实验代码 + 本机 DSH 证据”的方式推进。仓内只保存标准档工作区、施工计划、静态源包和审查记录；真正的 DSH 安装、升级、独立 Home 与进程内 smoke 全部发生在 `<experiment-root>` 下。
+Host 使用零构建 ESM 包。运行时代码只依赖 Node 标准库与 Cordis 公共 `Service`，避免为最小 Pilot 引入 TypeScript 编译链、Schemastery 版本耦合和 DSH 私有类型。profile 安装依靠 package manifest 的 `dsh.bundle.patch`，`dsh plugin remove` 同时移除依赖与 bundle 层。
 
-## 改动边界
+## 数据边界
 
-- 允许：`docs/modules/dh-relay/workspace/DHR_26/`。
-- 允许作为实验输入：`docs/modules/dh-relay/workspace/DHR_26/artifacts/src/dsh-host/`。
-- 禁止：`tools/` 现役生产代码。
-- 禁止：DeepSeek Harness 上游源码。
-- 禁止：日常 DSH Home 与用户凭据目录。
+`FixtureStore` 每次调用都重新 `readFile`、`JSON.parse` 并检查固定 schema version。返回值就是新解析的普通 JSON 对象。Host 不修改字段，不生成摘要，不缓存状态，不根据 `run_status` 推导 `group`。运行时代码不含写文件 API。
 
-## 风险控制
+## 生命周期边界
 
-1. 版本风险：所有 DSH 事实必须写明 `0.1.0-rc.7`，并保留 rc.6 到 rc.7 的差异证据。
-2. 类型污染风险：Host Service 返回值只允许普通 JSON；源包静态测试禁止导入 `@deepseek-ai/dsh-*` 私有运行类型。
-3. 路径泄露风险：仓内证据不得写入密钥、token、账号目录下的敏感路径。必须记录路径时，用 `<experiment-root>`、`<dsh-home>`、`<dsh-install>` 等占位。
-4. 结论越界风险：DHR_26 只登记 Host 侧事实，不给 DSH 桌面控制面三态结论。
+- 安装：profile 本地路径依赖 + bundle patch。
+- 启用：`RELAY_PILOT_HOST_DISABLED=0`。
+- 禁用：bundle 行的动态 `disabled` 表达式。
+- 取证：probe 注入 `relayPilot`，打印普通 JSON 后调用 DSH 提供的 `ctx.appExit`。
+- 卸载：`dsh plugin --profile ... remove`，随后用新 DSH 进程核对服务缺失。
 
-## 本轮 GitHub 侧可交付
+## 版本策略
 
-- 标准档工作区骨架。
-- DHR_26 源包草案。
-- 静态契约测试。
-- 本机执行计划与证据回填位置。
+目标基线为 DSH rc.7。入口仍为 rc.6 时先采新鲜快照，再尝试升级。升级失败不会吞掉 Host 侧可得事实；操作器继续在 rc.6 执行，但最后返回版本链不完整，所有结论必须带 rc.6 标签。
 
-## 本轮 GitHub 侧不可交付
+## 修改边界
 
-- 本机 `dsh --version` 复验。
-- rc.6 到 rc.7 升级。
-- DSH 独立 Home 安装和卸载。
-- DSH 进程内 `ctx.relayPilot` 调用证据。
-- 两轮独立复核与 verify。
+允许修改本工作区及仓外 `<experiment-root>/relay-control-pilot/src/dsh-host/`。禁止修改 DeepSeek Harness 上游仓库、dh-relay `tools/`、DHR_25 fixture 与日常 DSH Home。

@@ -1,26 +1,40 @@
-# progress — DHR_26
+# progress · DHR_26
 
-| 时间 | 做了什么 | 证据 / 结果 |
+## 当前状态
+
+`进行中`。GitHub 侧代码、操作器与预检已落盘；Windows DSH 现场证据和两轮 fresh 独立复核待补。草稿 PR #1 保持 Draft。
+
+## 2026-08-18 施工记录
+
+1. 读取 dh-relay 的 DHR_26 任务卡、仓库 AGENTS 约束及 dev-harness 标准档模板/节点要求。
+2. 核对 DHR_25 已销户，确认本卡授权、依赖与实施边界。
+3. 阅读 DeepSeek Harness rc.7 上游实现和文档，确认 Cordis Service、profile plugin bundle、`--patch`、`ctx.appExit`、client metadata 与 profile 扫描锚点。
+4. 发现并发草案已写入同一任务分支，保留其工作区历史并做差异审查。
+5. 发现草案的 `@deepseek-ai/cordis` 与 `@deepseek-ai/schemastery` 版本被误写为 rc.7，且缺少 `dsh.bundle.patch`，profile 安装后无法自动加入 Host 行。
+6. 用零构建 ESM Host bundle 替换该草案运行包，改为 `@deepseek-ai/cordis ^4.0.0`，移除 Schemastery 与 TypeScript 构建依赖。
+7. 增加 fixture schema guard、逐调用重读、普通 JSON 校验、Host 生命周期单测、profile bundle、一次性 probe、禁用/卸载 absence probe、版本快照、差异、fixture 发现、Client 侦察与 PowerShell 操作器。
+8. 阅读 DSH `profile-boot.ts` 后确认普通 profile 会建立配置监听，补接 `ctx.appExit`，保证 probe 输出后由启动器有界清理并退出。
+
+## 预检结果
+
+| 检查 | 结果 | 证据 |
 |---|---|---|
-| 2026-08-18 | GitHub 侧确认 `dh-relay` 与 `dev-harness` 可访问，`dh-relay` 有 push 权限 | 连接器返回仓库 `nashhu180-netizen/dh-relay` 与 `nashhu180-netizen/dev-harness`，均具备 push/admin 权限 |
-| 2026-08-18 | 读取 P4 DevPlan 中 DHR_26 任务卡 | DHR_26 被界定为桌面控制面轨 Host 半程：树外 Host Plugin、rc.7 升级留证、树外插件现场侦察；Client/UI 不在本卡 |
-| 2026-08-18 | 读取 dev-harness 开工规则与 dh-relay AGENTS 宪章 | 本卡按标准档建工作区；本机施工和标完成前需要证据、复核和 verify 流程 |
-| 2026-08-18 | 创建任务分支 | `wt/DHR_26-dsh-host-pilot`，基于 `master` 最新提交 `a4584ee7acff14e662bfa9712cbc3ae1c72d2169` |
-| 2026-08-18 | 建立 DHR_26 标准档工作区草案 | `brief.md`、`task_plan.md`、`execution_strategy.md`、`visual_map.md`、`progress.md`、`findings.md`、`lesson_candidates.md`、`review.md` |
-| 2026-08-18 | 准备树外 Host Plugin 源包草案 | `artifacts/src/dsh-host/`，用于复制到 `<experiment-root>\relay-control-pilot\src\dsh-host\` 后在本机 DSH rc.7 环境验证 |
+| Node 单测 | 18/18 通过 | `evidence/preflight-unit-tests.txt` |
+| 语法检查 | 通过 | `evidence/preflight-syntax-check.txt` |
+| npm pack dry-run | 通过，8 个运行文件，约 3.3 kB | `evidence/preflight-pack-dry-run.txt` |
+| mock DSH probe 对证 | `RESULT: IDENTICAL`，plain JSON=true | `evidence/preflight-host-probe-report.json` |
+| 源文件清单 | 已生成 sha256 | `evidence/preflight-source-inventory.sha256` |
+| 当前执行环境 | Node 22.16.0、npm 10.9.2；pnpm/dsh/PowerShell 不可用 | `evidence/preflight-environment.txt` |
 
-## 待本机执行
+预检使用自生成 mock fixture，只证明 Host 逻辑和操作器契约。它不替代 DHR_25 真 fixture 与真实 DSH 进程证据。
 
-| 步骤 | 状态 | 证据回填要求 |
-|---|---|---|
-| 复验 DSH 当前版本未漂 | 未执行 | `dsh --version`、预采快照是否仍可用 |
-| rc.6 升级到 rc.7 | 未执行 | 升级前后快照与 diff 摘要 |
-| Host 源包 typecheck/build | 未执行 | `npm run typecheck`、`npm run build` 输出 |
-| 独立 Home 安装 Host Plugin | 未执行 | 安装命令、profile 或 patch 入口、安装目录结构 |
-| DSH 进程内调用 `ctx.relayPilot` | 未执行 | `snapshot/detail/list` 调用转录与 sha256 对证 |
-| 卸载清理 | 未执行 | 卸载命令、重启后服务清理证据 |
-| 两轮独立复核 | 未执行 | `review.md` 第一轮、第二轮结论 |
+## 待办
 
-## 当前状态判断
-
-本分支完成的是 DHR_26 的开工落户与可审查施工包准备。由于 GitHub 连接器无法操作用户本机 DSH、无法执行 rc.7 升级、无法启动独立 Home，本卡不能标“待验收”或“已完成”。
+- [ ] 在用户 Windows 机器复制 artifacts 并运行 `Invoke-Dhr26Pilot.ps1`。
+- [ ] 回填 rc.6/rc.7 快照、差异和版本标签。
+- [ ] 回填真实 `ctx.relayPilot` 首次调用及 `RESULT: IDENTICAL`。
+- [ ] 回填显式禁用、卸载、重启后服务缺失证据。
+- [ ] 回填本机 Client 侦察路径。
+- [ ] 两轮 fresh 独立复核。
+- [ ] 用户需求境确认。
+- [ ] 通过后才更新为待验收并生成 verify 提交。

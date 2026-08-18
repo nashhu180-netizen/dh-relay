@@ -1,0 +1,13 @@
+# DHR_26 opt-in Host Service bundle. Runtime inputs come from the frozen DHR_25
+# fixtures; the plugin does not contain a second Read Model or state derivation.
+- insert:
+    - id: relay-pilot-host
+      name: '@dh-relay/dsh-relay-pilot-host'
+      disabled: !!js process.env.RELAY_PILOT_HOST_DISABLED === '1'
+      config:
+        detailFixture: !!js process.env.RELAY_PILOT_DETAIL_FIXTURE
+        listFixture: !!js process.env.RELAY_PILOT_LIST_FIXTURE
+
+    - id: relay-pilot-probe
+      name: '@dh-relay/dsh-relay-pilot-host/probe'
+      disabled: !!js process.env.RELAY_PILOT_PROBE !== '1'

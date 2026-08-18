@@ -1,31 +1,32 @@
-# brief — DHR_26 树外 DSH Host Plugin 与 rc.7 现场侦察
+# brief · DHR_26 树外 DSH Host Pilot
 
-- 计划：[P4-DSH工作台最小Pilot-开发方案.md](../../dev_plan/P4-DSH工作台最小Pilot-开发方案.md#dhr_26桌面控制面轨--host-半程)
+- 计划：[`P4-DSH工作台最小Pilot-开发方案.md`](../../dev_plan/P4-DSH工作台最小Pilot-开发方案.md#dhr_26桌面控制面轨--host-半程)
 - 档位：标准
+- 状态：进行中
 - 分支：`wt/DHR_26-dsh-host-pilot`
-- 工作区：`docs/modules/dh-relay/workspace/DHR_26/`
+- 草稿 PR：#1
 - 实验根：`D:\MyFiles\ai-workflow\dh-relay-p4-pilot\`
-- DSH 独立 Home：`<experiment-root>\dsh-home\`
-- 实施落点：`<experiment-root>\relay-control-pilot\src\dsh-host\`
-- 仓内源包：`artifacts/src/dsh-host/`，只作 DHR_26 本机施工输入，不接入本仓 `tools/` 生产代码。
+- 独立 DSH Home：`<experiment-root>\dsh-home\`
+- 仓外实施落点：`<experiment-root>\relay-control-pilot\src\dsh-host\`
 
-## 背景与边界
+## 目标
 
-DHR_26 是桌面控制面轨的 Host 半程。目标是在不修改 DeepSeek Harness 上游源码的前提下，把最小 `ctx.relayPilot` Host Service 以树外插件方式装进独立 Home 的 DSH，让 DSH 进程内能读取 DHR_25 冻结的两份 fake Read Model。Client 插件、面板 UI、v1 活现场投影、Relay 写权、DHR_49 的 Client bundle 可行性判断均不属于本卡。
+在不改 DeepSeek Harness 上游源码、不碰 dh-relay `tools/` 现役代码的前提下，提供可由 DSH profile 安装的树外 Host bundle。该 bundle 通过公共 Cordis `Service` seam 注册 `ctx.relayPilot`，从 DHR_25 冻结 fixture 读取并原样返回：
 
-本仓 GitHub 侧只能完成工作区、施工源包和静态检查准备。`dsh --version` 复验、rc.6 到 rc.7 升级、独立 Home 安装、DSH 进程内 `ctx.relayPilot` 调用、卸载清理与升级后快照，必须在用户本机执行后把证据回填到 `progress.md`、`findings.md` 和 `review.md`。
+- `relay.pilot-run-list/v1`
+- `relay.pilot-read-model/v1`
 
-## 完成条件
+同时准备 rc.6 到 rc.7 版本证据、独立 Home、安装、显式禁用、卸载、清理、重新安装与 DHR_49 Client 侦察的一键施工脚本。
 
-| ID | 谁验 | 完成条件 |
-|---|---|---|
-| C1 | 机器 | P4-DM1：不修改 DSH 上游仓库即可加载 Host Plugin。`ctx.relayPilot` 在 DSH 进程内可被调用，两份 schema 原样透传，Host 不做二次加工、不推导状态。 |
-| C2 | 机器 | P4-DM4a：Host Plugin 可安装、卸载。上游有显式启用或禁用机制则一并验证；无则如实登记“未验证”。卸载后服务与事件注册得到清理。 |
-| C3 | 机器 | P4-DM5a：Host 只传普通 JSON，不传 Cordis 活动对象；DSH RC 私有类型不进 Read Model。 |
-| C4 | 机器 | 版本基线：开工第一步复验本机仍为 `0.1.0-rc.6`；由 `0.1.0-rc.6` 升到 `0.1.0-rc.7`；升级前后各留 `dsh --version`、内置包版本与安装目录结构快照。证据来源登记为“B-10 预采前快照 + 本卡升级后快照”。版本已漂时作废预采，就地重采前快照再升。 |
-| C5 | 机器 | 侦察落档：`findings.md` 记录官方 client 插件的 `dsh.client` 声明形态、`exports["./client"]` 产物形态、profile 的 client 扫描锚点、本机可用类型定义位置、`--patch` 与 profile 安装各自适用边界。缺此项 DHR_49 不得开工。 |
-| C6 | 机器 | 本卡只登记事实，不自行给出 `passed / passed-with-constraints / stopped-by-pilot` 三态结论。 |
+## 本轮已交付
 
-## 非目标
+1. 零构建 ESM Host bundle，依赖公共 `@deepseek-ai/cordis` 4.x，不导入 `@deepseek-ai/dsh-*` 私有运行类型。
+2. `dsh.bundle.patch` profile 层，提供 Host 行与一次性 probe 行。
+3. `ctx.relayPilot.listRuns()` 与 `ctx.relayPilot.inspectRun(runId?)`，每次重新读取 fixture，不缓存、不排序、不分组、不推导状态。
+4. probe 通过 `ctx.appExit` 请求 DSH 有界退出，适合自动留证。
+5. PowerShell 操作器，覆盖版本快照、升级失败续验、fixture 发现、profile 安装、进程内调用、禁用、卸载、清理、重装及 Client 侦察。
+6. 18 项本地预检、语法检查、npm pack dry-run 与 mock transcript 对证。
 
-不做 Client 插件和面板 UI；不做 v1 活现场投影；不接 Relay 运行写权；不修改 DeepSeek Harness 上游源码；不判断 Client bundle 构建配方是否可行；不改本仓 `tools/` 现役生产代码。
+## 尚未满足的收口条件
+
+当前执行环境没有 Windows DSH、PowerShell、pnpm 与 `D:\MyFiles\...` 实验现场，因此以下机器证仍须在用户本机运行操作器后回填：rc.6/rc.7 版本链、真实 DSH 进程内调用、独立 Home 生命周期、实际安装目录侦察。两轮 fresh 独立复核也尚未派出。本卡保持“进行中”，草稿 PR 不转 Ready，不创建 `verify(dh-relay):` 提交。

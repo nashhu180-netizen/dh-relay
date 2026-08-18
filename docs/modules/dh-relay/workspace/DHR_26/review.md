@@ -1,33 +1,35 @@
-# review — DHR_26
+# review · DHR_26
 
-## 完成条件逐条挂证据
+## 完成条件覆盖
 
-| ID | 命题 | 事实证明方式 | 最终裁决者 | 覆盖态 | 实际执行结果 | 证据 |
-|---|---|---|---|---|---|---|
-| C1 | 不修改 DSH 上游仓库即可加载 Host Plugin；`ctx.relayPilot` 在 DSH 进程内可调用；两份 schema 原样透传，Host 不二次加工、不推导状态。 | 独立 Home DSH rc.7 进程内调用 `snapshot/detail/list`，对比 DHR_25 fixture sha256 与 schema version。 | 机器 | 未覆盖 | 待执行 | 待补 |
-| C2 | Host Plugin 可安装、卸载；显式启用/禁用机制存在时一并验证；卸载后服务与事件注册清理。 | 安装转录、卸载转录、重启后服务缺失或清理证据。 | 机器 | 未覆盖 | 待执行 | 待补 |
-| C3 | Host 只传普通 JSON，不传 Cordis 活动对象；DSH RC 私有类型不进 Read Model。 | 源包静态检查 + 运行时 `JSON.stringify` + 导入边界检查。 | 机器 | 部分覆盖 | 静态源包已准备，运行时未执行。 | `artifacts/src/dsh-host/` 待提交 |
-| C4 | 本机 DSH 由 `0.1.0-rc.6` 升到 `0.1.0-rc.7`，升级前后快照留证，证据来源标明 B-10 预采 + 本卡后快照。 | `dsh --version`、内置包版本、目录结构快照与 diff。 | 机器 | 未覆盖 | 待执行 | 待补 |
-| C5 | `findings.md` 登记 DHR_49 所需侦察事实：`dsh.client`、`exports["./client"]`、profile client 扫描锚点、类型定义位置、`--patch` 与 profile 边界。 | 本机 rc.7 文件/安装现场侦察，并记录脱敏路径。 | 机器 | 部分覆盖 | 已记录上游源码初步形态，本机安装事实待补。 | `findings.md` |
-| C6 | 本卡只登记事实，不自行贴三态结论。 | review 与 progress 中不出现通过/约束通过/判否裁定。 | 机器 | 部分覆盖 | 当前分支未贴三态结论。 | `progress.md`、`findings.md` |
+| ID | 命题 | 当前覆盖 | 结果与证据 |
+|---|---|---|---|
+| C1 | 树外加载 Host；DSH 进程内 `ctx.relayPilot` 可调用；两份 schema 原样透传。 | 部分 | Host 逻辑、profile bundle 与 mock transcript 已绿；真实 DSH 进程待用户本机。 |
+| C2 | 安装、显式禁用、卸载及清理。 | 部分 | 操作器与契约测试已覆盖命令/断言；真实 profile 生命周期待本机。 |
+| C3 | 只传普通 JSON，不引入 DSH RC 私有类型。 | 预检覆盖 | 运行包导入边界检查、普通 JSON 行为测试、schema guard 与 mock transcript 已绿。 |
+| C4 | rc.6 到 rc.7 的前后快照与差异。 | 未覆盖 | 操作器已实现采集和失败续验；当前环境无 dsh。 |
+| C5 | Client 声明、export、扫描锚点、类型路径、patch/profile 边界。 | 部分 | 上游 rc.7 事实已记录，侦察脚本测试通过；本机路径待采。 |
+| C6 | 只登记事实，不自行给三态。 | 已遵守 | `findings.md` 与操作器的 `feasibility_judgement` 均无三态裁定。 |
 
-## 第一轮代码复核
+## 实施者复核
 
-- 状态：未开始。
-- 范围：本工作区全部文件、`artifacts/src/dsh-host/` 源包、静态测试、证据链。
-- 目标：查 P0/P1 问题，尤其是 DSH 私有类型污染、DevPlan 验收口径漏项、把本机未执行步骤误写成已通过。
+已对并发草案进行一次完整差异复核，识别 5 个 P1 与 1 个 P2，全部在当前施工包中修复。该复核由实施上下文完成，只算自检，不冒充 dev-harness 要求的 fresh 独立复核。
 
-## 第二轮换人复核
+## 第一轮 fresh 代码复核
 
-- 状态：未开始。
-- 要求：fresh context，未参与实施，允许只读第一轮记录，不继承第一轮会话上下文。
+- 状态：待派出。
+- 范围：工作区、Host bundle、操作器、证据链、版本失败分支。
+- 重点：实际 DSH package resolution、profile layer、`ctx.appExit` 时序、禁用/卸载清理与路径脱敏。
+
+## 第二轮 fresh 对抗复核
+
+- 状态：待派出。
+- 前提：第一轮问题已修复，并取得用户机器运行证据。
 
 ## 需求境证据
 
-- 状态：未开始。
-- 需要的展示：用户本机 DSH 独立 Home 中 `ctx.relayPilot` 首次调用返回两份 fake Read Model 的终端转录，外加安装/卸载路径说明。
-- 通过标准：用户能看到 DSH 进程内取到同一份 Read Model；本卡仍不要求 UI 面板。
+主证据应为用户 Windows 机器执行 `Invoke-Dhr26Pilot.ps1` 后的首次 `ctx.relayPilot` 转录、`RESULT: IDENTICAL` 报告、禁用/卸载 absence transcript 和版本差异。预检中的 mock report 只用于施工前检查。
 
 ## 放行判断
 
-当前不可放行。缺失项：本机 DSH rc.7 升级证据、Host Plugin 安装与进程内调用证据、卸载清理证据、两轮复核、需求境证据。
+当前不可放行。本卡继续处于“进行中”，PR 保持 Draft。缺口为真实 Windows DSH 机器证、两轮 fresh 复核和用户确认；未创建 verify 提交。

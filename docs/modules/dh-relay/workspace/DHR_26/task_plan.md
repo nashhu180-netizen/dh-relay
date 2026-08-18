@@ -1,73 +1,79 @@
-# task_plan — DHR_26 施工计划
+# task_plan · DHR_26
 
 ## Context Packet
 
-DHR_26 的终点已经在 P4 DevPlan 锁定：Host 半程只证明树外 Host Plugin 能进入独立 DSH Home，并在 DSH 进程内暴露 `ctx.relayPilot`，从 DHR_25 fake fixture 原样返回 `relay.pilot-read-model/v1` 与 `relay.pilot-run-list/v1`。DHR_49 才承接 Client bundle、列表屏和详情屏。
+DHR_26 只承接 Host 半程。Client bundle、列表屏、详情屏、跨客户端镜像断言与三态裁定归 DHR_49/DHR_27。施工输入在 `artifacts/`，真实运行和证据写入仓外 `<experiment-root>`。
 
-施工必须遵守三条边界：第一，不修改 DeepSeek Harness 上游源码；第二，不改本仓 `tools/` 现役生产代码；第三，所有本机现场证据均落在 `<experiment-root>` 或本工作区，不写入日常 DSH Home。
+## 执行步骤
 
-本工作区的 `artifacts/src/dsh-host/` 是可复制到实验根的源包。它参考 DSH rc.7 中 Host Service 的常见形态：服务类继承 Cordis `Service`，通过 `declare module '@deepseek-ai/cordis'` 扩展 `Context`，构造时调用 `super(ctx, '<serviceName>')`；实现包仍需在本机 rc.7 环境内 typecheck、打包和加载。
+### S0 复制施工输入
 
-## 施工步骤
+将本工作区内容复制到实验根：
 
-### S0 本机前置核对
+```powershell
+$repo = '<dh-relay-repo>'
+$experiment = 'D:\MyFiles\ai-workflow\dh-relay-p4-pilot'
+$source = "$repo\docs\modules\dh-relay\workspace\DHR_26\artifacts"
+$hostDest = "$experiment\relay-control-pilot\src\dsh-host"
+$scriptDest = "$experiment\relay-control-pilot\scripts"
+New-Item -ItemType Directory -Force -Path $hostDest, $scriptDest | Out-Null
+Copy-Item "$source\src\dsh-host\*" $hostDest -Recurse -Force
+Copy-Item "$source\scripts\Invoke-Dhr26Pilot.ps1" $scriptDest -Force
+```
 
-1. 在本机进入 dh-relay 仓库，确认当前分支或任务 worktree 指向 `wt/DHR_26-dsh-host-pilot`。
-2. 确认 `<experiment-root>` 存在：`D:\MyFiles\ai-workflow\dh-relay-p4-pilot\`。
-3. 确认 DHR_25 产物存在：`<experiment-root>\relay-control-pilot\`，且 fake fixture 能被读取。
-4. 确认 B-10 预采快照存在：`<experiment-root>\evidence\dsh-version-baseline\rc6-before-upgrade.txt`。若不存在或当前 `dsh --version` 已不等于 `0.1.0-rc.6`，把预采快照标记为作废，并在本卡重新采“升级前快照”。
+不得覆盖或改写 DHR_25 的 `testdata/fake/`。
 
-### S1 搬运 Host 源包
+### S1 一键运行
 
-1. 新建或清理实验区目录：`<experiment-root>\relay-control-pilot\src\dsh-host\`。
-2. 将本工作区 `artifacts/src/dsh-host/` 复制到上述目录。
-3. 在实验区执行静态契约测试：`node --test tests/*.test.mjs`。
-4. 静态测试只证明源包没有引入 DSH 私有类型、注册名为 `relayPilot`、只按普通 JSON 与文件 hash 工作。它不替代 DSH 进程内 smoke。
+```powershell
+cd D:\MyFiles\ai-workflow\dh-relay-p4-pilot\relay-control-pilot
+.\scripts\Invoke-Dhr26Pilot.ps1
+```
 
-### S2 rc.7 升级与快照
+操作器固定使用 `<experiment-root>\dsh-home\`，不会使用日常 DSH Home。它要求 Node、npm、pnpm 与 dsh 在 PATH。
 
-1. 先记录当前 `dsh --version` 与 DSH 安装目录结构。
-2. 若当前仍为 `0.1.0-rc.6`，按本机实际安装方式升级到 `0.1.0-rc.7`。
-3. 升级后采集 `dsh --version`、内置包版本、安装目录结构，并与升级前快照做 diff。
-4. 把快照路径、diff 摘要、版本号写进 `progress.md` 和 `findings.md`。所有结论必须标明 DSH 版本。
+### S2 版本证据
 
-### S3 本机 typecheck 与打包
+1. 解析 `dsh --version`，只接受 `0.1.0-rc.6` 或 `0.1.0-rc.7`。
+2. 复验 B-10 预采的 `rc6-before-upgrade.txt`。不可信时保留失效副本，并在 rc.6 现场重新采集。
+3. 递归记录已安装 `@deepseek-ai/*` 包版本、路径和 `package.json` sha256。
+4. rc.6 入口默认尝试升级到 `@deepseek-ai/dsh@0.1.0-rc.7`。
+5. 升级失败时记录错误并继续 Host 生命周期验证，所有结果标注 rc.6；脚本最终以“版本链不完整”失败退出，避免误报 rc.7。
 
-1. 在 `<experiment-root>\relay-control-pilot\src\dsh-host\` 安装依赖，依赖版本必须对齐本机 DSH rc.7 可用包。
-2. 执行 `npm run typecheck` 和 `npm run build`。
-3. 记录 DSH 可用类型定义的位置：例如安装包目录、profile 包目录或本机缓存目录。不得把含用户名或密钥的完整敏感路径写入仓内工件；必要时做路径脱敏。
+### S3 Host 包预检
 
-### S4 独立 Home 安装
+运行 18 项 Node 测试、`node --check` 与 `npm pack <host-root> --dry-run`。任一失败立即停止安装。
 
-1. 使用 `<experiment-root>\dsh-home\` 作为独立 Home，禁止使用日常 DSH 配置目录。
-2. 优先验证上游显式 profile 安装机制；若必须使用 `--patch` overlay，则把 patch 入口、适用边界、回滚方式写入 `findings.md`。
-3. 任何“必须修改 deepseek-harness 上游源码”的路径都应立即止损登记，不继续硬改。
+### S4 profile 安装与首次调用
 
-### S5 DSH 进程内 smoke
+1. 按 schema 自动发现 DHR_25 detail/list fixture。
+2. `dsh plugin --profile relay-pilot add <absolute-host-root>`。
+3. `dsh --profile relay-pilot --dump-config` 核对 bundle 层。
+4. 启用 probe 后启动 DSH。probe 从 `ctx.relayPilot` 读取两份模型、打印唯一 JSON 转录，并调用 `ctx.appExit(0)` 完成有界退出。
+5. `verify-transcript.mjs` 对 fixture 与转录逐字段比较，必须输出 `RESULT: IDENTICAL`。
+6. 首次成功后立即打印 `DHR26_EARLY_DELIVERY` 与报告。
 
-1. 启动独立 Home 的 DSH。
-2. 在 DSH 进程内调用 `ctx.relayPilot.snapshot()`，确认返回：`service = ctx.relayPilot`、`protocol = relay.pilot-host/v1`、detail/list 的 schema version、字节数和 sha256。
-3. 调用 `ctx.relayPilot.detail()` 与 `ctx.relayPilot.list()`，确认返回对象能 `JSON.stringify`，且 schema 与 DHR_25 fixture 原样一致。
-4. 把首次成功调用的终端转录作为早交付证据写入 `<experiment-root>\evidence\DHR_26\host-smoke-first-call.txt`，并在 `progress.md` 登记。
+### S5 禁用、卸载与清理
 
-### S6 卸载与清理
+1. 设置 `RELAY_PILOT_HOST_DISABLED=1`，通过 `--patch` 注入只读 absence probe，必须得到 `present=false`。
+2. `dsh plugin --profile relay-pilot remove @dh-relay/dsh-relay-pilot-host`。
+3. dump config 中不得残留 `relay-pilot-host`。
+4. 再次启动 absence probe，必须得到 `present=false`。
+5. 重装并完成最终 probe，为 DHR_49 保留独立 profile 输入。
 
-1. 按安装方式执行卸载或禁用。
-2. 重启独立 Home 的 DSH。
-3. 确认 `ctx.relayPilot` 不再存在或服务注册被清理。若 DSH 上游没有显式验证入口，登记“未验证”，不要把未知写成失败或通过。
+### S6 Client 侦察
 
-### S7 DHR_49 输入沉淀
+记录本机 rc 版本下 `@deepseek-ai/dsh-client-modules` 的：
 
-1. 在 `findings.md` 固化：`dsh.client` 声明形态、`exports["./client"]` 产物形态、profile client 扫描锚点、本机类型定义位置、`--patch` 与 profile 安装边界。
-2. 给 DHR_49 准备“可以直接开工或止损”的事实包。DHR_26 自身不裁定三态。
+- `dsh.client` 声明
+- `exports["./client"]`
+- node/client 类型定义路径
+- client bundle 路径
+- profile `cordis.yml` 与 `ctx.baseUrl` 扫描锚点
+- `--patch` 与 profile bundle 的边界
 
-## 小批检查点
+报告字段 `feasibility_judgement` 固定为 `null`，本卡不替 DHR_49 裁定可行性。
 
-- 批 1：工作区与源包静态检查完成。
-- 批 2：rc.7 升级与前后快照完成。
-- 批 3：Host Plugin 在独立 Home 内安装并完成 `ctx.relayPilot` smoke。
-- 批 4：卸载清理与 DHR_49 侦察输入完成。
+### S7 回填与复核
 
-## 收口前要求
-
-进入“待验收”前必须补齐本机证据、两轮独立复核和需求境证据。没有本机 `ctx.relayPilot` smoke 与卸载清理证据时，本卡不得标完成。
+将 `<experiment-root>\evidence\dhr26\` 和版本差异摘要回填 `progress.md`、`findings.md`、`review.md`。随后派两轮 fresh 独立复核，P0/P1 清零后才能进入待验收。

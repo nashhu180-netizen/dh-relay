@@ -1,0 +1,11 @@
+{
+  "result": "IDENTICAL",
+  "service": "ctx.relayPilot",
+  "plain_json": true,
+  "list_identical": true,
+  "detail_identical": true,
+  "list_schema": "relay.pilot-run-list/v1",
+  "detail_schema": "relay.pilot-read-model/v1",
+  "list_sha256": "9373f30cf7853ea43210676dfb174ffc6ea4b89f7ad3f6f837424a1e054710a7",
+  "detail_sha256": "30b24348a1443c47d8dcd7349970958b634ed95dd20d866eded9380a312dc5ba"
+}
