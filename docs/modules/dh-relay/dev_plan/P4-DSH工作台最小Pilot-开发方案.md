@@ -3,12 +3,12 @@
 <!-- dh:plan-type: 开发 -->
 <!-- dh:planning-event:v1 id=DHR-B-10 stage=B-adjust artifact=dev_plan/P4-DSH工作台最小Pilot-开发方案.md review=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#review-b10 understanding=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#understanding-b10 -->
 <!-- dh:status
-汇报: P4 已按 design/06 重写为「CLI 必备控制面轨必过 + DSH 桌面控制面轨可判否」的双轨 Pilot；B-04 已于 2026-08-18 用户整版确认，DHR_25 已完成并销户。B-10（2026-08-18）把 DHR_26 拆成 Host 轨 / Client 轨两卡、补四处终点空白、并回写 DHR_25 的实际交付范围
-现状: DHR_25 已完成——机器证 C1~C5 全绿（Windows Node 24 与 Linux SSH Node 18 对同一 fixture canonical JSON 与文本渲染 sha256 全等，两侧单测全绿，跨终端 RESULT: IDENTICAL，远端零写入）；人判 H1 已由用户 2026-08-18 在对话里答复「暂时够了」，即认可本 Read Model（两份 schema）作为 P5 协议设计起点；DHR_26、DHR_49、DHR_27 未开始
-进行到: P4 ▸ DHR_25 已完成，B-10 已闭合（三轮 fresh 复核 + 用户确认，2026-08-18）
-下一步: 用户决定是否授权 DHR_26（Host 轨，标准档）开工；开工第一步为复验 DSH 版本未漂后升 rc.7
-看什么: workspace/DHR_25/task.md（含六轮范围变更与带往 P5 的结论）、实验区 evidence/README.md、design/05、design/06
-阻塞: 无（列表投影的 design 层缺口已由用户 2026-08-18 批准为显式白名单例外，见 §0.2）
+汇报: P4 已按 design/06 重写为「CLI 必备控制面轨必过 + DSH 桌面控制面轨可判否」的双轨 Pilot；B-04 与 B-10 已于 2026-08-18 闭合，DHR_25 已完成并销户；DHR_26 已获用户本轮明确授权开工，工作区、Host bundle、操作器与预检已提交至草稿 PR #1
+现状: DHR_25 已完成；DHR_26 进行中——树外零构建 Host bundle、独立 profile 操作器、版本/Client 侦察脚本与 18/18 本地预检已落盘，真实 Windows DSH 进程证据、rc.6→rc.7 版本链与双轮 fresh 复核待补；DHR_49、DHR_27 未开始
+进行到: P4 ▸ DHR_26 Host 半程，GitHub 侧实现与施工包已提交，当前停在用户 Windows 机器证入口
+下一步: 在用户 Windows 现场复制 DHR_26 artifacts 并运行 Invoke-Dhr26Pilot.ps1，采集 rc.6/rc.7 快照、profile 安装/调用/禁用/卸载/重装证据与 Client 侦察；随后完成两轮 fresh 独立复核
+看什么: workspace/DHR_26/brief.md、progress.md、findings.md、review.md，草稿 PR #1；DHR_25 历史证据仍见 workspace/DHR_25/task.md
+阻塞: 当前执行环境没有用户 Windows DSH、pnpm、PowerShell 与 D:\MyFiles\ai-workflow\dh-relay-p4-pilot\ 现场，真实机器证和双轮 fresh 复核尚未取得
 -->
 
 > 文件名沿用首次落盘时的「DSH工作台最小Pilot」，标题与责任已按 design/06 更新为多控制面 Pilot；是否改名统一放 P9 处置，避免链接噪声。
@@ -56,6 +56,7 @@
 - **用户回答 / 解释**：用户选**「停下来重问」**——把「不好用」拆成 DSH 渲染能力问题（属 DM 事实）与信息组织问题（属 P5 契约设计输入），二者对 P5 含义相反。**该回答暴露了原草案的缺口**：早交付只规定「做出来给用户看」，未规定「用户看完不满意怎么走」。据此在 DHR_49 新增正式的**「列表屏中途闸」人判验收项**（只暂停、不自动终止，判定权在用户，未表态时默认续做详情屏不空转）。
 - **调整与复审**：已做两轮——第 1 轮全面审（1 P0 / 4 P1 / 4 P2，有条件通过），裁决后第 2 轮**定向复审**只审实质调整（无新增 P0，2 P1 + 5 P2 全为连带句未刷干净，已全部回写）。「列表屏中途闸」系第 2 轮派出后新增，另派第 3 轮增量复审。
 - **用户确认**：已确认——2026-08-18 用户对话「落盘提交」。`DHR-B-10` 事件闭合。**DHR_26 / DHR_49 / DHR_27 仍未授权开工**，每张卡开工前仍按 DevHarness 入口闸单独分流、确认落点与范围。
+- **后续开工状态**：2026-08-18 用户在本轮对话明确授权 DHR_26 开工，当前户口与施工状态见计划头和 §3.1；DHR_49、DHR_27 仍未授权。
 
 ## 1. 概述
 
@@ -116,7 +117,7 @@
 | 任务 ID | 一句话 | 档位（轻/标准） | 状态 | 依赖 | 工作区 | 验收时间 / verify SHA | 备注 |
 |---|---|---|---|---|---|---|---|
 | DHR_25 | 冻结客户端中立 Read Model、fixture 与 Windows/SSH CLI 必备控制面 | 轻 | 已完成 | - | [workspace/DHR_25/](../workspace/DHR_25/task.md) | 2026-08-18（轻档人判签收，无 verify 提交） | 必备控制面轨；开工前需用户对话确认；轻档 + 人判签收（用户 2026-08-18 拍板） |
-| DHR_26 | 树外装载 DSH Host Plugin、升级到 rc.7 并完成树外插件现场侦察 | 标准 | 未开始 | DHR_25 | <开工时回填 workspace/…> | | 桌面控制面轨 · Host 半程；只登记事实、不贴三态标签；B-10 由原 DHR_26 缩范围而来 |
+| DHR_26 | 树外装载 DSH Host Plugin、升级到 rc.7 并完成树外插件现场侦察 | 标准 | 进行中 | DHR_25 | [workspace/DHR_26/](../workspace/DHR_26/brief.md) | | 桌面控制面轨 · Host 半程；Host bundle、操作器与预检已提交，待 Windows 机器证和双轮 fresh 复核；只登记事实、不贴三态标签 |
 | DHR_49 | 找到树外 Client Bundle 可复现构建配方并做出列表屏 + 详情屏面板 | 标准 | 未开始 | DHR_26 | <开工时回填 workspace/…> | | 桌面控制面轨 · Client 半程；本阶段唯一真未知；允许命中止损并交**判否事实**（三态标签只在 DHR_27 由人判落，本卡状态机仍用「已完成（含判否事实）」或「已取消并留因」）；B-10 新建（讨论中称「26b」） |
 | DHR_27 | 接 v1 只读投影、做跨客户端对证并完成 Pilot 裁决 | 标准 | 未开始 | DHR_49（通过或已落判否证据） | <开工时回填 workspace/…> | | 端到端 demo + P4 报告；三态归属在本卡人判收敛 |
 
