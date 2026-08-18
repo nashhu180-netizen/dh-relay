@@ -3,12 +3,12 @@
 <!-- dh:plan-type: 开发 -->
 <!-- dh:planning-event:v1 id=DHR-B-04 stage=B-adjust artifact=dev_plan/P4-DSH工作台最小Pilot-开发方案.md review=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#review-b04 understanding=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#understanding-b04 -->
 <!-- dh:status
-汇报: P4 已按 design/06 重写为「CLI 必备控制面轨必过 + DSH 桌面控制面轨可判否」的双轨 Pilot；claude-grok fresh 审核（有条件通过）已按裁决调整，用户 2026-08-18 整版确认；尚未授权任何卡开工
-现状: DHR_25~27 均未开始；本计划处于 B-调整后待审核
-进行到: P4 ▸ B 已确认（2026-08-18），无卡开工
-下一步: 用户决定是否授权 DHR_25 开工（开工闸另确认落点 <experiment-root>）
-看什么: design/05、design/06、design/evidence/07、design/evidence/08、dev_plan/README.md
-阻塞: 无前置阶段；存在 B 审核确认闸与开工确认闸
+汇报: P4 已按 design/06 重写为「CLI 必备控制面轨必过 + DSH 桌面控制面轨可判否」的双轨 Pilot；B-04 已于 2026-08-18 用户整版确认。DHR_25 已于 2026-08-18 完成并销户（轻档人判签收），落点 `D:\MyFiles\ai-workflow\dh-relay-p4-pilot\`、Linux 目标真机 `ssh thinkpad`
+现状: DHR_25 已完成——机器证 C1~C5 全绿（Windows Node 24 与 Linux SSH Node 18 对同一 fixture canonical JSON 与文本渲染 sha256 全等，90/90 单测两侧全绿，跨终端 RESULT: IDENTICAL，远端 29 文件零写入）；人判 H1 已由用户 2026-08-18 在对话里答复「暂时够了」，即认可本 Read Model 作为 P5 协议设计起点；DHR_26、DHR_27 未开始
+进行到: P4 ▸ DHR_25 已完成，待授权 DHR_26
+下一步: 用户决定是否授权 DHR_26（树外 DSH Host/Client Plugin，标准档）开工
+看什么: workspace/DHR_25/task.md（含五轮范围变更与三条带往 P5 的结论）、实验区 evidence/README.md、design/05、design/06
+阻塞: 无
 -->
 
 > 文件名沿用首次落盘时的「DSH工作台最小Pilot」，标题与责任已按 design/06 更新为多控制面 Pilot；是否改名统一放 P9 处置，避免链接噪声。
@@ -93,7 +93,7 @@
 
 | 任务 ID | 一句话 | 档位（轻/标准） | 状态 | 依赖 | 工作区 | 验收时间 / verify SHA | 备注 |
 |---|---|---|---|---|---|---|---|
-| DHR_25 | 冻结客户端中立 Read Model、fixture 与 Windows/SSH CLI 必备控制面 | 轻 | 未开始 | - | <开工时回填 workspace/…> | | 必备控制面轨；开工前需用户对话确认；轻档 + 人判签收（用户 2026-08-18 拍板） |
+| DHR_25 | 冻结客户端中立 Read Model、fixture 与 Windows/SSH CLI 必备控制面 | 轻 | 已完成 | - | [workspace/DHR_25/](../workspace/DHR_25/task.md) | 2026-08-18（轻档人判签收，无 verify 提交） | 必备控制面轨；开工前需用户对话确认；轻档 + 人判签收（用户 2026-08-18 拍板） |
 | DHR_26 | 验证树外 DSH Host/Client Plugin 并渲染同一 Read Model | 标准 | 未开始 | DHR_25 | <开工时回填 workspace/…> | | 桌面控制面轨；允许 `stopped-by-pilot` 终态 |
 | DHR_27 | 接 v1 只读投影、做跨客户端对证并完成 Pilot 裁决 | 标准 | 未开始 | DHR_26（通过或已落判否证据） | <开工时回填 workspace/…> | | 端到端 demo + P4 报告 |
 
