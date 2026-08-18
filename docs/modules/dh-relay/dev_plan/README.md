@@ -1,5 +1,6 @@
 <!-- dh:devplan-index:v1 -->
 <!-- dh:planning-no-event:v1 artifact="dev_plan/README.md" reason="2026-08-18 索引措辞对齐：状态列机读枚举 + 备注列记阶段闸、P4~P9 事件与证据落点说明、硬约束#1 改为 CLI 与 DSH 并行可配置替换（非回退）；同日随 DHR-B-10 机械同步 P4 行的任务 ID 清单与状态（拆卡与终点变更本体在 P4 计划正文，本索引不承载）；不改阶段顺序、闸规则" -->
+<!-- dh:planning-no-event:v1 artifact="dev_plan/README.md" reason="2026-08-18 DHR_26 开工状态机械同步：P4 活跃计划行改为 DHR_26 进行中，工作区、Host bundle、操作器与预检已提交；不改阶段顺序、任务终点或 Gate" -->
 # DH Relay DevPlan 入口
 
 ## 当前主线
@@ -47,7 +48,7 @@ P9 双平台、多控制面与迁移定型
 
 | 计划 | 目标 | 当前状态 | 任务 ID |
 |---|---|---|---|
-| [P4-DSH工作台最小Pilot](./P4-DSH工作台最小Pilot-开发方案.md) | 先证明 Windows/SSH CLI 必备控制面独立成立，再评估 DSH 树外桌面控制面（可判否） | DHR_25 已完成（2026-08-18）；`DHR-B-10` 拆卡与补终点草案待审核与用户确认 | DHR_25、DHR_26、DHR_49、DHR_27 |
+| [P4-DSH工作台最小Pilot](./P4-DSH工作台最小Pilot-开发方案.md) | 先证明 Windows/SSH CLI 必备控制面独立成立，再评估 DSH 树外桌面控制面（可判否） | DHR_25 已完成（2026-08-18）；DHR_26 进行中（Host bundle、独立 profile 操作器与 18/18 预检已提交，Windows 机器证和双轮 fresh 复核待补） | DHR_25、DHR_26、DHR_49、DHR_27 |
 | [P5-Relay-v2持久内核与DSH桥接](./P5-Relay-v2持久内核与DSH桥接-开发方案.md) | 建立客户端中立协议、Detached Runtime、参考 CLI、恢复和 basic-agent-task | blocked-by-phase-gate:P4-CM | DHR_28~31 |
 | [P6-Herdr多账号执行底座](./P6-Herdr多账号执行底座-开发方案.md) | 接入多账号 Codex/Claude Code，验证 DSH-off 和 Linux SSH Herdr 路径 | blocked-by-phase-gate:P5 | DHR_32~35 |
 | [P7-DevHarness单卡完整流水](./P7-DevHarness单卡完整流水-开发方案.md) | 在 DSH 关闭状态下，用 CLI + Herdr 跑通一张标准卡 S0~E13 与 verify | blocked-by-phase-gate:P6 | DHR_36~40 |
