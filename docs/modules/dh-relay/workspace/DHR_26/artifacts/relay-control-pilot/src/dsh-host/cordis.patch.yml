@@ -1,0 +1,7 @@
+# Persistent profile layer installed by `dsh plugin --profile <name> add <path>`.
+- insert:
+    - id: relay-pilot-host
+      name: '@personal/dsh-relay-host'
+      config:
+        fixtureRoot: !!js process.env.RELAY_PILOT_FIXTURE_ROOT
+        listFixture: !!js process.env.RELAY_PILOT_LIST_FIXTURE

@@ -1,0 +1,4 @@
+# Temporary evidence overlay. The installed Host bundle already owns relay-pilot-host.
+- insert:
+    - id: relay-pilot-probe
+      name: '@personal/dsh-relay-host/probe'
