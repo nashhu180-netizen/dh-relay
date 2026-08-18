@@ -7,16 +7,16 @@ npm notice 2.0kB fixture-store.js
 npm notice 248B index.js
 npm notice 1.2kB package.json
 npm notice 940B plain-json.js
-npm notice 1.3kB probe.js
+npm notice 1.7kB probe.js
 npm notice 926B service-factory.js
 npm notice Tarball Details
 npm notice name: @dh-relay/dsh-relay-pilot-host
 npm notice version: 0.0.0-dhr26
 npm notice filename: dh-relay-dsh-relay-pilot-host-0.0.0-dhr26.tgz
-npm notice package size: 3.3 kB
-npm notice unpacked size: 8.6 kB
-npm notice shasum: 349186d8eea702edabf537f8e9c6c0fb4c429a9f
-npm notice integrity: sha512-6B+1GCT+rtY/e[...]Fi9Psyi41jy3w==
+npm notice package size: 3.4 kB
+npm notice unpacked size: 9.0 kB
+npm notice shasum: 6b942f89bc854b6acec71e85db0425f5504bc3e0
+npm notice integrity: sha512-C9aa9tqR5WJv3[...]VkWan1e0AEn9g==
 npm notice total files: 8
 npm notice
 dh-relay-dsh-relay-pilot-host-0.0.0-dhr26.tgz

@@ -20,6 +20,7 @@
 | P1 | 草案 snapshot 硬编码 rc.7，会把升级失败后的 rc.6 验证误标成 rc.7。 | 移除公开 snapshot 方法；版本由独立快照脚本从 CLI/包现场采集。 |
 | P1 | 普通 profile 会启动配置监听，单纯打印 probe 可能不退出。 | probe 和 absence probe 通过公共 `ctx.appExit` 请求有界退出。 |
 | P1 | 只有正则静态测试，未证明 fixture 原样传输、schema swap 拒绝与服务清理。 | 增加行为测试与 transcript 逐字段对证，当前 18/18 通过。 |
+| P1 | probe 在 fixture 读取或 absence 检查异常时只抛错，profile watcher 可能继续保持进程。 | 两类 probe 均补错误转录并调用 `ctx.appExit(1)`；行为测试覆盖成功、缺失 launcher seam 与读取失败。 |
 | P2 | npm 10 在错误的 `--prefix ... pack` 调用下会读取调用目录 manifest。 | 操作器改为 `npm pack <absolute-host-root> --dry-run`。 |
 
 ## Host 契约

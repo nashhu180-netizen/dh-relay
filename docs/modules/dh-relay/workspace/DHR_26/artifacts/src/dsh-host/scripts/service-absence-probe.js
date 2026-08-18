@@ -9,16 +9,31 @@ function writeStdout(text) {
   })
 }
 
+function errorPayload(error) {
+  return {
+    name: error instanceof Error ? error.name : 'Error',
+    message: error instanceof Error ? error.message : String(error),
+  }
+}
+
 export function apply(ctx) {
+  const appExit = ctx.get('appExit')
+  if (typeof appExit !== 'function') {
+    throw new Error('relay-pilot-absence-probe: DSH launcher did not provide ctx.appExit')
+  }
+
   const timer = setTimeout(() => {
     void (async () => {
-      const appExit = ctx.get('appExit')
-      if (typeof appExit !== 'function') {
-        throw new Error('relay-pilot-absence-probe: DSH launcher did not provide ctx.appExit')
+      try {
+        const present = ctx.get('relayPilot') !== undefined
+        await writeStdout(`[relay-pilot-absence-probe] ${JSON.stringify({ present })}\n`)
+        appExit(present ? 1 : 0)
+      } catch (error) {
+        await writeStdout(`[relay-pilot-absence-probe-error] ${JSON.stringify({
+          error: errorPayload(error),
+        })}\n`)
+        appExit(1)
       }
-      const present = ctx.get('relayPilot') !== undefined
-      await writeStdout(`[relay-pilot-absence-probe] ${JSON.stringify({ present })}\n`)
-      appExit(present ? 1 : 0)
     })()
   }, 250)
   return () => clearTimeout(timer)

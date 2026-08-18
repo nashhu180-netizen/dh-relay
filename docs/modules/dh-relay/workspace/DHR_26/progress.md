@@ -14,6 +14,7 @@
 6. 用零构建 ESM Host bundle 替换该草案运行包，改为 `@deepseek-ai/cordis ^4.0.0`，移除 Schemastery 与 TypeScript 构建依赖。
 7. 增加 fixture schema guard、逐调用重读、普通 JSON 校验、Host 生命周期单测、profile bundle、一次性 probe、禁用/卸载 absence probe、版本快照、差异、fixture 发现、Client 侦察与 PowerShell 操作器。
 8. 阅读 DSH `profile-boot.ts` 后确认普通 profile 会建立配置监听，补接 `ctx.appExit`，保证 probe 输出后由启动器有界清理并退出。
+9. 最终失败路径复核发现：fixture 读取或 absence 探针异常时，若只抛错可能让 profile watcher 保持进程常驻。probe 与 absence probe 已补充错误转录和 `ctx.appExit(1)`，并纳入 18 项行为测试。
 
 ## 预检结果
 
@@ -21,7 +22,7 @@
 |---|---|---|
 | Node 单测 | 18/18 通过 | `evidence/preflight-unit-tests.txt` |
 | 语法检查 | 通过 | `evidence/preflight-syntax-check.txt` |
-| npm pack dry-run | 通过，8 个运行文件，约 3.3 kB | `evidence/preflight-pack-dry-run.txt` |
+| npm pack dry-run | 通过，8 个运行文件，约 3.4 kB | `evidence/preflight-pack-dry-run.txt` |
 | mock DSH probe 对证 | `RESULT: IDENTICAL`，plain JSON=true | `evidence/preflight-host-probe-report.json` |
 | 源文件清单 | 已生成 sha256 | `evidence/preflight-source-inventory.sha256` |
 | 当前执行环境 | Node 22.16.0、npm 10.9.2；pnpm/dsh/PowerShell 不可用 | `evidence/preflight-environment.txt` |

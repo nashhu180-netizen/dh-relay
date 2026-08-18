@@ -2,109 +2,109 @@ TAP version 13
 # Subtest: returns both fixtures field-for-field with ordinary JSON only
 ok 1 - returns both fixtures field-for-field with ordinary JSON only
   ---
-  duration_ms: 13.900602
+  duration_ms: 8.377373
   type: 'test'
   ...
 # Subtest: returns a fresh object on every call, so consumers cannot mutate the source
 ok 2 - returns a fresh object on every call, so consumers cannot mutate the source
   ---
-  duration_ms: 2.706204
+  duration_ms: 2.686264
   type: 'test'
   ...
 # Subtest: rejects a damaged fixture with an explicit label
 ok 3 - rejects a damaged fixture with an explicit label
   ---
-  duration_ms: 1.422951
+  duration_ms: 1.932551
   type: 'test'
   ...
 # Subtest: rejects a schema swap instead of guessing
 ok 4 - rejects a schema swap instead of guessing
   ---
-  duration_ms: 1.740495
+  duration_ms: 3.441375
   type: 'test'
   ...
 # Subtest: requires explicit fixture locations
 ok 5 - requires explicit fixture locations
   ---
-  duration_ms: 0.26826
+  duration_ms: 0.362801
   type: 'test'
   ...
 # Subtest: operator script isolates DSH Home and pins the approved rc.7 target
 ok 6 - operator script isolates DSH Home and pins the approved rc.7 target
   ---
-  duration_ms: 0.860592
+  duration_ms: 0.618431
   type: 'test'
   ...
 # Subtest: operator script validates install, disable, uninstall, cleanup, and reinstall
 ok 7 - operator script validates install, disable, uninstall, cleanup, and reinstall
   ---
-  duration_ms: 0.273137
+  duration_ms: 0.200228
   type: 'test'
   ...
 # Subtest: native commands are captured and the script refuses a partial version chain
 ok 8 - native commands are captured and the script refuses a partial version chain
   ---
-  duration_ms: 0.282571
+  duration_ms: 0.266568
   type: 'test'
   ...
 # Subtest: is an installable DSH bundle with a removable profile layer
 ok 9 - is an installable DSH bundle with a removable profile layer
   ---
-  duration_ms: 0.632723
+  duration_ms: 0.656229
   type: 'test'
   ...
 # Subtest: runtime imports no DSH private package and contains no write-side filesystem API
 ok 10 - runtime imports no DSH private package and contains no write-side filesystem API
   ---
-  duration_ms: 0.361779
+  duration_ms: 0.419385
   type: 'test'
   ...
 # Subtest: the service adapter exposes the public Cordis seam only
 ok 11 - the service adapter exposes the public Cordis seam only
   ---
-  duration_ms: 0.13407
+  duration_ms: 0.138997
   type: 'test'
   ...
 # Subtest: probe emits ordinary JSON and requests bounded DSH exit
 ok 12 - probe emits ordinary JSON and requests bounded DSH exit
   ---
-  duration_ms: 1.658382
+  duration_ms: 1.809317
   type: 'test'
   ...
-# Subtest: probe fails closed when the DSH launcher exit seam is missing
-ok 13 - probe fails closed when the DSH launcher exit seam is missing
+# Subtest: probe fails closed when the launcher seam is missing or a fixture read fails
+ok 13 - probe fails closed when the launcher seam is missing or a fixture read fails
   ---
-  duration_ms: 0.386136
+  duration_ms: 0.572854
   type: 'test'
   ...
 # Subtest: records client declaration, export shape, type paths, and profile anchor without a feasibility verdict
 ok 14 - records client declaration, export shape, type paths, and profile anchor without a feasibility verdict
   ---
-  duration_ms: 48.139818
+  duration_ms: 64.162648
   type: 'test'
   ...
 # Subtest: registers ctx.relayPilot and removes it with the provider lifecycle
 ok 15 - registers ctx.relayPilot and removes it with the provider lifecycle
   ---
-  duration_ms: 6.628541
+  duration_ms: 15.277475
   type: 'test'
   ...
 # Subtest: inspectRun rejects a run id that the selected fixture does not contain
 ok 16 - inspectRun rejects a run id that the selected fixture does not contain
   ---
-  duration_ms: 2.936387
+  duration_ms: 6.753117
   type: 'test'
   ...
 # Subtest: captures the installed @deepseek-ai dependency closure without shelling out
 ok 17 - captures the installed @deepseek-ai dependency closure without shelling out
   ---
-  duration_ms: 47.116632
+  duration_ms: 64.027848
   type: 'test'
   ...
 # Subtest: rejects a CLI/package version mismatch
 ok 18 - rejects a CLI/package version mismatch
   ---
-  duration_ms: 28.014101
+  duration_ms: 36.800473
   type: 'test'
   ...
 1..18
@@ -115,4 +115,4 @@ ok 18 - rejects a CLI/package version mismatch
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 208.854362
+# duration_ms 280.231481

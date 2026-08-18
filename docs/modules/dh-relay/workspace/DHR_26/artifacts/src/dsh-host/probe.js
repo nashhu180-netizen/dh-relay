@@ -17,6 +17,13 @@ function writeStdout(text) {
   })
 }
 
+function errorPayload(error) {
+  return {
+    name: error instanceof Error ? error.name : 'Error',
+    message: error instanceof Error ? error.message : String(error),
+  }
+}
+
 /** Read both models through ctx.relayPilot, emit one transcript, then exit cleanly under DSH. */
 export async function apply(ctx) {
   const appExit = typeof ctx.get === 'function' ? ctx.get('appExit') : undefined
@@ -24,19 +31,28 @@ export async function apply(ctx) {
     throw new Error('relay-pilot-probe: DSH launcher did not provide ctx.appExit')
   }
 
-  const list = await ctx.relayPilot.listRuns()
-  const detail = await ctx.relayPilot.inspectRun()
-  const payload = {
-    event: 'relay-pilot-host-ready',
-    service: 'ctx.relayPilot',
-    plain_json: isPlainJson(list) && isPlainJson(detail),
-    list_schema: list.schema_version,
-    detail_schema: detail.schema_version,
-    list_sha256: hashJson(list),
-    detail_sha256: hashJson(detail),
-    list,
-    detail,
+  try {
+    const list = await ctx.relayPilot.listRuns()
+    const detail = await ctx.relayPilot.inspectRun()
+    const payload = {
+      event: 'relay-pilot-host-ready',
+      service: 'ctx.relayPilot',
+      plain_json: isPlainJson(list) && isPlainJson(detail),
+      list_schema: list.schema_version,
+      detail_schema: detail.schema_version,
+      list_sha256: hashJson(list),
+      detail_sha256: hashJson(detail),
+      list,
+      detail,
+    }
+    await writeStdout(`[relay-pilot-probe] ${JSON.stringify(payload)}\n`)
+    appExit(0)
+  } catch (error) {
+    await writeStdout(`[relay-pilot-probe-error] ${JSON.stringify({
+      event: 'relay-pilot-host-error',
+      service: 'ctx.relayPilot',
+      error: errorPayload(error),
+    })}\n`)
+    appExit(1)
   }
-  await writeStdout(`[relay-pilot-probe] ${JSON.stringify(payload)}\n`)
-  appExit(0)
 }
