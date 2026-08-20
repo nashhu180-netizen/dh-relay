@@ -36,6 +36,7 @@
 | 2026-08-20 | 主会话(Opus) | 尾巴分流执行：F-012 入 dev-harness 验收池 `ACC-2026-08-20-01`；F-006 因 dh-relay 未注册验收池由 dev-harness 池代管 `ACC-2026-08-20-02`（注册缺口一并入池）；findings 两行改「遗留→验收池（已确认）」 | dev-harness/docs/acceptance/验收池.md | 等 H1/H4 表态后执行收口授权包 |
 | 2026-08-20 | 主会话(Opus) | **人验收敛（E11 闭合）**：AI 答疑（「独立控制面」语义 + 三条判断问题 + H4 投入决策与暂不表态选项）后用户第二轮点选 **H1「够，认可」+ H4「值得，继续」**；review 人类签名区两目的块勾结果、确认记录表追加「通过」行、解锁状态改「已验收」；需求对齐/完成条件#5/元数据 H1H4 行同步收敛；主报告 §5 回填判断结果。真值表判定=**全验收通过**（全部结果项通过 ∧ 无方向闸 ∧ 无未验证项 ∧ Risk-Count 0） | review.md 人类签名区；主报告 §5 | E12 verify 提交 |
 | 2026-08-20 | 主会话(Opus) | E12 前路径所有权审计：index 干净；工作树并行 WIP = `workspace/DHR_49/`（并行 session 已开工桌面轨 Client 卡，untracked）与本卡路径零重叠 → 按精确路径 stage（dev_plan P4 / workspace/DHR_27 / design/evidence/10），不碰 DHR_49 | git status 转录（对话内） | verify 提交 + E13 销户 |
+| 2026-08-20 | 主会话(Opus) | E12 verify 提交 `252a131`（Verification: full，Risk-Count: 0，Verified-Via chat-confirm 两轮点选）；E13 销户：DevPlan DHR_27 行改「已完成 · 2026-08-20 / 252a131 · release_mode=full」、dh:status 现状块刷新、review verify SHA 回填；无 worktree 无需清树 | git log 252a131；DevPlan §3.1 | 本行随销户 docs 提交落盘，卡收口完毕 |
 | 2026-08-20 | 主会话(Opus) | 修 F-010 证据保鲜：主报告 §2.1 补三次冻结哈希稳定说明；对比文件补时序附注并以现行代码复算冻结投影 file_sha256=f542818f（回到留档原值）、语义对证仍 IDENTICAL；批次小审轮 1 至此全部闭环（3/3 approved） | E-024 | 派 E2 轮 2 增量复核 |
 
 ## 证据账本 (Evidence Ledger)
