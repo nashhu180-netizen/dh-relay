@@ -1,0 +1,21 @@
+{
+  "name": "@personal/dsh-relay-absence-probe",
+  "version": "0.0.0-pilot.1",
+  "description": "Out-of-package absence probe for the Relay P4 Pilot Host service",
+  "private": true,
+  "type": "module",
+  "main": "./index.mjs",
+  "exports": {
+    ".": "./index.mjs",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.mjs",
+    "absence.patch.yml",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "UNLICENSED"
+}

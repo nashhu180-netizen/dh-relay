@@ -1,0 +1,17 @@
+# Persistent profile layer installed by `dsh plugin --profile <name> add <path>`.
+#
+# Every fixture the Host reads is named here. The plugin never scans a directory
+# and never picks a list for you, so changing what it reads means editing this
+# file — not dropping a file into the fixture root.
+- insert:
+    - id: relay-pilot-host
+      name: '@personal/dsh-relay-host'
+      config:
+        fixtureRoot: !!js process.env.RELAY_PILOT_FIXTURE_ROOT
+        listFixture: runs-active.json
+        detailFixtures:
+          - run-basic.json
+          - run-blocked.json
+          - run-chinese.json
+          - run-empty.json
+          - run-status-matrix.json

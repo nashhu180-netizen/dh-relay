@@ -1,0 +1,17 @@
+$ node --test test/*.test.mjs
+TAP version 13
+ok 1 - selects the populated list and returns correlated detail JSON
+ok 2 - public results are detached and cannot mutate the frozen repository snapshot
+ok 3 - rejects a list/detail attention mismatch instead of deriving a value
+ok 4 - rejects a missing detail instead of fabricating one
+ok 5 - preserves group verbatim when only run_status changes
+ok 6 - treats __proto__ as an ordinary run id without prototype pollution
+ok 7 - canonical hash is key-order independent
+ok 8 - package is an installable profile bundle with a peer Cordis runtime
+ok 9 - Host runtime imports no DSH private implementation package
+ok 10 - service has no route/event/timer/process registration side channel
+ok 11 - patches expose one persistent row plus explicit probe/disable/enable overlays
+1..11
+# tests 11
+# pass 11
+# fail 0

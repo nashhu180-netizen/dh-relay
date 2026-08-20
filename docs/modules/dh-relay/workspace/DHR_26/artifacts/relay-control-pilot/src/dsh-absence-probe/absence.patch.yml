@@ -1,0 +1,6 @@
+# Temporary evidence overlay. This probe lives in its own package, so it stays
+# installed after `dsh plugin --profile <name> remove @personal/dsh-relay-host`
+# and can report on the removed state — which the Host's in-package copy cannot.
+- insert:
+    - id: relay-pilot-absence-probe
+      name: '@personal/dsh-relay-absence-probe'

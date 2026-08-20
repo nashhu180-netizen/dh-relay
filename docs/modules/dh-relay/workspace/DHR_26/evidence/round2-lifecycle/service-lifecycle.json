@@ -1,0 +1,11 @@
+{
+  "probe": "relay-pilot-service-lifecycle",
+  "cordis": "C:\\Users\\nash\\AppData\\Roaming\\npm\\node_modules\\@deepseek-ai\\dsh\\node_modules\\@deepseek-ai\\cordis\\lib\\index.js",
+  "plugin": "relay-pilot-host",
+  "absent_before_apply": true,
+  "present_after_apply": true,
+  "fixture_hash_while_live": "67fb18b3d7d84fa8a3f188f0db67539eb0421aeac4e5c3aadbf536807d39612c",
+  "run_count_while_live": 5,
+  "absent_after_dispose": true,
+  "result": "CLEANED"
+}

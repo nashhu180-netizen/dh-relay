@@ -1,0 +1,51 @@
+file:///C:/Users/nash/AppData/Roaming/npm/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/dsh-app-boot/lib/index.js:1186
+		throw new Error(`${binName}: ${stage}: ${detail}${stack}`, { cause });
+		      ^
+
+Error: dsh: plugin tree failed to load: failed to apply loader entry include (cordis:include): failed to import loader entry relay-pilot-host (@personal/dsh-relay-host): Cannot find package '@deepseek-ai/cordis' imported from D:\MyFiles\ai-workflow\dh-relay-p4-pilot\relay-control-pilot\src\dsh-host\index.mjs
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@deepseek-ai/cordis' imported from D:\MyFiles\ai-workflow\dh-relay-p4-pilot\relay-control-pilot\src\dsh-host\index.mjs
+    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:316:9)
+    at packageResolve (node:internal/modules/esm/resolve:768:81)
+    at moduleResolve (node:internal/modules/esm/resolve:858:18)
+    at defaultResolve (node:internal/modules/esm/resolve:990:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:718:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:735:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:764:52)
+    at #resolve (node:internal/modules/esm/loader:700:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:620:35)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:143:33)
+    at boot (file:///C:/Users/nash/AppData/Roaming/npm/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/dsh-app-boot/lib/index.js:1186:9)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async runProfile (file:///C:/Users/nash/AppData/Roaming/npm/node_modules/@deepseek-ai/dsh/lib/profile-boot-DG5t9aNs.js:247:14)
+    at async file:///C:/Users/nash/AppData/Roaming/npm/node_modules/@deepseek-ai/dsh/lib/bin.js:133:3 {
+  [cause]: Error: failed to apply loader entry include (cordis:include): failed to import loader entry relay-pilot-host (@personal/dsh-relay-host): Cannot find package '@deepseek-ai/cordis' imported from D:\MyFiles\ai-workflow\dh-relay-p4-pilot\relay-control-pilot\src\dsh-host\index.mjs
+      at updateError (file:///C:/Users/nash/AppData/Roaming/npm/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js:299:9)
+      at Entry._init (file:///C:/Users/nash/AppData/Roaming/npm/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js:519:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+    [cause]: Error: failed to import loader entry relay-pilot-host (@personal/dsh-relay-host): Cannot find package '@deepseek-ai/cordis' imported from D:\MyFiles\ai-workflow\dh-relay-p4-pilot\relay-control-pilot\src\dsh-host\index.mjs
+        at updateError (file:///C:/Users/nash/AppData/Roaming/npm/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js:299:9)
+        at Entry._init (file:///C:/Users/nash/AppData/Roaming/npm/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js:514:10)
+        at async Entry.init (file:///C:/Users/nash/AppData/Roaming/npm/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js:495:4)
+        at async Entry.update (file:///C:/Users/nash/AppData/Roaming/npm/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js:416:37)
+        at async EntryGroup.create (file:///C:/Users/nash/AppData/Roaming/npm/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js:55:4)
+        at async Promise.allSettled (index 129)
+        at async EntryGroup.update (file:///C:/Users/nash/AppData/Roaming/npm/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js:87:21)
+        at async Include._apply (file:///C:/Users/nash/AppData/Roaming/npm/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/dsh-app-boot/lib/index.js:238:3) {
+      [cause]: Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@deepseek-ai/cordis' imported from D:\MyFiles\ai-workflow\dh-relay-p4-pilot\relay-control-pilot\src\dsh-host\index.mjs
+          at Object.getPackageJSONURL (node:internal/modules/package_json_reader:316:9)
+          at packageResolve (node:internal/modules/esm/resolve:768:81)
+          at moduleResolve (node:internal/modules/esm/resolve:858:18)
+          at defaultResolve (node:internal/modules/esm/resolve:990:11)
+          at #cachedDefaultResolve (node:internal/modules/esm/loader:718:20)
+          at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:735:38)
+          at ModuleLoader.resolveSync (node:internal/modules/esm/loader:764:52)
+          at #resolve (node:internal/modules/esm/loader:700:17)
+          at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:620:35)
+          at ModuleJob.syncLink (node:internal/modules/esm/module_job:143:33) {
+        code: 'ERR_MODULE_NOT_FOUND'
+      }
+    }
+  }
+}
+
+Node.js v24.12.0

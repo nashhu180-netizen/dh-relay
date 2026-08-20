@@ -1,0 +1,8 @@
+# Temporary evidence overlay for the *disabled* path only: pair it with
+# disable.patch.yml. It cannot report on the removed path — this probe ships
+# inside the Host package, so `dsh plugin remove @personal/dsh-relay-host` takes
+# it away too and the boot fails with `Cannot find package`. For the removed
+# state use the standalone @personal/dsh-relay-absence-probe package instead.
+- insert:
+    - id: relay-pilot-absence-probe
+      name: '@personal/dsh-relay-host/absence-probe'

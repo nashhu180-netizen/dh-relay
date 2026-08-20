@@ -1,0 +1,49 @@
+{
+  "result": "IDENTICAL",
+  "service": "ctx.relayPilot",
+  "plain_json": true,
+  "fixture_root": "D:\\MyFiles\\ai-workflow\\dh-relay-p4-pilot\\relay-control-pilot\\testdata\\fake",
+  "fixture_hash": "67fb18b3d7d84fa8a3f188f0db67539eb0421aeac4e5c3aadbf536807d39612c",
+  "list_fixture": "runs-active.json",
+  "list_identical": true,
+  "detail_checks": [
+    {
+      "fixture": "run-basic.json",
+      "run_id": "fake-run-0001",
+      "present": true,
+      "identical": true
+    },
+    {
+      "fixture": "run-blocked.json",
+      "run_id": "fake-run-0002",
+      "present": true,
+      "identical": true
+    },
+    {
+      "fixture": "run-chinese.json",
+      "run_id": "fake-run-0005",
+      "present": true,
+      "identical": true
+    },
+    {
+      "fixture": "run-empty.json",
+      "run_id": "fake-run-0003",
+      "present": true,
+      "identical": true
+    },
+    {
+      "fixture": "run-status-matrix.json",
+      "run_id": "fake-run-0004",
+      "present": true,
+      "identical": true
+    }
+  ],
+  "details_identical": true,
+  "degraded_run_ids": [
+    "fake-run-0007",
+    "fake-run-0006"
+  ],
+  "degrade_honoured": true,
+  "degrade_probed_run_id": "fake-run-0007",
+  "degrade_probe_returned_null": true
+}

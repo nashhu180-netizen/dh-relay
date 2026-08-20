@@ -1,0 +1,36 @@
+✔ loads the real DHR_25 fixture set, whose list and details do not line up 1:1 (4.4003ms)
+✔ reports the mismatch as diagnostics rather than throwing (1.4427ms)
+✔ a listed run without a detail reads back as null, and every other run resolves (1.5974ms)
+✔ passes the real list and detail models through byte-identical (1.9691ms)
+✔ real snapshot results are detached from the frozen internal state (1.5816ms)
+✔ the same real fixture set hashes identically across loads (1.8054ms)
+✔ accepts the delimiter-separated and JSON-array forms of detailFixtures (3.4863ms)
+✔ loads with no detail fixtures at all and degrades every run (0.4465ms)
+✔ requires listFixture instead of picking one for you (0.4155ms)
+✔ rejects a wrong-schema document named as the list (0.3713ms)
+✔ rejects a wrong-schema document named as a detail (0.422ms)
+✔ rejects two detail fixtures claiming the same run_id (0.5046ms)
+✔ reports unreadable and unparsable fixtures with their own codes (2.8947ms)
+✔ treats __proto__ as an ordinary run id without prototype pollution (4.2883ms)
+✔ canonical hash is key-order independent (0.1153ms)
+✔ package is an installable profile bundle without a second Cordis package identity (1.6943ms)
+✔ every runtime file and patch overlay is declared in files/exports (0.1909ms)
+✔ Host runtime imports only the public installation-owned Cordis service API (1.2551ms)
+✔ service has no route/event/timer/process registration side channel (0.3652ms)
+✔ the store reads only the fixtures config names, with no directory walk (0.4362ms)
+✔ both probes keep the namespace export shape the Cordis loader needs (0.7631ms)
+✔ the bundle patch names its fixtures explicitly instead of discovering them (0.5711ms)
+✔ overlays stay explicit and separate from the persistent bundle row (0.712ms)
+✔ the probe survives the Cordis loader unwrap with inject intact (1.1066ms)
+✔ the probe module exports no default, which is what preserves inject (0.1224ms)
+✔ the probe refuses to run without the launcher-provided appExit (3.521ms)
+✔ the probe emits one transcript over real fixtures and exits 0 through appExit (2.364ms)
+✔ the probe reports a service failure through appExit(1) instead of hanging (0.2598ms)
+ℹ tests 28
+ℹ suites 0
+ℹ pass 28
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 173.6822

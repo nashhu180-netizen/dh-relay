@@ -1,0 +1,6 @@
+$ dsh --profile web --patch ./src/dsh-absence-probe/absence.patch.yml
+--- stdout ---
+[relay-pilot-absence-probe] {"event":"relay-pilot-absence-checked","probe":"out-of-package","present":false}
+--- stderr ---
+--- exit code ---
+0

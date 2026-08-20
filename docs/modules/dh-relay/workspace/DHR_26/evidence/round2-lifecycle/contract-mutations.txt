@@ -1,0 +1,22 @@
+# package contract mutation check — 9 mutants
+
+BITES   computed dynamic import
+         exit=1  index.mjs must not use a computed dynamic import
+BITES   createRequire escape hatch
+         exit=1  index.mjs must not use createRequire
+BITES   CommonJS require of a bare specifier
+         exit=1  index.mjs must not use require()
+BITES   runtime file not declared in package.files
+         exit=1  Expected values to be strictly deep-equal:
+BITES   default export that would drop inject
+         exit=1  probe.mjs must not export a default
+BITES   bare import hidden in a shipped subdirectory
+         exit=1  lib/sneaky.mjs must not import the bare specifier @deepseek-ai/cordis
+BITES   runtime file in an undeclared subdirectory
+         exit=1  Expected values to be strictly deep-equal:
+BITES   bare import hidden in a shipped lib/test/ directory
+         exit=1  lib/test/sneaky.mjs must not import the bare specifier @deepseek-ai/cordis
+BITES   bare import in a .cjs file at the package root
+         exit=1  sneaky.cjs must not use require()
+
+RESULT: ALL 9 MUTANTS CAUGHT

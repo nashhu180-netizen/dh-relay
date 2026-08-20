@@ -1,0 +1,30 @@
+# transcript mutation check — 1 control + 12 mutants
+
+CONTROL ok   real transcript -> RESULT: IDENTICAL
+
+BITES   details, detail_fixtures and diagnostics all emptied
+         failed checks: snapshot.detail_fixtures, snapshot.details, snapshot.diagnostics
+BITES   fixture_hash replaced
+         failed checks: snapshot.fixture_hash
+BITES   one detail field tampered
+         failed checks: snapshot.details
+BITES   detail-unlisted diagnostics dropped
+         failed checks: snapshot.diagnostics
+BITES   detail_missing_run_id points at a run that does have a detail
+         failed checks: missing_run_is_really_missing
+BITES   snapshot.schema_version changed
+         failed checks: snapshot.schema_version
+BITES   probe envelope service renamed
+         failed checks: service
+BITES   list_sha256 tampered
+         failed checks: list_sha256
+BITES   an extra run smuggled into details
+         failed checks: snapshot.details
+BITES   detail_missing_returns_null flipped to false
+         failed checks: missing_returns_null
+BITES   an unplanned key added to the probe envelope
+         failed checks: no_unexpected_payload_keys
+BITES   detail_fixtures reordered
+         failed checks: snapshot.detail_fixtures
+
+RESULT: CONTROL PASSED AND ALL 12 MUTANTS CAUGHT

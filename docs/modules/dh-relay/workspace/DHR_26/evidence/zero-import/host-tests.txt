@@ -1,0 +1,48 @@
+✔ the absence probe keeps the namespace export shape (0.6326ms)
+✔ reports absence and exits 0 when the service row is gone (261.6131ms)
+✔ reports presence and exits 1 when the service row is still there (265.2485ms)
+✔ refuses to run without the launcher-provided appExit (0.5565ms)
+✔ returns a disposer that cancels the pending check (511.5791ms)
+✔ loads the real DHR_25 fixture set, whose list and details do not line up 1:1 (4.275ms)
+✔ reports the mismatch as diagnostics rather than throwing (1.2963ms)
+✔ a listed run without a detail reads back as null, and every other run resolves (1.5976ms)
+✔ an unlisted detail stays reachable through getRun — the other half of the contract (1.5906ms)
+✔ passes the real list and detail models through byte-identical (2.4104ms)
+✔ real snapshot results are detached from the frozen internal state (1.4607ms)
+✔ the same real fixture set hashes identically across loads (1.975ms)
+✔ accepts every documented form of detailFixtures, including absolute paths (7.383ms)
+✔ loads with no detail fixtures at all and degrades every run (1.2728ms)
+✔ requires listFixture instead of picking one for you (0.676ms)
+✔ rejects a wrong-schema document named as the list (0.4321ms)
+✔ rejects a wrong-schema document named as a detail (0.6676ms)
+✔ rejects two detail fixtures claiming the same run_id (0.7847ms)
+✔ reports unreadable and unparsable fixtures with their own codes (4.9976ms)
+✔ treats __proto__ as an ordinary run id without prototype pollution (4.8659ms)
+✔ canonical hash is key-order independent (0.2588ms)
+✔ package is an installable profile bundle without a second Cordis package identity (1.5028ms)
+✔ every runtime file and patch overlay is declared in files/exports (0.1917ms)
+✔ no runtime file imports anything outside this package (0.9901ms)
+✔ the Host publishes ctx.relayPilot through the public provide API (0.5513ms)
+✔ service has no route/event/timer/process registration side channel (0.4215ms)
+✔ the store reads only the fixtures config names, with no directory walk (0.37ms)
+✔ no runtime file exports a default, which is what preserves inject and name (1.4327ms)
+✔ the bundle patch names its fixtures explicitly instead of discovering them (0.2894ms)
+✔ overlays stay explicit and separate from the persistent bundle row (0.566ms)
+✔ the Host survives the Cordis loader unwrap as an object plugin (0.6425ms)
+✔ apply publishes ctx.relayPilot with the five read-only methods (3.7226ms)
+✔ the published surface exposes no write path and no live objects (2.1835ms)
+✔ apply fails fast when no list fixture is configured (0.4567ms)
+✔ createRelayPilotApi works without any context at all (1.3856ms)
+✔ the probe survives the Cordis loader unwrap with inject intact (1.0267ms)
+✔ the probe module exports no default, which is what preserves inject (0.157ms)
+✔ the probe refuses to run without the launcher-provided appExit (3.8377ms)
+✔ the probe emits one transcript over real fixtures and exits 0 through appExit (2.2378ms)
+✔ the probe reports a service failure through appExit(1) instead of hanging (0.2244ms)
+ℹ tests 40
+ℹ suites 0
+ℹ pass 40
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1160.4133

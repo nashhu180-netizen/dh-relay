@@ -1,0 +1,26 @@
+IN SYNC (content): 27 files across 2 package(s) under D:\MyFiles\ai-workflow\dh-relay-p4-pilot
+NOTE: 24 file(s) differ only in line endings (core.autocrlf rewrites the mirror on checkout):
+  line endings only:  dsh-host\absence-probe.mjs
+  line endings only:  dsh-host\absence.patch.yml
+  line endings only:  dsh-host\cordis.patch.yml
+  line endings only:  dsh-host\fixture-store.mjs
+  line endings only:  dsh-host\index.mjs
+  line endings only:  dsh-host\package.json
+  line endings only:  dsh-host\probe.mjs
+  line endings only:  dsh-host\README.md
+  line endings only:  dsh-host\scripts\compare-snapshots.mjs
+  line endings only:  dsh-host\scripts\contract-mutation-check.mjs
+  line endings only:  dsh-host\scripts\service-lifecycle-probe.mjs
+  line endings only:  dsh-host\scripts\snapshot-dsh.mjs
+  line endings only:  dsh-host\scripts\transcript-mutation-check.mjs
+  line endings only:  dsh-host\scripts\verify-transcript.mjs
+  line endings only:  dsh-host\test\absence-probe.test.mjs
+  line endings only:  dsh-host\test\fixture-store.test.mjs
+  line endings only:  dsh-host\test\package-contract.test.mjs
+  line endings only:  dsh-host\test\plugin-shape.test.mjs
+  line endings only:  dsh-host\test\probe.test.mjs
+  line endings only:  dsh-host\test\real-fixtures.mjs
+  line endings only:  dsh-absence-probe\absence.patch.yml
+  line endings only:  dsh-absence-probe\index.mjs
+  line endings only:  dsh-absence-probe\package.json
+  line endings only:  dsh-absence-probe\README.md

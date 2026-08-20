@@ -1,0 +1,53 @@
+{
+  "result": "IDENTICAL",
+  "failed_checks": [],
+  "fixture_root": "D:\\MyFiles\\ai-workflow\\dh-relay-p4-pilot\\relay-control-pilot\\testdata\\fake",
+  "expected_list_fixture": "runs-active.json",
+  "expected_detail_fixtures": [
+    "run-basic.json",
+    "run-blocked.json",
+    "run-chinese.json",
+    "run-empty.json",
+    "run-status-matrix.json"
+  ],
+  "expected_fixture_hash": "67fb18b3d7d84fa8a3f188f0db67539eb0421aeac4e5c3aadbf536807d39612c",
+  "transcript_fixture_hash": "67fb18b3d7d84fa8a3f188f0db67539eb0421aeac4e5c3aadbf536807d39612c",
+  "expected_missing_run_ids": [
+    "fake-run-0007",
+    "fake-run-0006"
+  ],
+  "expected_unlisted_run_ids": [
+    "fake-run-0003",
+    "fake-run-0004"
+  ],
+  "snapshot_key_check": {
+    "no_unexpected_keys": true
+  },
+  "snapshot_field_checks": {
+    "detail_fixtures": true,
+    "details": true,
+    "diagnostics": true,
+    "fixture_hash": true,
+    "list": true,
+    "list_fixture": true,
+    "schema_version": true
+  },
+  "envelope_checks": {
+    "event": true,
+    "service": true,
+    "plain_json_claimed": true,
+    "plain_json_verified": true,
+    "fixture_hash_echo": true,
+    "list_fixture_echo": true,
+    "detail_fixtures_echo": true,
+    "diagnostics_echo": true,
+    "list_schema": true,
+    "list_run_ids": true,
+    "list_sha256": true,
+    "present_run_is_really_present": true,
+    "present_schema": true,
+    "present_sha256": true,
+    "missing_run_is_really_missing": true,
+    "missing_returns_null": true
+  }
+}

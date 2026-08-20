@@ -1,0 +1,1 @@
+[relay-pilot-absence-probe] {"event":"relay-pilot-absence-checked","present":false}
