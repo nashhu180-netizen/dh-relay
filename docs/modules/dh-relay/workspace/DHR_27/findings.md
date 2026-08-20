@@ -1,0 +1,22 @@
+<!-- findings.md — 问题清单。🟢 边做边记。 -->
+# findings — DHR_27
+
+## 问题
+
+| ID | 级别 | 问题 | 证据 | 处理 | 状态 |
+|----|------|------|------|------|------|
+| F-001 | P2→已澄清 | 批 3 审计扫出桌面轨并行施工事实（Pilot 仓 `src/dsh-host/` 等，当时 dh-relay 无 workspace/DHR_26）；随后查明是 **DHR_26 并行 session 正在收口**——同日 15:59 已 verify（`c90cf88`，用户签）+ 销户留痕（`b64757b`），workspace/DHR_26 完整落户。主报告 §3 已按其正式登记的 DM1/DM4a/DM5a 事实更新。遗留协调点：HEAD 的 DevPlan 任务表 DHR_26 状态行仍「未开始」（其 E13 刷 status 未竟或让路于本卡工作树，由该轨/计划层收尾，本卡不代改） | E-011；git log c90cf88/b64757b；workspace/DHR_26/ | 主报告已更新；不代改 DHR_26 状态行 | resolved |
+| F-002 | P3 | v1 协议缺口清单（P5 协议设计输入）：v1 不记录 `workflow_name / summary / trigger / trigger_by`（投影须操作员补供并 note 留痕）、无 run 级状态（投影按节点聚合）、无节点 title（1:1 用 node_id）、无 run 级 attempt（缺省=不记录）、`brief_ref` 携带主机绝对路径（进仓须改写）、`terminal_state` 是 psmux 会话观测态而非任务结果（映射时不参与判定） | project-v1.mjs 映射表；freeze-manifest.json rewrites | 写进主报告「v1 协议缺口」节，带往 P5 DHR_30 | open |
+| F-004 | P2 | 批 1 小审：批 1「全量绿」的验证时点需澄清——小审复跑时 project.test.mjs（批 2 TDD 预期红）已落盘，`test/*.test.mjs` 非全绿，易被误读为批 1 回归 | 批 1 小审报告；E-004 / E-007 | progress 已加 P2 澄清行：批 1 的 136/136 在 project.test 落盘前，时序以 progress 行序为准 | resolved |
+| F-005 | P3 | 批 1 小审 ×3：①冻结侧 HOST_PATH 正则不覆盖 ~/、$HOME、%USERPROFILE%、file://、../（小审扩展模式亲扫零命中，无实际泄露）②freeze.test source_files 路径正则写法怪异（":foo" 可穿过，实际被整文本扫描兜底）③manifest excluded 含幽灵条目 relay-state.json.tmp（源目录无此文件） | 批 1 小审报告 | 三条当场修复：正则拓宽（脚本+两测试）、显式否定盘符写法、EXCLUDED 按实际存在过滤+反幽灵断言；重冻结复验 E-019/E-020 | resolved |
+| F-006 | P3 | E4 需求复核：DevPlan DHR_27「变更范围」枚举不含实际必要触点 `src/cli/`（project 子命令）、`scripts/`、`test/`，而同卡 CM6a 口径又明写 `src/cli/` 属「DHR_25/27 变更范围」——DevPlan 自身两处不一致，brief 只读副本随之登记不完备；定性=登记不完备，非越界（CLI 子命令是「由 Pilot CLI 渲染完成收口」的必要动作，且全部落在 CM6a 审计范围内） | E4 复核报告；DevPlan §3.2 DHR_27 变更范围行 vs CM6a 行 | 用户 2026-08-20 对话点选「入验收池」→ 因 dh-relay 未注册验收池，由 dev-harness 池代管 `ACC-2026-08-20-02`（含注册缺口本身）；待下次 B 事件补全枚举 | 遗留→验收池 ACC-2026-08-20-02（已确认） |
+| F-007 | P3 | E4 需求复核 ×2（已修）：①brief In scope 把 evidence/ 误标为「Pilot 代码仓内」（实物在实验根 evidence/v1/）；②review.md 人类签名区「解锁状态」预写模板目标态「已验收」，有被误读风险 | E4 复核报告 | ①brief 已更正并注明出处；②该行已改写真实状态「未验收（待人验 H1/H4）」 | resolved |
+| F-008 | P3 | 批 2 小审登记类已知行为 ×4（不修，留痕）：①重复 flag 后者静默覆盖；②节点缺 last_progress_at 时 attention.since=undefined 被 schema fail-close 拒但报错定位不友好（留待 v1 现场真实出现）；③top_attention_summary 取首条而非最高 severity（当前两类均 warn 无实际分歧）；④loadV1RunDir 不校验 relay-state 与 proposal 的 run_id 一致性（文件混搭静默出错，低风险） | 批 2 小审报告 | 登记为已知行为；②③④属 P5 协议/实现细化时一并处理 | resolved |
+| F-009 | P3 | E14 一致性复核「遗漏待修」×2：①cli.test.mjs 的 hostPath 正则未跟上批 1 拓宽（第四份副本漏改）；②全部扫描正则缺 schema 权威 HOST_ROOTS 里的 `/mnt/ /var/ /etc/` 三根（与「wider than schema」自声明矛盾） | E14 复核报告（e:E-017） | 当场修复：五处正则统一补齐三根 + cli.test 同步拓宽；拓宽后 DHR_25 故意反样例 `testdata/bad/host-path-locator.json`（含 fictional /var/ 路径以测校验器拒绝）命中扫描，按其存在目的给予显式豁免（凭据扫描不豁免）；159/159 绿 + 源目录零写入复验 | resolved |
+| F-010 | P3 | 批 3 小审证据保鲜 ×2：①主报告 §2.1 引用的 manifest 时间戳（07:21Z）因两次复核驱动的重冻结过时（末次 09:10:43Z）；②frozen-vs-live-comparison.txt 的冻结投影 file_sha256 在复核中间态（f45d2626）与留档值（f542818f）不一致 | 批 3 小审报告（e:E-015） | ①报告补「三次冻结哈希逐字节稳定」说明；②对比文件补时序附注。**轮 2 更正**：附注初版把 f45d2626 归因为「瞬时代码态」是错的——实为末尾 LF 记账口径差（含 LF 1527 字节=f45d2626，去 LF 1526 字节=f542818f，内容零漂移），对比文件已追加 correction 节，E-024 口径已注明；语义级对证双方复算均 IDENTICAL | resolved |
+| F-011 | P3 | E2 轮 2 新发现 ×3：①F-010 处置里「f45d2626=瞬时代码态」归因事实性错误（实为末尾 LF 记账口径差，内容零漂移）；②故意反样例 host-path-locator.json 的存在目的（校验器拒绝主机路径）未被任何测试消费，将来改坏无报警而扫描豁免仍生效；③主报告测试计数（17/153）与 cm6a-audit 行号引用陈旧 | E2 轮 2 报告（e:E-023） | 全部当场处置：①对比文件追加 correction 节 + F-010/E-024 口径补正 ②cli.test exit-3 负例清单钉入该 fixture ③报告刷新为 23 条/159、审计文件补保鲜注；全量重跑 159/159（E-025） | resolved |
+| F-012 | P3 | dev-harness 工具侧观察（非本卡缺陷）：`dh gate` 的五路复核行依赖 design/05 §九「绑定对象」协议（`evaluateReleasePolicy` 无 binding 一律 `missing-binding` 判红），而 review.md 表格形态目前无法承载绑定——同套 dh-core 判定（reviewerCount=6、hasTwoRounds、incrementalReviewLogged、reviewPolicyFacts 五路全 true）全绿；工具自带 gate 测试期望（fixture 无绑定应 ✅）与现行 policy 行为矛盾，属绑定机制半落地。gate 本就只读不拦，本卡收口以 dh-check（DHR_27 项已清零）+ E 系列登记 + 用户确认为准 | 本卡对话内 node 直跑 dh-core/policy 的输出对照 | 用户 2026-08-20 对话点选「入验收池」→ dev-harness 池 `ACC-2026-08-20-01` | 遗留→验收池 ACC-2026-08-20-01（已确认） |
+| F-003 | P3 | 冻结投影与活现场投影字节级不等（file_sha256 不同）是设计使然：source_refs 内嵌各源文件 sha256，冻结版 plan 文件因授权改写（brief_ref 绝对→相对）哈希必异；语义级（除 source_refs 外全字段）对证 IDENTICAL，另两个文件 same-bytes | evidence/v1/frozen-vs-live-comparison.txt | 主报告 CM3 节说明；task_plan 步 10 预期「应全等」按此修正口径（跑偏记此，不回写 task_plan） | resolved |
+
+> 级别：P0 阻塞发布 / 数据丢失 / 安全 · P1 阻塞任务目标 · P2 质量 / 证据缺口 · P3 后续不阻塞
+> 遗留（P0/P1 唯一合法路径，DC_46）：状态列写 `遗留→<DC_xx / backlog / 下计划名>（已确认）`——"已确认"三字代表你已在对话里明确点头同意把这条留到别处；没有这三个字，`dh-check` R13 仍按 `open` 处理、拦下"带病收口"。AI 不得自行把 open 的 P0/P1 划成遗留。
