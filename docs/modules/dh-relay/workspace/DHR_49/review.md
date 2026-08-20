@@ -40,11 +40,26 @@
 
 > 复核者另有一项建议（`src/dsh-host/` 只有 mtime 佐证、非内容证明）：**已采纳**，落 `src/dsh-host/` 的 sha256 基线清单，见 E-018。
 
+### CP1 返工收敛复检的发现与处置（轮 1 第 2 次，append-only）
+
+| 级别 | 发现 | 处置 | 证据 |
+|---|---|---|---|
+| **P2** | **测试缝留了一个真洞**：`dsh-client-host.test.mjs` 自己把 `__remoteInitializers__` 应用到裸实例上，证明的是「initializer 有效」而非「构造器会跑 initializer」。复检者把构造器里 `for (…) initialize.call(this)` 整行删掉，**6/6 仍全绿**——而运行时面板会直接失去 hash/list | **已修**。改为走**真实构造路径**：起真 Cordis `Context`、`ctx.provide('relayPilot', …)`、`ctx.plugin(RelayPanelGateway)`，再问 `remoteMethods(live)`；顺带验 `typertRemote` 绑定。并把这次手工验证**固化成常驻变异脚本** `scripts/mutate-dsh-client-host.mjs`（10 条，含复检者试过的四个变体），10/10 见红 + 正控全绿 | E-024 / E-025 |
+| **P2** | `SHA256SUMS.txt` 里 `load-client-bundle.mjs` 一条**是批-2 版本**，不是批-1 原件（复检者自陈：其抢救拷贝晚了 36 秒）。原件已不存在 | **已如实标注，未补造假文件**（按复检者建议）。注明成因、差异（仅新增 `export const PKG_ROOT`）、以及 round-1 结论不受影响；其余 9 条经复检者逐条重算与批-1 内容逐字节相同 | E-027 |
+| P3 | 白名单靠正则提取字面量，**计算式 `require(NAME)` 溜得过去** | **已修**。加断言：`require(` 出现次数必须等于字面量匹配数；配套变异一条见红（变异总数 15→16） | E-026 |
+| P3 | `__remoteInitializers__` 导出活数组，外部可 push | **已修**，`Object.freeze()` | E-024 |
+| P3 | 换机重跑时宿主侧 6 条会静默 skip，`skipped 0` 变 `skipped 6` | **接受，转批 3**。跨机跑时证据里必须写明 skip 了几条，不拿「全绿」盖过去。变异脚本已把 `skipped>0` 判为「结论无效」而非「见红」 | 待 E-xxx（批 3） |
+
+> **复检者独立复跑的三条数字**（未采信我贴的）：`npm test` 185/0/0；contract 变异 15/15；grouping 变异 6/6。处置后重跑：contract 变异 **16/16**、host 变异 **10/10**、全量 **185/185 skipped 0**。
+>
+> **自查补记**：写 host 变异脚本时又逮到我自己测试里的一个 bug——客户端面用写死相对路径导入，变异改的是副本、测试读的是真包，那条变异当场没咬。已改为全部经 `PKG_ROOT`。这是本卡第三次由变异/正控逮到自写断言的缺陷（前两次：vm realm 的 deepEqual 误报、DHR_26 §17 的退格字符）。
+
 **返工收敛**（有 open P0/P1 → 修 → 重跑证据 → 复核者再过；最多 3 轮；3 轮不收敛则停，摆给用户决断）
 
 | 轮次 | open P0/P1 数 | 处理 / 重跑了什么证据 | 是否收敛 |
 |------|--------------|----------------------|---------|
-| 1 | 2（P1-1 证据保全 / P1-2 宿主零覆盖） | P1-1：抢救并冻结批 1 源码快照 + SHA256SUMS（`client.js` 哈希与 E-008 逐字符相同）。P1-2：新增 6 条宿主侧断言（真库、非 stub）。连带修掉 P2-1/2/3/4/7 与 P3-1/2/3。重跑：全量 `npm test`、`mutate-dsh-client-contract`（**15/15 见红 + 两份正控全绿**，扩容前为 7）、`mutate-dsh-client-grouping`（6/6） | **是**（open P0/P1 → 0；待复核者再过） |
+| 1 | 2（P1-1 证据保全 / P1-2 宿主零覆盖） | P1-1：抢救并冻结批 1 源码快照 + SHA256SUMS（`client.js` 哈希与 E-008 逐字符相同）。P1-2：新增 6 条宿主侧断言（真库、非 stub）。连带修掉 P2-1/2/3/4/7 与 P3-1/2/3。重跑：全量 `npm test`、`mutate-dsh-client-contract`（**15/15 见红 + 两份正控全绿**，扩容前为 7）、`mutate-dsh-client-grouping`（6/6） | **是**（open P0/P1 → 0） |
+| 1b（复检） | 0（新发现均为 P2/P3，其中一条是真洞） | 补测试缝真洞：改走真实构造路径 + 固化 `mutate-dsh-client-host.mjs` 10 条变异；如实标注快照一条不实；计算式 require 堵上；冻结测试缝数组。重跑：contract 16/16、host 10/10、grouping 6/6、全量 185/185 skipped 0 | **是**（无 open P0/P1；剩余 P3 转批 3 / 批 4） |
 
 **需求复核结论**：<approved / 有漂移>｜证据(E-xxx)｜由 <复核者>｜派出=<e:E-xxx / log:路径>
 

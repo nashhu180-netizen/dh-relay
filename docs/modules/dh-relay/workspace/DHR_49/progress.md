@@ -49,6 +49,12 @@
 | E-020 | test | `node --test test/dsh-client-typert-drift.test.mjs test/dsh-client-package-contract.test.mjs` | pass | P2-1/2-3/2-4 与 P3-2/3-3 已修：描述符按 id 全量配对（新加不加用例就红）、`dsh.bundle.patch` 与 `files` 双向核对、require 改白名单、注释路径与 README 补齐 |
 | E-021 | cmd | `node scripts/mutate-dsh-client-contract.mjs` | pass（`RESULT: ALL 15 MUTATIONS CAUGHT` + 两份正控全绿） | P2-2/P3-1 已修：变异由 7 条扩到 15 条并覆盖防漂移测试；每条变异 apply 后核对 sha256 确实变了，锚点漂了报「变异未生效」而非「没咬」。**扩容期间正控当场逮到我自己写的一个 realm bug**（vm 数组 prototype 导致 deepEqual 误报），已修 |
 | E-022 | test | `npm test`（`scripts.test` 已由四份旧测试改为 `node --test`） | pass（185/185，fail 0，skipped 0） | P2-7 已修：复跑者按 `npm test` 拿到的不再是 partial 绿；全量含本卡 19 条新断言 |
+| E-023 | review | CP1 返工收敛复检（同一 fresh 实例，只读） | observed（两条 P1 收敛；新提 2×P2 + 3×P3，其中一条是**真洞**） | 复核者独立复跑三条数字全对；逐条核了 SHA256SUMS 10 条哈希与 dsh-host 基线 23 条 |
+| E-024 | test | `node --test test/dsh-client-host.test.mjs` | pass（6/6，skipped 0） | **补洞**：第一版测试自己把 initializer 应用到裸实例，删掉构造器那行仍全绿。改为真 Cordis Context + `ctx.plugin()` 走**真实构造路径**，并顺带验 `typertRemote` 绑定 |
+| E-025 | cmd | `node scripts/mutate-dsh-client-host.mjs` | pass（`RESULT: ALL 10 MUTATIONS CAUGHT` + 正控全绿） | 把复检者手工试过的四个变体固化成常驻变异（构造器不跑 initializer / addInitializer 空实现 / context 字段不合契约 / 漏 markRemote），另加 6 条。**跑的时候又逮到我测试里的一个 bug**：客户端面用写死相对路径导入，变异改副本而测试读真包，那条变异当场没咬——已改为全部经 `PKG_ROOT` |
+| E-026 | cmd | `node scripts/mutate-dsh-client-contract.mjs` | pass（`ALL 16 MUTATIONS CAUGHT`，新增计算式 require 一条） | P3 补：白名单只认字面量，`require(NAME)` 能溜过去；加 `require(` 出现次数必须等于字面量匹配数 |
+| E-027 | cmd | `<pilot>/evidence/dhr49/batch1/src-snapshot/SHA256SUMS.txt`（附注） | observed（如实标注一条不实） | 复检者指出 `load-client-bundle.mjs` 那条是批-2 版本（抢救晚了 36 秒），批-1 原件已不存在。**按其建议如实标注而不补造假文件**；差异仅为新增 `export const PKG_ROOT`，round-1 结论不受影响 |
+| E-028 | test | `npm test` | pass（185/185，fail 0，skipped 0） | 全部处置后无回归 |
 
 ## 硬依赖核验（开工前置）
 
