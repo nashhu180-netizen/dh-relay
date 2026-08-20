@@ -4,9 +4,9 @@
 <!-- dh:planning-event:v1 id=DHR-B-13 stage=B-adjust artifact=dev_plan/P5-Relay-v2持久内核与DSH桥接-开发方案.md review=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#review-b13 understanding=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#understanding-b13 -->
 <!-- dh:status
 汇报: P5 已按 design/06 重写为「控制面独立的承重内核」：Runtime + Store + 参考 CLI 必备，DSH/Pi 只是可替换客户端。B-11（2026-08-20）：解锁前置改为 P4-CM1/2/3/5/6a + 主报告 + 用户放行，不再等 DSH 三态收敛；DSH 轨与本阶段并行，汇合点在 DHR_30 的 DSH Bridge 条件部分与 DHR_31 的 DSH 附加客户端项（须有 DHR_50 结论才执行）
-现状: **P4 阶段闸已解锁**——CM1/2/3/5/6a 全绿 + 主报告落盘（P4 verify `252a131`）+ 用户 2026-08-20 对话放行（答复「按你的建议走」采纳 AI 明示建议=放行并推进 DHR_28，记录见 workspace/DHR_27/progress.md 尾部与本次对话）；DHR_28~31 均未开始
-进行到: P5 ▸ 开工前 B-调整（DHR-B-13）已闭合并落盘（`ec37703`：fresh 审核有条件通过 + 5 条处方回写 + 讲解/理解问答/用户委托确认，见 evidence/09 §23~§24）
-下一步: DHR_28 入口闸分流开工（施工 session 认领；分流要点：标准档、落点顺序=ADR 第一步裁决代码根（新独立仓 vs 仓内新顶层）、worktree 与委托表开工时问；缺口处置把关方式已由用户定「ADR 自定，收口一并看」）
+现状: **P4 阶段闸已解锁**——CM1/2/3/5/6a 全绿 + 主报告落盘（P4 verify `252a131`）+ 用户 2026-08-20 对话放行；**DHR_28 已开工（进行中）**，DHR_29~31 未开始
+进行到: P5 ▸ DHR_28 ▸ 批次 1（ADR 起草）——工作区 [workspace/DHR_28/](../workspace/DHR_28/) 八件套已落户，brief（委托起草+主会话逐字审）与 task_plan（3 批 16 步）已定
+下一步: 批次 1 出 ADR-001（语言 Go/TS × 代码根 本仓新顶层/新独立仓，四组合逐一评）+ ADR-002（Agent 宿主必答四问），过批次检查点 1 小审后**停下来摆给用户点选语言与代码根**；裁决后进批次 2（v1 六条缺口逐条处置表 + 冻结 7 份 schema + reason code + 兼容矩阵 + 4 份 v0 形状）
 看什么: P4 主报告（evidence/10，含 §4 v1 协议缺口清单 = DHR_28 直接输入）、design/05、design/06
 阻塞: 无（开工前 B-调整未完成前 DHR_28~31 不得开工）
 -->
@@ -102,7 +102,7 @@
 
 | 任务 ID | 一句话 | 档位（轻/标准） | 状态 | 依赖 | 工作区 | 验收时间 / verify SHA | 备注 |
 |---|---|---|---|---|---|---|---|
-| DHR_28 | 根据 P4 证据确定 Runtime 语言、Agent 宿主归属与客户端中立协议（ADR + golden fixture） | 标准 | 未开始 | P4 阶段闸（P4-CM1/2/3/5/6a 通过 + 主报告落盘 + 用户放行，B-11 口径） | <开工时回填 workspace/…> | | 阶段闸阻塞：blocked-by-phase-gate P4-CM（B-11：不等 DSH 三态收敛）；ADR 涉 DSH 的必答题按契约层回答，DHR_50 未收敛不阻塞本卡 |
+| DHR_28 | 根据 P4 证据确定 Runtime 语言、Agent 宿主归属与客户端中立协议（ADR + golden fixture） | 标准 | 进行中 | P4 阶段闸（P4-CM1/2/3/5/6a 通过 + 主报告落盘 + 用户放行，B-11 口径） | [workspace/DHR_28/](../workspace/DHR_28/) | | **阶段闸已解锁**（P4 verify `252a131` + 用户 2026-08-20 放行）；2026-08-20 入口闸分流经用户对话确认开工（worktree=批1 主树/批2 起按 ADR 结果、语言与代码根裁决摆用户点选、委托照节点表默认）；分 3 批=ADR / 缺口处置表+schema 冻结 / fixture+校验器；ADR 涉 DSH 的必答题按契约层回答，DHR_50 未收敛不阻塞本卡 |
 | DHR_29 | 实现 Detached Runtime、唯一写者 Store、事件账与恢复 | 标准 | 未开始 | DHR_28 | <开工时回填 workspace/…> | | 阶段闸阻塞；开工 B-调整时预计拆 ≥2 张 |
 | DHR_30 | 实现 Relay CLI 参考客户端与可选 DSH/Pi Bridge 接缝 | 标准 | 未开始 | DHR_29 | <开工时回填 workspace/…> | | 阶段闸阻塞；DSH Bridge 条件部分以 P4 DHR_50 结论为开工判据（B-11 汇合点）：无结论→记「未执行，待 DHR_50」，判否→只留合同接口；CLI 部分不受影响 |
 | DHR_31 | 以 DSH 关闭状态跑通 basic-agent-task 垂直闭环 | 标准 | 未开始 | DHR_30 | <开工时回填 workspace/…> | | 阶段闸阻塞；第一个端到端 demo；DSH 附加客户端项按 DHR_50 结论执行（B-11） |
