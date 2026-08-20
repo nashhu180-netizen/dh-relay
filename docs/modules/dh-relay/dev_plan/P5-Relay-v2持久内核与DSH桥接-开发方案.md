@@ -1,14 +1,14 @@
 # P5-Relay v2 持久内核与多控制面桥接 开发方案
 
 <!-- dh:plan-type: 开发 -->
-<!-- dh:planning-event:v1 id=DHR-B-12 stage=B-adjust artifact=dev_plan/P5-Relay-v2持久内核与DSH桥接-开发方案.md review=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#review-b12 understanding=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#understanding-b12 -->
+<!-- dh:planning-event:v1 id=DHR-B-13 stage=B-adjust artifact=dev_plan/P5-Relay-v2持久内核与DSH桥接-开发方案.md review=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#review-b13 understanding=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#understanding-b13 -->
 <!-- dh:status
 汇报: P5 已按 design/06 重写为「控制面独立的承重内核」：Runtime + Store + 参考 CLI 必备，DSH/Pi 只是可替换客户端。B-11（2026-08-20）：解锁前置改为 P4-CM1/2/3/5/6a + 主报告 + 用户放行，不再等 DSH 三态收敛；DSH 轨与本阶段并行，汇合点在 DHR_30 的 DSH Bridge 条件部分与 DHR_31 的 DSH 附加客户端项（须有 DHR_50 结论才执行）
-现状: DHR_28~31 均未开始；阶段闸等 P4 DHR_27（CLI 收口）完成 + 用户放行
-进行到: P5 ▸ 阶段闸阻塞（P4-CM（B-11 口径）未收口）
-下一步: DHR_27 收口、用户放行后，依据 P4 主报告做开工前 B-调整 → fresh 审核 → 讲解 / 理解问答 → 用户确认
-看什么: design/05、design/06、P4 主报告（evidence/10）、P4 §4.5（B-11 汇合点规则）
-阻塞: P4-CM（B-11 口径：CM1/2/3/5/6a + 主报告）未收口；本计划开工前 B-调整未做
+现状: **P4 阶段闸已解锁**——CM1/2/3/5/6a 全绿 + 主报告落盘（P4 verify `252a131`）+ 用户 2026-08-20 对话放行（答复「按你的建议走」采纳 AI 明示建议=放行并推进 DHR_28，记录见 workspace/DHR_27/progress.md 尾部与本次对话）；DHR_28~31 均未开始
+进行到: P5 ▸ 开工前 B-调整进行中（P4 证据回流）
+下一步: B-调整草案 → fresh 审核 → 讲解 / 理解问答 → 用户确认落盘 → DHR_28 入口闸分流开工
+看什么: P4 主报告（evidence/10，含 §4 v1 协议缺口清单 = DHR_28 直接输入）、design/05、design/06
+阻塞: 无（开工前 B-调整未完成前 DHR_28~31 不得开工）
 -->
 
 > 文件名沿用首次落盘的「DSH桥接」，标题与责任已按 design/06 改为多控制面桥接；改名放 P9 统一处置。
@@ -43,6 +43,7 @@
 - **调整与复审**：待补。
 - **用户确认**：待补。**DHR_28~31 为预留编号，落盘不等于 B 确认，也不构成开工授权。**
 - **B-12 关联修订（2026-08-20，本计划侧事件；与 P4 `DHR-B-11` 同批、同一次审核 / 讲解 / 用户确认）**：本计划前置条件、DHR_28 依赖口径、DHR_30/31 的 DSH 条件项判定依据（含 H4「DSH 插件卸载」子命题条件化、P5-H「DSH 组合」问条件化）随 B-11 调整同步修订——解锁不再等 DSH 三态收敛，DSH 条件项以 P4 DHR_50 结论为开工判据。事件本体见 P4 计划 §0.2（DHR-B-11），本计划侧记录见 [evidence/09 §21~§22](../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#review-b12)。本条不改变 DHR_28~31 的任务拆分与验收口径本体。
+- **B-13 开工前 B-调整（2026-08-20，P4 证据回流）**：P4 阶段闸解锁（DHR_27 verify `252a131` + 用户放行）后，按 §0.2 既有约定把 P4 实测证据回流进本计划：①DHR_28 增加「v1 协议缺口逐条处置表」验收（缺口清单 = P4 主报告 §4 六条实测缺口）；②DHR_30 的 Read Model 冻结起点钉为 P4 冻结的两份 pilot schema + 「分堆与排序由源头给」架构约束（两条镜像断言纳入 P5-M4 证据），并承接关闭 P4 §0.2 列表投影白名单例外；③§2.3 增补 Read Model 字段级起点条款；④DHR_30 Bridge 条件部分登记 DHR_26 侦察落档为施工依据。任务拆分、依赖、档位均未变。**缺口清单所有权改挂说明**：P4 主报告 §4 原标注「P5 DHR_30 协议设计输入」的 v1 缺口清单，自本事件起二分——**逐条处置表 → DHR_28**（契约冻结时裁决）；**正式 Read Model 冻结 + 关闭白名单例外 → DHR_30**；P4 报告原文按留痕原则不回改，差异由 DHR_50 附录按诚实差额机制核对。审核与确认记录见 [evidence/09 §23~§24](../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#review-b13)。
 
 ## 1. 概述
 
@@ -88,7 +89,7 @@
 - **P5 冻结的最小协议集**：`relay.rpc/v1`、`relay.run/v2`、`relay.event/v2`、`relay.run-state/v1`、`relay.launch-receipt/v2`、`relay.checkpoint/v2`、`relay.result/v2`；`relay.resolved-plan/v1`、`relay.host-observation/v1`、`relay.attention/v1`、`relay.approval/v1` 只定 v0 形状与 fixture，首次承重时（P6/P7）再冻结。
 - **RPC**：Windows Named Pipe / Linux Unix Domain Socket，newline-delimited JSON-RPC 2.0；握手字段见 2.1。
 - **最小 Runtime 接口**：`contracts() / listRuns() / inspectRun(runId) / validate(request) / start(request) / control(request) / subscribe(filter)`。
-- **客户端中立 Read Model**：`RunSummary / RunDetail / NodeSummary / EventEnvelope / AttentionSummary`，由 Runtime 生成，DSH / Pi / CLI 只渲染、不各自从 events 推导状态。
+- **客户端中立 Read Model**：`RunSummary / RunDetail / NodeSummary / EventEnvelope / AttentionSummary`，由 Runtime 生成，DSH / Pi / CLI 只渲染、不各自从 events 推导状态。**（B-13）字段级起点** = P4 冻结的 `relay.pilot-read-model/v1`（详情）与 `relay.pilot-run-list/v1`（列表，含必填 `group`、源头给的 `progress / elapsed_seconds` 等），经 DHR_25 人判签收并被 DHR_27 真实历史数据验证；P5 正式化时按 DHR_28 的 v1 缺口处置表修订，字段增删须留处置记录、不静默漂移。
 - **参考 CLI 最小命令**：`relay list [--json]`、`relay status <run_id> [--json]`、`relay inspect <run_id> [--json]`、`relay events <run_id> --follow [--json]`、`relay start --request <file>`、`relay stop <run_id>`、`relay resume <run_id>`；Attention / Approval / Plan Revision 命令 P7/P8 首次使用时补齐，但 RPC 与命令装配方式须预留。
 - **Agent 宿主 ADR 必答**：process executor 由 Runtime 直接持有；pi-agent 由 Runtime 直接持有 SDK/RPC 或经冻结 Adapter；DSH Native Agent 由 Bridge 代持时 DSH 消失如何标记 Attempt；Herdr Agent 由 Herdr server 持有时 Runtime 如何恢复观察。
 - **语言选择原则**：独立 CLI、跨外壳、单二进制、DSH 隔离价值更高 → Go；TypeScript 复用 Agent SDK 收益高且仍独立进程 + CLI → TypeScript。
@@ -119,9 +120,10 @@
   - **机器证**：[design/05 §6.2 生产协议](../design/05-DeepSeek-Harness插件化与专属工作台-可行性评估.md#62-生产协议)：协议不导入 DSH / Cordis / Pi / Herdr / DevHarness 私有类型；DSH 与 Runtime 不共享活动对象或内存状态（fixture 与 schema 静态可证）。
   - **机器证**：[design/06 H6](../design/06-多控制面与Headless-SSH运行-设计补充.md#11-验收命题)（契约级）：任一必经角色不能只声明 `dsh-agent`（schema 层拒绝）。
   - **机器证**：ADR 落盘且回答 §2.3「Agent 宿主 ADR 必答」四问；语言选择依据引用 P4 报告证据。
+  - **机器证 · v1 缺口处置（B-13 新增）**：契约文档含对 [P4 主报告 §4「v1 协议缺口清单」](../design/evidence/10-P4-多控制面Pilot报告.md)六条实测缺口的**逐条处置表**（每条：采纳进 v2 字段 / 显式不采纳 + 理由；含可 grep 锚点 `v1-gap-disposition:`）——缺口含：run 现场不记录 `workflow_name / summary / trigger / trigger_by`（P4 实证导致投影须操作员补供）、无 run 级状态、无节点 title、run 级 attempt「缺省≠1」语义、locator 必须相对/符号化、会话观测态与任务结果须分字段。处置方向由本卡 ADR 定，不预设结论。
 - **变更范围**：新 Runtime 仓 / 目录的 `contracts/`、校验器、ADR 文档；本卡 `workspace/DHR_28/`。
 - **档位**：标准（协议与架构决策是后续全部阶段的地基）。
-- **实施提示**：复用 P1 `tools/contracts/` 与 DHR_04 守卫作为 Oracle；「把 Core 嵌入 DSH Web 进程」不是可选项；不因 DSH 增强轨结论改变协议中立性。
+- **实施提示**：复用 P1 `tools/contracts/` 与 DHR_04 守卫作为 Oracle；「把 Core 嵌入 DSH Web 进程」不是可选项；不因 DSH 增强轨结论改变协议中立性。**（B-13）**Read Model 语义起点 = P4 冻结的 `relay.pilot-read-model/v1` + `relay.pilot-run-list/v1`（DHR_25 人判 H1 签收 + DHR_27 真实数据验证），尤其**架构约束**（分堆与排序由源头给、客户端不推导）与**源头计量约束**（progress/elapsed 由源头算，客户端不读时钟）两条——与 DHR_30 的「两条镜像断言」（该架构约束的测试形态）分名指称，避免混淆；语言 ADR 的 P4 侧证据含：Node 全链 pilot（schema/render/CLI + 约 250 行纯函数投影器）跨 Node v24(Win)/v18(Linux) 输出逐字节一致、dsh-host 零 bare import 的装载拓扑教训（workspace/DHR_26）。
 
 #### DHR_29
 
@@ -142,13 +144,13 @@
 - **非目标**：不实现完整 DSH Client UI（P4 判否时更不实现）；不做 Attention / Approval 命令正式版（P7/P8）；不让任何客户端直接写 Store。
 - **验收口径**：
   - **机器证**：[design/06 H2](../design/06-多控制面与Headless-SSH运行-设计补充.md#11-验收命题) · P5-M2：DSH 未安装时 CLI 完整可用（list/status/inspect/events/start/stop/resume）。
-  - **机器证**：[design/06 H3](../design/06-多控制面与Headless-SSH运行-设计补充.md#11-验收命题) · P5-M4：CLI 文本与 JSON 由同一 Read Model 渲染；任一已接入客户端与 CLI 读取同一 Run；DSH/Pi 私有字段不进入 Relay Store。
+  - **机器证**：[design/06 H3](../design/06-多控制面与Headless-SSH运行-设计补充.md#11-验收命题) · P5-M4：CLI 文本与 JSON 由同一 Read Model 渲染；任一已接入客户端与 CLI 读取同一 Run；DSH/Pi 私有字段不进入 Relay Store。**（B-13 加严）**Read Model 正式冻结以 P4 两份 pilot schema 为字段级起点（按 DHR_28 的 v1 缺口处置表修订），「分堆与排序由源头给」的两条镜像断言（改 `group` 必须移动 / 只改 `run_status` 必须逐字不变）纳入 P5-M4 证据；随本卡把字段级定义补进 design 正文并**关闭 P4 §0.2 列表投影白名单例外**——关闭判据（机检，双端 `rg` 可证）：design 落点文出现字段级定义 + 可 grep 标记 `whitelist-exception-closed: DHR_30`，且 P4 计划 §0.2 例外条机械回注回链该标记。
   - **机器证**：[design/06 H4](../design/06-多控制面与Headless-SSH运行-设计补充.md#11-验收命题)：任一客户端断开 / 退出不取消 Run，重连后从 Runtime 重建状态（无条件项，用 CLI 或任一非 DSH 客户端证）；其中「DSH 插件卸载只断开客户端」子命题为条件项（B-11 复审回写）——按 P4 DHR_50 结论执行，未收敛记「未执行，待 DHR_50」，判否记 N/A。
   - **机器证**：[design/02 B1](../design/02-完整流水-产品设计与验收.md#61-ai-自动验收栏)（relay/v2 契约矩阵中的控制请求幂等子命题）· P5-M2：重复 control request 以 request id 幂等，Receipt 唯一。
   - **机器证**（P5-X，条件执行；B-11：执行条件 = P4 DHR_50 已收敛且非判否，未收敛记「未执行，待 DHR_50」）：DSH Bridge 重连并重建 UI；Pi 客户端读取同一 Run 的 fixture 示例可解析（Pi 部分不受 DHR_50 约束）。
-- **变更范围**：`cli/`、`adapters/dsh-bridge/`（条件）、`fixtures/clients/`；本卡 `workspace/DHR_30/`。
+- **变更范围**：`cli/`、`adapters/dsh-bridge/`（条件）、`fixtures/clients/`；**（B-13）**承接 Read Model 字段级定义的 design 落点——默认 [design/06](../design/06-多控制面与Headless-SSH运行-设计补充.md)（新增字段级定义节；若开工分流时确认另建 design 文档，按 design-治理走）+ `dev_plan/P4-DSH工作台最小Pilot-开发方案.md` §0.2 白名单例外条（仅机械回注关闭标记回链）；本卡 `workspace/DHR_30/`。
 - **档位**：标准（客户端接线；DSH Bridge 部分若执行需真实截图作需求境证据）。
-- **实施提示**：CLI 是 P5 唯一必备客户端；Bridge 只走 RPC 合同不碰内存对象；命令装配方式为 P7/P8 的 attention/approve 预留。
+- **实施提示**：CLI 是 P5 唯一必备客户端；Bridge 只走 RPC 合同不碰内存对象；命令装配方式为 P7/P8 的 attention/approve 预留。**（B-13）**DSH Bridge 条件部分若执行，施工依据 = DHR_26 侦察落档（[workspace/DHR_26/](../workspace/DHR_26/) findings 与 `src/dsh-host/` README：`dsh plugin` profile 装载、`ctx.provide` 公开 API、零 bare import 拓扑约束、rc 迭代风险基线）。
 
 #### DHR_31
 
@@ -176,7 +178,7 @@
 | P5-M1 | Runtime 与 DSH、Pi、终端客户端的生命周期分离 | DHR_29 |
 | P5-M2 | DSH 完全关闭时，CLI 可启动、查询、停止、恢复 Run | DHR_30 / DHR_31 |
 | P5-M3 | 强杀 Runtime 并恢复后，状态、事件和终态确定一致 | DHR_29 |
-| P5-M4 | CLI 文本/JSON 与任一已接入客户端读取同一 Read Model | DHR_30 |
+| P5-M4 | CLI 文本/JSON 与任一已接入客户端读取同一 Read Model（B-13：含源头 `group` 镜像断言；正式字段级定义关闭 P4 列表白名单例外——细则见 DHR_30 卡） | DHR_30 |
 | P5-M5 | basic-agent-task 的 Process 闭环在无 DevHarness、无 DSH 时完整运行 | DHR_31 |
 | P5-M6 | 协议版本、能力和未知输入均 fail-closed | DHR_28 |
 | P5-M7 | 客户端断开不取消 Run，必经角色无 DSH-only 依赖 | DHR_28 / DHR_29 |
