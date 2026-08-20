@@ -79,7 +79,7 @@
 
 | 需求 / 人验项 | 场景与操作路径 | 证据 (E-00x) | 结论（满足 / 不满足 / 待人验） |
 |---|---|---|---|
-| 列表屏中途闸（完成条件 #6） | **可复跑操作路径（收口前必须写全，用户照着敲就能跑）**：<br>① 起独立 Home 的 DSH：`$env:DSH_HOME="D:\MyFiles\ai-workflow\dh-relay-p4-pilot\dsh-home"`<br>② 带 fixture 根：`$env:RELAY_PILOT_FIXTURE_ROOT="…\relay-control-pilot\testdata\fake"`（**每次都要带**，见 DHR_26 findings §20）<br>③ 装插件：`dsh plugin --profile web add <host.tgz> <panel.tgz>`<br>④ 起 web：`dsh --profile web`<br>⑤ 浏览器打开面板 → 看列表屏 → 点击 → 刷新 → 重启 DSH 再看<br>*（收口时以实跑命令逐字回填，占位不算数）* | | 待人验 |
+| 列表屏中途闸（完成条件 #6） | **可复跑操作路径**（下列命令均已实跑过，逐字可抄；只有第 ⑤ 步的「选工作区 / 开会话」必须由人在界面上点——自动化驱动不了原生文件夹选择框）：<br><br>`# ① 独立 Home（不碰日常 DSH 配置）`<br>`$env:DSH_HOME="D:\MyFiles\ai-workflow\dh-relay-p4-pilot\dsh-home"`<br><br>`# ② fixture 根 —— 每次起都要带，它在 boot 时解析、不是安装时固化`<br>`$env:RELAY_PILOT_FIXTURE_ROOT="D:\MyFiles\ai-workflow\dh-relay-p4-pilot\relay-control-pilot\testdata\fake"`<br><br>`# ③ 打包（唯一的"构建"步骤，无打包器）`<br>`cd D:\MyFiles\ai-workflow\dh-relay-p4-pilot\relay-control-pilot\src\dsh-client`<br>`npm pack --pack-destination ..\..\dist`<br><br>`# ④ 装（必须 tgz，不能目录 link，理由见 src/dsh-client/README.md）`<br>`dsh plugin --profile web add D:\MyFiles\ai-workflow\dh-relay-p4-pilot\relay-control-pilot\dist\personal-dsh-relay-panel-0.0.0-pilot.1.tgz`<br><br>`# ⑤ 起 web，浏览器开 http://127.0.0.1:3080`<br>`dsh --profile web`<br><br>**⑥ 界面上（必须人点）**：左侧「添加工作区」选任意目录 → 选中它 → 在输入框发一条消息建出会话 → 会话头部 tab 条上出现 **Relay** 页签 → 点它 → 列表屏（5 条 run 分 4 节）→ 刷新页面 → 重启 DSH 再看<br><br>⚠️ **tab 只在有会话时可见**（`conversation.view` 是 session 作用域，Trajectory 同理）；**第三方无法用代码切到自己的 tab**，只能手点。 | 待 E-xxx | **待人验**（v3 落点的渲染尚未由 AI 验到，见 findings 落点三版实录） |
 | 端到端体验（完成条件 #7） | 同上——用户跑完的结论即本卡人判主证据 | | 待人验 |
 | 两屏渲染附属留痕（完成条件 #8） | AI 首次跑通时留截图 / 录屏入 `<pilot>/evidence/dhr49/`，供零上下文复核 worker 核 DM3 | | |
 

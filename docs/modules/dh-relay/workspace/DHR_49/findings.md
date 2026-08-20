@@ -119,13 +119,30 @@ DHR_26 的 Host 已占用 `ctx.relayPilot`。`TypertRemoteService` 的 `super(ct
 |---|---|---|---|
 | v1 | `settings.section`（设置对话框里的一整页） | 渲染成功，导航栏多出「Relay」项 | 否（U-01） |
 | v2 | `sidebar.footer.action` 入口按钮 + `shell.overlay` 全屏浮层 | 渲染成功，侧栏底部出现 Relay 按钮，点开是居中浮层，刷新后重建一致 | 否（U-03） |
-| v3 | 待调研结论 | — | — |
+| v3 | **`conversation.view`**（会话头部 tab 条上的一个页签，与 Chat / Trajectory 并列） | 注册成功（`slot-registered` 到位）；**渲染尚未由 AI 验到**——见下方「v3 未完成的验证」 | 待人验 |
 
-### 待验证的机制事实（**尚未定论，禁止写成结论**）
+### 机制定论：主区域加法位**存在**，我的第一版判断是错的（2026-08-20）
 
-侦察阶段从类型声明读到：`dsh-client-ui-layout/lib/types/client/index.d.ts` 里主框架三根柱子 `sidebar` / `conversation` / `details` **全是 `kind:'single'` 且注释明说已被占、注册进去会 replace outright**；留给第三方的加法位是 `shell.overlay`（`kind:'list'`，注释原文「the additive seat for a frame-wide surface of your own」）与各种插空座位。
+侦察阶段我从类型注释读出「三根柱子全 single 全被占 ⇒ 第三方只能做浮层」，并把它当成待验证的机制限制记了下来。**这个判断是错的**，错因是只读了 `dsh-client-ui-layout` 的类型注释就外推到全局，没去看官方包实际怎么做界面。
 
-**若该结论经独立复核成立**，则「树外第三方插件在 DSH 里做不出常驻主界面，只能做浮层 / 弹窗 / 插空位」是一条 **DSH 渲染能力/机制限制**，属 (i) 桶、属 P4-DM 事实，须如实登记——**不是实现偷懒**。但目前只读了类型注释、未复核官方包的实际做法，故列为待验证。调研已派出（只读 agent，语料 = 本机 39 个一方 client 包）。
+独立调研（只读 agent，语料 = 本机一方 client 包）+ 本人复核后的定论：
+
+1. **本机有一份机器可读的完整槽位目录**，比各包 `.d.ts` 注释全得多：`dsh-cordis-client-runner/lib/client.js:2121` 的 `const CLIENT_SLOT_API = [...]`（到 3654 行），**42 个槽位**（我此前从 client bundle 里扫出的是 28 个，漏了一多半）。每条带 `kind` / `scope` / **`occupants`（含包名+组件名+id）** / `replaceRisk` / `registerOptions` / `standardProps` / 可直接抄的 `example` / 上游源码行号。同文件 `:1114` 的 `SERVICE_API` 给出每个 `ctx.<service>` 的方法签名。**以后查槽位与服务面直接查这两个数组。**
+2. **`conversation.view` 是主区域的加法位**（已本人复核 `:2897` 条目原文）：`kind: 'list'`、`scope: 'session'`、`replaceRisk: none`，现占用者 `client-ui-conversation ChatView id:'chat'` 与 `client-ui-trajectory TrajectoryView id:'trajectory'`。官方 `registerOptions.id` 文档原话：「a fresh id is added beside the shipped entries」。注册一个新 id = 会话头部 tab 条上多一个页签，点进去**整个中栏主体区归你渲染**。官方 Trajectory 就是这么做的一整套界面。
+3. **首页 hero 的座位关死了**：`conversation.hero.workspace` / `conversation.hero.agentPreset`（及 `…directoryFlow`）全是 `single` 且被占，`replaceRisk` 均为 `shadows-shipped-ui`，第三方加不进去、只能顶掉。
+4. **右栏能开、不能放**：`ctx.layout` 只有三个方法 `toggleSidebar()` / `openDetails()` / `closeDetails()`，插件能把右栏拉出来；但 `details` 是 single 被 `DetailsPanel` 占，其内部的 `conversation.details.tool` 也是 single 被 `ToolDetails` 占，**右栏一个 list/keyed 加法位都没有**。硬抢 `details` 会连带让所有工具详情瞎掉，不走这条。三列宽度由纯函数 `computeColumns` 解算（`DETAILS_MIN/MAX=300/520`、`CENTER_MIN=640`），**没有「申请第四列」这种 API**。
+5. **首页上唯一的常驻加法位是 `conversation.input.dock`**（`kind: list`，`replaceRisk: none`，现占用者 QueueDock / TodoDock / GoalDock）——输入卡片正上方的整行。适合做一条「Relay：N 个任务运行中」的入口条，但它**不能**切到 Relay tab（见下）。**本卡未采用，登记为可选增强。**
+
+### v3 落点的固有代价（**属 P4-DM 事实，不是实现问题**）
+
+1. **session 作用域**：空白 hero 态整个会话头被隐藏，tab 条不出现——**必须先有会话才看得见**。对「所有接力任务一览」这种全局视图，这在语义上是别扭的：想看全局却得先开一个对话。Trajectory 有同样的性质。
+2. **第三方无法用代码切到自己的 tab**：`actions.setView` 是 ui-conversation 的私有 store 动作；公开的 `ctx.conversation`（`IConversation`）对外只有 `send` / `cancel` / `updateQueue` / `loadOlder` / `input` / `blocks`。只能靠用户手点。这意味着任何「从别处一键跳到 Relay 面板」的设计在 rc.7 上都做不出来。
+
+### v3 未完成的验证（**禁止写成已验**）
+
+AI 侧只确认到**注册成功**（`window.__RELAY_PANEL_PROBE__` 停在 `slot-registered`），**未确认渲染**。卡点：要看见 tab 必须先有会话；建会话必须先选工作区；而「添加工作区」拉起的是**宿主机上的原生文件夹选择框**（`dsh-client-ui-directory-picker-native`），浏览器自动化驱动不了它。此外建会话本身要真发一条消息调模型，属用户额度。
+
+故 v3 的渲染事实**只能由用户亲跑取得**——这与任务卡「需求境证据 · 主证据 = 用户亲跑端到端」的规定同向，不是退让。操作路径已写进 `review.md` 需求境证据栏。
 
 ## 止损条件预判（§4.4 逐条，**预判不是结论**）
 
