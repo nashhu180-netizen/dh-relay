@@ -7,7 +7,7 @@
 
 | 复核者(谁) | 范围 | 发现（逐条 P0~P3） | 派出证据 (e:E-xxx / log:路径) | 证据 (E-xxx) |
 |--------|------|------|------|------|
-| <CP1 fresh subagent> | 批 1 可行性探针 diff（`src/dsh-client/` 初版 + package-contract 测试 + 装载/Typert 探针证据） | | | |
+| `cp1-review`（general-purpose fresh subagent，零上下文，只读；未参与实施） | 批 1 可行性探针（`src/dsh-client/` 初版 + 3 份测试 + 变异脚本 + `evidence/dhr49/`） | **结论 changes-requested**。批 1 的六条声称逐条复跑对拍后**全部属实**；要求返工的是证据与断言的覆盖面，不是结论本身。**2×P1 / 7×P2 / 6×P3**，逐条与处置见下方「CP1 发现与处置」 | e:E-010 | E-017 |
 | <CP2 fresh subagent> | 批 2 列表屏 diff（`groupRuns` + 镜像断言 + 真机三次渲染证据） | | | |
 | <CP3 fresh subagent> | 批 3 构建配方 diff（README 配方全文 + 清净重跑 + 换机重跑证据） | | | |
 | <CP4 fresh subagent> | 批 4 详情屏 diff（详情视图 + 装卸清理三态 + 纯 JSON 断言） | | | |
@@ -18,11 +18,33 @@
 |--------|------|------|------|------|------|
 | | | | | | |
 
+### CP1 发现与处置（逐条 append-only）
+
+| 级别 | 发现 | 处置 | 证据 |
+|---|---|---|---|
+| **P1-1** | 批 1 源码在复核期间被批 2 覆写；树外无 git ⇒ 无 diff、无回滚点。复核者是靠 profile 安装副本重建批 1 快照才复核成的，而那份副本下次 `plugin add` 就被抹掉 | **已修**。从复核者临时目录抢救出批 1 快照，落 `evidence/dhr49/batch1/src-snapshot/`（10 文件）并生成 `SHA256SUMS.txt`。其中 `client.js` = `67b8510f…62bc`，与 E-008 记录的安装哈希**逐字符相同**，独立印证快照是批 1 原件。**此后每批开工前先冻结上一批源码**（无 git 下唯一的留痕手段） | E-018 |
+| **P1-2** | 宿主半边（`lib/index.mjs` / `lib/typert.host.js`）**零自动化覆盖**。`markRemote()` 手工调用 TC39 装饰器今天成立，但将来 rc 若让 `Remote` 返回替换方法或读 `context.metadata`，测试仍全绿而面板**静默失去 remote 方法** | **已修**。新增 `test/dsh-client-host.test.mjs` 6 条，**用真库不用 stub**（stub 会把那个变化一起写进假设）：①`remoteMethods()` 确实标到 `hash`/`list`；②两侧 invocation 集合一一对应；③宿主 schema 带 `_zod` 品牌（typert-loader 硬查）；④两侧 schema 对同一批边界值判决一致；⑤`list()`/`hash()` 原样转发不排序不过滤；⑥只声明真正需要的注入。装树不在的机器上跳过而非失败（保跨机重跑可跑）。为此加了测试缝 `__remoteInitializers__` 与 loader hook `test/helpers/dsh-install-tree*.mjs` | E-019 |
+| P2-1 | 防漂移测试只比 `descriptors[0]`；批 2 加描述符后新加的静默不被检查 | **已修**。改为按 `id` 配对遍历全部 descriptors，断言两侧 id 集合相等；每条 descriptor 必须有自己的边界值用例，**新加 descriptor 不加用例就红** | E-020 |
+| P2-2 | 变异只 spawn 包契约测试，防漂移的 3 条断言零变异覆盖 | **已修**。变异脚本扩到 15 条并按测试文件分派，新增 4 条描述符漂移变异（改字段 / 删一条 / 放宽 schema / 收紧 schema），两份测试各跑一次正控 | E-021 |
+| P2-3 | `cordis.patch.yml` 与 `dsh.bundle.patch` 完全无断言——删掉或改名后包能装上但**不注册宿主半边、面板整个不出现**，而契约测试照样全绿 | **已修**。加两条断言（`dsh.bundle.patch` 指向存在文件 ∧ 被 `files` 覆盖）+ 两条对应变异，均见红 | E-020 / E-021 |
+| P2-4 | 「客户端 bundle 零 bare import」比断言强：bundle 有 `require("react")`，而契约测试只禁 zod 四种写法、别的模块 id 一律放行。§4.4「要求大范围导入未公开内部模块」判不命中就架在这句上 | **已修**。断言由黑名单改**白名单**（只允许 `react` / `react/jsx-runtime`），加一条「require 白名单外内部模块」变异见红；`findings.md` §4.4 表措辞同步修正，并把两处**非文档化但官方自用**的形态（全局 `window.__ModuleLoader__`、手工调用 `Remote` 装饰器）显式登记 | E-020 / E-021 |
+| P2-5 | `apply` 返回 `Promise<disposer>`，但**没有证据表明 loader 会调它**；官方 `dsh-client-ui-plan` 的 `apply` 是同步且不返回 disposer，靠 fiber 释放。若 disposer 永不执行，卸载后 Remote contribution 仍挂着 | **接受，转批 4**。这正是 P4-DM4b 要证的东西：批 4 卸载时**显式验** `ctx.remote.relayPanel` 与 UI 注册项都消失，不拿「代码里写了 disposer」当已清理。已写进 task_plan 批 4 的验收动作 | 待 E-xxx（批 4） |
+| P2-6 | CP1 出口是「有 open P0/P1 先收敛再进批 2」，但批 2 编码在复核结论返回**之前**已开工，闸口被架空；副作用就是 P1-1 | **确认属实，是我的流程违规**。见 `findings.md` F-004。已改行为：后续检查点等复核结论回来再进下一批；派审后立刻冻结上一批源码 | E-018 |
+| P2-7 | `package.json` 的 `scripts.test` 只列四份旧测试，复跑者按 `npm test` 得到 partial 绿 | **已修**。改成 `node --test`（一并把 `freeze` / `project` 两份漏网的也纳入） | E-022 |
+| P3-1 | 变异靠字符串锚点注入，锚点漂了会伪装成「断言没咬」 | **已修**。每条变异 apply 后核对文件 sha256 确实变了，否则报「变异未生效」而非「没咬」；锚点找不到直接抛 | E-021 |
+| P3-2 | 契约测试头注释指向不存在的 `test/…mutation.mjs` | **已修**，改指 `scripts/mutate-dsh-client-contract.mjs` | E-020 |
+| P3-3 | `files` 列了不存在的 `README.md` | **已修**。写了真的 `README.md`（构建配方全文 + 外部前提三问，批 3 交付物提前落地），并加「files 列的每一项都真实存在」正向断言 + 变异 | E-020 / E-021 |
+| P3-4 | E-002 的 TDD 跑红无留存输出，不可复跑 | **接受，不追溯**。实现已存在，无法诚实地重造那次跑红。已改行为：此后跑红顺手存 `evidence/.../red-*.txt`。E-002 在账本里保留原样并标注此限制 | — |
+| P3-5 | `window.__RELAY_PANEL_PROBE__` 是全局，卸载不清理，长会话 stages 无界增长 | **接受，转批 4**。批 4 扫全局残留时一并处置：要么 disposer 里 delete，要么显式登记为「探针留存、不算残留」 | 待 E-xxx（批 4） |
+| P3-6 | 本机绝对路径 `C:\Users\nash\…` 进了仓内文档与证据 | **接受，收口时处理**。产物本身干净（安全扫描零命中），只是用户名落进 git 仓；收口前改成 `<npm-global>/…` 占位 | — |
+
+> 复核者另有一项建议（`src/dsh-host/` 只有 mtime 佐证、非内容证明）：**已采纳**，落 `src/dsh-host/` 的 sha256 基线清单，见 E-018。
+
 **返工收敛**（有 open P0/P1 → 修 → 重跑证据 → 复核者再过；最多 3 轮；3 轮不收敛则停，摆给用户决断）
 
 | 轮次 | open P0/P1 数 | 处理 / 重跑了什么证据 | 是否收敛 |
 |------|--------------|----------------------|---------|
-| 1 | | | |
+| 1 | 2（P1-1 证据保全 / P1-2 宿主零覆盖） | P1-1：抢救并冻结批 1 源码快照 + SHA256SUMS（`client.js` 哈希与 E-008 逐字符相同）。P1-2：新增 6 条宿主侧断言（真库、非 stub）。连带修掉 P2-1/2/3/4/7 与 P3-1/2/3。重跑：全量 `npm test`、`mutate-dsh-client-contract`（**15/15 见红 + 两份正控全绿**，扩容前为 7）、`mutate-dsh-client-grouping`（6/6） | **是**（open P0/P1 → 0；待复核者再过） |
 
 **需求复核结论**：<approved / 有漂移>｜证据(E-xxx)｜由 <复核者>｜派出=<e:E-xxx / log:路径>
 

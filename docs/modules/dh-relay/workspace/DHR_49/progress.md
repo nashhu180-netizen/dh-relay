@@ -43,6 +43,12 @@
 | E-014 | cmd | `<pilot>/evidence/dhr49/batch2/dm6-mirror-assertions.md` + `mutant-fixtures/` | pass（双向成立） | **P4-DM6 真机双向对照**：①只改 `group` → run 换节且状态芯片仍显旧状态、`running` 节整节消失；②只改 `run_status` → 分节骨架与基线逐项相同、仅芯片改字 |
 | E-015 | cmd | `<pilot>/evidence/dhr49/batch2/list-screen-baseline.png` | pass | 列表屏首次渲染：5 条 run 分 4 节，节序 = 源头 `runs[]` 首现顺序，标题词表与 CLI 一致 |
 | E-016 | cmd | `<pilot>/evidence/dhr49/batch2/list-screen-overlay.png` + a11y 树转录 | pass | **落点改版后**：侧栏底部 `Relay` 入口按钮 → `shell.overlay` 全屏浮层；刷新后重建一致（4 节 / 5 条 / fixture 67fb18b3 全同） |
+| E-017 | review | CP1 复核结论（`cp1-review` fresh subagent，只读，零上下文） | observed（changes-requested：2 P1 / 7 P2 / 6 P3；批 1 六条声称逐条复跑对拍**全部属实**） | 轮 1 批次小审已做；发现与处置逐条见 `review.md`「CP1 发现与处置」 |
+| E-018 | cmd | `<pilot>/evidence/dhr49/batch1/src-snapshot/`（10 文件 + `SHA256SUMS.txt`）、`batch1/dsh-host-baseline.txt`（23 文件） | pass（`client.js` = `67b8510f…62bc`，与 E-008 记录的安装哈希逐字符相同） | **P1-1 已修**：批 1 源码快照抢救并永久落档；`src/dsh-host/` 内容基线补上（此前只有 mtime 佐证） |
+| E-019 | test | `node --test test/dsh-client-host.test.mjs` | pass（6/6，非跳过） | **P1-2 已修**：宿主半边从零覆盖到 6 条断言，**用真库不用 stub**——`markRemote()` 的手工装饰器施加、两侧描述符集合、`_zod` 品牌硬查、两侧 schema 判决一致、`list()`/`hash()` 原样转发、注入声明 |
+| E-020 | test | `node --test test/dsh-client-typert-drift.test.mjs test/dsh-client-package-contract.test.mjs` | pass | P2-1/2-3/2-4 与 P3-2/3-3 已修：描述符按 id 全量配对（新加不加用例就红）、`dsh.bundle.patch` 与 `files` 双向核对、require 改白名单、注释路径与 README 补齐 |
+| E-021 | cmd | `node scripts/mutate-dsh-client-contract.mjs` | pass（`RESULT: ALL 15 MUTATIONS CAUGHT` + 两份正控全绿） | P2-2/P3-1 已修：变异由 7 条扩到 15 条并覆盖防漂移测试；每条变异 apply 后核对 sha256 确实变了，锚点漂了报「变异未生效」而非「没咬」。**扩容期间正控当场逮到我自己写的一个 realm bug**（vm 数组 prototype 导致 deepEqual 误报），已修 |
+| E-022 | test | `npm test`（`scripts.test` 已由四份旧测试改为 `node --test`） | pass（185/185，fail 0，skipped 0） | P2-7 已修：复跑者按 `npm test` 拿到的不再是 partial 绿；全量含本卡 19 条新断言 |
 
 ## 硬依赖核验（开工前置）
 
