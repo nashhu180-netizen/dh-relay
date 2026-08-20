@@ -1,5 +1,5 @@
 <!-- dh:devplan-index:v1 -->
-<!-- dh:planning-no-event:v1 artifact="dev_plan/README.md" reason="2026-08-18 索引措辞对齐：状态列机读枚举 + 备注列记阶段闸、P4~P9 事件与证据落点说明、硬约束#1 改为 CLI 与 DSH 并行可配置替换（非回退）；同日随 DHR-B-10 机械同步 P4 行的任务 ID 清单与状态（拆卡与终点变更本体在 P4 计划正文，本索引不承载）；不改阶段顺序、闸规则" -->
+<!-- dh:planning-no-event:v1 artifact="dev_plan/README.md" reason="2026-08-18 索引措辞对齐：状态列机读枚举 + 备注列记阶段闸、P4~P9 事件与证据落点说明、硬约束#1 改为 CLI 与 DSH 并行可配置替换（非回退）；同日随 DHR-B-10 机械同步 P4 行的任务 ID 清单与状态；2026-08-20 随 DHR-B-11 机械同步 P4/P5 行、P4 特殊阶段闸与通用规则的延后措辞（拆卡与闸规则变更本体在 P4/P5 计划正文，本索引不承载）" -->
 # DH Relay DevPlan 入口
 
 ## 当前主线
@@ -41,14 +41,14 @@ P8 多卡编排与多控制面运行治理
 P9 双平台、多控制面与迁移定型
 ```
 
-后一阶段已经落盘，只表示路线和责任边界预先可见。前置阶段未通过时，后一阶段任务表的状态列仍填机读枚举「未开始」，阶段闸阻塞记在「备注」列（`blocked-by-phase-gate:Px`），一律不能开工。P4~P9 每份计划文首均带规划事件 marker（事件 `DHR-B-04`~`DHR-B-09`；P4 已于 2026-08-18 二次调整为 `DHR-B-10`），审核 / 讲解 / 理解问答证据统一落 `design/evidence/09-P4至P9阶段计划-交叉审核记录.md`，该文件在派出 fresh 审核时创建；未审核前 `dh dh-relay` 的 R29 对这六份计划报红属预期状态。
+后一阶段已经落盘，只表示路线和责任边界预先可见。前置阶段未通过时，后一阶段任务表的状态列仍填机读枚举「未开始」，阶段闸阻塞记在「备注」列（`blocked-by-phase-gate:Px`），一律不能开工。P4~P9 每份计划文首均带规划事件 marker（事件 `DHR-B-04`~`DHR-B-09`；P4 已于 2026-08-18 二次调整为 `DHR-B-10`、2026-08-20 三次调整为 `DHR-B-11`，P5 随 B-11 同步），审核 / 讲解 / 理解问答证据统一落 `design/evidence/09-P4至P9阶段计划-交叉审核记录.md`，该文件在派出 fresh 审核时创建；未审核前 `dh dh-relay` 的 R29 对这六份计划报红属预期状态。
 
 ## 活跃计划
 
 | 计划 | 目标 | 当前状态 | 任务 ID |
 |---|---|---|---|
-| [P4-DSH工作台最小Pilot](./P4-DSH工作台最小Pilot-开发方案.md) | 先证明 Windows/SSH CLI 必备控制面独立成立，再评估 DSH 树外桌面控制面（可判否） | DHR_25 已完成（2026-08-18）；`DHR-B-10` 拆卡与补终点草案待审核与用户确认 | DHR_25、DHR_26、DHR_49、DHR_27 |
-| [P5-Relay-v2持久内核与DSH桥接](./P5-Relay-v2持久内核与DSH桥接-开发方案.md) | 建立客户端中立协议、Detached Runtime、参考 CLI、恢复和 basic-agent-task | blocked-by-phase-gate:P4-CM | DHR_28~31 |
+| [P4-DSH工作台最小Pilot](./P4-DSH工作台最小Pilot-开发方案.md) | 先证明 Windows/SSH CLI 必备控制面独立成立，再评估 DSH 树外桌面控制面（可判否，与 P5 并行） | DHR_25 已完成（2026-08-18）；`DHR-B-11`（2026-08-20）拆 DHR_27 为 CLI 收口 + DHR_50 补录、解锁 P5 不等 DSH 三态 | DHR_25、DHR_26、DHR_49、DHR_27、DHR_50 |
+| [P5-Relay-v2持久内核与DSH桥接](./P5-Relay-v2持久内核与DSH桥接-开发方案.md) | 建立客户端中立协议、Detached Runtime、参考 CLI、恢复和 basic-agent-task | blocked-by-phase-gate:P4-CM（B-11 口径：CM1/2/3/5/6a + 主报告 + 用户放行，不等 DSH 三态收敛） | DHR_28~31 |
 | [P6-Herdr多账号执行底座](./P6-Herdr多账号执行底座-开发方案.md) | 接入多账号 Codex/Claude Code，验证 DSH-off 和 Linux SSH Herdr 路径 | blocked-by-phase-gate:P5 | DHR_32~35 |
 | [P7-DevHarness单卡完整流水](./P7-DevHarness单卡完整流水-开发方案.md) | 在 DSH 关闭状态下，用 CLI + Herdr 跑通一张标准卡 S0~E13 与 verify | blocked-by-phase-gate:P6 | DHR_36~40 |
 | [P8-多卡编排与运行治理](./P8-多卡编排与运行治理-开发方案.md) | 多卡、重编排、诊断、Outbox、归档和 Oracle，治理对象可由 CLI/DSH/Pi处理 | blocked-by-phase-gate:P7 | DHR_41~45 |
@@ -81,7 +81,7 @@ P4-DM 桌面控制面轨（DSH，可判否）
   Host/Client Plugin 与最小 Web 面板
 ```
 
-只有 P4-CM 是 P5 核心主线的硬前置（CM4 跨客户端一致性在 DSH 判否时记 N/A、延后 P5）。P4-DM 可以通过、受限或判否。DSH 判否时，P5 阶段默认控制面为 Relay CLI（阶段默认，不是把 CLI 定位为回退），后续再决定是否建设 Pi TUI 或其他客户端。
+只有 P4-CM 是 P5 核心主线的硬前置（B-11 口径：CM1/2/3/5/6a + 主报告落盘；CM4 跨客户端一致性可记「延后（DHR_50）」或 DSH 判否时记 N/A）。P4-DM 可以通过、受限或判否，且其三态收敛（DHR_50）**与 P5 并行、不再是 P5 解锁前置**——汇合点在 P5 DHR_30 的 DSH Bridge 条件部分与 DHR_31 的 DSH 附加客户端项（须有 DHR_50 结论才执行，详见 P4 §4.5，B-11）。DHR_50 收敛前或 DSH 判否时，P5 阶段默认控制面为 Relay CLI（阶段默认，不是把 CLI 定位为回退），后续再决定是否建设 Pi TUI 或其他客户端。P4 解锁 P5 所要求的「人类体验判断已记录」仅指 H1/H4（随 DHR_27 主报告）；H2/H3 随 DHR_50 补录，不阻塞 P5（B-11，与下方通用规则第 2 条的适用关系以此为准）。
 
 ## 冻结计划
 
@@ -102,7 +102,7 @@ P4-DM 桌面控制面轨（DSH，可判否）
 3. 未验证项和风险已明确，不用下一阶段掩盖当前失败。
 4. 用户在对话中明确同意进入下一阶段。
 
-可选客户端（DSH / Pi）验收可以是通过、受限或不适用，不能掩盖核心失败，也不能因 DSH 单点失败否决已经证明独立可用的 Relay Runtime 主线。
+可选客户端（DSH / Pi）验收可以是通过、受限、不适用，或**延后**（B-11：延后必须在来源计划里显式钉住汇合点与补录卡，延后只推迟收敛裁决、不推迟失败事实的登记与披露），不能掩盖核心失败，也不能因 DSH 单点失败否决已经证明独立可用的 Relay Runtime 主线。
 
 设计总方向的确认不等于 P4~P9 全部开工授权。每张任务卡仍按 DevHarness 入口闸单独分流、确认和施工。
 
