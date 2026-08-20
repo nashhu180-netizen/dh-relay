@@ -138,7 +138,7 @@
 ---
 
 - 确认记录：2026-08-20 用户在对话里通过 AskUserQuestion 点选「**认可，执行本地收口**」——AI 先给出七段收口汇报 + 机器证据摘要（五轮转录一致、包外探针三态带退出码、真 Cordis dispose 后服务消失、rc.6→rc.7 包对差、41/41 单测、转录变异 13/13、契约变异 9/9），用户在此基础上授权本地收口（代签 verify + 精确路径合入本地 master + 工作区回填），并明确**不 push**。同一轮用户还点选「合并后删 agent/dhr26-host-pilot 与 wt/DHR_26-dsh-host-pilot 两条分支，agent/dhr49-client-pilot 原地封存」。
-- verify 提交 SHA：<收口提交后回填>
+- verify 提交 SHA：`c90cf88`（`git log --grep="^verify" | head` 可查）
 - 签名：hyf（chat-confirm 代签）　　时间：2026-08-20
 
 → 解锁状态：**已验收**（随后回 DevPlan 任务表销户）
