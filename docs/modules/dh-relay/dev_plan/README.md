@@ -1,5 +1,5 @@
 <!-- dh:devplan-index:v1 -->
-<!-- dh:planning-no-event:v1 artifact="dev_plan/README.md" reason="2026-08-18 索引措辞对齐：状态列机读枚举 + 备注列记阶段闸、P4~P9 事件与证据落点说明、硬约束#1 改为 CLI 与 DSH 并行可配置替换（非回退）；同日随 DHR-B-10 机械同步 P4 行的任务 ID 清单与状态；2026-08-20 随 DHR-B-11 机械同步 P4/P5 行、P4 特殊阶段闸与通用规则的延后措辞（拆卡与闸规则变更本体在 P4/P5 计划正文，本索引不承载）" -->
+<!-- dh:planning-no-event:v1 artifact="dev_plan/README.md" reason="2026-08-18 索引措辞对齐：状态列机读枚举 + 备注列记阶段闸、P4~P9 事件与证据落点说明、硬约束#1 改为 CLI 与 DSH 并行可配置替换（非回退）；同日随 DHR-B-10 机械同步 P4 行的任务 ID 清单与状态；2026-08-20 随 DHR-B-11 机械同步 P4/P5 行、P4 特殊阶段闸与通用规则的延后措辞（拆卡与闸规则变更本体在 P4/P5 计划正文，本索引不承载）；2026-08-21 随 DHR-B-15 机械同步 P5 行的任务 ID 清单（DHR_28~31 → 增 DHR_51/DHR_52）与状态备注（DHR_28 已 verify、DHR_29 拆三卡），拆卡本体在 P5 计划 §0.2 DHR-B-15 条" -->
 # DH Relay DevPlan 入口
 
 ## 当前主线
@@ -48,7 +48,7 @@ P9 双平台、多控制面与迁移定型
 | 计划 | 目标 | 当前状态 | 任务 ID |
 |---|---|---|---|
 | [P4-DSH工作台最小Pilot](./P4-DSH工作台最小Pilot-开发方案.md) | 先证明 Windows/SSH CLI 必备控制面独立成立，再评估 DSH 树外桌面控制面（可判否，与 P5 并行） | DHR_25 已完成（2026-08-18）；`DHR-B-11`（2026-08-20）拆 DHR_27 为 CLI 收口 + DHR_50 补录、解锁 P5 不等 DSH 三态 | DHR_25、DHR_26、DHR_49、DHR_27、DHR_50 |
-| [P5-Relay-v2持久内核与DSH桥接](./P5-Relay-v2持久内核与DSH桥接-开发方案.md) | 建立客户端中立协议、Detached Runtime、参考 CLI、恢复和 basic-agent-task | blocked-by-phase-gate:P4-CM（B-11 口径：CM1/2/3/5/6a + 主报告 + 用户放行，不等 DSH 三态收敛） | DHR_28~31 |
+| [P5-Relay-v2持久内核与DSH桥接](./P5-Relay-v2持久内核与DSH桥接-开发方案.md) | 建立客户端中立协议、Detached Runtime、参考 CLI、恢复和 basic-agent-task | DHR_28 已完成（verify `0e2dd54`）；`DHR-B-15`（2026-08-21）把 DHR_29 拆为 Store（DHR_29）/ 宿主·lease·发号（DHR_51）/ RPC·握手（DHR_52）三卡 | DHR_28~31、DHR_51、DHR_52 |
 | [P6-Herdr多账号执行底座](./P6-Herdr多账号执行底座-开发方案.md) | 接入多账号 Codex/Claude Code，验证 DSH-off 和 Linux SSH Herdr 路径 | blocked-by-phase-gate:P5 | DHR_32~35 |
 | [P7-DevHarness单卡完整流水](./P7-DevHarness单卡完整流水-开发方案.md) | 在 DSH 关闭状态下，用 CLI + Herdr 跑通一张标准卡 S0~E13 与 verify | blocked-by-phase-gate:P6 | DHR_36~40 |
 | [P8-多卡编排与运行治理](./P8-多卡编排与运行治理-开发方案.md) | 多卡、重编排、诊断、Outbox、归档和 Oracle，治理对象可由 CLI/DSH/Pi处理 | blocked-by-phase-gate:P7 | DHR_41~45 |

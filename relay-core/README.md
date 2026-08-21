@@ -5,7 +5,7 @@
 
 ## 这是什么
 
-控制面独立的承重内核的**契约层**。协议在这里冻结，之后 Runtime（DHR_29）、Relay CLI（DHR_30）、以及任何客户端（DSH Bridge / Pi / 其他终端）都只认这一份契约来源。
+控制面独立的承重内核的**契约层**。协议在这里冻结，之后 Runtime（DHR_29 Store / DHR_51 宿主 / DHR_52 RPC，`DHR-B-15` 拆卡）、Relay CLI（DHR_30）、以及任何客户端（DSH Bridge / Pi / 其他终端）都只认这一份契约来源。
 
 **语言 = TypeScript / Node**（ADR-001，用户 2026-08-20 裁决）。**代码根 = 本仓新顶层目录**，与 `tools/`（P1 PowerShell Runner，只读作 Oracle）并列。
 
@@ -19,7 +19,9 @@
 | `fixtures/negative/` | 反例 + 写死期望 reason code **与出错位置 `at`** 的 `.expect.json` | DHR_28 |
 | `fixtures/manifest.json` | 基线对证清单：逐份 fixture 的 canonical sha256（承接 P4 §2.1）。改任何 fixture 后须跑 `node tools/fixture-manifest.mjs --write` | DHR_28 |
 | `tools/` | 独立校验器与静态中立性检查 | DHR_28 |
-| `runtime/` `store/` `rpc/` | Detached Runtime、唯一写者 Store、事件账与恢复 | DHR_29（尚未建） |
+| `store/` | 唯一写者 Store、不可变工件、追加事件账、原子快照、确定性回放 | DHR_29（尚未建） |
+| `runtime/` | Detached 宿主、PID/lease、`run_id` 规范化与仓级锁内发号、恢复、只读宿主三态读数（**不注册 `bin`、不占 `relay` 命令名**） | DHR_51（尚未建） |
+| `rpc/` | RPC 服务端：Named Pipe / UDS + NDJSON JSON-RPC 2.0，握手 `capability_hash` 比对 fail-closed | DHR_52（尚未建） |
 | `cli/` | Relay CLI 参考客户端 | DHR_30（尚未建） |
 | `adapters/` `workflows/` | 可选 DSH Bridge / Pi fixture；basic-agent-task | DHR_30 / DHR_31（尚未建） |
 
