@@ -117,4 +117,58 @@ DM-deferred-facts: stoploss-not-triggered
 
 ## 附录（DHR_50 交付节位）
 
-> 本节位由 DHR_50 收口时追加：CLI↔DSH 跨客户端对证（P4-CM4 补录）、CM6b 审计、DSH 三态收敛（用户人判）、H2/H3、以及对 §3 `DM-deferred-facts:` 清单的诚实差额核对。未追加前本节留空。
+> 本节只追加 DHR_50 的事实与裁决，不回改主报告 §1~§5（留痕原则）。DHR_50 于 2026-08-21 开工；机器事实、两轮只读复核与用户人判均已完成。
+
+### A.1 CLI ↔ DSH 字段级对证（P4-CM4）
+
+- **输入与版本**：DHR_25 冻结 fake list `runs-active.json` 与 detail `run-chinese.json`；CLI 当前只读重跑，DSH 为 rc.7 独立 Home / `web` profile。DSH Host 的完整 fixture 指纹为 `67fb18b3d7d84fa8a3f188f0db67539eb0421aeac4e5c3aadbf536807d39612c`。
+- **列表屏**：真实 DSH DOM 转录显示 5 条，顺序 `0005/0007/0002/0001/0006`，与 CLI 同序；`group / progress / attention_count / max_attention_severity / current_node_* / workflow_name` 逐条无差异。首载、浏览器刷新和 DSH 进程重启后三次列表 `innerText` SHA-256 均为 `076c9d4a1036b0733ce6e854893676c10959c4fd1ce9f95d938ebbb89ce39e24`。
+- **详情屏**：真实 DSH 截图与 CLI `show run-chinese.json` 对 `fake-run-0005` 的标识、状态、摘要、流程、标签、触发/开始/用时/尝试/更新、日志位置、5 个节点及 1 个 Attention 均一致；CLI canonical SHA-256=`eb6ca373c87d75f662a5f24bc5210048d18dfbc9cd2f112bbc1a8e5f83ee22a2`。
+- **覆盖边界**：`schema_version / source_kind / source_refs` 未在 UI 逐字打印，由 Host plain-JSON + fixture hash 对证为同一 payload；此为 payload 等价覆盖，不能说成截图字段覆盖。目标机没有会话，故“目标机面板渲染出数据”仍未证；这属于 P4-DM2 的既有约束，不是本机 CM4 已对出字段的差异。
+- **CM4 机器结论：通过。** Round 1 与 fresh-context Round 2 两轮独立只读复核均建议 `pass`，两轮均为 0 P0/P1；Round 1 提出的列表可见字段表 P2 已补齐。完整字段表、证据索引和两份复核记录：[workspace/DHR_50/](../../workspace/DHR_50/)。
+
+### A.2 桌面轨审计（P4-CM6b）
+
+审计范围为 DHR_26 / DHR_49 / DHR_50 的 Host、Client、独立 `dsh-home` 与工作区。运行时代码（排除 test/scripts）对写文件、进程派活与网络写词边界扫描为 0 命中；Host/Client 只消费普通 JSON，未见 Relay 运行写 API。Pilot 根无 `.git`，DSH 由全局 npm 安装，未含 monorepo checkout 或源码副本。`dsh-home` 的插件安装状态会变化，但不是 Relay Run 写权。
+
+**P4-CM6b：通过**（审计边界与哈希见 [workspace/DHR_50/cm6b-audit.md](../../workspace/DHR_50/cm6b-audit.md)）。
+
+### A.3 主报告后新增事实与诚实差额
+
+主报告的 `DM-deferred-facts: stoploss-not-triggered` 是 2026-08-20 时点快照；当时 DHR_49 尚未开始。核对结果如下：
+
+| 项目 | 主报告时点 | DHR_49 后新增事实 | 诚实差额 |
+|---|---|---|---|
+| Client 构建 / 上游边界 | 未有事实 | 无 monorepo checkout、无打包器；本机清净重跑成立 | 无遗漏；新增事实已披露 |
+| P4-DM2 | 未有事实 | 换机 bundle/Host/Client 装载成立，但目标机 UI 渲染未证 | **不得记 pass** |
+| P4-DM3 / DM4b / DM5b / DM6 | 未有事实 | 本机两屏重建、Client 装卸、纯 JSON、`group` 镜像断言均有证据 | 无遗漏；新增事实已披露 |
+| 人验路径 | 未有事实 | 列表屏中途闸已由用户实际使用；H-e2e 未从零亲跑，零上下文机器旁证抓到并修复 `--port` 文档缺步 | H-e2e 仍未做，不得补绿 |
+
+`honesty-gap: none` —— 主报告没有把 2026-08-21 才产生的 DHR_49 事实写成已知；本附录逐项补登记，未静默改动正文。
+
+### A.4 §4 v1 缺口清单的后续归属差额
+
+主报告 §4 的六条 v1 缺口仍是 DHR_27 在投影期观察到的历史记录，按留痕原则不回改。P5 后续将其职责二分，核对如下：
+
+| 后续职责 | 归属 | 与 §4 的关系 |
+|---|---|---|
+| 为六条缺口逐条决定“进入 v2 字段”或“显式不采纳 + 理由”，并落 ADR / 契约处置表 | DHR_28 | 负责协议语义与取舍；验收锚点为 `v1-gap-disposition:` |
+| 将 Pilot 的两份 Read Model 写成正式字段级 design 定义，冻结源头给 `group` / 客户端不推导的镜像断言，并关闭列表投影白名单例外 | DHR_30 | 负责控制面消费契约及 CLI/DSH 的同读约束；不替 DHR_28 决定六条缺口的协议取舍 |
+
+`honesty-gap: none` —— 六条缺口未被遗失或由 DHR_30 静默代管；“先决定 v2 怎么处置”与“再把客户端消费字段写成正式定义”是相邻但不同的责任面。
+
+### A.5 P4-X
+
+DSH Native Agent 棒 0 Proposal：**未验证**。本卡未为可选探索引入新写权或额外环境配置。
+
+### A.6 用户人判（2026-08-21 对话确认）
+
+| 项目 | 用户结论 | 留存的边界 |
+|---|---|---|
+| DSH 桌面控制面轨三态 | **`passed-with-constraints`** | P4-DM2 的“目标机面板渲染出数据”未证；H-e2e 尚未从零由用户亲跑。二者均不补绿。 |
+| P4-H2 | **值得作为 Windows 日常首选控制面。** 用户明确选择先使用 DSH，并指定其产品方向为：对接力计划中已登记、正在运行的任务，一键跳转到对应 PowerShell / psmux / Herdr 终端上下文。 | 这是一项后续受控 Bridge / Runtime 能力方向，不是 P4 已实现的终端接管证明；DSH 不扫描或接管未登记的本机终端。 |
+| P4-H3 | **不适用。** | DSH 未判否；CLI 仍保持独立正式控制面与故障兜底，不因 H2 改变。 |
+
+对话确认链：用户先确认以 `passed-with-constraints` 记录；随后明确“先用 DSH”并限定一键跳转目标为“登记在接力计划且正在运行的任务”的 PowerShell、psmux、Herdr 终端。
+
+因此，P5 DHR_30 的 DSH Bridge 条件部分与 DHR_31 的 DSH 附加客户端项不再是“未执行，待 DHR_50”，可按各自既定开工闸和范围执行；P5 CLI 主线及其独立性不变。
