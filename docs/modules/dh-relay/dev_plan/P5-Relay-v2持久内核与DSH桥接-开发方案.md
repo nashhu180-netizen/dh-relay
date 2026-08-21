@@ -2,13 +2,14 @@
 
 <!-- dh:plan-type: 开发 -->
 <!-- dh:planning-event:v1 id=DHR-B-13 stage=B-adjust artifact=dev_plan/P5-Relay-v2持久内核与DSH桥接-开发方案.md review=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#review-b13 understanding=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#understanding-b13 -->
+<!-- dh:planning-event:v1 id=DHR-B-14 stage=B-adjust artifact=dev_plan/P5-Relay-v2持久内核与DSH桥接-开发方案.md review=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#review-b14 understanding=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#understanding-b14 -->
 <!-- dh:status
 汇报: P5 已按 design/06 重写为「控制面独立的承重内核」：Runtime + Store + 参考 CLI 必备，DSH/Pi 只是可替换客户端。B-11（2026-08-20）：解锁前置改为 P4-CM1/2/3/5/6a + 主报告 + 用户放行，不再等 DSH 三态收敛；DSH 轨与本阶段并行，汇合点在 DHR_30 的 DSH Bridge 条件部分与 DHR_31 的 DSH 附加客户端项（须有 DHR_50 结论才执行）
-现状: **P4 阶段闸已解锁**——CM1/2/3/5/6a 全绿 + 主报告落盘（P4 verify `252a131`）+ 用户 2026-08-20 对话放行；**DHR_28 已开工（进行中）**，DHR_29~31 未开始
-进行到: P5 ▸ DHR_28 ▸ 批次 1（ADR 起草）——工作区 [workspace/DHR_28/](../workspace/DHR_28/) 八件套已落户，brief（委托起草+主会话逐字审）与 task_plan（3 批 16 步）已定
-下一步: 批次 1 出 ADR-001（语言 Go/TS × 代码根 本仓新顶层/新独立仓，四组合逐一评）+ ADR-002（Agent 宿主必答四问），过批次检查点 1 小审后**停下来摆给用户点选语言与代码根**；裁决后进批次 2（v1 六条缺口逐条处置表 + 冻结 7 份 schema + reason code + 兼容矩阵 + 4 份 v0 形状）
-看什么: P4 主报告（evidence/10，含 §4 v1 协议缺口清单 = DHR_28 直接输入）、design/05、design/06
-阻塞: 无（开工前 B-调整未完成前 DHR_28~31 不得开工）
+现状: **P4 阶段闸已解锁**——CM1/2/3/5/6a 全绿 + 主报告落盘（P4 verify `252a131`）+ 用户 2026-08-20 对话放行；**DHR_28 已完成**（verify `0e2dd54`，2026-08-21 用户对话放行）——relay v2 最小协议集已冻结，`relay-core/` 是本仓唯一契约来源；DHR_29~31 未开始
+进行到: P5 ▸ **DHR_28 已收口销户**。交付 = 本仓顶层代码根 [relay-core/](../../../../relay-core/)：7 份冻结协议 + 1 份共享定义模块 + 4 份 v0 形状、23 个 reason code、兼容矩阵、v1 六条缺口处置表、33 份 golden/negative fixture、独立校验器与 11 维度静态审计、三份互不覆盖的基线（fixture manifest / capability baseline / 结构 token 白名单）。首份 as-built 见 [as-built/relay-core.md](../as-built/relay-core.md)
+下一步: **DHR_29 开工 B-调整**（预计拆 ≥2 张实际施工卡，至少分离「Store/回放」与「宿主/lease/恢复」）。⚠️ **开工前必读三处**：①`relay-core/contracts/v1-gap-disposition.md` 末尾的「DHR_30 开工前必读」段（本卡已替 DHR_30 冻掉 `group` / `progress` / `elapsed_seconds` 三个 Read Model 展示字段及其天花板）；②`relay-core/contracts/OPEN-POINTS.md` 的 3 处有意开放点 + **K-1~K-4 四条已知缺口**（`waiting_human` 无产生者 / `attempt_id` 无序后 stale 判定失据 / 身份 token 13 处内联重复 / attention 的 `reason` 必填与 reason-codes 口径对撞）；③DHR_28 findings 里 `遗留→DHR_29（已确认）` 与 `open` 的条目，尤其 **F-064**（本卡新增的那条握手期能力指纹比对机器证就是它的落点）
+看什么: **`relay-core/README.md`（硬约束 6 条 + 「改了什么跑什么」基线对照表）与 [as-built/relay-core.md](../as-built/relay-core.md)（含「这套东西是怎么长成现在这样的」一节，动它之前先读）**；P4 主报告（evidence/10 §4 v1 协议缺口清单）、design/05、design/06
+阻塞: 无。DHR_28 已收口，DHR_29 的依赖（契约冻结）已满足
 -->
 
 > 文件名沿用首次落盘的「DSH桥接」，标题与责任已按 design/06 改为多控制面桥接；改名放 P9 统一处置。
@@ -43,6 +44,7 @@
 - **调整与复审**：待补。
 - **用户确认**：待补。**DHR_28~31 为预留编号，落盘不等于 B 确认，也不构成开工授权。**
 - **B-12 关联修订（2026-08-20，本计划侧事件；与 P4 `DHR-B-11` 同批、同一次审核 / 讲解 / 用户确认）**：本计划前置条件、DHR_28 依赖口径、DHR_30/31 的 DSH 条件项判定依据（含 H4「DSH 插件卸载」子命题条件化、P5-H「DSH 组合」问条件化）随 B-11 调整同步修订——解锁不再等 DSH 三态收敛，DSH 条件项以 P4 DHR_50 结论为开工判据。事件本体见 P4 计划 §0.2（DHR-B-11），本计划侧记录见 [evidence/09 §21~§22](../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#review-b12)。本条不改变 DHR_28~31 的任务拆分与验收口径本体。
+- **B-14 收口期 B-调整（2026-08-21，DHR_28 收口证据回流）**：DHR_28 收口时发现 **P5-M6「协议版本、能力和未知输入均 fail-closed」是三个分句，而承接卡只写了 DHR_28**——其中「协议版本」与「未知输入」DHR_28 已在契约层证毕（7 份协议的判别字段全为 `const`，7/7 实测；全域 `additionalProperties: false`），但**「能力不匹配」契约层不可能证**：schema 拿不到对端指纹，一份形态合法而与对端不同的 `capability_hash` 必然被放行。而 **DHR_29 / DHR_30 两张卡全文里 `capability` / 能力 / 指纹 / 握手 四个词零命中**（主会话与 E4 需求复核各自独立核过），于是这一分句处在「本卡证不了、下游也没人接」的状态，P5 阶段闸走到 P5-M6 时会在**没有任何一张卡真正证过它**的情况下记为通过。**两处修订**：①§4.1 P5-M6 承接卡列由 `DHR_28` 改为 `DHR_28 / DHR_29`；②DHR_29 验收口径**增一条机器证**「RPC 握手期对 `capability_hash` 做比对并在不符时 fail-closed（`E_CAPABILITY_MISMATCH`），不得按能力交集降级工作」，附等价判据。**不改变**任何任务的拆分、依赖、档位与其余验收口径。**为什么不只做风险接受**：只做风险接受能让 DHR_28 过闸，但敞口会飘着；改计划是把它**钉到真正有手段验它的那张卡上**。事件本体见 DHR_28 findings **F-064**（`遗留→DHR_29（已确认）`）；审核与确认记录见 [evidence/09 §25~§26](../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#review-b14)。
 - **B-13 开工前 B-调整（2026-08-20，P4 证据回流）**：P4 阶段闸解锁（DHR_27 verify `252a131` + 用户放行）后，按 §0.2 既有约定把 P4 实测证据回流进本计划：①DHR_28 增加「v1 协议缺口逐条处置表」验收（缺口清单 = P4 主报告 §4 六条实测缺口）；②DHR_30 的 Read Model 冻结起点钉为 P4 冻结的两份 pilot schema + 「分堆与排序由源头给」架构约束（两条镜像断言纳入 P5-M4 证据），并承接关闭 P4 §0.2 列表投影白名单例外；③§2.3 增补 Read Model 字段级起点条款；④DHR_30 Bridge 条件部分登记 DHR_26 侦察落档为施工依据。任务拆分、依赖、档位均未变。**缺口清单所有权改挂说明**：P4 主报告 §4 原标注「P5 DHR_30 协议设计输入」的 v1 缺口清单，自本事件起二分——**逐条处置表 → DHR_28**（契约冻结时裁决）；**正式 Read Model 冻结 + 关闭白名单例外 → DHR_30**；P4 报告原文按留痕原则不回改，差异由 DHR_50 附录按诚实差额机制核对。审核与确认记录见 [evidence/09 §23~§24](../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#review-b13)。
 
 ## 1. 概述
@@ -102,7 +104,7 @@
 
 | 任务 ID | 一句话 | 档位（轻/标准） | 状态 | 依赖 | 工作区 | 验收时间 / verify SHA | 备注 |
 |---|---|---|---|---|---|---|---|
-| DHR_28 | 根据 P4 证据确定 Runtime 语言、Agent 宿主归属与客户端中立协议（ADR + golden fixture） | 标准 | 进行中 | P4 阶段闸（P4-CM1/2/3/5/6a 通过 + 主报告落盘 + 用户放行，B-11 口径） | [workspace/DHR_28/](../workspace/DHR_28/) | | **阶段闸已解锁**（P4 verify `252a131` + 用户 2026-08-20 放行）；2026-08-20 入口闸分流经用户对话确认开工（worktree=批1 主树/批2 起按 ADR 结果、语言与代码根裁决摆用户点选、委托照节点表默认）；分 3 批=ADR / 缺口处置表+schema 冻结 / fixture+校验器；ADR 涉 DSH 的必答题按契约层回答，DHR_50 未收敛不阻塞本卡 |
+| DHR_28 | 根据 P4 证据确定 Runtime 语言、Agent 宿主归属与客户端中立协议（ADR + golden fixture） | 标准 | 已完成 | P4 阶段闸（P4-CM1/2/3/5/6a 通过 + 主报告落盘 + 用户放行，B-11 口径） | [workspace/DHR_28/](../workspace/DHR_28/) | | **verify `0e2dd54`**（2026-08-21，用户对话内 AskUserQuestion 放行、chat-confirm 代签）。交付 = 本仓顶层代码根 `relay-core/`：7 份冻结协议 + 1 份共享定义模块 + 4 份 v0 形状、23 个 reason code、44 行兼容矩阵、v1 六条缺口逐条处置表、11 golden + 22 negative fixture、独立校验器 + 11 维度静态审计 + 三份互不覆盖的基线；ADR-001（TypeScript / 本仓新顶层目录，用户 2026-08-20 点选）+ ADR-002（Agent 宿主必答四问）；as-built 首份建。　**验收口径**：2/3/4/5 达成；**1 判「否」**——未知字段与未知版本已证（7 份协议判别字段全为 `const`，7/7 实测），**「能力不匹配」契约层不可能证**（schema 拿不到对端指纹），本卡兑现的是「指纹可复算」那一半（`capability-baseline.json`，8 份契约 digest + 参考 `capability_hash = 3ccf3b10…`，改任一 schema 的任意一个字即 `exit 1`）；**指纹比对已移交 DHR_29**——见 findings **F-064**（`遗留→DHR_29（已确认）`）与本计划 §4.1 P5-M6 承接卡、DHR_29 新增的那条机器证。　**过程**：六路复核（cp1/cp2/cp3 批次小审 + E2 代码轮2 + E4 需求 + E5 教训 + E14 一致性）共 60 余条发现全接全改；findings 85 条、**P0 全程为 0**、收敛后 open 的 P0/P1 归零；教训 20 条，miner 另抽 4 条候选。 |
 | DHR_29 | 实现 Detached Runtime、唯一写者 Store、事件账与恢复 | 标准 | 未开始 | DHR_28 | <开工时回填 workspace/…> | | 阶段闸阻塞；开工 B-调整时预计拆 ≥2 张 |
 | DHR_30 | 实现 Relay CLI 参考客户端与可选 DSH/Pi Bridge 接缝 | 标准 | 未开始 | DHR_29 | <开工时回填 workspace/…> | | 阶段闸阻塞；DSH Bridge 条件部分以 P4 DHR_50 结论为开工判据（B-11 汇合点）：无结论→记「未执行，待 DHR_50」，判否→只留合同接口；CLI 部分不受影响 |
 | DHR_31 | 以 DSH 关闭状态跑通 basic-agent-task 垂直闭环 | 标准 | 未开始 | DHR_30 | <开工时回填 workspace/…> | | 阶段闸阻塞；第一个端到端 demo；DSH 附加客户端项按 DHR_50 结论执行（B-11） |
