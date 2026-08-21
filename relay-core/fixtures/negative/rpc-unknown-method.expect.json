@@ -1,0 +1,6 @@
+{
+  "schema": "relay.rpc/v1",
+  "reason": "E_UNKNOWN_METHOD",
+  "at": "/method",
+  "why": "不为未来方法预留宽容通道"
+}

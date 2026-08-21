@@ -1,0 +1,6 @@
+{
+  "schema": "relay.run/v2",
+  "reason": "E_ABSOLUTE_LOCATOR",
+  "at": "/nodes/0/executor_profiles/0/ref",
+  "why": "D-3：~ 展开后即含用户名的主机绝对路径，正是 G5 的隐私理由要挡的"
+}

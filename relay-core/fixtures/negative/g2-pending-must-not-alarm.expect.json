@@ -1,0 +1,6 @@
+{
+  "schema": "relay.run-state/v1",
+  "reason": "E_BAD_VALUE",
+  "at": "/group",
+  "why": "D-19 原病灶：pending 归 needs_you 会让每个正常 Run 起跑前都误报警 ⚠️ **本例已不是「单一违规」**（E2 代码复核轮 2 · P3-2 实测）：把 group 改回合法值后仍被拒，第二处违规落 /node_states——本例同时违反聚合条款⑤（run_status 与节点态不符），那是 F-048 加 allOf 时顺带产生的，不是 progress 改动引入的。判定由 at 钉死在 /group（删对应 allOf 分支时会打印「期望 @/group 实得 @/node_states」而 FAIL）。**cp3 立的「单 token 变异 + 基准自身 PASS ⇒ 不可能被别的原因拒」这条方法学标准，在本例上不再适用**——留痕即可，不改 fixture：把它构造成单一违规要动 node_states，那会让它不再是 golden 的最小变异。"
+}

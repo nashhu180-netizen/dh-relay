@@ -1,0 +1,33 @@
+# forbidden-types.txt — 协议中立性禁词表
+#
+# 依据：DevPlan §2.2 复用与禁改边界 + design/05 §6.2 生产协议
+#   「协议必须平台、客户端、业务域无关」「不导入 DSH / Cordis / Pi / Herdr / DevHarness 私有类型」
+#
+# 由 tools/audit-contracts.mjs 消费。扫描口径（两条都重要）：
+#   1) 只扫**结构位置**——字段名、enum 值、const 值；剥掉 description / $comment / title / $id / $ref
+#      等散文键。理由：禁令禁的是"把私有类型**导入结构**"，不是"文档里不许提这些名字"；
+#      兼容矩阵与 ADR 必须能引用 v1 的 psmux、DHR_26 的 Cordis 教训等事实。
+#   2) 匹配**必须带边界**（前后非 ASCII 字母）。裸子串会命中 `han-DSH-ake`——
+#      批次检查点 2 的小审和本仓自建审计脚本首版**各自独立踩过这个假阳性**，
+#      说明这是该类脚本的通病，不是偶然。
+#
+# 五家齐（批次检查点 3 小审 P2-2）：权威原文列的是 DSH / Cordis / Pi / Herdr / DevHarness，
+#   本表首版只有四家，漏了 `pi`——于是 `pi_session_ref` / `pi-native-adapter` 这类字段名
+#   能大摇大摆进结构位置而审计 exit 0、npm test 全绿，验收口径第 2 条对五家里的一家是空的。
+#   E-034 的负向验证只插了 `cordis_hint`，恰好没碰到这个洞。
+#   加 `pi` 的附带风险已实测：边界规则下 `api` / `mapping` / `pipeline` 均不命中，
+#   而 `pi-agent` 本就在白名单里。
+#
+# 白名单（允许出现在结构位置的厂商 token，见 contracts/README.md 硬约束 1 的例外条）：
+#   pi-agent / dsh-agent / herdr-agent
+#   —— 它们是 executor_kind 的**不透明枚举字面量**，不是导入的类型；
+#      且 design/06 H6 的契约断言逐字依赖 `dsh-agent` 存在（DevPlan §3.2 验收口径第 3 条），
+#      不可回避。白名单由 audit-contracts.mjs 的 VENDOR_TOKEN_WHITELIST 执行，改一处须改另一处。
+
+dsh
+pi
+cordis
+herdr
+devharness
+psmux
+subagent

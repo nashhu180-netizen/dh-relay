@@ -1,0 +1,6 @@
+{
+  "schema": "relay.run/v2",
+  "reason": "E_MISSING_FIELD",
+  "at": "/trigger_by",
+  "why": "G1：trigger=human 必须记谁触发"
+}

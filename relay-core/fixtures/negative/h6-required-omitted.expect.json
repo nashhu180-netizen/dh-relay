@@ -1,0 +1,6 @@
+{
+  "schema": "relay.run/v2",
+  "reason": "E_MISSING_FIELD",
+  "at": "/nodes/0/required",
+  "why": "D-11：required 改必填后，不标 required 不再让 H6 静默失效（此前 fail-open by default）"
+}

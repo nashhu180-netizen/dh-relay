@@ -1,0 +1,232 @@
+{
+  "$comment": "本文件是 fixture 基线对证清单（批次检查点 3 小审 P1-1，承接 P4 §2.1 的 manifest 对证做法）。 digest = lowercase_hex(sha256(utf8(JCS(载荷))))，口径见 contracts/CANONICALIZATION.md。 改任何 fixture 后必须跑 `node tools/fixture-manifest.mjs --write` 重新生成，并在 commit 里能看见 digest 变了—— 这正是它的用途：让 fixture 的语义改动不可能悄悄发生。",
+  "canonicalization": "RFC 8785 (JCS) + sha256, lowercase hex — contracts/CANONICALIZATION.md",
+  "counts": {
+    "golden": 11,
+    "negative_payload": 22,
+    "negative_expect": 22,
+    "total": 55
+  },
+  "files": [
+    {
+      "path": "golden/checkpoint.v2.json",
+      "digest": "a36ba79c0798d9ecc0f2b49eccb9d267504d1565926c1d5248ef2769e84b50e4"
+    },
+    {
+      "path": "golden/event.v2.client-disconnect.json",
+      "digest": "e8a187a76135eb7545dc9d811b15e7526b069371fc21db7769a4904fa24f9b82"
+    },
+    {
+      "path": "golden/event.v2.json",
+      "digest": "04e8bda3a41d03ccc05edb515fa28c2e5d66eacdc179111f00370ed47d4adb21"
+    },
+    {
+      "path": "golden/launch-receipt.v2.json",
+      "digest": "d932b889e5a8df5cba9633bc40ae87be182e135820619788b5875dd56bdad2f9"
+    },
+    {
+      "path": "golden/result.v2.json",
+      "digest": "fedada813fbc3d043e9b398531c3e7e9b4684e0e29f35b8d1afc6f9310cee504"
+    },
+    {
+      "path": "golden/rpc.v1.error.json",
+      "digest": "d3420463239f71f206106c589c8f5bbabd5e4678d5dad8fb0b3a792c5ab1430a"
+    },
+    {
+      "path": "golden/rpc.v1.notification.json",
+      "digest": "269b1a04b78376379af42898d96e0b74a82619d56963c112d4d2afc4371b7210"
+    },
+    {
+      "path": "golden/rpc.v1.request.json",
+      "digest": "2facc8aac169d3a20fce35e49fa474007017f8a4b6c490f139d9d0ca7ac2462b"
+    },
+    {
+      "path": "golden/rpc.v1.response.json",
+      "digest": "2b2eadce04dccd75f4e92c72821906751e32e16229cba5ec6343bd969a46c184"
+    },
+    {
+      "path": "golden/run-state.v1.json",
+      "digest": "1efafdc8da5eb13609fd48c003864c1001a9ef946d2a666070b97aee117427cf"
+    },
+    {
+      "path": "golden/run.v2.json",
+      "digest": "d4944de467b799c2a39552d5a04195e85e44681b13348604263c8710d4024d45"
+    },
+    {
+      "path": "negative/bad-timestamp.expect.json",
+      "digest": "414d628033384f29817cc5f5b293280c8064a90e6718b872edf43a9db491ebf5"
+    },
+    {
+      "path": "negative/bad-timestamp.json",
+      "digest": "4ebf47a45959770ac2544c9dae4f653b198d571a6b9bd45995ed72066918c672"
+    },
+    {
+      "path": "negative/capability-mismatch.expect.json",
+      "digest": "5e2087605cee1b904eec43a9fbafe6c9bd025efc807e836e7c7a57948d724305"
+    },
+    {
+      "path": "negative/capability-mismatch.json",
+      "digest": "5914d1e0c421f1ca568e022d667ce56d2b694b61b4db688e2f68f90845c2e66c"
+    },
+    {
+      "path": "negative/d25-empty-node-states.expect.json",
+      "digest": "da07cd3e60fa95eb43b0886b207f5f0dc8ef62a6b20e37725502cdaf3844c53a"
+    },
+    {
+      "path": "negative/d25-empty-node-states.json",
+      "digest": "b65bbc113fcd07ff19ef8e9e77050d29398846c8ec0bcfe4cdd889e2198c3112"
+    },
+    {
+      "path": "negative/d25-node-states-omitted.expect.json",
+      "digest": "8f5abe91923b18995b8000dea29575e12cdf83b1ea0f1cd1bdc0dfc2d7fe7b4b"
+    },
+    {
+      "path": "negative/d25-node-states-omitted.json",
+      "digest": "8b628a88797a365df94a629bb7163ddf228c863043d88cec9f72489150cccb2c"
+    },
+    {
+      "path": "negative/g1-human-trigger-without-by.expect.json",
+      "digest": "4a3a4af2226a590d17070f830bf6ccff32779db10d8ee2d88651c1edd4e7cadd"
+    },
+    {
+      "path": "negative/g1-human-trigger-without-by.json",
+      "digest": "cda5c7aa14ee9a04bcb6247e18eb58209af8aa22e4ced29ac4b63ae6605caf85"
+    },
+    {
+      "path": "negative/g2-pending-must-not-alarm.expect.json",
+      "digest": "728fa5c89370e108e99fbfb7ad38d205d1fac3613d2540c95ea44023fe3c035b"
+    },
+    {
+      "path": "negative/g2-pending-must-not-alarm.json",
+      "digest": "eab2228ddccd83fd02249cf99cb51d7ab5fe1b54169007e031da944eb807d1b3"
+    },
+    {
+      "path": "negative/g2-unknown-must-float.expect.json",
+      "digest": "2df5824125d558c0b7dbebd7ac44d19b3c63e32d1850fbe3dedf6614b15baccd"
+    },
+    {
+      "path": "negative/g2-unknown-must-float.json",
+      "digest": "60ee871130986edab42a89aab391eae5b289d0940942058d002abc2bdebd0579"
+    },
+    {
+      "path": "negative/g3-node-missing-title.expect.json",
+      "digest": "55fb75a4434281b1c658ac30bbda457f662254fbaa69b18a9cdb1c0c0906e120"
+    },
+    {
+      "path": "negative/g3-node-missing-title.json",
+      "digest": "ddfec6ef0ffe316b16603ce489e01b0ec509f38f2b9f55367a8bcf8b9c6673fb"
+    },
+    {
+      "path": "negative/g4-attempt-zero.expect.json",
+      "digest": "7e85effdb7f8a8c5413f9b5181dce45a88db8e52c625ef11fd954b9339e676ec"
+    },
+    {
+      "path": "negative/g4-attempt-zero.json",
+      "digest": "94318a1a1b36db5eae22dbd0092bf02cbb675c3834ee7dd0bfec16254c13c4e5"
+    },
+    {
+      "path": "negative/g5-absolute-locator-drive.expect.json",
+      "digest": "60c2981c2b597f2f7eaf4d9598542890db8122acb7a0b4965fab7808645d2d2e"
+    },
+    {
+      "path": "negative/g5-absolute-locator-drive.json",
+      "digest": "63cec261f302c883d837eb53ed0cbba8805265d296b9eee6c7071e900071a4f6"
+    },
+    {
+      "path": "negative/g5-absolute-locator-file-scheme.expect.json",
+      "digest": "59ca32f48272678122efb84654ed980eb7f0c9d723e5e11250b1d6843edee19b"
+    },
+    {
+      "path": "negative/g5-absolute-locator-file-scheme.json",
+      "digest": "cd0c353e89a207ff910180c9e4053c1ff15072ae8255258ee35fcd9dc65528af"
+    },
+    {
+      "path": "negative/g5-absolute-locator-home.expect.json",
+      "digest": "96abe2cffcb7172c6fd50168b480f4def2745b7e9cb186f78e714ad183529637"
+    },
+    {
+      "path": "negative/g5-absolute-locator-home.json",
+      "digest": "82bdc9082904ce5b22397dbbda83037f305d73e0f0218cbe20620b2bd16bd8f6"
+    },
+    {
+      "path": "negative/g6-attempt-failed-reason-null.expect.json",
+      "digest": "2ec9c30f50a81614a2ee95cd30bd8f8f42a5123263fcdef94a978689028f618e"
+    },
+    {
+      "path": "negative/g6-attempt-failed-reason-null.json",
+      "digest": "0c4fc2919728c574e963a9b9bc5ea1b7473da0c492169422a9b1d302d1f37312"
+    },
+    {
+      "path": "negative/g6-attempt-failed-reason-omitted.expect.json",
+      "digest": "71358f025921f3440a45d79ed30c08c2be4aaa08e141521a84a6f7b969d7e6d0"
+    },
+    {
+      "path": "negative/g6-attempt-failed-reason-omitted.json",
+      "digest": "614858277f899ba822c45347c0a23b9527d1537f9d3bc8c04cc3cf072b3dd7e1"
+    },
+    {
+      "path": "negative/g6-client-disconnect-carries-observation.expect.json",
+      "digest": "b96d1ae4a95665085ab0773ab0b218f623224d6904ecf86b39915834f39f4d5a"
+    },
+    {
+      "path": "negative/g6-client-disconnect-carries-observation.json",
+      "digest": "8a60e5c47b038f19f325722fa3dcbb545a6f569bea857e4f0f7e1b8bad770036"
+    },
+    {
+      "path": "negative/h6-dsh-only-required-role.expect.json",
+      "digest": "3647eb134c07554fb6c0f43fc03ed2b550c6a9a578bb937d9668279c91c3c781"
+    },
+    {
+      "path": "negative/h6-dsh-only-required-role.json",
+      "digest": "8b9cc863e57a92b40850137ecc664a9849321e4752a7747c99b5e0da797e17bd"
+    },
+    {
+      "path": "negative/h6-required-omitted.expect.json",
+      "digest": "5147bb7320f1ba4edabbf344c7e752ba60b04b58071f454482ddebf1af25d41b"
+    },
+    {
+      "path": "negative/h6-required-omitted.json",
+      "digest": "43e0fce2ee86e8731c969456d62a0ebb22c6b4622bcd3d27ac6cbed7b33133b2"
+    },
+    {
+      "path": "negative/rpc-notification-cross-payload.expect.json",
+      "digest": "ed6a694cb26ad26866c899dca5d79e8bea544700723f2ef39bbe8b8e090bbd06"
+    },
+    {
+      "path": "negative/rpc-notification-cross-payload.json",
+      "digest": "32abbae78f5bb1aac5b4ec00379d73b16ae677a2e702878aed3a36b800014b49"
+    },
+    {
+      "path": "negative/rpc-unknown-method.expect.json",
+      "digest": "f08d4004f20a2499e99dc80d1cad6ddb821f87f4c007255ef9ea06ffcbaf390a"
+    },
+    {
+      "path": "negative/rpc-unknown-method.json",
+      "digest": "7c995fa71241d02276e577a545cd24a6d5846989d56b06017bb1e58e99eb769e"
+    },
+    {
+      "path": "negative/timestamp-no-timezone.expect.json",
+      "digest": "286ade2f1494e552f428e1e99ded27a6a58d12b510df3e5d7a2ca6dce5ce6d94"
+    },
+    {
+      "path": "negative/timestamp-no-timezone.json",
+      "digest": "565632e5a949418c4e683c28d97be236a02288cc0fd16f80c1dbab59ca5dacda"
+    },
+    {
+      "path": "negative/unknown-field.expect.json",
+      "digest": "2ed74be960b544fbbc7017e187168b628b40fb845dfb067a7c72443ba1864b8d"
+    },
+    {
+      "path": "negative/unknown-field.json",
+      "digest": "9bed7cc38488ab82640d1be22d419cf8a4a4d8b913ec21f484fd12761877b5b6"
+    },
+    {
+      "path": "negative/unsupported-version.expect.json",
+      "digest": "931a789faf289cff154d65da29baf5a2390ed32052bac8ed0b8e8d893e61d75e"
+    },
+    {
+      "path": "negative/unsupported-version.json",
+      "digest": "3fedbba503b8ef0cf40e467c97bf11fed8da2fef71ee439e74c4a177283573a1"
+    }
+  ]
+}

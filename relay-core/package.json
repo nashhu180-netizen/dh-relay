@@ -1,0 +1,22 @@
+{
+  "name": "@dh-relay/relay-core",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Relay v2 persistent kernel: client-neutral JSON contracts, reason codes, golden fixtures and an independent validator. Runtime/CLI land in DHR_29/DHR_30.",
+  "type": "module",
+  "bin": {
+    "relay-validate": "./tools/validate.mjs"
+  },
+  "scripts": {
+    "test": "node --test test/contracts.test.mjs",
+    "audit": "node tools/audit-contracts.mjs",
+    "validate": "node tools/validate.mjs"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1"
+  }
+}

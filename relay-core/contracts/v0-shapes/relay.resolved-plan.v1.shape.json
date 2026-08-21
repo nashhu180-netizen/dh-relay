@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dh-relay.local/contracts/v0-shapes/relay.resolved-plan/v1",
+  "title": "relay.resolved-plan/v1 — v0 形状（未冻结）",
+  "x-freeze-status": "v0-shape-only",
+  "x-frozen-at": "未冻结",
+  "x-first-load-bearing": "P6 / P7（首次承重时冻结；DevPlan §2.3。P8 的重编排/Plan Revision 会在此之上加修订链）",
+  "description": "Workflow 定义经解析、绑定具体 Executor 后的『这次实际要怎么跑』。与 relay.run/v2 的分工：run/v2 是不可变的『这是什么活 + 有哪些节点 + 每个节点可由谁执行』；resolved-plan 是『本次实际选了谁、按什么顺序』。承接 design/06 H11——更换控制客户端不改变 Authority、ResolvedPlan、Gate、Result 和 Verify。",
+  "type": "object",
+  "properties": {
+    "protocol": {
+      "const": "relay.resolved-plan/v1"
+    },
+    "run_id": {
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/run_id"
+    },
+    "resolved_at": {
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/timestamp"
+    },
+    "plan_digest": {
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/sha256",
+      "description": "本次解析结果的规范化摘要。H11 的锚点：换客户端后重新读到的 ResolvedPlan 必须 digest 相同。 规范化口径见 contracts/CANONICALIZATION.md（RFC 8785 JCS + sha256 小写十六进制；摘要字段自身不参与计算）——不按该口径算出的值跨实现对不上。"
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "node_id": {
+            "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/node_id"
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "chosen_executor": {
+            "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/executor_profile"
+          },
+          "depends_on": {
+            "type": "array",
+            "items": {
+              "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/node_id"
+            }
+          }
+        },
+        "required": [
+          "node_id",
+          "order",
+          "chosen_executor"
+        ],
+        "additionalProperties": false
+      },
+      "description": "排序由源头给，客户端不重排（P4 已验证的架构约束）。"
+    }
+  },
+  "required": [
+    "protocol",
+    "run_id",
+    "resolved_at",
+    "plan_digest",
+    "steps"
+  ],
+  "additionalProperties": false
+}

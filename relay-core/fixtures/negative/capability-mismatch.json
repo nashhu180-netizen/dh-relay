@@ -1,0 +1,13 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "inspectRun",
+  "params": {},
+  "handshake": {
+    "protocol_version": "relay.rpc/v1",
+    "runtime_version": "0",
+    "capability_hash": "NOT-A-SHA",
+    "client_id": "c",
+    "request_id": "r"
+  }
+}

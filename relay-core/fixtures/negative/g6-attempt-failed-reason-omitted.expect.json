@@ -1,0 +1,6 @@
+{
+  "schema": "relay.event/v2",
+  "reason": "E_MISSING_FIELD",
+  "at": "/reason",
+  "why": "G4/G6：kind=attempt_failed 的 then 分支 required 含 reason，整个不填 → E_MISSING_FIELD。与同批的 -reason-null 成对：「缺省」与「填了 null」在本契约里是两条路，G4 反复强调的正是这个区分（缺省≠已知），两条都要钉住。批次检查点 3 小审 P3-4。"
+}

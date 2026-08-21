@@ -1,0 +1,10 @@
+{
+  "protocol": "relay.run-state/v1",
+  "run_id": "RUN-1",
+  "run_status": "succeeded",
+  "group": "done",
+  "progress": 0.5,
+  "elapsed_seconds": 3240,
+  "updated_at": "2026-08-21T10:00:00+08:00",
+  "state_signature": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+}

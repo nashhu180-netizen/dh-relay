@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dh-relay.local/contracts/relay.common/v1",
+  "title": "relay.common/v1 — 共享定义模块",
+  "description": "不是独立协议，是 P5 最小协议集共用的类型定义。随最小协议集同批冻结（DHR_28）。改动这里等于改动全部 7 份协议，须走契约变更流程。",
+  "$defs": {
+    "locator": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "description": "相对/符号化定位符。禁绝对路径——承接 v1-gap-disposition G5（P4 实测 brief_ref 携带主机绝对路径）。两道守卫：①`(?![A-Za-z][A-Za-z0-9+.-]*:)` 拒绝任何『scheme 或盘符』前缀——覆盖 Windows 盘符（`C:\\x` / `C:/x` / 盘符相对 `C:x`）与全部 URI scheme，**含单斜杠形态 `file:/etc/passwd`**（RFC 8089 下与 `file:///etc/passwd` 等价合法，只挡双斜杠会漏）；②`(?![\\\\/~%])` 拒绝以 `\\`、`/`、`~`、`%` 起头——分别对应 UNC、POSIX 绝对路径、家目录展开（`~/x` 展开后即含用户名的主机绝对路径，正是 G5 的隐私理由要挡的）、环境变量展开（`%SystemRoot%/x`）。违规由校验器报 E_ABSOLUTE_LOCATOR。**已知的有意从严（over-rejection，实测确认）**：形如 `a:b`、`notes:x` 的 POSIX 相对路径也会被拒，因为守卫拒绝一切 scheme 形前缀而不要求后跟斜杠。这是**故意的**：要求后跟斜杠会同时放进 `C:x`（『C 盘当前目录下的 x』）；而首段含冒号的相对路径本就在 Windows 上非法、跨平台协议应避免。取舍已登记 workspace/DHR_28 findings F-011。**放行的合法形态**：`briefs/x.md`、`./x`、`../x`、`.dh-relay/RUN-1/log.txt`、`node_modules/.bin/x`、含空格的 `logs/run 1/out.log`。",
+      "pattern": "^(?![A-Za-z][A-Za-z0-9+.-]*:)(?![\\\\/~%]).+$"
+    },
+    "run_id": {
+      "type": "string",
+      "description": "Run 标识。规范化口径承接 design/02 B7 D23。",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "node_id": {
+      "type": "string",
+      "description": "节点机器标识。与人话 title 分字段——承接 v1-gap-disposition G3，禁止一字段兼任。",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "attempt_id": {
+      "type": "string",
+      "description": "Attempt 标识。Attempt 是最小失败单元（design/06 H7）；换 Executor 必产生 fresh attempt_id（H12），禁止复用旧 id 续写。",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])[Tt]([01][0-9]|2[0-3]):[0-5][0-9]:([0-5][0-9]|60)(\\.[0-9]+)?([Zz]|[+-]([01][0-9]|2[0-3]):[0-5][0-9])$",
+      "description": "RFC 3339 带时区。禁本地时间裸串。**为什么 format 之外还并列一个 pattern**（批次检查点 2 小审 D-18）：JSON Schema 2020-12 把 `format` 放在 *Format Annotation* 词汇表里——**默认是注解、不做断言**，只有实现了 *Format Assertion* 词汇表的校验器才校验它。这不是某个校验器的配置疏漏，是**规范默认行为**：只靠 `format`，换任何独立校验器都可能空转，而 DHR_28 验收口径第 1 条要的正是『协议正反 fixture 可由**独立**校验器验证』。`pattern` 是断言性关键字，任何合规校验器都必须执行，约束才真正静态可证。两者并列：`format` 供支持断言的实现做更严格校验，`pattern` 保证下限。**已知限制（批次检查点 2 小审 D-23，勿误以为 pattern 全管了）**：正则表达不了日历规则，`2026-02-30` / `2025-02-29` / `2026-04-31` 都会被本 pattern 放行——**正因如此 `format` 必须留着**，由支持 Format Assertion 的实现补日历校验。已实测放行的合法边界：闰秒 `23:59:60`（RFC3339 §5.8 允许）、负零时区 `-00:00`（§4.3，表示本地偏移未知）、任意精度小数秒（§5.6）、小写 `t`/`z`、`+14:00`（Kiribati）与 `+13:45`（Chatham）等真实极端偏移。"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "小写十六进制 sha256。"
+    },
+    "reason_code": {
+      "type": "string",
+      "pattern": "^E_[A-Z0-9_]{2,62}$",
+      "description": "拒绝/失败原因码。全集见 contracts/reason-codes.md；schema 只约束形态，不内联全集（避免每加一个码就改 7 份 schema）。"
+    },
+    "protocol_version": {
+      "type": "string",
+      "pattern": "^relay\\.[a-z-]+/v[0-9]+$",
+      "description": "协议标识，形如 relay.run/v2。未知或不支持的版本一律拒绝（E_UNSUPPORTED_VERSION），不得降级放行。"
+    },
+    "capability_hash": {
+      "$ref": "#/$defs/sha256",
+      "description": "能力集指纹。客户端与 Runtime 不匹配时拒绝（E_CAPABILITY_MISMATCH），不得静默按交集工作。 规范化口径见 contracts/CANONICALIZATION.md（RFC 8785 JCS + sha256 小写十六进制；摘要字段自身不参与计算）——不按该口径算出的值跨实现对不上。"
+    },
+    "executor_kind": {
+      "type": "string",
+      "enum": [
+        "process",
+        "pi-agent",
+        "dsh-agent",
+        "herdr-agent"
+      ],
+      "description": "Executor 宿主归属，四问结论见 adr/ADR-002。注意：这三个厂商 token 是不透明枚举字面量，不是导入的私有类型；forbidden-types 静态检查须对它们显式白名单（否则会误报，且 design/06 H6 的契约断言本就依赖 dsh-agent 存在）。"
+    },
+    "executor_profile": {
+      "type": "object",
+      "description": "一个角色可用的 Executor 候选。ref 按 kind 语义不同（process=可执行入口；pi-agent=adapter_ref；dsh-agent=bridge_ref；herdr-agent=server_ref），但一律是 locator，禁绝对路径。",
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/executor_kind"
+        },
+        "ref": {
+          "$ref": "#/$defs/locator"
+        }
+      },
+      "required": [
+        "kind",
+        "ref"
+      ],
+      "additionalProperties": false
+    },
+    "trigger": {
+      "type": "string",
+      "enum": [
+        "human",
+        "schedule",
+        "system",
+        "upstream"
+      ],
+      "description": "承接 v1-gap-disposition G1。"
+    },
+    "observation_status": {
+      "type": "string",
+      "enum": [
+        "alive",
+        "observation_lost"
+      ],
+      "description": "会话/宿主观测态。承接 v1-gap-disposition G6：这是「我还看得见吗」，不是「这活成了没有」。禁止参与 run_status 推导，禁止与 relay.result/v2 的 outcome 混用同一字段。"
+    }
+  }
+}

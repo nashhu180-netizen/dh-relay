@@ -1,0 +1,6 @@
+{
+  "schema": "relay.rpc/v1",
+  "reason": "E_BAD_VALUE",
+  "at": "/handshake/capability_hash",
+  "why": "【期望已按批 3 实测更正】契约层只能校验 capability_hash 的**形态**（64 位小写十六进制）→ E_BAD_VALUE。真正的 E_CAPABILITY_MISMATCH 是**运行期比对**（客户端指纹 vs Runtime 指纹），schema 无从判断，实证归 DHR_29/30。原写 E_CAPABILITY_MISMATCH 是把运行期语义错挂到契约层。"
+}

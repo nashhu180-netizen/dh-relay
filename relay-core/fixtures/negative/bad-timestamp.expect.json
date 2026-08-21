@@ -1,0 +1,6 @@
+{
+  "schema": "relay.run/v2",
+  "reason": "E_BAD_VALUE",
+  "at": "/created_at",
+  "why": "F-024：format 在 2020-12 默认只作注解，靠并列的 RFC3339 pattern 兜底"
+}

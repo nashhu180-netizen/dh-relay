@@ -1,0 +1,6 @@
+{
+  "schema": "relay.run/v2",
+  "reason": "E_MISSING_FIELD",
+  "at": "/nodes/0/title",
+  "why": "G3：title 必填，禁用 node_id 兜底"
+}

@@ -1,6 +1,7 @@
 # ADR-002 · Agent 宿主归属（必答四问）
 
-- **状态**：草案 · 待批次检查点 1 小审 + 用户裁决（与 ADR-001 同批摆出）
+- **状态**：**已裁决**（2026-08-20 用户对话点选，与 ADR-001 同批摆出；批次检查点 1 小审已完成，见 progress 的 E-006 / E-007）。第②问的次级裁决「pi-agent 走冻结适配器、不直连 SDK」记在 ADR-001 的「决策」节。
+  - ⚠️ 本行原为「草案 · 待…用户裁决」，裁决当天没跟着改，由 E4 需求复核 P2-1 抓出。两层后果：①验收口径 4 要「ADR 落盘」，而一份自称「待裁决」的 ADR 让 DHR_29 无法判定四问的答案是否可依（本文是 DHR_29 全部 executor 生命周期语义的唯一来源）；②H=0 双谓词的谓词 A 要「无 open 方向项」，盘上这份文档字面就是一个未关的方向项。
 - **卡**：DHR_28（P5 批次 1）
 - **必答来源**：DevPlan `P5-…-开发方案.md` §2.3「Agent 宿主 ADR 必答」四问，逐字承接
 - **语言无关**：本 ADR 的结论**不依赖 ADR-001 的语言裁决**——四问答的是"谁持有 Executor、它消失时真相怎么记"，是协议与责任边界问题。仅第②问的实现手段（SDK 直连 vs Adapter）会被语言裁决影响，已在该节标出。
@@ -42,12 +43,12 @@ answer: process-executor · Runtime 直接持有 · 子进程终态即 Attempt �
   3. **语言裁决不该绑架架构**：若 ADR-001 选 L-Go，直连 TS SDK 本就不成立；若选 L-TS，直连"能做"但会把上面两条代价一起买下。**Adapter 方案在两种语言下都成立**，这正是它该被选中的理由。
 - **Adapter 的"冻结"含义**：Adapter 与 Runtime 之间只走**已冻结的 JSON/RPC 合同**（`relay.rpc/v1`），Adapter 内部怎么调 Pi 是它自己的事。Adapter 是**独立进程**，不与 Runtime 共享内存对象（同 design/05 §6.2 对 DSH 的要求）。
 - **消失时的语义**：Adapter 进程消失 → 视同该 Attempt 的 executor 消失，Attempt 终结、reason code `E_EXECUTOR_ADAPTER_LOST`；**Run 与其他节点不受影响**（H7）。Pi 侧会话若仍活着但 Adapter 断了，Runtime **不假设**会话可续——按 H12 开 fresh Attempt，不把旧会话的后续输出续写进旧 Attempt。
-- **恢复路径**：Runtime 重启 → 回放事件账 → 对无终态的 pi Attempt，尝试按 `adapter_ref` 重连 Adapter：重连成功且 Adapter 报同一 attempt 仍在 → 恢复观察；否则判 `orphaned` + fresh Attempt。
-- **契约层如何表达**：`executor_kind: "pi-agent"`，另带 `adapter_ref`（符号化）。**协议里不出现任何 Pi 私有类型名**——Pi 的输入输出在协议层一律降为 `relay.result/v2` 的通用结构化结果。P5 阶段 pi-agent 属 **P5-X 条件项**（DevPlan §4.2），本卡只冻结合同形状，不要求实现 Adapter。
+- **恢复路径**：Runtime 重启 → 回放事件账 → 对无终态的 pi Attempt，尝试按 `executor_profile.ref` 重连 Adapter：重连成功且 Adapter 报同一 attempt 仍在 → 恢复观察；否则判 `orphaned` + fresh Attempt。
+- **契约层如何表达**：`executor_kind: "pi-agent"`，另带 `executor_profile.ref`（符号化）。**协议里不出现任何 Pi 私有类型名**——Pi 的输入输出在协议层一律降为 `relay.result/v2` 的通用结构化结果。P5 阶段 pi-agent 属 **P5-X 条件项**（DevPlan §4.2），本卡只冻结合同形状，不要求实现 Adapter。
 
 > **与 ADR-001 的耦合点（唯一一处）**：若用户裁决 L-TS，团队可能倾向"反正同语言，直连算了"。本 ADR 建议**即使选 L-TS 也走 Adapter**，理由见上第 2、3 条。若用户/复核认为该建议在 L-TS 下应放宽，须作为**方向决策**另行登记，不得在批次 2 写 schema 时静默改口。
 
-answer: pi-agent · 经冻结 Adapter（独立进程、只走 relay.rpc/v1，不直连 SDK）· Adapter 消失即 Attempt 终结 E_EXECUTOR_ADAPTER_LOST，不假设 Pi 会话可续 · 重启后按 adapter_ref 重连，失败判 orphaned 开 fresh Attempt · 契约层 executor_kind="pi-agent" + adapter_ref，零 Pi 私有类型
+answer: pi-agent · 经冻结 Adapter（独立进程、只走 relay.rpc/v1，不直连 SDK）· Adapter 消失即 Attempt 终结 E_EXECUTOR_ADAPTER_LOST，不假设 Pi 会话可续 · 重启后按 `executor_profile.ref` 重连，失败判 orphaned 开 fresh Attempt · 契约层 executor_kind="pi-agent" + `executor_profile.ref`（ref 字段名见下方「四问对协议的净产出」表的批 2 修订注），零 Pi 私有类型
 
 ---
 
@@ -69,12 +70,12 @@ answer: pi-agent · 经冻结 Adapter（独立进程、只走 relay.rpc/v1，不
 - **不确定的边界（如实登记，不装作已知）**：DSH 消失瞬间，Native Agent 可能已经产出了结果但尚未经 Bridge 回传。协议层的处理：该 Attempt 先标 `E_EXECUTOR_HOST_LOST`，若日后收到**带同一 Attempt 身份链**的迟到结果，按 design/02 **B11**「迟到结果按 Receipt 身份链接受或隔离」处理——**接受进隔离区、不改已定终态**，由人或后续节点裁决。这条复用 P1 已有的迟到结果 Oracle（DevPlan §3.2 DHR_29 实施提示）。
 - **恢复路径**：Runtime 重启后对无终态的 dsh-native Attempt，尝试经 Bridge 重连：Bridge 在且报同一 attempt 仍在 → 恢复观察；Bridge 不在或报无此 attempt → 判 `orphaned` + fresh Attempt（H12）。**Runtime 的恢复不得依赖 DSH 存活**（H1）。
 - **契约层如何表达**：
-  - `executor_kind: "dsh-agent"` + `bridge_ref`（符号化）。
+  - `executor_kind: "dsh-agent"` + `executor_profile.ref`（符号化）。
   - **H6 契约级断言**（DevPlan §3.2 DHR_28 验收口径第 3 条）：任一**必经**角色的合法 Executor 集合**不能只有 `dsh-agent`**——schema 层拒绝，不是运行时检查。这是本卡批次 3 的反例 fixture 之一。
   - **会话观测态与任务结果分字段**：`relay.host-observation/v1`（v0 形状，本卡只定形状）承载"DSH/会话还在不在"，`relay.result/v2` 承载"任务结果"，二者不得混用同一字段。
 - **留口（待 DHR_50）**：DSH 三态若判否，`dsh-agent` 在协议里仍**保留为合法枚举成员**（因为 H6 的断言需要它作为"被拒绝的单选"存在），但 Bridge 实现转为"只留合同接口"（出处：DevPlan **§3.1 DHR_30 索引行**「判否→只留合同接口」+ **§1 前置条件 B-11 段**「DSH 判否时 DSH Bridge 只保留合同接口或转可选」；§3.2 的 DHR_30 卡正文无此句——出处经批次检查点 1 小审 F-3 校正）。**本卡不因 DHR_50 未收敛而缺答，也不预判其结论。**
 
-answer: dsh-native · Bridge 代持 · 必须区分「DSH 作为控制客户端消失=不动 Run 不动 Attempt（H4）」与「DSH 承载的 Executor 消失=仅该 Attempt 终结 E_EXECUTOR_HOST_LOST（H7）」，会话观测态与任务结果分字段（同 G6）· 迟到结果按 B11 身份链进隔离区不改已定终态 · 重启后经 Bridge 重连，失败判 orphaned 开 fresh Attempt · 契约层 executor_kind="dsh-agent" + bridge_ref，且必经角色不得只声明 dsh-agent（H6 schema 层拒绝）· DHR_50 判否时枚举保留、实现只留合同接口
+answer: dsh-native · Bridge 代持 · 必须区分「DSH 作为控制客户端消失=不动 Run 不动 Attempt（H4）」与「DSH 承载的 Executor 消失=仅该 Attempt 终结 E_EXECUTOR_HOST_LOST（H7）」，会话观测态与任务结果分字段（同 G6）· 迟到结果按 B11 身份链进隔离区不改已定终态 · 重启后经 Bridge 重连，失败判 orphaned 开 fresh Attempt · 契约层 executor_kind="dsh-agent" + `executor_profile.ref`（ref 字段名见下方「四问对协议的净产出」表的批 2 修订注），且必经角色不得只声明 dsh-agent（H6 schema 层拒绝）· DHR_50 判否时枚举保留、实现只留合同接口
 
 ---
 
@@ -89,14 +90,14 @@ answer: dsh-native · Bridge 代持 · 必须区分「DSH 作为控制客户端�
   - `observation_lost`（观察中断，Attempt **不终结**）——写进 `relay.host-observation/v1`，不写 `relay.result/v2`。
   - `executor_lost`（确认 Executor 已死，Attempt 终结）——只有 Runtime **拿到 Herdr 的明确否定答复**（"无此 attempt"）时才能进入此态。
   两者不得合并——这是第③问同一条"观测态 ≠ 结果"原则（G6）在 Herdr 侧的复用。
-- **恢复路径**：Runtime 重启 → 回放事件账 → 对无终态的 herdr Attempt，按 `server_ref` + attempt 身份链**向 Herdr server 查询**：
+- **恢复路径**：Runtime 重启 → 回放事件账 → 对无终态的 herdr Attempt，按 `executor_profile.ref` + attempt 身份链**向 Herdr server 查询**：
   - server 报"仍在跑" → **恢复观察，续用原 Attempt**（不开 fresh Attempt——这是与第①②③问最大的差别，因为 Executor 从未死过）；
   - server 报"已结束 + 结果" → 按身份链接受该结果（B11）；
   - server 报"无此 attempt" → 判 `orphaned` + fresh Attempt（H12）；
   - server 不可达 → 维持 `observation_lost`，**不判死、不重试**，向用户出 Attention（design/06 H5：需要人类输入时安全暂停并留下持久 Attention）。
-- **契约层如何表达**：`executor_kind: "herdr-agent"` + `server_ref`（符号化）。协议**不导入 Herdr 私有类型**（DevPlan §2.2 禁改边界逐字），Herdr 的账号/会话概念在协议层降为不透明的 `server_ref` + attempt 身份链。`relay.attention/v1`（v0 形状）承载 `observation_lost` 超时后的 Attention——**本卡只定形状，P7 首次承重时才冻结**。
+- **契约层如何表达**：`executor_kind: "herdr-agent"` + `executor_profile.ref`（符号化）。协议**不导入 Herdr 私有类型**（DevPlan §2.2 禁改边界逐字），Herdr 的账号/会话概念在协议层降为不透明的 `executor_profile.ref` + attempt 身份链。`relay.attention/v1`（v0 形状）承载 `observation_lost` 超时后的 Attention——**本卡只定形状，P7 首次承重时才冻结**。
 
-answer: herdr-agent · Herdr server 持有 · 必须区分 observation_lost（观察中断，Attempt 不终结）与 executor_lost（拿到 server 明确否定才终结），不得合并 · 重启后按 server_ref+身份链查询：仍在跑则续用原 Attempt（不开 fresh）、已结束按 B11 接受结果、无此 attempt 判 orphaned 开 fresh、不可达则维持 observation_lost 并出 Attention（H5）· 契约层 executor_kind="herdr-agent" + server_ref，零 Herdr 私有类型
+answer: herdr-agent · Herdr server 持有 · 必须区分 observation_lost（观察中断，Attempt 不终结）与 executor_lost（拿到 server 明确否定才终结），不得合并 · 重启后按 `executor_profile.ref`+身份链查询：仍在跑则续用原 Attempt（不开 fresh）、已结束按 B11 接受结果、无此 attempt 判 orphaned 开 fresh、不可达则维持 observation_lost 并出 Attention（H5）· 契约层 executor_kind="herdr-agent" + `executor_profile.ref`（ref 字段名见下方「四问对协议的净产出」表的批 2 修订注），零 Herdr 私有类型
 
 ---
 
@@ -106,7 +107,8 @@ answer: herdr-agent · Herdr server 持有 · 必须区分 observation_lost（�
 |---|---|
 | `executor_kind` 枚举：`process` / `pi-agent` / `dsh-agent` / `herdr-agent` | `relay.run/v2` 节点角色定义 + `relay.event/v2` attempt 事件 |
 | **禁词表豁免注（批 3 步 14 建 `forbidden-types.txt` 时执行）**：上行三个厂商 token（`pi-agent` / `dsh-agent` / `herdr-agent`）**显式白名单**。禁词表针对的是**导入的私有类型名**（DevPlan §2.2 / design/05 §6.2），不是不透明枚举**字面量**；且 H6 契约断言本身就依赖 `dsh-agent` 作为"被拒绝的单选"存在（DevPlan §3.2 DHR_28 验收口径第 3 条逐字用了该 token）。不加白名单则批 3 全域 grep 必然误报（批次检查点 1 小审 F-7，findings F-008） | `<CODE_ROOT>/tools/forbidden-types.txt` + 批 3 步 14 |
-| 每种 kind 配一个**符号化** ref 字段：`executor_ref` / `adapter_ref` / `bridge_ref` / `server_ref`（禁绝对路径，承接 G5） | 同上 |
+| ~~每种 kind 配一个**符号化** ref 字段：`executor_ref` / `adapter_ref` / `bridge_ref` / `server_ref`~~ → **批 2 落地时收敛为单一 `ref`**（见下方修订注） | 同上 |
+| **【批 2 修订注 · 2026-08-21】** 上一行的"四字段按 kind 分名"**未按原样落地**，收敛为 `executor_profile.ref` 单字段（`_shared/relay.common.v1.schema.json#/$defs/executor_profile`），语义按同结构里的 `kind` 区分；另有 `executor_ref`（`relay.event/v2`，事件侧）与 `host_ref`（`relay.host-observation/v1` v0 形状，观测侧）两个同类型字段。**收敛理由**：四个同类型字段按 kind 分名会诱导实现写 `if kind==... then read xxx_ref` 的分支，而它们的约束（符号化 locator、禁绝对路径）完全相同；单字段 + `kind` 判别更不易漏。**登记原因**：这是对已过批次检查点 1 小审的 ADR 的偏离，由批次检查点 2 小审 D-5 指出——若不登记，批 3 或 DHR_29 照本 ADR 去找 `bridge_ref` / `server_ref` / `adapter_ref` 会找不到。对应 findings F-018 | `_shared` + `relay.event/v2` + `relay.host-observation/v1` |
 | reason code：`E_EXECUTOR_EXIT_NONZERO` / `E_EXECUTOR_KILLED` / `E_EXECUTOR_ADAPTER_LOST` / `E_EXECUTOR_HOST_LOST` / `E_EXECUTOR_ORPHANED` | `contracts/reason-codes.md` |
 | **观测态与结果分字段**（G6 的协议化）：`relay.host-observation/v1` 承载 observation，`relay.result/v2` 承载结果，禁混用 | `contracts/` v0 形状 + 正式 schema |
 | **H6 契约级断言**：必经角色的合法 Executor 集合不能只有 `dsh-agent` | `relay.run/v2` schema 约束 + 批次 3 反例 fixture |

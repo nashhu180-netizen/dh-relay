@@ -1,0 +1,513 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dh-relay.local/contracts/relay.run-state/v1",
+  "title": "relay.run-state/v1 — Run 级状态（源头计算，客户端不推导）",
+  "description": "承接 v1-gap-disposition G2。P4 给的是『源头记 run 级状态，或冻结这套聚合语义为协议』——本协议两者都取：run_status 由源头（Runtime）记，聚合语义同时冻结为规范条款，使任何实现算出的值唯一且可复算。客户端只渲染，不得自行从 events 推导。",
+  "type": "object",
+  "properties": {
+    "protocol": {
+      "const": "relay.run-state/v1"
+    },
+    "run_id": {
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/run_id"
+    },
+    "run_status": {
+      "type": "string",
+      "enum": [
+        "failed",
+        "running",
+        "pending",
+        "waiting_human",
+        "succeeded",
+        "unknown"
+      ],
+      "description": "承接 G2。**规范性聚合条款（冻结，实现不得另立，①~⑥由下方 allOf 逐条机器强制——批次检查点 3 小审 P1-2 前本条款零机器闸，run_status=succeeded 配一个 failed 节点可被放行）——按下列优先级自上而下取第一个命中项，条款覆盖 node_state.status 的全部 7 个取值**：①任一节点为 `failed` 或 `orphaned` → `failed`；②否则任一为 `running` → `running`；③否则任一为 `waiting_human` → `waiting_human`；④否则任一为 `unknown` → `unknown`；⑤否则任一为 `pending` → `pending`；⑥否则**若存在至少一个节点**且全部为 `succeeded` → `succeeded`；⑦**节点集合为空 → `pending`**。 ── **⑦档的定位（第 5 轮小审纠正了主会话原先给的错误理由）**：节点集合为空在本协议中**不可表示**（`node_states` 必填 + `minItems: 1`），故本档在合法线路文档上**不可达**，这是**有意的**。它是**计算期防御档**，不是常见态——『Run 已受理、尚未起节点』的常见态由**⑤档**承接（`node_states` 从 `run/v2.nodes` 派生、此时全为 `pending`，⑤命中）。⑦的价值在于：一个**部分恢复、事件回放到一半、或自身有 bug** 的 Runtime，其内部集合可能真是空的；条款若对空集合沉默，实现就会自己发挥，而最自然的发挥恰恰是『全部 succeeded 真空成立』。⑦给它一个**已定义且安全**的答案，性质同 `E_TERMINAL_STATE_CONFLICT` 一类的兜底。⚠️ **不要因为『发不出来』就删掉⑦**（真空真的洞会回来），**也不要因此删掉 `minItems: 1`**（结构护栏会没）——把『不可达是有意的』写下来，比留着让人猜便宜。findings F-032。 ── **本条款于 2026-08-21 按批次检查点 2 小审 D-19 修订**：原条款逐字照抄自 P4 §4（`failed > running > waiting_human > succeeded`，表外一律 `unknown`），照抄保真是对的，但**没检查它现在管的枚举是否还是原来那个**——v2 的 `node_state.status` 比 v1 多了 `pending` 与 `orphaned`，二者落在表外走 `unknown`、再经 `group` 硬拦，会把**每一个刚创建的 Run 以及每两个节点之间的空档**强制浮顶到 `needs_you`：等于往报警器里灌噪音，真正不认识的状态反而被淹掉，恰好打掉 G2『不认识的状态必须让人看见』的设计意义。**两处裁决**：`orphaned` 归 failed 侧（『确认没了』比 unknown 明确，且 `relay.result/v2` 的 `outcome` 已把它与 failed 并列；由此 `[orphaned, running]` 判 `failed`，是 fail-fast 可见性优先的有意选择）；`pending` 新增为独立 `run_status` 值，不并入 `running`——那一刻确实没有节点在跑，谎报会让『还没开始』与『正在跑』不可区分。findings F-025。"
+    },
+    "group": {
+      "type": "string",
+      "enum": [
+        "needs_you",
+        "running",
+        "done",
+        "failed"
+      ],
+      "description": "分堆由源头给（P4 已验证的架构约束：分堆与排序由源头给、客户端不推导）。**规范性映射（冻结，由下方 allOf 逐条机器强制）**：`failed`→`failed`；`running`→`running`；`pending`→`running`（在途，不需要你做什么）；`waiting_human`→`needs_you`；`unknown`→`needs_you`（不认识的状态必须让人看见，不得沉底）；`succeeded`→`done`。**为什么 group 与 run_status 并存而非推导**：P4 架构约束要求分堆由源头给、客户端不推导；但源头也不得给出与 run_status 矛盾的 group，故本映射机器强制——冗余是有意的，矛盾是禁止的。**为什么必须无裁量（最强理由，批次检查点 2 小审 D-33 补出）**：`group` **参与 `state_signature` 计算**；若源头对 group 有自由裁量，同一状态在两个实现上会算出不同签名，**P5-M3『强杀后重建相同状态签名』直接失效**。机器强制把这条堵死。⚠️ **对 DHR_30 是天花板**：`group` 现在是 `run_status` 的**全函数**、携带零独立信息；将来若正式 Read Model 需要一种不是 `run_status` 纯函数的分堆，须改契约。**已知的编码决定（现在写下，别等 P8 撞上）**：design/06 **H8** 的 Approval 场景（活干完了但人工批准未下）在本映射下唯一的表达方式是把 `run_status` 记为 `waiting_human` → `needs_you`；这大概率也确实是对的记法，但它是一个**编码决定**而非自然推论。",
+      "$comment": "DHR_30 冻结正式 Read Model 时以 P4 的 relay.pilot-run-list/v1 为字段级起点，group 在那里即为必填；此处保持同一口径。 　—— **⚠️ 与 P4 pilot 的实际差异（E14 一致性复核 F-E14-3，实读 `relay-control-pilot/src/read-model/` 源文件比对得出）**：本字段此前自称与 `relay.pilot-run-list/v1`「保持同一口径」，**该陈述不实**。至少三处不同，现逐条登记（DevPlan B-13 明令：字段增删须留处置记录、不得静默漂移）：①**词表**：pilot 是 `[needs_you, blocked, running, done]`，v2 是 `[needs_you, running, done, failed]`——`blocked` 去掉、`failed` 新增。理由：v2 有了 run 级 `run_status`，`failed` 必须能与 `needs_you` 分开（失败是「已定终态」，浮顶要人处理的是「还没定」），否则 D-19 判死的报警噪音会以另一种形式回来；`blocked` 在 v2 里由 `waiting_human` → `needs_you` 承接，不需要独立分堆。②**`failed` 的归堆**：pilot 是 `failed → needs_you`，v2 是 `failed → failed`，同①。③**`progress` 类型**：已按 F-E14-3 改回 pilot 的计数对，见该字段。 这三条是**有意差异**不是遗漏——但此前一条处置记录都没有，那才是缺陷。"
+    },
+    "progress": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "done": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "done",
+            "total"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "由源头计算，客户端不得自行折算。null = 源头未提供（同 G4 的『缺省≠已知』纪律，禁止渲染成 0）。**形态 = `{done, total}` 计数对，不是 0..1 比率**（E14 一致性复核 F-E14-3）：P4 冻结的 `relay.pilot-run-list/v1` 用的就是计数对（`PROGRESS_REQUIRED = [done, total]`，两个 ≥0 整数），本卡首版擅自改成了比率。**为什么必须改回**：①计数对能算出比率、比率算不回计数对——严格更强的形态，改成比率是**信息丢失**；②P4 已验证的跨屏断言「`progress` 必须等于详情节点的实际计数」在比率形态上**无法表达**，而 DevPlan B-13 把这条断言列进了 P5-M4 的证据；③「3/5」这种最常见的渲染在比率形态下再也做不出来。⚠️ `done <= total` 是**语义约束、schema 表达不了**（JSON Schema 无跨字段比较），由 Runtime 保证——这条与「`node_states` 须覆盖 `nodes` 全集」同类，一并交 DHR_29 实现期守。"
+    },
+    "elapsed_seconds": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "由源头计算。客户端不得读本机时钟自行相减——跨时区/跨机器会算出互相矛盾的值（源头计量约束，承接 P4 冻结的两份 pilot schema 语义）。null = 源头未提供。"
+    },
+    "node_states": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/node_state"
+      },
+      "description": "**必填且至少一个元素**（批次检查点 2 小审 D-25）——`relay.run/v2` 的 `nodes` 已有 `minItems: 1`，但 run-state 是**独立文档**，此前没有任何机制保证两者对齐，于是零节点的 run-state 经真空真判出 `succeeded`/`done`。把前提从「约定」升级成机器强制，同一条推理已在 D-11（`required` 该必填却设成可选）上用过一次。**跨文档完整性约束（schema 管不了，交 DHR_29 实现期保证）**：`node_states` 必须**覆盖对应 `relay.run/v2` `nodes` 的全集**——只列 3 个节点中的 1 个时，聚合条款⑥的『全部 succeeded』字面成立但是空话（小审 D-32）。**⚠️ 适用边界（第 5 轮小审 Q4 主动指出，findings F-038）**：本协议定位为**完整状态文档**，故 `node_states` 必填。**列表 / 摘要投影不复用本协议**——P4 冻结的是**两份** pilot schema（`relay.pilot-read-model/v1` 详情 + `relay.pilot-run-list/v1` 列表），列表视图本就不携带节点明细；DHR_30 应沿 `relay.pilot-run-list/v1` 血统**另立**列表协议（DevPlan B-13），不要拿本协议当列表 schema 再回头说约束太紧。"
+    },
+    "updated_at": {
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/timestamp"
+    },
+    "state_signature": {
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/sha256",
+      "description": "状态签名。用于『强杀 Runtime 后从 Store 重建相同状态签名』（design/02 B7 D18 · P5-M3，由 DHR_29 承接验证）。 规范化口径见 contracts/CANONICALIZATION.md（RFC 8785 JCS + sha256 小写十六进制；摘要字段自身不参与计算）——不按该口径算出的值跨实现对不上。"
+    }
+  },
+  "required": [
+    "protocol",
+    "run_id",
+    "run_status",
+    "group",
+    "node_states",
+    "updated_at"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "run_status": {
+            "const": "failed"
+          }
+        },
+        "required": [
+          "run_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "group": {
+            "const": "failed"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "run_status": {
+            "const": "running"
+          }
+        },
+        "required": [
+          "run_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "group": {
+            "const": "running"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "run_status": {
+            "const": "pending"
+          }
+        },
+        "required": [
+          "run_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "group": {
+            "const": "running"
+          }
+        },
+        "$comment": "pending 归 running 堆：Run 已受理但尚未起节点（或处于节点间空档），在途、不需要用户做任何事。归 needs_you 会让每个正常 Run 在起跑前都浮顶——这正是 D-19 要修的噪音。"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "run_status": {
+            "const": "waiting_human"
+          }
+        },
+        "required": [
+          "run_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "group": {
+            "const": "needs_you"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "run_status": {
+            "const": "unknown"
+          }
+        },
+        "required": [
+          "run_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "group": {
+            "const": "needs_you"
+          }
+        },
+        "$comment": "G2 规范条款的机器化：unknown 必须浮顶到 needs_you。把它归进 done/failed 会让不认识的状态被悄悄埋掉，正是 P4 判定要避免的。"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "run_status": {
+            "const": "succeeded"
+          }
+        },
+        "required": [
+          "run_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "group": {
+            "const": "done"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "run_status": {
+            "const": "failed"
+          }
+        },
+        "required": [
+          "run_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "node_states": {
+            "contains": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "enum": [
+                    "failed",
+                    "orphaned"
+                  ]
+                }
+              },
+              "required": [
+                "status"
+              ]
+            }
+          }
+        }
+      },
+      "$comment": "G2 规范性聚合条款的机器化（批次检查点 3 小审 P1-2）。条款①：run_status=failed ⇔ 至少一个节点 failed 或 orphaned。orphaned 归 failed 侧见 D-19 裁决。"
+    },
+    {
+      "if": {
+        "properties": {
+          "run_status": {
+            "const": "running"
+          }
+        },
+        "required": [
+          "run_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "node_states": {
+            "not": {
+              "contains": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "failed",
+                      "orphaned"
+                    ]
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              }
+            },
+            "contains": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "const": "running"
+                }
+              },
+              "required": [
+                "status"
+              ]
+            }
+          }
+        }
+      },
+      "$comment": "G2 规范性聚合条款的机器化（批次检查点 3 小审 P1-2）。条款②：running 要求「无 failed/orphaned」且「至少一个 running」。前档取值排除 + 本档 contains，是优先级序的机器表达。"
+    },
+    {
+      "if": {
+        "properties": {
+          "run_status": {
+            "const": "waiting_human"
+          }
+        },
+        "required": [
+          "run_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "node_states": {
+            "not": {
+              "contains": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "failed",
+                      "orphaned",
+                      "running"
+                    ]
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              }
+            },
+            "contains": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "const": "waiting_human"
+                }
+              },
+              "required": [
+                "status"
+              ]
+            }
+          }
+        }
+      },
+      "$comment": "G2 规范性聚合条款的机器化（批次检查点 3 小审 P1-2）。条款③。"
+    },
+    {
+      "if": {
+        "properties": {
+          "run_status": {
+            "const": "unknown"
+          }
+        },
+        "required": [
+          "run_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "node_states": {
+            "not": {
+              "contains": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "failed",
+                      "orphaned",
+                      "running",
+                      "waiting_human"
+                    ]
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              }
+            },
+            "contains": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "const": "unknown"
+                }
+              },
+              "required": [
+                "status"
+              ]
+            }
+          }
+        }
+      },
+      "$comment": "G2 规范性聚合条款的机器化（批次检查点 3 小审 P1-2）。条款④。"
+    },
+    {
+      "if": {
+        "properties": {
+          "run_status": {
+            "const": "pending"
+          }
+        },
+        "required": [
+          "run_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "node_states": {
+            "not": {
+              "contains": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "failed",
+                      "orphaned",
+                      "running",
+                      "waiting_human",
+                      "unknown"
+                    ]
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              }
+            },
+            "contains": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "const": "pending"
+                }
+              },
+              "required": [
+                "status"
+              ]
+            }
+          }
+        }
+      },
+      "$comment": "G2 规范性聚合条款的机器化（批次检查点 3 小审 P1-2）。条款⑤：至少一个 pending 且无更高档。⑦档（空集合→pending）在 minItems:1 下不可达，故本档等价承接⑤，见 run_status.description 对⑦定位的说明。"
+    },
+    {
+      "if": {
+        "properties": {
+          "run_status": {
+            "const": "succeeded"
+          }
+        },
+        "required": [
+          "run_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "node_states": {
+            "items": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "const": "succeeded"
+                }
+              },
+              "required": [
+                "status"
+              ]
+            }
+          }
+        }
+      },
+      "$comment": "G2 规范性聚合条款的机器化（批次检查点 3 小审 P1-2）。条款⑥：succeeded ⇔ 全部节点 succeeded。node_states 已有 minItems:1，故「存在至少一个」由结构保证，此处只需 items 全称约束——真空真的洞由 minItems 而非本条堵住。"
+    }
+  ],
+  "$defs": {
+    "node_state": {
+      "type": "object",
+      "properties": {
+        "node_id": {
+          "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/node_id"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "running",
+            "waiting_human",
+            "succeeded",
+            "failed",
+            "orphaned",
+            "unknown"
+          ],
+          "description": "节点态。orphaned = Runtime 恢复后确认该 Attempt 的 Executor 已不在（见 ADR-002 各问的恢复路径），与 failed 分开——前者是『观察不到了』的确认结果，后者是拿到了失败结论。"
+        },
+        "current_attempt_id": {
+          "oneOf": [
+            {
+              "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/attempt_id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "attempt_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "description": "同 G4 纪律：null = 源头未记录，禁止解释为 1。"
+        }
+      },
+      "required": [
+        "node_id",
+        "status"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "protocol": "relay.result/v2",
+  "run_id": "RUN-1",
+  "node_id": "fix",
+  "attempt_id": "att-1",
+  "receipt_id": "rcpt-1",
+  "executor_kind": "process",
+  "outcome": "succeeded",
+  "reason": null,
+  "finished_at": "2026-08-21T10:00:00+08:00",
+  "structured": {
+    "changed_paths": [
+      "a.ts"
+    ]
+  },
+  "log_locator": ".dh-relay/RUN-1/logs/fix.log",
+  "payload_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "quarantined": false
+}

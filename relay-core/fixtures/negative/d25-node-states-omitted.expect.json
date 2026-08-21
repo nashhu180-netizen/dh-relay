@@ -1,0 +1,6 @@
+{
+  "schema": "relay.run-state/v1",
+  "reason": "E_MISSING_FIELD",
+  "at": "/node_states",
+  "why": "D-25：node_states 必填"
+}

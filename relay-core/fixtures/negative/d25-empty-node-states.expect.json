@@ -1,0 +1,6 @@
+{
+  "schema": "relay.run-state/v1",
+  "reason": "E_BAD_VALUE",
+  "at": "/node_states",
+  "why": "D-25：空集合上「全部 succeeded」是真空真 ⇒ 从未跑过的 Run 报告成功完成"
+}

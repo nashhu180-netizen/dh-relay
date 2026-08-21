@@ -1,0 +1,50 @@
+{
+  "protocol": "relay.run/v2",
+  "run_id": "RELAY-IHSR05-RW-20260816113004",
+  "workflow_name": "dh-crew/manual-dispatch",
+  "summary": "IHSR05 修复与两轮复核接力",
+  "trigger": "human",
+  "trigger_by": "hyf",
+  "attempt": null,
+  "created_at": "2026-08-21T10:00:00+08:00",
+  "nodes": [
+    {
+      "node_id": "fix",
+      "title": "修复",
+      "role": "执行",
+      "required": true,
+      "depends_on": [],
+      "executor_profiles": [
+        {
+          "kind": "process",
+          "ref": "~/.ssh/id_rsa"
+        }
+      ]
+    },
+    {
+      "node_id": "review3",
+      "title": "复核三轮",
+      "role": "复核",
+      "required": false,
+      "depends_on": [
+        "fix"
+      ],
+      "executor_profiles": [
+        {
+          "kind": "dsh-agent",
+          "ref": "adapters/dsh-bridge"
+        },
+        {
+          "kind": "process",
+          "ref": "bin/review.sh"
+        }
+      ]
+    }
+  ],
+  "source_refs": [
+    {
+      "path": ".dh-relay/RUN-1/relay-state.json",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    }
+  ]
+}

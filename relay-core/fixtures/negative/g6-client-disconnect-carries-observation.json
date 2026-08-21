@@ -1,0 +1,14 @@
+{
+  "protocol": "relay.event/v2",
+  "run_id": "RUN-1",
+  "seq": 8,
+  "at": "2026-08-21T10:00:00+08:00",
+  "kind": "client_disconnected",
+  "node_id": null,
+  "attempt_id": null,
+  "executor_kind": null,
+  "executor_ref": null,
+  "observation_status": "observation_lost",
+  "reason": null,
+  "detail": "H4：断开不取消 Run"
+}

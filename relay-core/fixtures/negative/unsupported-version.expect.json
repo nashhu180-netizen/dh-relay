@@ -1,0 +1,6 @@
+{
+  "schema": "relay.rpc/v1",
+  "reason": "E_UNSUPPORTED_VERSION",
+  "at": "/handshake/protocol_version",
+  "why": "版本不认识 = 连字段含义都不确定"
+}

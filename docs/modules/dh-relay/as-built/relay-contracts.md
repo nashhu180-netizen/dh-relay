@@ -1,5 +1,7 @@
 # as-built · relay-contracts（dh-relay 接力契约层 v1）
 
+> ⚠️ **本份只讲 v1（`relay/v1`，PowerShell，`tools/contracts/`）。v2 协议集（`relay.run/v2` 等，TypeScript/Node，`relay-core/contracts/`）在 [relay-core.md](relay-core.md)。** 两套并列共存、互不迁移——v1 现役且被 v2 只读作 Oracle，v2 是 DHR_29 起一切 Runtime / CLI / 客户端的唯一契约来源。
+
 > 首份快照：DHR_01（P1 批次 1·冻结接力权威、双维状态与异常契约）。全 greenfield，`tools/` 新命名空间；对 dh-crew 零引用（不点源 `tools/protocol/**`、不读 `.dh-runtime`、不进 dh-crew `run-all`）。
 
 ## 落点

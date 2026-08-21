@@ -1,0 +1,6 @@
+{
+  "schema": "relay.run/v2",
+  "reason": "E_BAD_VALUE",
+  "at": "/created_at",
+  "why": "禁本地时间裸串"
+}

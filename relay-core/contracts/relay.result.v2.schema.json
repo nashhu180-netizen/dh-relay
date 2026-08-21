@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dh-relay.local/contracts/relay.result/v2",
+  "title": "relay.result/v2 — Attempt 结果（任务结果侧，与观测态严格分离）",
+  "description": "一次 Attempt 的结论。承接 v1-gap-disposition G6 的建模纪律：本协议只回答『这活成了没有』；『我还看不看得见宿主』由 relay.host-observation/v1 回答，两者永不同字段、永不互相推导。Attempt 是最小失败单元（design/06 H7）——一个 Attempt 失败不得污染其它节点或 Run 真相。",
+  "type": "object",
+  "properties": {
+    "protocol": {
+      "const": "relay.result/v2"
+    },
+    "run_id": {
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/run_id"
+    },
+    "node_id": {
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/node_id"
+    },
+    "attempt_id": {
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/attempt_id"
+    },
+    "receipt_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+      "description": "身份链回链。迟到结果凭它判定接受还是隔离（design/02 B11）——回执不符 → quarantined，且不得改写已定终态。"
+    },
+    "executor_kind": {
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/executor_kind"
+    },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "succeeded",
+        "failed",
+        "orphaned"
+      ],
+      "description": "任务结果三态。orphaned = Runtime 恢复后确认该 Attempt 的 Executor 已不在（ADR-002 各问恢复路径），与 failed 分开：前者是『确认观察不到了』，后者是『拿到了失败结论』。注意 herdr-agent 的 observation_lost 绝不映射到这里——观测中断不判死（ADR-002 第④问）。"
+    },
+    "reason": {
+      "oneOf": [
+        {
+          "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/reason_code"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "finished_at": {
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/timestamp"
+    },
+    "structured": {
+      "type": "object",
+      "description": "结构化结果载荷。业务域无关的通用结构——Pi / DSH / Herdr 的私有输入输出在此一律降为通用结构，不得引入任何工作台私有类型（design/05 §6.2）。",
+      "additionalProperties": true
+    },
+    "log_locator": {
+      "oneOf": [
+        {
+          "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/locator"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "承接 G5：符号化，禁绝对路径。"
+    },
+    "payload_digest": {
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/sha256",
+      "description": "规范化口径见 contracts/CANONICALIZATION.md（RFC 8785 JCS + sha256 小写十六进制；摘要字段自身不参与计算）——不按该口径算出的值跨实现对不上。"
+    },
+    "quarantined": {
+      "type": "boolean",
+      "default": false,
+      "description": "true = 本结果因身份链不符或终态已定而被隔离（B11）。隔离的结果保留、可追溯、可人工裁决，但不改写已定终态。"
+    }
+  },
+  "required": [
+    "protocol",
+    "run_id",
+    "node_id",
+    "attempt_id",
+    "receipt_id",
+    "executor_kind",
+    "outcome",
+    "finished_at",
+    "payload_digest"
+  ],
+  "additionalProperties": false,
+  "if": {
+    "properties": {
+      "outcome": {
+        "enum": [
+          "failed",
+          "orphaned"
+        ]
+      }
+    },
+    "required": [
+      "outcome"
+    ]
+  },
+  "then": {
+    "required": [
+      "reason"
+    ],
+    "properties": {
+      "reason": {
+        "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/reason_code"
+      }
+    },
+    "$comment": "非成功终态必须带原因码。"
+  }
+}

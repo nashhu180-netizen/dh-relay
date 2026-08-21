@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dh-relay.local/contracts/relay.checkpoint/v2",
+  "title": "relay.checkpoint/v2 — Attempt 中途检查点",
+  "description": "Executor 在跑的过程中回报的中途进展。checkpoint 只描述『我到哪一步了』，永远不构成终态——终态只由 relay.result/v2 给。重复 checkpoint 幂等（design/02 B6/B11）。",
+  "type": "object",
+  "properties": {
+    "protocol": {
+      "const": "relay.checkpoint/v2"
+    },
+    "run_id": {
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/run_id"
+    },
+    "node_id": {
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/node_id"
+    },
+    "attempt_id": {
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/attempt_id"
+    },
+    "receipt_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+      "description": "身份链回链。与当前 Attempt 的回执不符 → 迟到/越权 checkpoint，按 B11 隔离而非接受。"
+    },
+    "checkpoint_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+      "description": "同一 Attempt 内唯一。重复投递同一 checkpoint_id + 同一 payload_digest = 幂等接受（不重复记账）；同 id 异 digest = 冲突，拒绝（E_CHECKPOINT_CONFLICT）。"
+    },
+    "at": {
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/timestamp"
+    },
+    "phase": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "业务域无关的自由标签（如 prepare / processing / collecting）。禁引入任何工作台或领域私有枚举。"
+    },
+    "progress": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1,
+      "description": "源头计量。null = 未提供，禁止渲染成 0。"
+    },
+    "log_locator": {
+      "oneOf": [
+        {
+          "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/locator"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "承接 G5：符号化，禁绝对路径。"
+    },
+    "payload_digest": {
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/sha256",
+      "description": "规范化口径见 contracts/CANONICALIZATION.md（RFC 8785 JCS + sha256 小写十六进制；摘要字段自身不参与计算）——不按该口径算出的值跨实现对不上。"
+    }
+  },
+  "required": [
+    "protocol",
+    "run_id",
+    "node_id",
+    "attempt_id",
+    "receipt_id",
+    "checkpoint_id",
+    "at",
+    "phase",
+    "payload_digest"
+  ],
+  "additionalProperties": false
+}

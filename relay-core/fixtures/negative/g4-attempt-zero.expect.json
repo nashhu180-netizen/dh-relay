@@ -1,0 +1,6 @@
+{
+  "schema": "relay.run/v2",
+  "reason": "E_BAD_VALUE",
+  "at": "/attempt",
+  "why": "G4：attempt 最小为 1，null 才表示未记录"
+}

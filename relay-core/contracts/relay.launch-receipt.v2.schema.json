@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dh-relay.local/contracts/relay.launch-receipt/v2",
+  "title": "relay.launch-receipt/v2 — 启动/控制回执（身份链锚点）",
+  "description": "Runtime 对一次 start 或 control 请求签发的唯一回执。它是身份链的锚点：迟到结果凭 receipt_id 判定该接受还是隔离（design/02 B11）；重复 control 请求凭 request_id 幂等（design/02 B1 · P5-M2）。",
+  "type": "object",
+  "properties": {
+    "protocol": {
+      "const": "relay.launch-receipt/v2"
+    },
+    "receipt_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+      "description": "回执唯一标识。一个 request_id 只对应一个 receipt_id——重复请求返回同一回执，不新签。"
+    },
+    "request_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+      "description": "客户端生成的请求标识，幂等键。"
+    },
+    "run_id": {
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/run_id"
+    },
+    "node_id": {
+      "oneOf": [
+        {
+          "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/node_id"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "attempt_id": {
+      "oneOf": [
+        {
+          "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/attempt_id"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "本回执绑定的 Attempt。换 Executor 产生 fresh Attempt 时必须签新回执（design/06 H12），禁止沿用旧回执续写。"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "start",
+        "stop",
+        "resume"
+      ],
+      "description": "被回执的控制动作。注意 cancel 不在此列——客户端断开永不产生取消（H4），取消须是显式 stop。"
+    },
+    "issued_at": {
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/timestamp"
+    },
+    "issued_by_runtime": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "签发回执的 Runtime 实例标识（含 lease 持有者身份）。用于恢复后判定回执是否出自当前唯一写者。"
+    },
+    "request_digest": {
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/sha256",
+      "description": "被回执请求的规范化摘要。重复 request_id 但 digest 不同 = 冲突请求，拒绝（E_REQUEST_CONFLICT），不得静默覆盖。 规范化口径见 contracts/CANONICALIZATION.md（RFC 8785 JCS + sha256 小写十六进制；摘要字段自身不参与计算）——不按该口径算出的值跨实现对不上。"
+    }
+  },
+  "required": [
+    "protocol",
+    "receipt_id",
+    "request_id",
+    "run_id",
+    "kind",
+    "issued_at",
+    "issued_by_runtime",
+    "request_digest"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dh-relay.local/contracts/v0-shapes/relay.approval/v1",
+  "title": "relay.approval/v1 — v0 形状（未冻结）",
+  "x-freeze-status": "v0-shape-only",
+  "x-frozen-at": "未冻结",
+  "x-first-load-bearing": "P8（首次承重时冻结；DevPlan §2.3）",
+  "description": "人类批准请求与回执。承接 design/06 H8：同一 Approval Request 经 DSH 或 CLI 提交后，生成语义相同、hash 绑定的 Receipt——即『在哪个窗口点的头』不改变批准的真相。这是控制面中立性在人类决策上的落地。",
+  "type": "object",
+  "properties": {
+    "protocol": { "const": "relay.approval/v1" },
+    "approval_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "run_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/run_id" },
+    "node_id": {
+      "oneOf": [
+        { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/node_id" },
+        { "type": "null" }
+      ]
+    },
+    "question": { "type": "string", "minLength": 1, "maxLength": 4096 },
+    "requested_at": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/timestamp" },
+    "request_digest": {
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/sha256",
+      "description": "H8 的 hash 绑定锚点：同一请求无论从哪个客户端提交，digest 必须相同。"
+    },
+    "decision": {
+      "oneOf": [
+        { "type": "string", "enum": ["approved", "rejected"] },
+        { "type": "null" }
+      ],
+      "description": "null = 尚未决策。"
+    },
+    "decided_at": {
+      "oneOf": [
+        { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/timestamp" },
+        { "type": "null" }
+      ]
+    },
+    "decided_via_client_id": {
+      "type": ["string", "null"],
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+      "description": "从哪个客户端提交的。**仅供审计留痕，不参与语义**——H8 要求经 DSH 或 CLI 提交生成语义相同的 Receipt。"
+    },
+    "receipt_digest": {
+      "oneOf": [
+        { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/sha256" },
+        { "type": "null" }
+      ]
+    }
+  },
+  "required": ["protocol", "approval_id", "run_id", "question", "requested_at", "request_digest"],
+  "additionalProperties": false
+}

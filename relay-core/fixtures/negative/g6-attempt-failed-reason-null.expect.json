@@ -1,0 +1,6 @@
+{
+  "schema": "relay.event/v2",
+  "reason": "E_BAD_TYPE",
+  "at": "/reason",
+  "why": "G4/G6：kind=attempt_failed 时 reason 必须是 reason_code 字符串；填 null 触发 type。⚠️ 本份测的是「填了 null」——与「整个不填」是两条不同的路（后者由 g6-attempt-failed-reason-omitted 钉住，报 E_MISSING_FIELD）。批次检查点 3 小审 P3-4：改期望是对的，但改完后文件名 without-reason 与它实测的路径不符，且 omitted 那条路径失去覆盖。"
+}

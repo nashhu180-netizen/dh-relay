@@ -134,6 +134,7 @@
   - **机器证**：[design/02 B7 宿主存活语义 D18](../design/02-完整流水-产品设计与验收.md#61-ai-自动验收栏) · P5-M3：Runtime 强杀后从 Store 重建相同状态签名；第二个宿主被 lease 拒绝，过期后可接管。
   - **机器证**：[design/02 B7 run_id 规范化 D23 / `.gitignore` 前置](../design/02-完整流水-产品设计与验收.md#61-ai-自动验收栏) · P5-M8：Store 位于 `<repo>/.dh-relay/<run_id>/`；缺 `.gitignore` 锚定时 start fail-closed 且 Relay 不改业务仓 `.gitignore`；零误跟踪。
   - **机器证**：[design/02 B6 / B11](../design/02-完整流水-产品设计与验收.md#61-ai-自动验收栏)：重复 checkpoint/result 幂等，冲突终态拒绝；迟到结果按 Receipt 身份链接受或隔离。
+  - **机器证（2026-08-21 补，承接 DHR_28 的 F-064）**：`contracts/CANONICALIZATION.md` §三 · **P5-M6 的「能力」分句**：RPC 握手期对 `capability_hash` 做**比对**并在不符时 fail-closed（`E_CAPABILITY_MISMATCH`），不得按能力交集降级工作。**为什么补在这里**：P5-M6 原承接卡只写 DHR_28，而该条是三个分句——「协议版本」与「未知输入」DHR_28 已在契约层证毕（7 份协议的判别字段全为 `const`，7/7 实测；全域 `additionalProperties: false`），但「能力不匹配」**契约层不可能证**：schema 拿不到对端指纹，一份形态合法而与对端不同的 `capability_hash` 必然被放行。DHR_28 兑现的是这一半——**指纹的可复算性**（`relay-core/capability-baseline.json`，8 份契约 digest + 参考 `capability_hash`，改任一 schema 的任意一个字即 `exit 1`）；**指纹的比对**需要真实握手，是本卡第一次有手段验它。**等价判据**：构造两份 `capability_hash` 不同的握手（例如一端多托管一种 `executor_kind`），断言被拒且 reason 为 `E_CAPABILITY_MISMATCH`；并断言参考实现算出的指纹与 `capability-baseline.json` 逐字相符。出处：DHR_28 findings **F-064**（用户 2026-08-21 对话确认改计划补承接）。
 - **变更范围**：Runtime `runtime/`、`store/`、`rpc/` 服务端；本卡 `workspace/DHR_29/`（拆卡后各自工作区）。
 - **档位**：标准（组件接线 + 持久状态；开工 B-调整时拆卡）。
 - **实施提示**：复用 P1 恢复锁 / CAS / 迟到结果 fixture 作为回放 Oracle；先证明「无客户端也能跑」再接任何客户端；lease 与恢复走同一事件账，不另立状态。
@@ -180,7 +181,7 @@
 | P5-M3 | 强杀 Runtime 并恢复后，状态、事件和终态确定一致 | DHR_29 |
 | P5-M4 | CLI 文本/JSON 与任一已接入客户端读取同一 Read Model（B-13：含源头 `group` 镜像断言；正式字段级定义关闭 P4 列表白名单例外——细则见 DHR_30 卡） | DHR_30 |
 | P5-M5 | basic-agent-task 的 Process 闭环在无 DevHarness、无 DSH 时完整运行 | DHR_31 |
-| P5-M6 | 协议版本、能力和未知输入均 fail-closed | DHR_28 |
+| P5-M6 | 协议版本、能力和未知输入均 fail-closed | DHR_28 / **DHR_29** |
 | P5-M7 | 客户端断开不取消 Run，必经角色无 DSH-only 依赖 | DHR_28 / DHR_29 |
 | P5-M8 | Store 位于规范根，`.gitignore` 前置与零误跟踪有证据 | DHR_29 |
 

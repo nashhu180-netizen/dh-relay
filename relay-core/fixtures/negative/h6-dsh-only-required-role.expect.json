@@ -1,0 +1,6 @@
+{
+  "schema": "relay.run/v2",
+  "reason": "E_DSH_ONLY_REQUIRED_ROLE",
+  "at": "/nodes/0/executor_profiles",
+  "why": "design/06 H6：必经角色至少要有一个非 DSH-only Executor —— schema 层拒绝，不是运行时检查"
+}

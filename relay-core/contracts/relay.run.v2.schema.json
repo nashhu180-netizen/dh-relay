@@ -1,0 +1,213 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dh-relay.local/contracts/relay.run/v2",
+  "title": "relay.run/v2 — Run 定义（不可变工件）",
+  "description": "一次 Run 的不可变真相：这是什么活、谁触发、有哪些节点、每个节点可由谁执行。状态不在这里（见 relay.run-state/v1），结果也不在这里（见 relay.result/v2）。",
+  "type": "object",
+  "properties": {
+    "protocol": {
+      "const": "relay.run/v2"
+    },
+    "run_id": {
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/run_id"
+    },
+    "workflow_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "description": "承接 v1-gap-disposition G1。必填——P4 实证缺它就得操作员投影时补供，等于把真相放在人脑里。"
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "description": "承接 G1。人话一句：这个 Run 在干什么。"
+    },
+    "trigger": {
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/trigger"
+    },
+    "trigger_by": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "description": "承接 G1。trigger=human 时必填（见下方 if/then）；schedule/system/upstream 时无自然人主体，允许省略——强填会造假。"
+    },
+    "attempt": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "default": null,
+      "description": "承接 v1-gap-disposition G4，且「缺省≠1」是协议级规范条款：null 或缺省一律表示『源头未记录』，任何实现不得解释或渲染为 1，渲染侧须显示『未知』。这是四条 G1~G4 里唯一故意可空的字段——『没记』与『确实是第1次』是两个事实。"
+    },
+    "created_at": {
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/timestamp"
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/node"
+      },
+      "description": "节点定义。分堆与排序由源头给，客户端只渲染不推导（P4 已验证的架构约束）。"
+    },
+    "source_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source_ref"
+      },
+      "description": "本 Run 真相所依据的源文件指针与哈希。用于独立复算与冻结忠实性对证。"
+    },
+    "labels": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "value": {
+            "type": "string",
+            "maxLength": 1024
+          }
+        },
+        "required": [
+          "key",
+          "value"
+        ],
+        "additionalProperties": false
+      },
+      "description": "**不透明标签**，Relay 不解释其含义（E14 一致性复核 F-E14-6 采纳）。 **为什么必须有**：design/04 §1 定的是「Core 不内置任务卡 / 计划等领域词义」，于是 DevHarness / DSH / 任何上层的私有标识**只能以不透明 label 搭车**——P4 冻结件的源文件里逐字写明 `labels` 是这条原则的**唯一载体**。 本卡七份契约首版一个 `labels` 都没有，等于把这条原则的落点删掉了：DHR_31 的 basic-agent-task 想挂任务卡 id 时无处可挂，唯一去处会是 `relay.result/v2` 的 `structured`（OPEN-POINTS O-1 的开放载荷），而那里协议层不承诺中立性、也不受 locator 约束。 **中立性不受影响**：`key` / `value` 都是不透明字符串，Relay 只存不读；结构位置零厂商 token，禁词表与结构 token 白名单照常生效（往 label **值**里写什么是上层的事，不是协议结构）。 　—— **规范性约束（E2 代码复核轮 2 · P3-5，趁还没有消费者时定）**：①**数组按 `key` 的 UTF-16 码元升序排列**，`key` 相同则按 `value` 升序；②**`key` 在同一 Run 内唯一**。 **为什么必须现在定**：`labels` 语义上是**无序集合**（不像 `nodes` 有 DAG 顺序、`source_refs` 有引用顺序），两个实现按不同顺序发同一组 label 是完全合规的；而 `CANONICALIZATION.md` §三那条「JCS 只管对象键序、不管数组序，故数组序必须显式规定」（F-033③ 的原话）正对这里。本卡冻结的五个指纹字段当前都不覆盖 `relay.run/v2`，所以**当下无失败场景**——但等 DHR_29 把 run 纳入任何摘要、或有消费者做 label 查表遇到 `[{a,1},{a,2}]` 时再改，就贵了。 ⚠️ 两条都是 schema 表达不了的语义约束（JSON Schema 无跨元素序比较、`uniqueItems` 只比整个元素），由 Runtime 保证，与「`done <= total`」「`node_states` 覆盖 `nodes` 全集」同类，一并交 DHR_29。"
+    }
+  },
+  "required": [
+    "protocol",
+    "run_id",
+    "workflow_name",
+    "summary",
+    "trigger",
+    "created_at",
+    "nodes"
+  ],
+  "additionalProperties": false,
+  "if": {
+    "properties": {
+      "trigger": {
+        "const": "human"
+      }
+    },
+    "required": [
+      "trigger"
+    ]
+  },
+  "then": {
+    "required": [
+      "trigger_by"
+    ],
+    "$comment": "G1：trigger=human 时必须记『谁触发』，否则 P4 的『投影期操作员补供』原样复发。"
+  },
+  "$defs": {
+    "node": {
+      "type": "object",
+      "properties": {
+        "node_id": {
+          "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/node_id"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "description": "承接 v1-gap-disposition G3：人话短标题，与 node_id 分字段。必填，且实现不得用 node_id 自动兜底填充——那等于把 P4 的有损降级写进协议。缺 title 应在 Workflow 定义期 fail-closed。"
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "节点在工作流中的角色（如 执行 / 复核）。业务域无关的自由标签，不引入任何工作台私有类型。"
+        },
+        "required": {
+          "type": "boolean",
+          "description": "是否为『必经』角色。true 时触发下方 H6 约束。**本字段必填、必须显式写 true 或 false**（见节点的 required 列表）——不设默认值是刻意的：批次检查点 2 小审 D-11 指出，若设为可选+默认 false，H6 这条安全断言就是 fail-open by default（实现只要不标，一次都不触发）。同一条推理已用在 G3 的 title 上（『可选会让所有实现都省掉它』），对本字段更适用——title 缺了只是屏幕难看，本字段缺了是安全断言静默失效。强制显式声明不改变 H6 语义（写 false 照样不触发），但让『这个节点必不必经』成为 Workflow 作者必须回答的问题。findings F-022。"
+        },
+        "depends_on": {
+          "type": "array",
+          "items": {
+            "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/node_id"
+          },
+          "default": []
+        },
+        "executor_profiles": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/executor_profile"
+          },
+          "description": "该节点可用的 Executor 候选集合。"
+        }
+      },
+      "required": [
+        "node_id",
+        "title",
+        "role",
+        "required",
+        "executor_profiles"
+      ],
+      "additionalProperties": false,
+      "if": {
+        "properties": {
+          "required": {
+            "const": true
+          }
+        },
+        "required": [
+          "required"
+        ]
+      },
+      "then": {
+        "properties": {
+          "executor_profiles": {
+            "minContains": 1,
+            "contains": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "not": {
+                    "const": "dsh-agent"
+                  }
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            }
+          }
+        },
+        "$comment": "design/06 H6 的契约层落地：『任一必经 Workflow 角色至少存在一个非 DSH-only 合法 Executor Profile』。必经角色若只声明 dsh-agent，在 schema 层即被拒绝（不是运行时检查）——对应 DHR_28 验收口径第 3 条。校验器报 E_DSH_ONLY_REQUIRED_ROLE。"
+      }
+    },
+    "source_ref": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/locator"
+        },
+        "sha256": {
+          "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/sha256"
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 512,
+          "description": "留痕用。P4 曾用它记『操作员补供』；v2 里 G1 四字段已成必填，该用法应绝迹——若仍出现，是实现在绕过 G1。"
+        }
+      },
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

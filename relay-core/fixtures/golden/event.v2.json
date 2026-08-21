@@ -1,0 +1,14 @@
+{
+  "protocol": "relay.event/v2",
+  "run_id": "RUN-1",
+  "seq": 7,
+  "at": "2026-08-21T10:00:00+08:00",
+  "kind": "attempt_failed",
+  "node_id": "fix",
+  "attempt_id": "att-1",
+  "executor_kind": "process",
+  "executor_ref": "bin/fix.sh",
+  "observation_status": null,
+  "reason": "E_EXECUTOR_EXIT_NONZERO",
+  "detail": "exit code 2"
+}

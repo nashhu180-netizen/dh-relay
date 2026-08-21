@@ -1,0 +1,27 @@
+{
+  "protocol": "relay.run-state/v1",
+  "run_id": "RUN-1",
+  "run_status": "unknown",
+  "group": "done",
+  "progress": {
+    "done": 1,
+    "total": 2
+  },
+  "elapsed_seconds": 3240,
+  "node_states": [
+    {
+      "node_id": "fix",
+      "status": "succeeded",
+      "current_attempt_id": "att-1",
+      "attempt_count": 1
+    },
+    {
+      "node_id": "review3",
+      "status": "running",
+      "current_attempt_id": "att-2",
+      "attempt_count": null
+    }
+  ],
+  "updated_at": "2026-08-21T10:00:00+08:00",
+  "state_signature": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+}

@@ -18,3 +18,7 @@
 
 # 一卡一树（worktree 纪律：收口即删，不入仓）
 .dh-worktrees/
+
+# Node 依赖（DHR_28 起 relay-core/ 为 TypeScript/Node 代码根；本仓此前是纯 PowerShell，故此条为新增）
+#   package-lock.json 仍入仓 —— 校验器要可复现构建
+node_modules/

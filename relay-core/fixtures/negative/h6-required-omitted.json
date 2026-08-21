@@ -1,0 +1,30 @@
+{
+  "protocol": "relay.run/v2",
+  "run_id": "RELAY-IHSR05-RW-20260816113004",
+  "workflow_name": "dh-crew/manual-dispatch",
+  "summary": "IHSR05 修复与两轮复核接力",
+  "trigger": "human",
+  "trigger_by": "hyf",
+  "attempt": null,
+  "created_at": "2026-08-21T10:00:00+08:00",
+  "nodes": [
+    {
+      "node_id": "gate",
+      "title": "闸",
+      "role": "复核",
+      "depends_on": [],
+      "executor_profiles": [
+        {
+          "kind": "dsh-agent",
+          "ref": "adapters/dsh-bridge"
+        }
+      ]
+    }
+  ],
+  "source_refs": [
+    {
+      "path": ".dh-relay/RUN-1/relay-state.json",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "protocol": "relay.checkpoint/v2",
+  "run_id": "RUN-1",
+  "node_id": "fix",
+  "attempt_id": "att-1",
+  "receipt_id": "rcpt-1",
+  "checkpoint_id": "cp-1",
+  "at": "2026-08-21T10:00:00+08:00",
+  "phase": "processing",
+  "progress": 0.4,
+  "log_locator": ".dh-relay/RUN-1/logs/fix.log",
+  "payload_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+}

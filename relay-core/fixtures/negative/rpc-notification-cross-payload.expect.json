@@ -1,0 +1,6 @@
+{
+  "schema": "relay.rpc/v1",
+  "reason": "E_BAD_VALUE",
+  "at": "/params/protocol",
+  "why": "D-1 收窄后的交叉污染防护：method=runStateChanged 却塞 relay.event/v2 载荷，被 allOf 分支的 $ref 拒。【期望已更正】原写 E_UNKNOWN_METHOD 是 oneOf 四分支错误串味所致，校验器已改为取最佳分支的错误。"
+}

@@ -1,0 +1,6 @@
+{
+  "schema": "relay.run/v2",
+  "reason": "E_ABSOLUTE_LOCATOR",
+  "at": "/nodes/0/executor_profiles/0/ref",
+  "why": "D-3：单斜杠 file:/ 与三斜杠等价合法，只挡 :// 会漏"
+}

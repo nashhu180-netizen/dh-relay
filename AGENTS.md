@@ -60,7 +60,7 @@
 | 恢复现场 / 继续 | dev-harness `references/动作-R-恢复.md` + [docs/modules/dh-relay/dev_plan/](docs/modules/dh-relay/dev_plan/) / [docs/modules/dh-relay/workspace/](docs/modules/dh-relay/workspace/) |
 | 修 bug / 优化分流 | dev-harness `references/维护任务.md` |
 | 接力执行范式总览 / Runner / RelayPlan | [docs/modules/dh-relay/design/README.md](docs/modules/dh-relay/design/README.md) + [docs/modules/dh-relay/dev_plan/](docs/modules/dh-relay/dev_plan/) |
-| 现役实现是什么样 | [docs/modules/dh-relay/as-built/](docs/modules/dh-relay/as-built/)（contracts / runner / psmux-host / policy 四份快照） |
+| 现役实现是什么样 | [docs/modules/dh-relay/as-built/](docs/modules/dh-relay/as-built/)（contracts / **relay-core** / runner / psmux-host / policy 四份快照） |
 | 未排期的需求与已知坑 | [docs/modules/dh-relay/backlog.md](docs/modules/dh-relay/backlog.md) |
 | 踩过的坑 | [docs/modules/dh-relay/knowledge/教训库-候选.md](docs/modules/dh-relay/knowledge/教训库-候选.md) |
 

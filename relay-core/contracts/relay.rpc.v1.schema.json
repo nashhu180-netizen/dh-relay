@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dh-relay.local/contracts/relay.rpc/v1",
+  "title": "relay.rpc/v1 — 本地 RPC 信封（NDJSON JSON-RPC 2.0）",
+  "description": "Runtime 与任意客户端之间的唯一说话方式。传输：Windows Named Pipe / Linux Unix Domain Socket，newline-delimited JSON-RPC 2.0（DevPlan §2.3）。客户端只走本协议，不碰 Store、不共享内存对象（design/05 §6.2）。fail-closed 三条全部落在握手与信封校验里。",
+  "oneOf": [
+    { "$ref": "#/$defs/request" },
+    { "$ref": "#/$defs/response" },
+    { "$ref": "#/$defs/error_response" },
+    { "$ref": "#/$defs/notification" }
+  ],
+  "$defs": {
+    "method": {
+      "type": "string",
+      "enum": [
+        "contracts",
+        "listRuns",
+        "inspectRun",
+        "validate",
+        "start",
+        "control",
+        "subscribe"
+      ],
+      "description": "最小 Runtime 接口（DevPlan §2.3）。未列出的方法一律拒绝 E_UNKNOWN_METHOD——不得为未来方法预留『宽容通道』。Attention / Approval / Plan Revision 的方法在 P7/P8 首次使用时增补，届时 capability_hash 随之变化。"
+    },
+
+    "handshake": {
+      "type": "object",
+      "description": "每个 request 必带。三条 fail-closed 的着力点：protocol_version 不认识 → E_UNSUPPORTED_VERSION；capability_hash 不匹配 → E_CAPABILITY_MISMATCH；信封含未知字段 → E_UNKNOWN_FIELD。三者一律拒绝，不得降级、不得按交集工作。",
+      "properties": {
+        "protocol_version": {
+          "const": "relay.rpc/v1",
+          "description": "**必须恰为 `relay.rpc/v1`**——本 schema 就是 v1 的信封定义，握手声明的版本只可能是它。**为什么用 `const` 而不是 `$ref` 到 relay.common/v1 的 `protocol_version`（后者只约束形态 `^relay\\.[a-z-]+/v[0-9]+$`）**：批次 3 的反例实测发现，只约束形态时 `relay.rpc/v9` **会被放行**——于是 fail-closed 三条里的『未知版本 → `E_UNSUPPORTED_VERSION`』在**契约层根本没有落点**，验收口径第 1 条只兑现了三分之二。改 `const` 后由 schema 直接拒绝。**P7/P8 出 v2 信封时**：新增独立的 `relay.rpc/v2` schema，不是放宽本字段——放宽等于把刚补上的闸又拆掉。findings F-043。"
+        },
+        "runtime_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "Runtime 实现版本。仅供展示与诊断，**不参与兼容判定**——兼容只看 protocol_version 与 capability_hash。"
+        },
+        "capability_hash": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/capability_hash" },
+        "client_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+          "description": "客户端实例标识。用于连接记账——但客户端断开永不取消 Run（design/06 H4）。"
+        },
+        "request_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+          "description": "幂等键。重复 request_id 且请求摘要相同 → 返回同一 receipt（design/02 B1 · P5-M2）；摘要不同 → E_REQUEST_CONFLICT。"
+        }
+      },
+      "required": ["protocol_version", "runtime_version", "capability_hash", "client_id", "request_id"],
+      "additionalProperties": false
+    },
+
+    "request": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": { "const": "2.0" },
+        "id": { "type": ["string", "integer"] },
+        "method": { "$ref": "#/$defs/method" },
+        "handshake": { "$ref": "#/$defs/handshake" },
+        "params": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "按 method 定义的请求参数。**本卡不落 per-method schema**（最小协议集范围），因此此处是【有意开放点】之一，见 contracts/OPEN-POINTS.md。⚠️ **契约层未兑现的约束，如实说破**（批次检查点 2 小审 D-2，findings F-015）：『禁携带工作台私有类型』与『locator 参数走 relay.common/v1 的 locator（G5 禁绝对路径）』这两条在本卡**只是散文约定、不是机器闸**——`start`/`control` 的 params 里塞 `C:\\Users\\nash\\brief.md` 目前在契约层放行。落机器闸的责任归 P6/P7 的 per-method schema；在那之前，调用方须自行遵守，Runtime 实现应在参数解包处补运行时校验。"
+        }
+      },
+      "required": ["jsonrpc", "id", "method", "handshake"],
+      "additionalProperties": false
+    },
+
+    "response": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": { "const": "2.0" },
+        "id": { "type": ["string", "integer"] },
+        "result": {
+          "description": "成功载荷。形状由 method 决定（如 inspectRun 返回客户端中立 Read Model；start 返回 relay.launch-receipt/v2）。",
+          "type": ["object", "array", "string", "number", "boolean", "null"]
+        }
+      },
+      "required": ["jsonrpc", "id", "result"],
+      "additionalProperties": false
+    },
+
+    "error_response": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": { "const": "2.0" },
+        "id": { "type": ["string", "integer", "null"] },
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "integer",
+              "description": "JSON-RPC 2.0 数值码。语义细节以 data.reason 为准——排障看 reason，不看数字。"
+            },
+            "message": { "type": "string", "minLength": 1, "maxLength": 1024 },
+            "data": {
+              "type": "object",
+              "properties": {
+                "reason": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/reason_code" },
+                "detail": { "type": "string", "maxLength": 4096 }
+              },
+              "required": ["reason"],
+              "additionalProperties": false
+            }
+          },
+          "required": ["code", "message", "data"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["jsonrpc", "id", "error"],
+      "additionalProperties": false
+    },
+
+    "notification": {
+      "type": "object",
+      "description": "subscribe 的推送帧。无 id、不要求响应。**params 已按 method 收窄**——推送的两种载荷本卡都已冻结，没有理由留开口（批次检查点 2 小审 D-1 指出，findings F-014）。",
+      "properties": {
+        "jsonrpc": { "const": "2.0" },
+        "method": {
+          "type": "string",
+          "enum": ["event", "runStateChanged"],
+          "description": "event 推 relay.event/v2 条目；runStateChanged 推 relay.run-state/v1 快照。客户端只渲染这两者，不从 events 自行推导状态（架构约束）。"
+        },
+        "params": { "type": "object" }
+      },
+      "required": ["jsonrpc", "method", "params"],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": { "properties": { "method": { "const": "event" } }, "required": ["method"] },
+          "then": { "properties": { "params": { "$ref": "https://dh-relay.local/contracts/relay.event/v2" } } }
+        },
+        {
+          "if": { "properties": { "method": { "const": "runStateChanged" } }, "required": ["method"] },
+          "then": { "properties": { "params": { "$ref": "https://dh-relay.local/contracts/relay.run-state/v1" } } }
+        }
+      ]
+    }
+  }
+}

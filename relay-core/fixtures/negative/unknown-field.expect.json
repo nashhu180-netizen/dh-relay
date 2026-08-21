@@ -1,0 +1,6 @@
+{
+  "schema": "relay.run/v2",
+  "reason": "E_UNKNOWN_FIELD",
+  "at": "/surprise",
+  "why": "未知字段必须拒绝：放过它=单方面假设语义兼容"
+}

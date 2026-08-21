@@ -1,0 +1,56 @@
+{
+  "$comment": "参考基线：只托管 process 的最小 P5 参考实现的 capability_manifest 与其 capability_hash。 口径见 contracts/CANONICALIZATION.md §三（E4 需求复核 P1-1 / E2 代码复核 P3-3 逼出）。 **它同时是 12 份契约的 digest 基线**：改任一 schema 的任意一个字（含 description，本卡有意不剥离）都会让这里的 digest 与 capability_hash 变化，`npm test` 立刻红——这正是「改一个错别字也是能力变更、也会断握手」那条规定的机器表达。 改契约后跑 `node tools/capability-baseline.mjs --write` 重新生成，并在 commit 里能看见 capability_hash 变了。",
+  "capability_manifest": {
+    "protocols": [
+      {
+        "id": "relay.checkpoint/v2",
+        "digest": "ac84983503dd086c969ecb920b3aa04fcfdf269c34787a059537a15b4df5fa8f"
+      },
+      {
+        "id": "relay.common/v1",
+        "digest": "98cc3d69ef2506fa9233473a754f869088ee70f866e89eeca5117b84b93e1366"
+      },
+      {
+        "id": "relay.event/v2",
+        "digest": "369383f89156e9aa05deca5849eb51ce677841227d55380ab1f5fe6a33eb42b3"
+      },
+      {
+        "id": "relay.launch-receipt/v2",
+        "digest": "5fe9b5de9c02da705f69814fdbd00ab3f828e5cd0fcd8084fba02d3529808e5b"
+      },
+      {
+        "id": "relay.result/v2",
+        "digest": "76e8295e415b6bc2cb2bbdec9fe293543c39bc6208ea5305646aa8a21faca69f"
+      },
+      {
+        "id": "relay.rpc/v1",
+        "digest": "95f1d6a966de1e8fdec56dd1555416d20ec434befed2e3181052a8b015f0ef78"
+      },
+      {
+        "id": "relay.run-state/v1",
+        "digest": "e2e6f3b277d787d3e57c23f6b4201304b9e1abfd3f90a8878782052916b41c98"
+      },
+      {
+        "id": "relay.run/v2",
+        "digest": "0ff1e432db4df3e517d9eb89fe6ffd8b5f556b2b8114ac45b71bafdb0641e4e8"
+      }
+    ],
+    "methods": [
+      "contracts",
+      "control",
+      "inspectRun",
+      "listRuns",
+      "start",
+      "subscribe",
+      "validate"
+    ],
+    "notifications": [
+      "event",
+      "runStateChanged"
+    ],
+    "executor_kinds": [
+      "process"
+    ]
+  },
+  "capability_hash": "3ccf3b1043afbd8224dd2eadf61c80b29ab951d61db8b838fc3a58b97f58e4d3"
+}

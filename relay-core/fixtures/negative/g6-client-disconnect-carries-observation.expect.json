@@ -1,0 +1,6 @@
+{
+  "schema": "relay.event/v2",
+  "reason": "E_BAD_VALUE",
+  "at": "/observation_status",
+  "why": "H4/G6：控制客户端断开 ≠ Executor 消失，前者不得携带观测态"
+}

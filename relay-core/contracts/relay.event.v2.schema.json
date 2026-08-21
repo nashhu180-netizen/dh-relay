@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dh-relay.local/contracts/relay.event/v2",
+  "title": "relay.event/v2 — 追加事件账条目",
+  "description": "Run 的追加式事件账。状态由事件确定性回放得出（DHR_29 承接）。关键纪律：会话/宿主观测事件与任务结果事件是不同 kind，观测事件永不推导 run_status——承接 v1-gap-disposition G6。",
+  "type": "object",
+  "properties": {
+    "protocol": { "const": "relay.event/v2" },
+    "run_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/run_id" },
+    "seq": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "单调递增序号，同一 run 内唯一。回放确定性的依据。"
+    },
+    "at": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/timestamp" },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "run_created",
+        "node_started",
+        "attempt_started",
+        "attempt_succeeded",
+        "attempt_failed",
+        "attempt_orphaned",
+        "checkpoint_recorded",
+        "result_recorded",
+        "late_result_quarantined",
+        "host_observation_changed",
+        "client_connected",
+        "client_disconnected",
+        "lease_acquired",
+        "lease_expired",
+        "run_finished"
+      ],
+      "description": "事件类型。注意三组必须分开、永不互相推导：①attempt_* = 任务结果侧；②host_observation_changed = 会话/宿主观测侧（G6）；③client_connected/disconnected = 控制客户端侧。design/06 H4：客户端断开、DSH 插件卸载、SSH 断开均不隐式取消 Run——所以 client_disconnected 绝不得生成 cancel 或推动 run_status。"
+    },
+    "node_id": {
+      "oneOf": [
+        { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/node_id" },
+        { "type": "null" }
+      ]
+    },
+    "attempt_id": {
+      "oneOf": [
+        { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/attempt_id" },
+        { "type": "null" }
+      ]
+    },
+    "executor_kind": {
+      "oneOf": [
+        { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/executor_kind" },
+        { "type": "null" }
+      ]
+    },
+    "executor_ref": {
+      "oneOf": [
+        { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/locator" },
+        { "type": "null" }
+      ],
+      "description": "承接 G5：符号化，禁绝对路径。按 executor_kind 语义分别是可执行入口 / adapter_ref / bridge_ref / server_ref（ADR-002）。"
+    },
+    "observation_status": {
+      "oneOf": [
+        { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/observation_status" },
+        { "type": "null" }
+      ],
+      "description": "仅 kind=host_observation_changed 时有值（见下方 if/then）。G6：这是观测态，不是任务结果。"
+    },
+    "reason": {
+      "oneOf": [
+        { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/reason_code" },
+        { "type": "null" }
+      ]
+    },
+    "detail": {
+      "type": "string",
+      "maxLength": 4096,
+      "description": "人可读补充。禁写入密钥/凭据值（AGENTS 宪章#6）；禁携带主机绝对路径。"
+    }
+  },
+  "required": ["protocol", "run_id", "seq", "at", "kind"],
+  "additionalProperties": false,
+
+  "allOf": [
+    {
+      "if": {
+        "properties": { "kind": { "const": "host_observation_changed" } },
+        "required": ["kind"]
+      },
+      "then": {
+        "required": ["observation_status"],
+        "properties": { "observation_status": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/observation_status" } },
+        "$comment": "G6：观测事件必须带观测态。"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": { "enum": ["client_connected", "client_disconnected"] }
+        },
+        "required": ["kind"]
+      },
+      "then": {
+        "properties": {
+          "observation_status": { "const": null },
+          "attempt_id": { "const": null }
+        },
+        "$comment": "design/06 H4 的契约层落地：控制客户端的连接/断开不得携带观测态、不得绑定任何 Attempt——否则实现会顺手把『关窗口』记成『Executor 没了』，正是 ADR-002 第③问要拆开的两件事。"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": { "enum": ["attempt_started", "attempt_succeeded", "attempt_failed", "attempt_orphaned"] }
+        },
+        "required": ["kind"]
+      },
+      "then": {
+        "required": ["node_id", "attempt_id"],
+        "$comment": "Attempt 是最小失败单元（H7），必须能定位到具体节点与具体 attempt。"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": { "enum": ["attempt_failed", "attempt_orphaned"] }
+        },
+        "required": ["kind"]
+      },
+      "then": {
+        "required": ["reason"],
+        "properties": { "reason": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/reason_code" } },
+        "$comment": "失败必须带原因码，不许只留一句散文 detail。"
+      }
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "jsonrpc": "2.0",
+  "method": "runStateChanged",
+  "params": {
+    "protocol": "relay.run-state/v1",
+    "run_id": "RUN-1",
+    "run_status": "pending",
+    "group": "running",
+    "node_states": [
+      {
+        "node_id": "fix",
+        "status": "pending"
+      }
+    ],
+    "updated_at": "2026-08-21T10:00:00+08:00"
+  }
+}

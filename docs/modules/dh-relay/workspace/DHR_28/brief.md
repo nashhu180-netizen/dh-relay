@@ -33,4 +33,4 @@
 
 ## 触及子系统（收口时更新其 as-built）
 
-无（新建 `contracts/` 与校验器；as-built 首份快照归 DHR_29 起）——理由：本卡是新建协议契约与 ADR 文档，不改动任何现役子系统（`tools/`、`.dh-runtime/relay/` 均只读），没有既有 as-built 快照需要覆盖更新；新 Runtime 代码根本身是全新落点，其首份 as-built 快照留给真正落地实现的 DHR_29 收口时建立。
+**`relay-core/`（本卡新建，首份 as-built 已在本卡收口时建立 → [as-built/relay-core.md](../../as-built/relay-core.md)）**　⚠️ **本行原写「无（新建 `contracts/` 与校验器；as-built 首份快照归 DHR_29 起）」，收口时改口，理由如实登记（findings F-084）**：①dev-harness 节点表把 E7「as-built 收敛 · 首份建」列为**硬条**；②更实际的理由是交付物形态与立项预期不同——`relay-core/` 最终不是骨架，是 **12 份 schema + 6 个工具 + 5 份规范文档 + 5 道机器闸**的完整冻结契约，DHR_29 开工第一件事就是读它，把首份快照推给它等于让接手的人先自己摸一遍。**这是主会话改了 brief 的已登记决定，不是 brief 本来就允许的**，故显式留痕而非静默改写（教训 L-014 讲的正是这个）。——理由：本卡是新建协议契约与 ADR 文档，不改动任何现役子系统（`tools/`、`.dh-runtime/relay/` 均只读），没有既有 as-built 快照需要覆盖更新；新 Runtime 代码根本身是全新落点，其首份 as-built 快照留给真正落地实现的 DHR_29 收口时建立。

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dh-relay.local/contracts/v0-shapes/relay.host-observation/v1",
+  "title": "relay.host-observation/v1 — v0 形状（未冻结）",
+  "x-freeze-status": "v0-shape-only",
+  "x-frozen-at": "未冻结",
+  "x-first-load-bearing": "P6 / P7（首次承重时冻结；DevPlan §2.3）",
+  "description": "会话/宿主观测态。承接 v1-gap-disposition G6 的建模纪律：本协议只回答『我还看得见宿主吗』，绝不回答『这活成了没有』——后者在 relay.result/v2。两者永不同字段、永不互相推导。ADR-002 第③④问依赖本分离：DSH 作为控制客户端消失不动 Run（design/06 H4）；Herdr 的 observation_lost 不判死，只有拿到 server 明确否定才 executor_lost。",
+  "type": "object",
+  "properties": {
+    "protocol": { "const": "relay.host-observation/v1" },
+    "run_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/run_id" },
+    "node_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/node_id" },
+    "attempt_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/attempt_id" },
+    "executor_kind": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/executor_kind" },
+    "host_ref": {
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/locator",
+      "description": "被观测宿主的符号化引用（bridge_ref / server_ref / 进程指纹）。禁绝对路径，G5。"
+    },
+    "observation_status": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/observation_status" },
+    "observed_at": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/timestamp" },
+    "lost_since": {
+      "oneOf": [
+        { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/timestamp" },
+        { "type": "null" }
+      ],
+      "description": "observation_status=observation_lost 起始时刻。超过阈值后出 Attention（design/06 H5），但**始终不判 Attempt 死**。"
+    }
+  },
+  "required": ["protocol", "run_id", "observation_status", "observed_at"],
+  "additionalProperties": false
+}
