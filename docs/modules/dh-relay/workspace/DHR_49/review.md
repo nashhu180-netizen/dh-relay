@@ -8,22 +8,22 @@
 | 复核者(谁) | 范围 | 发现（逐条 P0~P3） | 派出证据 (e:E-xxx / log:路径) | 证据 (E-xxx) |
 |--------|------|------|------|------|
 | `cp1-review`（general-purpose fresh subagent，零上下文，只读；未参与实施） | 批 1 可行性探针（`src/dsh-client/` 初版 + 3 份测试 + 变异脚本 + `evidence/dhr49/`） | **结论 changes-requested**。批 1 的六条声称逐条复跑对拍后**全部属实**；要求返工的是证据与断言的覆盖面，不是结论本身。**2×P1 / 7×P2 / 6×P3**，逐条与处置见下方「CP1 发现与处置」 | e:E-010 | E-017 |
-| <CP2 fresh subagent> | 批 2 列表屏 diff（`groupRuns` + 镜像断言 + 真机三次渲染证据） | | | |
-| <CP3 fresh subagent> | 批 3 构建配方 diff（README 配方全文 + 清净重跑 + 换机重跑证据） | | | |
-| <CP4 fresh subagent> | 批 4 详情屏 diff（详情视图 + 装卸清理三态 + 纯 JSON 断言） | | | |
+| `cp2-review`（general-purpose fresh subagent，零上下文，只读；未参与实施）<br>⚠️ **2026-08-21 补派，不是当时那道闸** | 批 2 列表屏（`groupRuns` + 镜像断言 + 词表返工 + 真机渲染证据） | **结论 changes-requested，1×P1 / 5×P2 / 4×P3**。P1：源码级词法断言只切 `groupRuns` **自己的函数体**，把 `run_status` 的读取挪进同 region 的 helper 就整个绕开——它造的「按 `run_status` 静默丢 run」实现跑全量 **60/60 全绿**。已按 (a) 切片扩到整个 region + 剥注释、(b) 补守恒断言（CLI 侧早有、DSH 镜像漏了）、(c) 补 `run_status` 全覆盖 三处返工，并把它那两个 mutant 原样固化（grouping 6→8），且**单独验过是行为断言在咬、不是词法网**。逐条处置见 progress E-104~E-114 | e:E-100 | E-104 |
+| `cp3-review`（general-purpose fresh subagent，零上下文，只读；未参与实施） | 批 3 构建配方（README 配方全文 + 清净重跑 + 换机重跑证据） | **两轮。轮 1 结论 changes-requested**：P1「清净重跑从没清过 pnpm store」——装的文件是从一个比重装早 11 分钟的 store 对象硬链过来的，**成立，已返工**（真冷 store 重跑）；P2「变异只有 20 条」——**refuted**，脚本实际 22 条，它的 grep 锚了行首漏掉单行字面量，CP3 已撤回。**轮 2 结论 changes-requested**：冷 store 对比面只盖 4 个文件而 tarball 有 7 个成员（已扩到全部成员）、`link:` 装的包没被覆盖、把「判为不划算」写成「被 pnpm 挡住」是双标（**认，已改**，见 L-25）。逐条处置见 progress E-061~E-071 | e:E-061 | E-069 |
+| `cp4-review`（general-purpose fresh subagent，零上下文，只读；未参与实施） | 批 4 详情屏（详情视图 + 装卸清理三态 + P4-DM5b 纯 JSON 断言） | **结论 changes-requested，1×P1 / 5×P2 / 3×收尾提示**。P1：DM5b 那张纯 JSON 网**数组分支只遍历索引元素**——把一个**真 Cordis Context** 挂到 `model.runs.ctx` 上，12 条断言 **12/12 全绿放行**（同一个盲点 DHR_26 的 `isPlainJson` 也有，见 F-010 附注）。**成立，已修**，变异 12→17。P2 五条全部复现并接受：§D 拿自身比自身、「用时」词表两侧漂开、`roots === 7` 是倒着写的魔数、参数 codec 从没比过、§C 镜像太窄。逐条处置见 progress E-072~E-088 | e:E-072 | E-080 |
 
 **第二轮·增量复核**（**另派 fresh-context、未参与实施且不继承或注入第一轮会话上下文的独立 agent 实例，可只读仓内已落账的第一轮记录；模型/账号可同，不得复用同一会话**；核全程 + 核各批小审记录 + 查收口增量 diff；本卡为 UI 任务 → 叠加渲染证据比对）
 
 | 复核者(谁·实例/会话须≠第一轮) | 范围 | 核第一轮结论 + 新发现 | 结论（approved / changes-requested / 需人裁决） | 派出证据 (e:E-xxx / log:路径) | 证据 (E-xxx) |
 |--------|------|------|------|------|------|
-| | | | | | |
+| `dhr49-round2`（general-purpose fresh subagent，**fresh context、未参与实施、不继承任一轮 1 会话**；只读仓内已落账记录） | 全程 + 各批小审记录 + 收口增量 | **核轮 1**：独立复跑了全部机器数字——`npm test` 亲跑两遍 217/217 skipped 0、五份变异脚本全跑（16/6/16/25/17 = 80），与声称**一字不差**，各自正控全绿；并横扫全工作区确认没有一处把实现方自证写成「经复核验证」。**新发现**：①**CP2 那道闸从来没派过**（P1，已补派，见本表 CP2 行）②§4.4 止损表 7 行里 4 行停在过程态、其中一行的理由是本卡**已撤回**的说法（P1，已推到终态）③词表断言**只咬面板漂、不咬 CLI 漂**，期望值是手抄的第三份常量——它实测 CLI 侧改三个词全绿（P2，已改成从 CLI 定义原文取，并加第六份变异脚本）④README 复现配方 6 个数字过期（P2，已刷新）⑤「v3 渲染 AI 未验」这条登记**过期且低报**（P2，已改为分段登记）⑥列表屏在最终落点缺刷新/重启对照（P2，已补，见 E-102/E-103）⑦`_raw/` 未占位、`clean-rerun.txt` 量程理由过期、purity 变异脚本没查 skipped（3×P3，均已处置） | **changes-requested** | e:E-089 | E-089 |
 
 ### CP1 发现与处置（逐条 append-only）
 
 | 级别 | 发现 | 处置 | 证据 |
 |---|---|---|---|
 | **P1-1** | 批 1 源码在复核期间被批 2 覆写；树外无 git ⇒ 无 diff、无回滚点。复核者是靠 profile 安装副本重建批 1 快照才复核成的，而那份副本下次 `plugin add` 就被抹掉 | **已修**。从复核者临时目录抢救出批 1 快照，落 `evidence/dhr49/batch1/src-snapshot/`（10 文件）并生成 `SHA256SUMS.txt`。其中 `client.js` = `67b8510f…62bc`，与 E-008 记录的安装哈希**逐字符相同**，独立印证快照是批 1 原件。**此后每批开工前先冻结上一批源码**（无 git 下唯一的留痕手段） | E-018 |
-| **P1-2** | 宿主半边（`lib/index.mjs` / `lib/typert.host.js`）**零自动化覆盖**。`markRemote()` 手工调用 TC39 装饰器今天成立，但将来 rc 若让 `Remote` 返回替换方法或读 `context.metadata`，测试仍全绿而面板**静默失去 remote 方法** | **已修**。新增 `test/dsh-client-host.test.mjs` 6 条，**用真库不用 stub**（stub 会把那个变化一起写进假设）：①`remoteMethods()` 确实标到 `hash`/`list`；②两侧 invocation 集合一一对应；③宿主 schema 带 `_zod` 品牌（typert-loader 硬查）；④两侧 schema 对同一批边界值判决一致；⑤`list()`/`hash()` 原样转发不排序不过滤；⑥只声明真正需要的注入。装树不在的机器上跳过而非失败（保跨机重跑可跑）。为此加了测试缝 `__remoteInitializers__` 与 loader hook `test/helpers/dsh-install-tree*.mjs` | E-019 |
+| **P1-2** | 宿主半边（`lib/index.mjs` / `lib/typert.host.js`）**零自动化覆盖**。`markRemote()` 手工调用 TC39 装饰器今天成立，但将来 rc 若让 `Remote` 返回替换方法或读 `context.metadata`，测试仍全绿而面板**静默失去 remote 方法** | **已修**。新增 `test/dsh-client-host.test.mjs` 6 条（批 4 加 `get` 后为 **7 条**），**用真库不用 stub**（stub 会把那个变化一起写进假设）：①`remoteMethods()` 确实标到 `hash`/`list`；②两侧 invocation 集合一一对应；③宿主 schema 带 `_zod` 品牌（typert-loader 硬查）；④两侧 schema 对同一批边界值判决一致；⑤`list()`/`hash()` 原样转发不排序不过滤；⑥只声明真正需要的注入。装树不在的机器上跳过而非失败（保跨机重跑可跑）。为此加了测试缝 `__remoteInitializers__` 与 loader hook `test/helpers/dsh-install-tree*.mjs` | E-019 |
 | P2-1 | 防漂移测试只比 `descriptors[0]`；批 2 加描述符后新加的静默不被检查 | **已修**。改为按 `id` 配对遍历全部 descriptors，断言两侧 id 集合相等；每条 descriptor 必须有自己的边界值用例，**新加 descriptor 不加用例就红** | E-020 |
 | P2-2 | 变异只 spawn 包契约测试，防漂移的 3 条断言零变异覆盖 | **已修**。变异脚本扩到 15 条并按测试文件分派，新增 4 条描述符漂移变异（改字段 / 删一条 / 放宽 schema / 收紧 schema），两份测试各跑一次正控 | E-021 |
 | P2-3 | `cordis.patch.yml` 与 `dsh.bundle.patch` 完全无断言——删掉或改名后包能装上但**不注册宿主半边、面板整个不出现**，而契约测试照样全绿 | **已修**。加两条断言（`dsh.bundle.patch` 指向存在文件 ∧ 被 `files` 覆盖）+ 两条对应变异，均见红 | E-020 / E-021 |
@@ -36,7 +36,7 @@
 | P3-3 | `files` 列了不存在的 `README.md` | **已修**。写了真的 `README.md`（构建配方全文 + 外部前提三问，批 3 交付物提前落地），并加「files 列的每一项都真实存在」正向断言 + 变异 | E-020 / E-021 |
 | P3-4 | E-002 的 TDD 跑红无留存输出，不可复跑 | **接受，不追溯**。实现已存在，无法诚实地重造那次跑红。已改行为：此后跑红顺手存 `evidence/.../red-*.txt`。E-002 在账本里保留原样并标注此限制 | — |
 | P3-5 | `window.__RELAY_PANEL_PROBE__` 是全局，卸载不清理，长会话 stages 无界增长 | **接受，转批 4**。批 4 扫全局残留时一并处置：要么 disposer 里 delete，要么显式登记为「探针留存、不算残留」 | 待 E-xxx（批 4） |
-| P3-6 | 本机绝对路径 `C:\Users\nash\…` 进了仓内文档与证据 | **接受，收口时处理**。产物本身干净（安全扫描零命中），只是用户名落进 git 仓；收口前改成 `<npm-global>/…` 占位 | — |
+| P3-6 | 本机绝对路径 `C:\Users\nash\…` 进了仓内文档与证据 | **接受，收口时处理**。产物本身干净（安全扫描零命中），只是用户名落进 git 仓；收口前改成 `<npm-global>/…` 占位 | — **（2026-08-21 扩写，CP4 复核）：范围不止 `C:\Users\nash\…`，而是"所有本机绝对路径与主机标识"——`D:\MyFiles\ai-workflow\…` 在 brief / task_plan / progress / review 里都有；tailnet IP 与对端主机名已在 2026-08-21 就地占位（**范围限定：仅指入仓文档**；`evidence/dhr49/batch3/_raw/` 保留原始转录不占位，那批不入仓——若将来入仓或被 P4 主报告引用，先过占位）。收口时按扩写后的范围逐条过。**<br>⚠️ **2026-08-21 用户点选「先不管」（E-126）**：本条**保持 open**，暂不处理。这是用户的取舍判断，不是被挡住、也不是遗漏。
 
 > 复核者另有一项建议（`src/dsh-host/` 只有 mtime 佐证、非内容证明）：**已采纳**，落 `src/dsh-host/` 的 sha256 基线清单，见 E-018。
 
@@ -71,11 +71,11 @@
 
 | 比对对象 | 同类路径 | 定义是否一致 | 裁决 | 派出证据 |
 |---------|---------|-------------|------|---------|
-| 「分堆与排序只读源头 `group`」架构约束（§2.3） | CLI 侧实现 `<pilot>/relay-control-pilot/src/render/`（DHR_25 已用变异测试验证断言会咬） | <一致 / 不一致> | <无需处置 / 有意差异→<文档#锚点> / 遗漏待修> | |
-| 列表 Read Model 字段集 `relay.pilot-run-list/v1` | `<pilot>/relay-control-pilot/src/read-model/`（DHR_25 契约）、`src/dsh-host/`（DHR_26 原样透传） | <一致 / 不一致> | | |
-| 详情 Read Model 字段集 `relay.pilot-read-model/v1` | 同上 | <一致 / 不一致> | | |
-| 缺 detail 的 run 的降级语义（返回 null、不抛、不灭树） | `src/dsh-host/` `getRun()`（DHR_26 §10 教训）、CLI `show` 路径 | <一致 / 不一致> | | |
-| 树外插件包契约（零 bare import / `files` 派生运行时清单 / 变异验证断言） | `src/dsh-host/`（DHR_26 §17）、`src/dsh-absence-probe/` | <一致 / 不一致> | | |
+| 「分堆与排序只读源头 `group`」架构约束（§2.3） | CLI 侧实现 `<pilot>/relay-control-pilot/src/render/`（DHR_25 已用变异测试验证断言会咬） | **一致** | **无需处置** | 逐行核过 `src/render/text.mjs`：`renderRunGroups()` 分节序取自 `run.group` 首现序（:452）、成员取自 `run.group === group`（:455），`run_status` 只出现在**展示**位（:379 打状态词）。面板侧 `groupRuns()` 同形。⚠️ **一处必须写清的差异**：CLI 的 split 布局另有一层 `SECTION_LABELS`/`SECTION_OF_GROUP`（:420/:428，把四个 group 并成三节），**面板没做这层合并**——不影响本条约束（本条只管"不从 `run_status` 推导"），但**「共用一套词表」这句话在 split 那层不成立**，收口措辞要避开（CP2 范围外发现，已收） |
+| 列表 Read Model 字段集 `relay.pilot-run-list/v1` | `<pilot>/relay-control-pilot/src/read-model/`（DHR_25 契约）、`src/dsh-host/`（DHR_26 原样透传） | **一致** | **无需处置** | 契约在 `src/read-model/schema.mjs` 的 `LIST_ROOT_REQUIRED`（且 `LIST_ROOT_ALLOWED === LIST_ROOT_REQUIRED`，不留扩展口）。宿主网关 `listRuns()` 只 `return this.ctx.relayPilot.listRuns()`，**零加工**——一条变异「网关偷偷按 run_id 排序」见红（host 变异脚本）。面板侧只读不写，DM5b 的 §C/§D 断言证明交到视图手里的与宿主给的**逐字相等** |
+| 详情 Read Model 字段集 `relay.pilot-read-model/v1` | 同上 | **一致** | **无需处置** | 同上，走 `ROOT_REQUIRED`。网关 `get(runId)` 同样零加工——两条变异（「按 `depends_on` 重排棒序」「把 null 翻译成异常」）见红。面板的棒序表按 `nodes[]` **源顺序**逐行打印，`depends_on` 只被打印、从不参与决定，两条镜像断言 + 25 条变异钉住 |
+| 缺 detail 的 run 的降级语义（返回 null、不抛、不灭树） | `src/dsh-host/` `getRun()`（DHR_26 §10 教训）、CLI `show` 路径 | **一致** | **无需处置** | 宿主 `fixture-store.mjs:220` 明写「Return the detail model, or `null` when this run has no detail fixture」，两条 guard 都 `return null`。面板网关**原样转发那个 null**，不翻译成异常（`lib/index.mjs` 注释里点名了这条），屏上如实说"没有详情"、不当错误、不灭树。变异「把 null 翻译成异常」见红；DM5b §D 另有「`loadRun()` 的 null 分支也不例外」一条 |
+| 树外插件包契约（零 bare import / `files` 派生运行时清单 / 变异验证断言） | `src/dsh-host/`（DHR_26 §17）、`src/dsh-absence-probe/` | **不一致（其中"零 bare import"这一条）** | **有意差异 → `src/dsh-client/README.md#为什么必须是-tgz不能目录安装`** | DHR_26 的 Host 插件做到了**零 bare import**，所以目录装、tgz 装都能跑。**本包做不到**：`lib/index.mjs` 必须 `import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'`，`lib/typert.host.js` 必须 `import { z } from 'zod'`（`dsh-typert-loader` **硬查 `'_zod' in codec.schema'` 品牌**，结构化 `{parse}` 过不了）。后果：**本包必须 tgz 安装，不能目录 link**——`link:` 装的软链让 Node 按真实路径向上找 `node_modules`，永远走不到 profile 的 fallback 农场。已在 README 立节说明，并被 CP1 修正过原来"零 bare import"的过强说法（契约测试改成**白名单**钉死：客户端 bundle 只许 require 宿主提供的 `react` / `react/jsx-runtime`）。**其余两条一致**：`files` 白名单派生运行时清单、断言必配变异验证 |
 
 > `定义是否一致` 二选一：`一致` / `不一致`。
 > `裁决` 三选一：`无需处置` / `有意差异` / `遗漏待修`——`有意差异` 必带理由落点指针；`遗漏待修` 必在 `findings.md` 有对应条目。
@@ -83,7 +83,33 @@
 ## AI 提交区　⚠️ This is not human approval
 
 **Confidence Challenge**：对实现有没有 100% 信心？没有就逐条列 gap。
-- <收口时填>
+
+**没有。** 下面按"如果签下去，最可能后悔哪一条"排序。
+
+1. **DM2 差的那一格是真的差，不是措辞问题。** 目标机上 bundle 能载入、能挂 Remote、能注册视图、能注入样式——四步都证了；缺的是"页面上真渲染出数据"。它卡在 DSH 的一个 UX 前置条件（页签只在有会话时可见），而开会话要真发消息调模型、需要那台机器的 LLM 凭据，**我没有去配，也不该由 AI 代配**。这一格**补起来很便宜**：用户在那台机器上开个会话发一条消息即可。**在补上之前，DM2 不得记 pass。**
+
+2. **这张卡的断言被三轮复核各捅穿一次，每次都是"看着有网、实际有洞"。**
+   - CP4：DM5b 的纯 JSON 网**数组分支只遍历索引元素**，真 Cordis Context 挂 `runs.ctx` 上 12/12 放行。
+   - 轮 2：词表断言**期望值是手抄的第三份常量**，CLI 那侧改词全套照样全绿。
+   - CP2：分组的词法网**挪一层函数就绕开**，"按 `run_status` 静默丢 run"跑全量 60/60 全绿。
+
+   三次都不是"某条断言写错了"，而是**整类断言的方向搞反了**。修完当然更严了，但**我没有理由相信第四类不存在**——只是没人再去找。这是我对这张卡最大的不确定，也是我认为**换人复核这道闸不能省**的直接证据。
+
+3. **数字是实现方自证的。** 228 断言、六份变异脚本 89 条，这些**全是我自己跑的**。轮 2 复跑了 217 时点的全部数字（一字不差），CP2 复跑了 228 与 grouping 那份——**其余四份变异脚本没有任何第三方复验**，两个复核方也都在我返工**之前**结束。收口口径只能是「实现方自证 + 复核指出的洞已补」，**不能写成"经复核验证"**。
+
+4. **真机证据比的是文本，不是像素。** 所有 SHA-256 对照走的都是 `innerText`。字号、颜色、间距、布局塌陷这类回归它一概看不见。目前唯一的视觉证据是几张截图和一个 `paddingBottom` 读数——而其中一张（`list-screen-overlay.png`）**白底浅灰字根本读不出来**，当时却被用来撑四项结论。
+
+5. **"两个客户端共用一套词表"这句话现在只在一层上成立。** CLI 的 split 布局有一层 `SECTION_LABELS`/`SECTION_OF_GROUP`（把四个 group 并成三节），面板**没做这层合并**。不影响 DM6（DM6 只管"不从 `run_status` 推导"），但**收口措辞必须避开过宽的说法**，否则 P5/P6 会按一个不成立的前提往下建。
+
+6. **换机那轮跑的是 216 条的树。** 此后随三轮返工到 228。新增的都是纯 JS、与平台无关，风险很低——但引用时口径应是「换机时点 216/216」，不能拿当前总数往回套。
+
+7. **本机端到端全冷运行主动没跑。** 这是**成本判断，不是被挡住**——早先曾写成"pnpm 不让"，CP3 指出那是双标，已改。跨机那侧反而跑成了真正的全冷环境（目标机此前从没装过 DSH），一定程度上补了这个缺，但不等于本机也证了。
+
+8. **生产 bundle 上 export 了 6 个测试钩子**（F-014）。有意为之——没有打包器，测试要拿纯函数只能走 `exports`。判定为卫生问题、本卡不改，但它是树外插件对宿主暴露的真实表面，带给 P5/P6。
+
+**我认为可以签的部分**：DM3（两屏，机器证 + 人判都齐）、DM6（含真机可核产物）、DM4b（客户端半边）、DM5b。
+**我认为不能签的**：DM2。
+**我不裁的**：三态（`passed` / `passed-with-constraints` / `stopped-by-pilot`）归 DHR_50 由用户人判。
 
 **设计契约传导声明**（收口时只保留一条）：
 
@@ -94,7 +120,7 @@
 
 | 需求 / 人验项 | 场景与操作路径 | 证据 (E-00x) | 结论（满足 / 不满足 / 待人验） |
 |---|---|---|---|
-| 列表屏中途闸（完成条件 #6） | **可复跑操作路径**（下列命令均已实跑过，逐字可抄；只有第 ⑤ 步的「选工作区 / 开会话」必须由人在界面上点——自动化驱动不了原生文件夹选择框）：<br><br>`# ① 独立 Home（不碰日常 DSH 配置）`<br>`$env:DSH_HOME="D:\MyFiles\ai-workflow\dh-relay-p4-pilot\dsh-home"`<br><br>`# ② fixture 根 —— 每次起都要带，它在 boot 时解析、不是安装时固化`<br>`$env:RELAY_PILOT_FIXTURE_ROOT="D:\MyFiles\ai-workflow\dh-relay-p4-pilot\relay-control-pilot\testdata\fake"`<br><br>`# ③ 打包（唯一的"构建"步骤，无打包器）`<br>`cd D:\MyFiles\ai-workflow\dh-relay-p4-pilot\relay-control-pilot\src\dsh-client`<br>`npm pack --pack-destination ..\..\dist`<br><br>`# ④ 装（必须 tgz，不能目录 link，理由见 src/dsh-client/README.md）`<br>`dsh plugin --profile web add D:\MyFiles\ai-workflow\dh-relay-p4-pilot\relay-control-pilot\dist\personal-dsh-relay-panel-0.0.0-pilot.1.tgz`<br><br>`# ⑤ 起 web，浏览器开 http://127.0.0.1:3080`<br>`dsh --profile web`<br><br>**⑥ 界面上（必须人点）**：左侧「添加工作区」选任意目录 → 选中它 → 在输入框发一条消息建出会话 → 会话头部 tab 条上出现 **Relay** 页签 → 点它 → 列表屏（5 条 run 分 4 节）→ 刷新页面 → 重启 DSH 再看<br><br>⚠️ **tab 只在有会话时可见**（`conversation.view` 是 session 作用域，Trajectory 同理）；**第三方无法用代码切到自己的 tab**，只能手点。 | 待 E-xxx | **待人验**（v3 落点的渲染尚未由 AI 验到，见 findings 落点三版实录） |
+| 列表屏中途闸（完成条件 #6） | **可复跑操作路径**（下列命令均已实跑过，逐字可抄；只有第 ⑤ 步的「开会话」必须由人在界面上点——发消息要调模型、走用户额度。**「选工作区」那一步 2026-08-21 起不再是卡点**：原生文件夹框可绕（`dsh-host-directory-picker-auto` 按环境选后端，见 E-042），此处原写「自动化驱动不了」已过期）：<br><br>`# ① 独立 Home（不碰日常 DSH 配置）`<br>`$env:DSH_HOME="D:\MyFiles\ai-workflow\dh-relay-p4-pilot\dsh-home"`<br><br>`# ② fixture 根 —— 每次起都要带，它在 boot 时解析、不是安装时固化`<br>`$env:RELAY_PILOT_FIXTURE_ROOT="D:\MyFiles\ai-workflow\dh-relay-p4-pilot\relay-control-pilot\testdata\fake"`<br><br>`# ③ 打包（唯一的"构建"步骤，无打包器）`<br>`cd D:\MyFiles\ai-workflow\dh-relay-p4-pilot\relay-control-pilot\src\dsh-client`<br>`npm pack --pack-destination ..\..\dist`<br><br>`# ④ 装（必须 tgz，不能目录 link，理由见 src/dsh-client/README.md）`<br>`dsh plugin --profile web add D:\MyFiles\ai-workflow\dh-relay-p4-pilot\relay-control-pilot\dist\personal-dsh-relay-panel-0.0.0-pilot.1.tgz`<br><br>`# ⑤ 起 web，浏览器开 http://127.0.0.1:3080`<br>`dsh --profile web`<br><br>**⑥ 界面上（必须人点）**：左侧「添加工作区」选任意目录 → 选中它 → 在输入框发一条消息建出会话 → 会话头部 tab 条上出现 **Relay** 页签 → 点它 → 列表屏（5 条 run 分 4 节）→ 刷新页面 → 重启 DSH 再看<br><br>⚠️ **tab 只在有会话时可见**（`conversation.view` 是 session 作用域，Trajectory 同理）；**第三方无法用代码切到自己的 tab**，只能手点。 | E-029（人判）／E-039·E-053·E-054（AI 机器证） | **满足**——用户 2026-08-21 亲跑确认 tab 出现、点进去是列表屏（E-029，原话「对，是你说的」）。⚠️ **2026-08-21 按轮 2 复核更正**：此格原写「v3 落点的渲染尚未由 AI 验到」，那是写于 E-042 卸掉自动化卡点**之前**的登记，已过期且属**低报**——E-039 起 AI 已在浏览器里驱动全链路并取到屏内全文 SHA256。人判与机器证是两件事，现在两件都齐了 |
 | 端到端体验（完成条件 #7） | 同上——用户跑完的结论即本卡人判主证据 | | 待人验 |
 | 两屏渲染附属留痕（完成条件 #8） | AI 首次跑通时留截图 / 录屏入 `<pilot>/evidence/dhr49/`，供零上下文复核 worker 核 DM3 | | |
 
@@ -102,35 +128,40 @@
 
 | # | 完成条件 | 谁验 | 证据 (E-00x) | 达成? |
 |---|---------|------|-------------|------|
-| 1 | P4-DM2 可重复构建：①清净重跑 ∧ ②换机重跑（②失败①成立 → 记「本机可复现、跨机未成立」，不得记 pass） | AI | | |
-| 2 | P4-DM3 两屏各自可从统一 Read Model 重建；刷新与 DSH 重启后重建同一页面。**分屏登记**，详情屏未做记 N/A | AI | | |
-| 3 | P4-DM6 分节排序只读源头 `group`；两条镜像断言在 DSH 侧同样咬；词表外 `group` 自成一节原样打印 | AI | | |
-| 4 | P4-DM4b 装/卸/UI 注册清理有证据；P4-DM5b RC 私有类型不进 Read Model | AI | | |
-| 5 | 事实登记（不裁定）：构建配方全文 + 外部前提 + §4.4 止损逐条命中与否；**不自裁三态** | AI | | |
-| 6 | 人判 · 列表屏中途闸：用户亲跑后表态；「不如 CLI 好用」须拆 (i)/(ii)/(iii) 三类**由用户逐条点选**；止损优先；等待期不得开工详情屏编码 | 人 | | |
-| 7 | 需求境证据 · 主证据 = 用户亲跑端到端（可复跑操作路径写进本文件） | 人 | | |
-| 8 | 需求境证据 · 附属留痕：两屏渲染产物入 `<experiment-root>/evidence/` | AI | | |
+| 1 | P4-DM2 可重复构建：①清净重跑 ∧ ②换机重跑（②失败①成立 → 记「本机可复现、跨机未成立」，不得记 pass） | AI | ①E-056~E-060 + **真冷 store 重跑** E-065~E-071；②E-081~E-085（目标机全冷环境） | **否 —— 不得记 pass（已定格，不再等补）**。⚠️ **2026-08-21 用户点选「暂时不动目标机」（E-127）**：这一格**就此定格为未证**，不再等补。按 L-25 口径明确登记——这是**用户的取舍判断，不是被挡住、也不是遗漏**；补法一直在（目标机上开个会话即可），是决定不补。 ①成立（分两段，冷 store 出同字节，对比面盖住 tarball 全部成员）；②**差最后一格**：目标机上 216/216、bundle 逐字节相同、宿主半边答出同一 `fixture_hash`、客户端 bundle 四步加载齐全，但**面板渲染出数据未证**（该实例没有开着的会话，需目标机 LLM 凭据，AI 不代配）。⚠️ 本机端到端全冷运行**主动未跑**——判为不划算，**不是被挡住**（L-25） |
+| 2 | P4-DM3 两屏各自可从统一 Read Model 重建；刷新与 DSH 重启后重建同一页面。**分屏登记**，详情屏未做记 N/A | AI | 列表屏 E-102/E-103；详情屏 E-053/E-054/E-055 | **是（两屏都齐，且都在最终落点 `conversation.view` 上取的）**。两屏各有「首载 / 刷新 / DSH 重启」三次**屏内全文 SHA-256 逐字相同**。列表屏那次另用一正一负两道控排掉「其实没刷新」（标记消失 + **探针是新对象**），比 E-054 只有否定控强一档。⚠️ 此前列表屏只有 E-015/E-016，取自 v1/v2 两个**已废弃**落点，不顶格——轮 2 复核查出后补 |
+| 3 | P4-DM6 分节排序只读源头 `group`；两条镜像断言在 DSH 侧同样咬；词表外 `group` 自成一节原样打印 | AI | 单测 E-011/E-012/E-014 + **返工** E-105~E-107、E-115/E-116；真机 E-112/E-113 | **是**。9 条变异全见红（含 CP2 抓出的两种绕法：把 `run_status` 挪进 helper、挪到 region 之外）。**承重的是守恒断言，不是词法网**——这条量程已写进断言注释并固化成变异。真机两条镜像有可独立复核的 dump：镜像①run 搬进「已完成」节而**卡片状态词仍打「运行中」**；镜像②屏内全文 44 行**恰好 2 行不同**（fixture 指纹 + 那个状态词） |
+| 4 | P4-DM4b 装/卸/UI 注册清理有证据；P4-DM5b RC 私有类型不进 Read Model | AI | DM4b：E-037/E-038/E-050/E-052；DM5b：E-047~E-049 + **返工** E-072~E-080、E-087 | **是（各带量程）**。DM4b：`--dump-config` 三态 505→502→505，A≡C 逐字节，A/B diff 恰好面板 3 行；⚠️ E-052 主动登记 `--dump-config` 只答「配置里在不在」、答不了运行时——运行时那半由 E-037（HMR：探针身份变 + 无关标记存活，一正一负）与 E-038 承担。DM5b：17 条变异全见红，含 CP4 抓出的**数组盲点**（真 Cordis Context 挂 `runs.ctx` 曾 12/12 放行）；往返那条网的两个反例（稀疏数组、`-0`）已从注释升级成断言 |
+| 5 | 事实登记（不裁定）：构建配方全文 + 外部前提 + §4.4 止损逐条命中与否；**不自裁三态** | AI | 配方 `src/dsh-client/README.md`；外部前提同文件「外部前提」表；止损表 findings §4.4（E-095 推到终态）；F-013 三条 Linux 前提 | **是**。§4.4 七行全部推到实测终态——⚠️ 此前 4 行停在过程态、且有一行的理由是本卡**已撤回**的说法（把「判为不划算」写成「被 pnpm 挡住」），轮 2 复核查出。**三态未自裁**，归 DHR_50 由用户人判 |
+| 6 | 人判 · 列表屏中途闸：用户亲跑后表态；「不如 CLI 好用」须拆 (i)/(ii)/(iii) 三类**由用户逐条点选**；止损优先；等待期不得开工详情屏编码 | 人 | E-029（亲跑）/ E-031（判「三分桶作废，改记原话」）/ E-032（「放行，开干」） | **待用户签**（AI 不代签）。事实部分已齐：用户亲跑确认页签出现、点进去是列表屏；三分桶分类法**被用户当场判作废**、改记原话，DevPlan §3.2 口径已随之改。⚠️ 这道闸的**另一半（派 fresh 小审）当时漏了**，2026-08-21 补派，见本文件第一轮表 CP2 行 |
+| 7 | 需求境证据 · 主证据 = 用户亲跑端到端（可复跑操作路径写进本文件） | 人 | E-029 + 本文件「需求对齐证据」表里的可复跑操作路径 | **未达成（如实记，E-129）**——用户 2026-08-21 答「**没从零敲过**」：之前是 AI 在旁边带着跑的，不满足本条「中途不需要 AI 补任何未写在文档里的步骤」的要求。**签名区那个框不勾。** 事实部分：操作路径已逐字写进本文件且每条都实跑过；⚠️ 其中「选工作区」那步 2026-08-21 起**不再是卡点**（原生文件夹框可绕，E-042），仍需人点的只剩「开会话」——那要真发一条消息调模型，走用户额度 |
+| 8 | 需求境证据 · 附属留痕：两屏渲染产物入 `<experiment-root>/evidence/` | AI | `evidence/dhr49/batch2/`（含 `list-screen-rebuild.md`、`dm6-mirror-real-machine.md`、`mirror1-group-moved.png`、`_mirror/` 两份屏内全文 dump）、`batch4/`（详情屏截图、`lifecycle.txt`、`hmr-disposer-transcript.md`）、`batch3/`（`clean-rerun.txt`、`cross-machine.txt`、`_raw/`） | **是**。⚠️ 量程两条：①`batch2/list-screen-overlay.png` **白底浅灰字基本不可读**，撑不起 E-016 列举的任何一项，该落点已废弃、不重拍，E-016 已改记为「以 a11y 树转录为准」；②`_raw/` 保留原始转录（含真实 tailnet IP 与主机名），**不入仓**，若将来入仓先过占位 |
 
 **验收项元数据表**（每条稳定验收项一行；复合观察点拆两行共享稳定 ID）：
 
 | 命题 | 事实证明方式 | 最终裁决者(machine\|human) | 稳定 ID | 覆盖态(等价覆盖\|部分\|否\|无法取证) | 等价判据 | 实际执行结果 | 版本环境 | 独立 oracle | 未覆盖边界 | contractVersion | arbiterCapability | arbiterAuthorization |
 |------|------------|----------|--------|-------|---------|-------------|---------|-----------|-----------|----------------|------------------|---------------------|
-| 树外 Client Bundle 有可重复构建配方并可加载 | 清净重跑 + 换机重跑转录，产出 bundle 可再次加载 | machine | P4-DM2 | | 两条判据都成立才算等价覆盖 | | dsh 0.1.0-rc.7 / Windows 11 + `ssh thinkpad` | | | | | |
-| 列表屏可从 `relay.pilot-run-list/v1` 重建（刷新/重启后同一页面） | 三次渲染产物比对 | machine | P4-DM3-list | | 首载 / 刷新 / 重启三次逐项一致 | | dsh 0.1.0-rc.7 | fixture 磁盘原文 | | | | |
-| 详情屏可从 `relay.pilot-read-model/v1` 重建 | 同上 | machine | P4-DM3-detail | | 同上；未做则记 N/A，**不得由 list 半绿推全过** | | | | | | | |
-| 分堆排序只读源头 `group`，两条镜像断言在第二个独立客户端上成立 | 变异测试：改 `group` 必移动 / 只改 `run_status` 必逐字不变 / 词表外 `group` 自成一节 | machine | P4-DM6 | | 三条断言均先红后绿且变异体见红 | | | CLI 侧同约束实现 | | | | |
-| Bundle 可安装/卸载，卸载后 UI 注册清理 | 装/卸/装回三态转录 + `--dump-config` 前后对照 | machine | P4-DM4b | | | | | | | | | |
-| 面板消费路径上 RC 私有类型没有进入 Read Model | 纯 JSON 深等断言（无函数 / 无 Cordis 活对象） | machine | P4-DM5b | | | | | | | | | |
-| 列表屏体验是否可接受（中途闸） | 用户亲跑后在对话表态 + 三类归属逐条点选 | human | P4-DHR49-H-midgate | | 不以截图代替亲跑 | | | | | | | |
-| 端到端可复跑操作路径是否真能让用户自己跑起来 | 用户照文档实跑 | human | P4-DHR49-H-e2e | | | | | | | | | |
+| 树外 Client Bundle 有可重复构建配方并可加载 | 清净重跑 + 换机重跑转录，产出 bundle 可再次加载 | machine | P4-DM2 | **部分** | 两条判据都成立才算等价覆盖 | ①成立（含真冷 store 重跑，对比面盖住 tarball 全部成员）；②**差最后一格**：目标机 216/216 + bundle 逐字节相同 + 宿主半边同 `fixture_hash` + 客户端四步加载齐全，**但面板渲染出数据未证** | dsh 0.1.0-rc.7 / Windows 11 + Node v24.12.0；目标机 Ubuntu 24.04 / Node v24.12.0（便携）| 安装副本 vs 源码逐文件 sha256（不看 tarball 哈希——它在改文档与换平台两个维度上都会变） | ①本机端到端全冷运行（**主动未跑，判为不划算**，非阻塞）②目标机上的面板渲染 | relay.pilot-run-list/v1 · relay.pilot-read-model/v1（fixture `67fb18b3…`） | 机器可判：字节比对与加载探针都是确定性的 | AI 自证；CP3 两轮复核只读，未复跑修复后的树 |
+| 列表屏可从 `relay.pilot-run-list/v1` 重建（刷新/重启后同一页面） | 三次渲染产物比对 | machine | P4-DM3-list | **等价覆盖** | 首载 / 刷新 / 重启三次逐项一致 | 屏内全文 SHA-256 三次均 `076c9d4a…`（663 字符），run 顺序三次均 `0005/0007/0002/0001/0006`；一正一负两道控排除「其实没刷新」 | dsh 0.1.0-rc.7 / Windows 11 + Node v24.12.0；落点 `conversation.view`（v3，最终落点）| fixture 磁盘原文 + CLI `list` 输出 | 比的是 `innerText` 不是像素；同一台机器同一浏览器；跨机的列表屏渲染未证 | relay.pilot-run-list/v1 · relay.pilot-read-model/v1（fixture `67fb18b3…`） | 机器可判 | AI 自证（E-102/E-103）；轮 2 复核指出缺口后补，**复核方未见此证据** |
+| 详情屏可从 `relay.pilot-read-model/v1` 重建 | 同上 | machine | P4-DM3-detail | **等价覆盖** | 同上；未做则记 N/A，**不得由 list 半绿推全过** | 屏内全文 SHA-256（680 字符）在 DSH 重启（E-053）与浏览器刷新（E-054）后逐字符相同 | dsh 0.1.0-rc.7 / Windows 11 + Node v24.12.0；落点同上 | fixture 磁盘原文 + CLI `show` 输出 | 同上；另 E-054 的刷新排除只有**否定控**（排不掉 eval 上下文切换），比 E-103 弱一档 | relay.pilot-run-list/v1 · relay.pilot-read-model/v1（fixture `67fb18b3…`） | 机器可判 | AI 自证；CP4 复核只读 |
+| 分堆排序只读源头 `group`，两条镜像断言在第二个独立客户端上成立 | 变异测试：改 `group` 必移动 / 只改 `run_status` 必逐字不变 / 词表外 `group` 自成一节 | machine | P4-DM6 | **等价覆盖** | 三条断言均先红后绿且变异体见红 | 单测 9 条变异全见红（含两种绕法：挪进 helper、挪出 region）；真机镜像①run 搬进「已完成」节而**状态词仍打「运行中」**，镜像②屏内全文 44 行**恰好 2 行不同** | dsh 0.1.0-rc.7 / Windows 11 + Node v24.12.0 | CLI 侧同约束实现（`src/render/text.mjs` + `test/list.test.mjs` 的守恒断言） | 真机只覆盖了 `fake-run-0001` 一条 run 的一次改动；split 布局那层的 `SECTION_LABELS` 两侧**不共用**（不影响本条，但别引用成"共用一套词表"） | relay.pilot-run-list/v1 · relay.pilot-read-model/v1（fixture `67fb18b3…`） | 机器可判 | AI 自证；**CP2 复核复跑确认 8/8**（第 9 条是回信后加的，未经复核复跑） |
+| Bundle 可安装/卸载，卸载后 UI 注册清理 | 装/卸/装回三态转录 + `--dump-config` 前后对照 | machine | P4-DM4b | **部分（客户端半边等价覆盖）** | 三态 505→502→505、A≡C 逐字节、A/B diff 恰好面板 3 行 | 成立。运行时那半由 E-037（HMR：探针身份变 + 无关标记存活，一正一负）与 E-038 承担 | dsh 0.1.0-rc.7 / Windows 11 + Node v24.12.0 | `dsh --dump-config` 输出 + DevTools DOM 查询 | `--dump-config` **只答"配置里在不在"，答不了运行时**（E-052 主动登记）；宿主半边的卸载清理属 DHR_26 范围 | relay.pilot-run-list/v1 · relay.pilot-read-model/v1（fixture `67fb18b3…`） | 机器可判 | AI 自证；CP4 复核只读 |
+| 面板消费路径上 RC 私有类型没有进入 Read Model | 纯 JSON 深等断言（无函数 / 无 Cordis 活对象） | machine | P4-DM5b | **等价覆盖** | 宿主网关侧与客户端消费侧各验一遍 + 镜像断言（掺活对象必须见红） | 17 条变异全见红。⚠️ 第一版有**数组盲点**：真 Cordis Context 挂 `model.runs.ctx` 曾 12/12 放行（CP4 抓出，已修） | dsh 0.1.0-rc.7 / Windows 11 + Node v24.12.0；真 Cordis Context/Fiber + 真 zod | DHR_26 的 `isPlainJson`（§B 交叉对照，**已知它共享同一数组盲点**，见 F-010 附注——两侧盲点相同的对照等于两个瞎子互相担保） | 不证 Typert 传输层；跨 realm 用"原型链根"代替身份判等 | relay.pilot-run-list/v1 · relay.pilot-read-model/v1（fixture `67fb18b3…`） | 机器可判 | AI 自证；CP4 复核只读，未复跑修复后的树 |
+| 列表屏体验是否可接受（中途闸） | 用户亲跑后在对话表态 + 三类归属逐条点选 | human | P4-DHR49-H-midgate | **待人判** | 不以截图代替亲跑 | 用户 2026-08-21 亲跑确认（E-029）；⚠️ **三分桶分类法被用户当场判作废、改记原话**（E-031），DevPlan §3.2 口径已随之改；随后「放行，开干」（E-032） | 同上 | 用户本人 | ⚠️ 这道闸的**另一半（派 fresh 小审）当时漏了**，2026-08-21 补派 | — | 人判：体验好坏本就只有用户能答 | **待用户签，AI 不代签** |
+| 端到端可复跑操作路径是否真能让用户自己跑起来 | 用户照文档实跑 | human | P4-DHR49-H-e2e | **否（未取证）** | 用户照着敲能自己跑起来 | **未做（E-129）**：用户答「没从零敲过」，之前是 AI 在旁边带着跑的，不满足「中途不问 AI 补充」。操作路径本身逐字写进本文件「需求对齐证据」表且每条实跑过；⚠️「选工作区」那步 2026-08-21 起不再是卡点（E-042），仍需人点的只剩「开会话」 | 同上 | 用户本人 | 配方在一台**无遗留状态**的机器上暴露过一个 `mkdir` 缺步（换机重跑抓到，已补）——本机永远试不出这类缺陷 | — | 人判 | **待用户签，AI 不代签** |
 
 **业务化五段展示区**（人验项证据先走这五段）：
 
-- 要证明啥：<收口时填>
-- 期望值：<…>
-- 实际值：<…>
-- 差没差：<…>
-- 证据局限：<…>
+- **要证明啥**：一个零共享代码的第二客户端，能不能从同一份 Read Model 重建出与 CLI 语义一致的两屏，并且**不自己发明分组**。这是 P4「DSH 工作台」路线可不可行的最小验证。
+- **期望值**：两屏都能从 fixture 重建（刷新/重启后同一页面）；分堆排序**只读源头 `group`**；词表与 CLI 共用；面板消费路径拿到的是脱离的纯 JSON；装得上卸得掉、卸载后 UI 注册清干净；配方在清净重跑与换机重跑下都能产出可加载的 bundle。
+- **实际值**：DM3 / DM6 / DM4b / DM5b **四条成立**，各带已登记的量程。**DM2 只成立一半**——判据①成立，判据②差「面板渲染出数据」最后一格。全量 228 断言、六份变异脚本 89 条全见红。
+- **差没差**：**差 DM2 那一格**，且这一格**不是 bundle 的问题**——目标机上 bundle 已证明能载入、能挂 Remote、能注册视图、能注入样式；缺的是 DSH 的一个 UX 前置条件（页签只在有会话时可见），而开会话要真发消息调模型、需要那台机器的 LLM 凭据，**AI 不代配**。
+- **证据局限**（挑最要紧的说）：
+  1. 全部真机证据比的是 **`innerText`，不是像素**——字号、颜色、间距的回归看不见（那部分只有 `paddingBottom` 读数与截图）。
+  2. **228/89 这些数字是实现方自证**。CP3/CP4 都在返工**之前**结束，没复跑过修完的树；轮 2 复跑了 217 时点的全部数字，CP2 复跑了 228 与 grouping 那份，**其余四份变异脚本没有第三方复验**。
+  3. 换机那轮跑的是 **216 条的树**，不是当前这棵。新增的都是纯 JS、与平台无关，但引用时口径应是「换机时点 216/216」。
+  4. **「共用一套词表」这条主张在 split 布局那层不成立**——CLI 的 `SECTION_LABELS`/`SECTION_OF_GROUP` 把四个 group 并成三节，面板没做这层合并。不影响 DM6（DM6 只管「不从 `run_status` 推导」），但收口措辞要避开过宽的说法。
+  5. **生产 bundle 上 export 了 6 个测试钩子**（F-014）。判定为卫生问题、本卡不改，带给 P5/P6。
 
 **风险放行账表**：
 
@@ -167,11 +198,11 @@
 
 ---
 
-- 确认记录：<AI 回填：确认方式 + 用户选择/答复摘要>
+- 确认记录：**2026-08-21 对话内点选**。用户认可**两轮复核结论与全部返工**（E-128），但**明确选择"签名先不动"**——本次确认**不构成 verify 签字**。同轮另确认：签名区目的二（H-e2e）**没从零敲过**，该格记未做（E-129）。<br>⚠️ 一句泛泛的「认可」不被视为签字授权；签名与三态须就**具体那件事**单独表态（确认闸 G5）。
 - verify 提交 SHA：<AI 代打后回填；`git log --grep="^verify"` 可查>
 - 签名：hyf（<chat-confirm 代签 / 本人敲 git>）　　时间：
 
-→ 解锁状态：**未解锁**（收口后改「已验收」，随后回 DevPlan 任务表销户）
+→ 解锁状态：**未解锁**（收口后改「已验收」，随后回 DevPlan 任务表销户）<br>**2026-08-21 状态**：AI 侧交付与账目已齐，**卡在两处人判**——①目的二 H-e2e 未做（用户答"没从零敲过"）②用户选择暂不签字。两处都不是 AI 能补的。
 
 > 铁律：没有对应的 `verify(dh-relay): DHR_49 …` git 提交，本卡不许标"已完成"。
 > **本卡专有**：DSH 三态标签（`passed / passed-with-constraints / stopped-by-pilot`）**不在本卡落**——本卡只登记事实，三态由 DHR_50 人判收敛。本卡状态机只用「已完成（含判否事实）」或「已取消并留因」。
