@@ -160,7 +160,7 @@
 ---
 
 - 确认记录：2026-08-22 用户在对话内查看证据展示（23/23 测试 + 四闸输出 + capability_hash + 两轮复核与四路复核结论摘要）后明示答复「认可」——即「已查看证据，认可执行本地收口」；授权包=精确本地 squash 合入 + 合入复验 + verify 代签 + DevPlan/workspace 回填 + worktree/branch 清理；未缩窄。
-- verify 提交 SHA：<AI 代打后回填；`git log --grep="^verify"` 可查>
+- verify 提交 SHA：`5971d8d`（2026-08-22；`git log --grep="^verify"` 可查）
 - 签名：hyf（chat-confirm 代签）　　时间：2026-08-22
 
 → 解锁状态：**已验收**（随后各任务回 DevPlan 任务表销户）
