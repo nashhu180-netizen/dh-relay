@@ -14,6 +14,11 @@ const EVENT_SCHEMA_ID = 'relay.event/v2';
 // 它不推进任何状态，终态后仍必须可写（可追溯）。
 const LIFECYCLE_KINDS = new Set(['node_started', 'attempt_started', 'checkpoint_recorded', 'human_input_requested']);
 
+// F-011（DHR_29 移交，DHR_51 封堵）：终态 kind 只能由 appendResult 记账。公开 raw 入口
+// 一旦放行它们，就能绕过终态守卫直接污染回放——attempt_* 三兄弟在 schema 里带
+// node_id/attempt_id、看起来像正常事件，实则越过「结果 → 终态」的唯一通道。
+const TERMINAL_RESULT_KINDS = new Set(['attempt_succeeded', 'attempt_failed', 'attempt_orphaned']);
+
 let validatorCache;
 function eventValidator() {
   validatorCache ??= loadAjv();
@@ -76,7 +81,7 @@ async function writeAtomic(path, value) {
 
 export { replayRun };
 
-function createHandle({ root, run, events, receipts, checkpoints, results, enqueue }) {
+function createHandle({ root, run, events, receipts, checkpoints, results, enqueue, writeGuard = null }) {
   const runPath = join(root, 'run.json');
   const eventsPath = join(root, 'events.jsonl');
   const statePath = join(root, 'state.json');
@@ -84,6 +89,15 @@ function createHandle({ root, run, events, receipts, checkpoints, results, enque
   const checkpointsPath = join(root, 'checkpoints');
   const resultsPath = join(root, 'results');
   const quarantinePath = join(root, 'quarantine');
+
+  // fencing（DHR_51 · 移交②）：可选写权卫兵，在串行队列内、每次变更落盘前调用；
+  // 抛错即中止本次变更（事件与工件都不落盘）。Store 不理解卫兵语义——保持域中立。
+  const runWrite = writeGuard
+    ? (job) => enqueue(async () => {
+        await writeGuard();
+        return job();
+      })
+    : enqueue;
 
   function ensureKnownNode(nodeId) {
     if (!run.nodes.some((node) => node.node_id === nodeId)) throw new Error('E_BAD_VALUE:unknown-node');
@@ -147,14 +161,17 @@ function createHandle({ root, run, events, receipts, checkpoints, results, enque
   return {
     get events() { return [...events]; },
     appendEvent(input) {
-      return enqueue(async () => {
+      return runWrite(async () => {
+        if (TERMINAL_RESULT_KINDS.has(input?.kind)) {
+          throw new Error(`E_TERMINAL_STATE_CONFLICT:${input.kind}-via-raw-append`);
+        }
         const event = await emitEvent(input);
         await persistState();
         return event;
       });
     },
     registerReceipt(receipt) {
-      return enqueue(async () => {
+      return runWrite(async () => {
         requireId(receipt?.receipt_id, 'receipt-id');
         requireId(receipt?.attempt_id, 'attempt-id');
         ensureKnownNode(requireId(receipt?.node_id, 'node-id'));
@@ -173,7 +190,7 @@ function createHandle({ root, run, events, receipts, checkpoints, results, enque
       });
     },
     appendCheckpoint(checkpoint) {
-      return enqueue(async () => {
+      return runWrite(async () => {
         if (!checkpoint || typeof checkpoint !== 'object') throw new Error('E_BAD_VALUE:checkpoint-required');
         // 判定次序：身份链 → 幂等 → 终态守卫。身份先行堵住「冒用 attempt_id
         // 借同 key 同 digest 白拿 idempotent ack」的洞；幂等在终态守卫之前，
@@ -200,7 +217,7 @@ function createHandle({ root, run, events, receipts, checkpoints, results, enque
       });
     },
     appendResult(result) {
-      return enqueue(async () => {
+      return runWrite(async () => {
         if (!result || typeof result !== 'object') throw new Error('E_BAD_VALUE:result-required');
         const current = currentReceipt(result.node_id);
         const identityHolds = current
@@ -231,7 +248,7 @@ function createHandle({ root, run, events, receipts, checkpoints, results, enque
   };
 }
 
-export async function createStore({ root, run }) {
+export async function createStore({ root, run, writeGuard = null }) {
   validateRunSemantics(run);
   await mkdir(root, { recursive: true });
   const runPath = join(root, 'run.json');
@@ -249,6 +266,7 @@ export async function createStore({ root, run }) {
     checkpoints: new Map(),
     results: new Map(),
     enqueue: createWriteQueue(),
+    writeGuard,
   });
 }
 
@@ -331,7 +349,7 @@ async function loadCheckpoints(dir) {
  * 由全量事件重算并原子重写（自愈「append 与 persist 之间被强杀」的半更新现场）。
  * 任何损坏一律 fail-closed（E_EVENT_LOG_CORRUPT / E_STORE_CORRUPT），不做部分恢复。
  */
-export async function openStore({ root }) {
+export async function openStore({ root, writeGuard = null }) {
   let run;
   try {
     run = JSON.parse(await readFile(join(root, 'run.json'), 'utf8'));
@@ -353,5 +371,6 @@ export async function openStore({ root }) {
     checkpoints,
     results,
     enqueue: createWriteQueue(),
+    writeGuard,
   });
 }

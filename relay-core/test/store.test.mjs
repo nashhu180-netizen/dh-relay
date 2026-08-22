@@ -304,3 +304,62 @@ test('Store：node_states 覆盖全集与 done<=total（schema 表达不了、�
   assert.deepEqual(final.progress, { done: 2, total: 2 }, 'F-070 边界：全部 succeeded 时 done==total');
   assert.equal(final.run_status, 'succeeded');
 });
+
+test('Store：F-011 封堵——终态 kind 不得经 raw appendEvent 落账（DHR_29 移交，DHR_51 承接）', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'dhr51-f011-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const store = await createStore({ root, run });
+  await store.registerReceipt({ receipt_id: 'receipt-r1', node_id: 'node-a', attempt_id: 'attempt-1' });
+  const before = await readFile(join(root, 'events.jsonl'), 'utf8');
+  const beforeCount = store.events.length;
+  const rawTerminal = [
+    { kind: 'attempt_succeeded', node_id: 'node-a', attempt_id: 'attempt-1', at: '2026-08-22T00:00:00Z' },
+    { kind: 'attempt_failed', node_id: 'node-a', attempt_id: 'attempt-1', at: '2026-08-22T00:00:00Z', reason: 'E_EXECUTOR_KILLED' },
+    { kind: 'attempt_orphaned', node_id: 'node-a', attempt_id: 'attempt-1', at: '2026-08-22T00:00:00Z', reason: 'E_EXECUTOR_ORPHANED' },
+  ];
+  for (const input of rawTerminal) {
+    await assert.rejects(
+      () => store.appendEvent(input),
+      (error) => {
+        const message = String(error.message);
+        return message === `E_TERMINAL_STATE_CONFLICT:${input.kind}-via-raw-append`;
+      },
+      `${input.kind} 必须以 -via-raw-append 精确子码拒绝`,
+    );
+  }
+  assert.equal(store.events.length, beforeCount, '被拒的 raw 终态事件不得进内存账');
+  assert.equal(await readFile(join(root, 'events.jsonl'), 'utf8'), before, '被拒的 raw 终态事件不得落盘');
+
+  // 唯一合法通道照常工作：appendResult 产生的终态事件不受影响。
+  assert.deepEqual(
+    await store.appendResult({ receipt_id: 'receipt-r1', node_id: 'node-a', attempt_id: 'attempt-1', outcome: 'succeeded', payload_digest: 'a'.repeat(64), at: '2026-08-22T00:00:01Z' }),
+    { ok: true, idempotent: false },
+    'appendResult 仍是终态的唯一入口',
+  );
+  assert.equal(store.events.at(-1).kind, 'attempt_succeeded');
+});
+
+test('Store：writeGuard 失守时拦截一切变更，事件与工件零落盘（fencing 接线）', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'dhr51-guard-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  let authorityValid = false;
+  const store = await createStore({
+    root,
+    run,
+    writeGuard: async () => {
+      if (!authorityValid) throw new Error('E_LEASE_HELD:lease-lost');
+    },
+  });
+  await assert.rejects(() => store.appendEvent({ kind: 'run_created', at: '2026-08-22T00:00:00Z' }), /E_LEASE_HELD/);
+  await assert.rejects(() => store.registerReceipt({ receipt_id: 'receipt-r1', node_id: 'node-a', attempt_id: 'attempt-1' }), /E_LEASE_HELD/, '失守期连 receipt 都不得登记');
+  assert.equal((await readdir(join(root, 'receipts'))).length, 0, '卫兵拒绝不得留 receipt 工件');
+  assert.equal(await readEventsFileHelper(root), '', '卫兵拒绝不得留任何事件');
+
+  authorityValid = true; // 权威恢复（≙ 合法宿主重新持有 lease）
+  assert.deepEqual(await store.registerReceipt({ receipt_id: 'receipt-r1', node_id: 'node-a', attempt_id: 'attempt-1' }), { ok: true, idempotent: false });
+  assert.notEqual(await readEventsFileHelper(root), '', '卫兵放行后写入恢复');
+});
+
+async function readEventsFileHelper(root) {
+  return readFile(join(root, 'events.jsonl'), 'utf8').catch(() => '');
+}

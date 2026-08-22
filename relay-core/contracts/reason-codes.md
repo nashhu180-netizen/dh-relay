@@ -40,7 +40,7 @@
 | `E_IDENTITY_MISMATCH` | 结果或检查点的 `receipt_id` / `attempt_id` 与当前 Attempt 的回执身份链不符 → **结果**按 B11 隔离（`late_result_quarantined` 事件 + 隔离区工件，可追溯、可人工裁决、不改写已定终态）；**检查点**拒识即返、不留痕不隔离（v2 与 v1 的有意差异：拒绝是"未发生的写入"，落盘路径只有 result 一条，见 `compat-matrix.md` §4b `checkpoint_rejected` 行与 as-built relay-core §3.5） |
 | `E_LEASE_HELD` | 第二个宿主试图取得同一 Run 的写权，而 lease 未过期。唯一写者由 lease 保证（P5-M3，DHR_29 承接） |
 
-> **边界声明（DHR_29 收敛批补）**：本表是**协议层 reason code 的全集权威**。Store 实现另有若干**进程内异常前缀**——`E_SCHEMA_INVALID:*`（写前契约校验拒绝）、`E_EVENT_LOG_CORRUPT:*` / `E_STORE_CORRUPT:*`（openStore 完整性校验）、`E_RUN_NOT_FOUND`、`E_BAD_VALUE:*`（入参守卫）——它们**不是协议码、不上线**，只出现在库抛出的异常消息里；机器侧由 `relay.common/v1` 的 `reason_code` pattern 兜住「混进协议载荷」的情形。新增协议码必须先进本表；内部前缀不得越界当协议码用。
+> **边界声明（DHR_29 收敛批补 + DHR_51 增补）**：本表是**协议层 reason code 的全集权威**。Store / Runtime 实现另有若干**进程内异常前缀**——`E_SCHEMA_INVALID:*`（写前契约校验拒绝）、`E_EVENT_LOG_CORRUPT:*` / `E_STORE_CORRUPT:*`（openStore 完整性校验）、`E_RUN_NOT_FOUND`、`E_BAD_VALUE:*`（入参守卫）、`E_GITCHECK_FAILED:*`（git check-ignore 前置检查失败）、`E_REPO_LOCK_TIMEOUT`（仓级/索引锁取得超时）、`E_LEASE_ACQUIRE_TIMEOUT`（lease 取得超时，有界防自旋）、`E_LEASE_HELD:<detail>`（如 `:lease-lost`，fencing 失效子码）——它们**不是协议码、不上线**，只出现在库抛出的异常消息里；机器侧由 `relay.common/v1` 的 `reason_code` pattern 兜住「混进协议载荷」的情形。新增协议码必须先进本表；内部前缀不得越界当协议码用。
 
 ## 五、Executor 生命周期（ADR-002 四问的直接产出）
 

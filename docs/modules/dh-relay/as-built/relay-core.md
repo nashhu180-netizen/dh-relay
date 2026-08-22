@@ -100,7 +100,24 @@ relay-core/
 - **写前契约校验（F-004）**：每个事件落盘前过 `relay.event/v2`（ajv），拒绝即抛 `E_SCHEMA_INVALID:*`、不落盘不留痕。
 - **脱敏（宪章#6）**：accepted result 与隔离区走同一 sanitizer，覆盖对象键、行内键值、`sk-` 与 PEM。
 - **边界**：本层不认识客户端与宿主——detached 宿主 / lease / 发号归 DHR_51，RPC 归 DHR_52。
-- **已知边界（轮 2 复核登记，非缺陷）**：①工件先落盘、事件后追加，两文件之间存在跨文件撕裂窗口——openStore 以事件账为真值重建，撕裂现场表现为「有工件无事件」，幂等键仍可对上但不做交叉断言（彻底消除需单文件事务或 WAL，归 DHR_51 恢复路径评估）；②`appendEvent` 是库级原始入口，直接投递 `attempt_succeeded/failed/orphaned` 可绕过终态守卫——运行期只应经 `appendResult` 走结果，raw 投递的封堵归 DHR_51（runtime 层不暴露 raw 入口）。
+- **已知边界（DHR_29 轮 2 登记 + DHR_51 收口刷新）**：①跨文件撕裂窗口——**评估结论（DHR_51 F-102）**：有意接受、不实施 WAL。单宿主 lease 独占下撕裂只源于自身强杀；openStore 以事件账为真值，「有工件无事件」经幂等键重投收敛；DHR_52 引入 RPC 后写者仍唯一（lease+fencing）。重启评估触发条件：出现「工件存在与否本身参与状态判定」的机制，或现场迁到非本地 FS。②**F-011 已封堵（DHR_51 关账）**：公开 `appendEvent` 对 `attempt_succeeded/failed/orphaned` 抛 `E_TERMINAL_STATE_CONFLICT:<kind>-via-raw-append`，终态只经 `appendResult`；③renew 采用 unlink+wx（非 rename 覆写），租约文件在续租瞬间微秒级缺失——inspect 可能闪 dead，无操作面影响（R1-03 修复后登记）；④PID 复用残余（F-103）：死宿主 pid 被无关进程复用会误报 alive 至 TTL 过期，独占性不受影响；⑤损坏租约（open-wx 与 writeFile 之间被强杀）由 acquire 回收 + 有界超时 `E_LEASE_ACQUIRE_TIMEOUT`（F-109），绝不无限自旋。
+
+### 3.6 `runtime/` —— DHR_51 的 Detached 宿主 / lease / 发号 / 恢复 / 三态读数
+
+| 文件 | 干什么 |
+|---|---|
+| `runid.mjs` | D23 规范化：`R<nnn>-<slug>-<yyyyMMdd>`；slug ASCII 小写/数字/短横线 ≤30 首尾非短横线，五反例拒绝且不静默截断（`E_RUN_ID_INVALID:<why>:<原输入>`） |
+| `pidalive.mjs` | `process.kill(pid,0)` 探活（ESRCH 死 / EPERM 活）；PID 复用残余登记为已知边界 |
+| `repolock.mjs` | 仓级锁：wx 独占 + 陈旧回收（过期或死 pid）+ 超时 `E_REPO_LOCK_TIMEOUT`；**空文件=在途锁不偷**（临界区无 fencing，偷锁=双持有人，R1-02 修复）；payload 带 nonce，release 只删 pid+nonce 双匹配的自己 |
+| `lease.mjs` | Run 级宿主 lease：`host-lease.json` 为唯一写者仲裁物；接管=过期或死持有人或损坏（`LEASE_CORRUPT` 区分，unlink+wx，fencing 兜底自愈）；`E_LEASE_HELD` 拒第二宿主；renew=**新鲜度闸 + unlink+wx**（绝不 rename 覆写接管者租约，R1-03）；有界超时 `E_LEASE_ACQUIRE_TIMEOUT` 防自旋；inspect 三态 alive/lease_expired/dead，与 acquire 成败构成可测不变量 |
+| `gitignore.mjs` | start 前置闸：`git check-ignore` 语义判定（F-009 任意深度反例），缺失 `E_GITIGNORE_MISSING`，不改业务仓文件；其它失败 `E_GITCHECK_FAILED` fail-closed |
+| `startrun.mjs` | 发号：slug 规范 → gitignore 闸 → **索引旁锁 `<indexPath>.lock`**（跨仓并发共享一把，E14 遗漏修复）→ runs.json 该仓分段 max+1 → 复合键查重 → 建 run 根 + createStore + `run_created` → 锁内原子回写索引；索引形状 `{version:1, repos:{[canonicalRepo]:{max_seq, runs}}}`（内部形态，演进归后续卡）；失败路径孤儿 run 根观察登记（F-106） |
+| `host.mjs` / `host-main.mjs` | 会话：闸 → 取/接管 lease → openStore（writeGuard=fencing）→ 补记 `lease_expired`/`lease_acquired` → tick 续租 → 优雅释放 / 失租停机不删别人；`startDetachedHost` detached+unref 脱离终端存活；本卡宿主=生命周期保持器，无 executor（DHR_31 行使） |
+| `status.mjs` | 只读三态读数：`node relay-core/runtime/status.mjs <run_id> [--root <p>]`，输出 JSON；三态来源仅 lease 文件，账面只渲染 Store 产出的 state.json/events.jsonl，**不自造协议对象、不注册 bin** |
+
+**发号锁位置（E14 遗漏修复）**：锁挂在 `<indexPath>.lock` 而非仓内——每仓一把锁只能串行化同仓，跨仓并发会丢 runs.json 分段（后写覆盖先写 bucket）。共享索引锁 + wx 仲裁 + 超时陈旧回收，跨仓 4 仓大索引 10 轮 0 丢段（轮1 探针实证）。
+
+**host-lease.json 是运行现场内部形态，不是协议对象**：无 protocol 字段、不进契约、不进能力指纹（实施提示 3）；D18 的「宿主可执行指纹」要素有意不承接（F-107 登记，RPC 阶段需要时再评估）。
 
 ## 4. 技术选型的裁决出处
 
@@ -115,11 +132,11 @@ relay-core/
 
 ## 5. 五道机器闸各自在守什么
 
-在 `relay-core/` 下跑。以下数字**2026-08-22 由 DHR_29 收敛批实跑刷新**（上一版为 DHR_28 时点快照，hash `3ccf3b10…` 已被批次 1/2 的授权契约修订取代）。
+在 `relay-core/` 下跑。以下数字**2026-08-22 由 DHR_51 收口实跑刷新**（上一版为 DHR_29 收敛批时点）。
 
 | 闸 | 命令 | 当前实际输出 | 它独占守住的是什么 |
 |---|---|---|---|
-| ① 单元测试 | `npm test` | **23 条全过**（contracts 10 + store 13） | 把下面四道闸接进一个入口；Store 侧另钉：幂等/冲突/隔离、身份链、终态守卫、openStore fail-closed、快照切点等价、并发 seq、P1 fixture 复验、F-037/F-070 反例 |
+| ① 单元测试 | `npm test` | **50 条全过**（contracts 10 + store 15 + runtime 25） | 把下面四道闸接进一个入口；Store 侧另钉：幂等/冲突/隔离、身份链、终态守卫、openStore fail-closed、快照切点等价、并发 seq、P1 fixture 复验、F-037/F-070 反例、F-011 raw 终态封堵、writeGuard fencing；Runtime 侧另钉：run_id 五反例、仓级锁（活锁超时/在途锁不偷/TTL 回收/只删自己）、lease 全生命周期（接管/过期/死持有人/僵尸 renew/损坏回收/有界超时）、detached 强杀恢复 M3、真并发发号（同仓+跨仓）、三态读数 |
 | ② 校验器 selftest | `node tools/validate.mjs --selftest` | **pass=33 fail=0**（golden 11 + negative 22） | 每条反例**逐条命中写死的 reason code 与出错位置 `at`**，两者都不对就红 |
 | ③ 契约静态审计 | `node tools/audit-contracts.mjs` | 扫 12 份 schema/shape；闭合对象 24；条件收窄 1；有意开放点 3；未登记开口 0；非白名单厂商 token 0；`$ref` 实解析 **98 条**失败 0（`$id` 注册表 12 项）；结构 token 164 个未登记 0；**F-042：ajv.validateSchema 0 拒、meta 分叉 0；K-3 身份键内联 pattern 0**（两闸 DHR_29 批次新增） | 「没有我没想到的那几种」——`$ref` 真解析、开口全登记、结构 token 全白名单、meta 规则单一权威、身份 pattern 结构受闸 |
 | ④ fixture 基线 | `node tools/fixture-manifest.mjs` | **55 份逐份 digest 相符**（golden 11 / negative 载荷 22 / expect 22） | fixture **还是过审时那批**。没有它，②的通过数只能证明「当下盘上这批自洽」 |
@@ -251,7 +268,7 @@ relay-core/
 
 ### 8.4 `compat-matrix.md` §6 移交三条
 
-`authority_generation` → lease 的语义等价性复核（**B-15 后归 DHR_51**）；7 段身份链 → `receipt_id` 单锚点的迟到结果判定；会话尾巴脱敏（`SessionTailMaxBytes` + redaction）。三条原移交 DHR_29，**都要用 P1 的 fixture 作 Oracle 复验「不弱于 v1」**。**DHR_29 处置（2026-08-22）**：迟到判定已用 P1 fixture 复验（`store.test.mjs`「P1 迟到结果 fixture 复验」一测：隔离 ≥ result_stale、冲突码 ≥ CAS）；脱敏已按 v1 redaction 口径对齐并双路钉死；lease 一条随 B-15 移交 DHR_51。
+`authority_generation` → lease 的语义等价性复核（**B-15 后归 DHR_51**）；7 段身份链 → `receipt_id` 单锚点的迟到结果判定；会话尾巴脱敏（`SessionTailMaxBytes` + redaction）。三条原移交 DHR_29，**都要用 P1 的 fixture 作 Oracle 复验「不弱于 v1」**。**DHR_29 处置（2026-08-22）**：迟到判定已用 P1 fixture 复验（`store.test.mjs`「P1 迟到结果 fixture 复验」一测：隔离 ≥ result_stale、冲突码 ≥ CAS）；脱敏已按 v1 redaction 口径对齐并双路钉死；**DHR_51 处置（2026-08-22，F-105 落账）**：lease 一条以 `result-A1-wrong-generation.json` 为 Oracle 复验（`runtime.test.mjs`「移交②」用例）——v1 权威代次（写时 CAS 比代次）≙ v2 fencing（写时重验 lease 持有人，覆盖一切变更入口而非仅 result）；v1 恢复锁陈旧回收 ≙ 「死持有人视同过期可接管」+ wx 独占仲裁；结论：**v2 唯一写者保证不弱于 v1 且严格更强**（接管事件可追溯、TTL 过期兜底、fencing 全入口）。差异面：v1 无显式接管概念，v2 显式接管并补记 lease 事件。
 
 ### 8.5 findings 里 `open` 的条目
 
@@ -275,5 +292,7 @@ relay-core/
 | 你是 | 先读 |
 |---|---|
 | DHR_29（Runtime） | 本文 §7 硬约束 → §8.2 K-1~K-4 → §8.4 移交三条 → §9 F-064 → `ADR-002`（executor 生命周期语义的**唯一**来源） |
+| DHR_51（宿主/lease/发号） | 本文 §3.5（Store 边界）→ **§3.6（runtime 全貌）** → §5 闸表 → §8.4（lease 等价性已落账）→ `runtime/*.mjs` 源码 → `workspace/DHR_51/{findings,review}.md` |
+| DHR_52（RPC/握手） | **§3.6（host-lease.json 形态与 fencing 接线）** → §8.1 O-2/O-3 → F-107（指纹要素评估触发点） |
 | DHR_30（CLI / Read Model） | 本文 §8.3 → `v1-gap-disposition.md` 全文 → `OPEN-POINTS.md` O-3 |
 | 要改 `contracts/` 任何一个字的人 | 本文 §5「三份基线互不覆盖」→ §6 全节 → `CANONICALIZATION.md` §三 |
