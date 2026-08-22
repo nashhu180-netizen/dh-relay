@@ -40,13 +40,11 @@
         },
         "capability_hash": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/capability_hash" },
         "client_id": {
-          "type": "string",
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+          "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/identifier",
           "description": "客户端实例标识。用于连接记账——但客户端断开永不取消 Run（design/06 H4）。"
         },
         "request_id": {
-          "type": "string",
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+          "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/identifier",
           "description": "幂等键。重复 request_id 且请求摘要相同 → 返回同一 receipt（design/02 B1 · P5-M2）；摘要不同 → E_REQUEST_CONFLICT。"
         }
       },

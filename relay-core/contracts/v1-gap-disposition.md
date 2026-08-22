@@ -110,6 +110,6 @@ v1-gap-disposition: G6
 > `relay.run-state/v1` 里的 `group`（必填 + 6 条 `run_status → group` 映射由 `allOf` 机器强制）、`progress`、`elapsed_seconds` 三个字段，本是 P4 `relay.pilot-run-list/v1` 的列表投影字段。本卡冻结它们是在授权范围内（§2.3 把 `relay.run-state/v1` 列进 DHR_28 要冻的最小协议集，G2 的处置权也在本卡），**但你从 DevPlan 的卡面上看不见这个天花板**——那里只说「以 P4 两份 pilot schema 为字段级起点、按处置表修订」。三条具体约束：
 > 1. **`group` 是 `run_status` 的全函数**，携带零独立信息。将来若正式 Read Model 需要一种不是 `run_status` 纯函数的分堆，**须改契约**（这条同时是 `state_signature` 可复算的前提：源头对 group 有裁量 = 同一状态两个实现算出不同签名 = P5-M3 直接失效）。
 > 2. **`group` 的词表与 pilot 不同**：pilot 是 `[needs_you, blocked, running, done]`，v2 是 `[needs_you, running, done, failed]`；`failed` 的归堆也从 `needs_you` 改成了 `failed`。理由见 `run-state` schema 的 `group` 注。
-> 3. **`progress` 已按 F-E14-3 改回 pilot 的 `{done, total}` 计数对**（本卡首版擅自改成 0..1 比率，会让 P4 已验证、且被 B-13 列进 P5-M4 证据的跨屏断言「progress 等于详情节点实际计数」无法表达）。`done <= total` schema 表达不了，交你实现期守。
+> 3. **`progress` 已按 F-E14-3 改回 pilot 的 `{done, total}` 计数对**（本卡首版擅自改成 0..1 比率，会让 P4 已验证、且被 B-13 列进 P5-M4 证据的跨屏断言「progress 等于详情节点实际计数」无法表达）。`done <= total` schema 表达不了——**归属更正（DHR_29 验收第 6 项；本行原文写「交你实现期守」是 B-15 拆卡前的陈旧指名）**：该约束归 **DHR_29** 实现期守，**且已守**：Store 回放构造性保证 `done` 只数 `succeeded` 节点、`total` 取 `nodes` 全集长度，反例钉在 `relay-core/test/store.test.mjs`（node_states 覆盖全集与 done<=total 一测）。你（DHR_30）读到的只是展示侧事实，不承担守卫。
 >
 > **另：`node_states` 必填 + `minItems: 1` 只约束「完整状态文档」这一形态**。列表 / 摘要投影**不复用**本协议，应沿 `relay.pilot-run-list/v1` 血统另立列表协议——别拿 run-state 当列表 schema 再回头说约束太紧。

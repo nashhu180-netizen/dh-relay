@@ -35,7 +35,8 @@ relay-core/
 ├── contracts/                协议本体 + 五份规范文档
 ├── fixtures/                 golden 11 / negative 22 对 / manifest.json
 ├── tools/                    校验器、审计器、三个基线工具、JCS 实现
-└── test/contracts.test.mjs   node --test，10 条
+├── store/                    DHR_29 单 Run 账本：事件账 + 确定性回放（见 §3.5）
+└── test/                     node --test：contracts.test.mjs（10 条）+ store.test.mjs（11 条）
 ```
 
 ### 3.1 `contracts/` —— 7 份冻结协议
@@ -82,6 +83,25 @@ relay-core/
 | `structural-tokens.txt` | 162 个 token | 结构位置 token 的**白名单**（`properties`/`$defs` 键 + `enum` 项 + `const` 值） |
 | `forbidden-types.txt` | 33 条 | 五家私有类型的**黑名单**（第二层，给已知厂商词更明确的报错） |
 
+
+### 3.5 `store/` —— DHR_29 的单 Run 账本（库形态，无进程无 RPC）
+
+| 文件 | 干什么 |
+|---|---|
+| `store.mjs` | 唯一写者 API：`createStore({ root, run })` / `openStore({ root })` / `registerReceipt` / `appendCheckpoint` / `appendResult` / `appendEvent` / `readState`。所有变更操作过**串行写队列**（seq 分配与落盘之间隔着 await，不排队并发 append 会重号） |
+| `state.mjs` | 纯函数回放：`replayRun({ run, events })` 从零全量；`applyEvents({ run, state, events })` 从快照折叠增量。折叠只依赖「起始状态 + 其后事件」——这是「快照 + 增量 ≡ 全量逐字节」的全部前提 |
+
+**语义要点**（测试钉在 `test/store.test.mjs`，21/21）：
+
+- **不可变工件**：`run.json`、receipt、checkpoint、result 一律 create-new（`wx`），重投同内容 = 幂等，改内容 = 冲突码；唯一可变文件是 `state.json`（临时文件 + rename 原子替换）。
+- **身份链**：checkpoint/result 的 `receipt_id` + `attempt_id` 必须与当前 Attempt 的回执一致；不符按 B11 处置——checkpoint 拒识即返（`E_IDENTITY_MISMATCH`，不留痕，与 v1 的有意差异已登记 `reason-codes.md` §四）、result 进隔离区并留 `late_result_quarantined` 事件。迟到判定挂 `seq`（当前 receipt），不依赖 attempt 字典序（K-2）。
+- **终态语义**：终态按 receipt（= attempt）记账。旧 attempt 的终态锁不住新 receipt 的 fresh attempt（重试路径）；但已定终态的 attempt 自己不再接受 lifecycle 事件（`node_started` / `attempt_started` / `checkpoint_recorded` / `human_input_requested` 一律拒），隔离留痕除外。checkpoint 判定次序 = **身份链 → 幂等 → 终态守卫**：身份先行堵「冒用 attempt 借同 key 同 digest 白拿 idempotent ack」；幂等在终态守卫前，已记录 checkpoint 的原样重投在其 attempt 定终态后仍回 idempotent、不误报终态冲突。
+- **恢复（F-003 收口实现）**：`openStore` 以 `run.json` 为锚点重建；`events.jsonl` 逐行校验——可解析、协议与 run 归属、seq 从 0 连续、逐条过冻结契约——任何损坏 fail-closed（`E_EVENT_LOG_CORRUPT*`），不做部分恢复；receipt/checkpoint/result 工件损坏同样 fail-closed（`E_STORE_CORRUPT:*`）。工件全量回装后幂等/冲突判定跨重启成立。`state.json` 是**纯派生缓存**：从不读回参与判定，每次打开由全量事件重算并原子重写——「append 与 persist 之间被强杀」的半更新现场被自愈；代价是外部对 state.json 的篡改会被静默纠正（事件账是唯一真值），这是有意取舍。
+- **写前契约校验（F-004）**：每个事件落盘前过 `relay.event/v2`（ajv），拒绝即抛 `E_SCHEMA_INVALID:*`、不落盘不留痕。
+- **脱敏（宪章#6）**：accepted result 与隔离区走同一 sanitizer，覆盖对象键、行内键值、`sk-` 与 PEM。
+- **边界**：本层不认识客户端与宿主——detached 宿主 / lease / 发号归 DHR_51，RPC 归 DHR_52。
+- **已知边界（轮 2 复核登记，非缺陷）**：①工件先落盘、事件后追加，两文件之间存在跨文件撕裂窗口——openStore 以事件账为真值重建，撕裂现场表现为「有工件无事件」，幂等键仍可对上但不做交叉断言（彻底消除需单文件事务或 WAL，归 DHR_51 恢复路径评估）；②`appendEvent` 是库级原始入口，直接投递 `attempt_succeeded/failed/orphaned` 可绕过终态守卫——运行期只应经 `appendResult` 走结果，raw 投递的封堵归 DHR_51（runtime 层不暴露 raw 入口）。
+
 ## 4. 技术选型的裁决出处
 
 | 决策 | 结论 | 出处 |
@@ -95,15 +115,15 @@ relay-core/
 
 ## 5. 五道机器闸各自在守什么
 
-在 `relay-core/` 下跑。以下数字是**本快照写作时实跑取得的**，不是抄文档。
+在 `relay-core/` 下跑。以下数字**2026-08-22 由 DHR_29 收敛批实跑刷新**（上一版为 DHR_28 时点快照，hash `3ccf3b10…` 已被批次 1/2 的授权契约修订取代）。
 
 | 闸 | 命令 | 当前实际输出 | 它独占守住的是什么 |
 |---|---|---|---|
-| ① 单元测试 | `npm test` | **10 条全过** | 把下面四道闸接进一个入口，另加三条独占用例：JCS 一致性、G2 聚合条款 14 例红绿矩阵、`__proto__` 原型污染回归 |
+| ① 单元测试 | `npm test` | **23 条全过**（contracts 10 + store 13） | 把下面四道闸接进一个入口；Store 侧另钉：幂等/冲突/隔离、身份链、终态守卫、openStore fail-closed、快照切点等价、并发 seq、P1 fixture 复验、F-037/F-070 反例 |
 | ② 校验器 selftest | `node tools/validate.mjs --selftest` | **pass=33 fail=0**（golden 11 + negative 22） | 每条反例**逐条命中写死的 reason code 与出错位置 `at`**，两者都不对就红 |
-| ③ 契约静态审计 | `node tools/audit-contracts.mjs` | 扫 12 份 schema/shape；闭合对象 24；条件收窄 1；有意开放点 3；未登记开口 0；非白名单厂商 token 0；`$ref` 实解析 **84 条**失败 0（`$id` 注册表 12 项）；结构 token 162 个未登记 0 | 「没有我没想到的那几种」——`$ref` 真解析、开口全登记、结构 token 全白名单 |
+| ③ 契约静态审计 | `node tools/audit-contracts.mjs` | 扫 12 份 schema/shape；闭合对象 24；条件收窄 1；有意开放点 3；未登记开口 0；非白名单厂商 token 0；`$ref` 实解析 **98 条**失败 0（`$id` 注册表 12 项）；结构 token 164 个未登记 0；**F-042：ajv.validateSchema 0 拒、meta 分叉 0；K-3 身份键内联 pattern 0**（两闸 DHR_29 批次新增） | 「没有我没想到的那几种」——`$ref` 真解析、开口全登记、结构 token 全白名单、meta 规则单一权威、身份 pattern 结构受闸 |
 | ④ fixture 基线 | `node tools/fixture-manifest.mjs` | **55 份逐份 digest 相符**（golden 11 / negative 载荷 22 / expect 22） | fixture **还是过审时那批**。没有它，②的通过数只能证明「当下盘上这批自洽」 |
-| ⑤ 能力指纹基线 | `node tools/capability-baseline.mjs` | **8 份**（7 顶层协议 + 1 共享定义模块）digest 相符，`capability_hash = 3ccf3b1043afbd82…` | schema **本身**没被改软。②③④ 全都盯 fixture 与结构，唯独没人钉 schema 全文 |
+| ⑤ 能力指纹基线 | `node tools/capability-baseline.mjs` | **8 份**（7 顶层协议 + 1 共享定义模块）digest 相符，`capability_hash = 970b54601ae582a5…`（批次 1 K-1/K-3 与批次 2 两处 description 更正后同批重生成） | schema **本身**没被改软。②③④ 全都盯 fixture 与结构，唯独没人钉 schema 全文 |
 
 ### 三份基线互不覆盖（这一节最容易被后来人省掉）
 
@@ -231,11 +251,11 @@ relay-core/
 
 ### 8.4 `compat-matrix.md` §6 移交三条
 
-`authority_generation` → lease 的语义等价性复核；7 段身份链 → `receipt_id` 单锚点的迟到结果判定；会话尾巴脱敏（`SessionTailMaxBytes` + redaction）。三条都移交 DHR_29，**都要用 P1 的 fixture 作 Oracle 复验「不弱于 v1」**。
+`authority_generation` → lease 的语义等价性复核（**B-15 后归 DHR_51**）；7 段身份链 → `receipt_id` 单锚点的迟到结果判定；会话尾巴脱敏（`SessionTailMaxBytes` + redaction）。三条原移交 DHR_29，**都要用 P1 的 fixture 作 Oracle 复验「不弱于 v1」**。**DHR_29 处置（2026-08-22）**：迟到判定已用 P1 fixture 复验（`store.test.mjs`「P1 迟到结果 fixture 复验」一测：隔离 ≥ result_stale、冲突码 ≥ CAS）；脱敏已按 v1 redaction 口径对齐并双路钉死；lease 一条随 B-15 移交 DHR_51。
 
 ### 8.5 findings 里 `open` 的条目
 
-本卡 findings 81 条，7 条 `open`。**`F-064` 是唯一 open 的 P1**，见 §9。其余 6 条：F-042（P3，手写 `KEYWORD_TYPES` 与 ajv 两套 meta-schema 规则可能漂移）、F-013（P2，`format: "date-time"` 空转，已由 `relay.common/v1` 的 RFC3339 `pattern` 实际承担）、F-010 / F-009 / F-001 / F-061（工具链与仓级存量，与 `relay-core/` 本体无关）。
+本卡 findings 81 条，7 条 `open`。**`F-064` 是唯一 open 的 P1**，见 §9。其余 6 条：F-042（P3，手写 `KEYWORD_TYPES` 与 ajv 两套 meta-schema 规则可能漂移——**已由 DHR_29 批次收口：ajv.validateSchema 为权威 + 分叉 tripwire 进审计第③闸**）、F-013（P2，`format: "date-time"` 空转，已由 `relay.common/v1` 的 RFC3339 `pattern` 实际承担）、F-010 / F-009 / F-001 / F-061（工具链与仓级存量，与 `relay-core/` 本体无关）。
 
 ## 9. 已知不覆盖的（说清楚，别当已兑现）
 

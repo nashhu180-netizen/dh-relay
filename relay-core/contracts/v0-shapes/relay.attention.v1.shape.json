@@ -10,8 +10,7 @@
   "properties": {
     "protocol": { "const": "relay.attention/v1" },
     "attention_id": {
-      "type": "string",
-      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/identifier"
     },
     "run_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/run_id" },
     "node_id": {

@@ -81,7 +81,7 @@ v1 的 `schema_version` 是**单一全局版本串** `relay/v1`，一份契约�
 | checkpoint `status` / `progress_note` / `tried` | `phase` / `structured` | 改型 | |
 | checkpoint `question` + `options`（`status=decision_required` 时必填） | `relay.attention/v1`（v0 形状，P7 冻结） | 改型 | v1 把"要人决策"塞在 checkpoint 里；v2 单立 Attention 协议，因为 design/06 **H5** 要求它**持久**、不依赖任何客户端在线 |
 | event `event_id` / `kind` / `occurred_at` | `seq` / `kind` / `at` | 改型 | v2 用单调 `seq` 保证回放确定性；v1 的 `event_id` 是字符串、不保证序 |
-| event `kind` 12 值 | v2 15 值 | 改型 | ⚠️ 原写法只说"新增 6、弃用 3"，`12−3+6=15` 数字凑巧对上，**掩盖了实际 churn**（批次检查点 2 小审 D-8，findings F-017）。逐值对照见 §4b |
+| event `kind` 12 值 | v2 16 值（批次 1 K-1 补 `human_input_requested` 后） | 改型 | ⚠️ 原写法只说"新增 6、弃用 3"，`12−3+6=15` 数字凑巧对上，**掩盖了实际 churn**（批次检查点 2 小审 D-8，findings F-017）。逐值对照见 §4b |
 | event `observation` kind 携带 `terminal_state` | `host_observation_changed` 携带 `observation_status` | 改名 | G6 的事件侧落地 |
 | event `control` kind 的 `actor`/`source`/`nonce` | `relay.rpc/v1` 握手的 `client_id`/`request_id` | 改型 | |
 | `SessionTailMaxBytes = 65536` + `relay-redaction.ps1` | — | **弃用（本卡范围内）** | ⚠️ v1 有"截取会话尾巴 + 凭据形态脱敏 + 残留检测"的完整机制。v2 协议层不承载会话尾巴（`log_locator` 只给指针）。**但 AGENTS 宪章#6 的密钥红线依然生效**——DHR_29 实现 Store 落盘时须复用 v1 的 redaction 口径作 Oracle，本条**留给 DHR_29，不在本卡关闭** |
@@ -90,25 +90,27 @@ v1 的 `schema_version` 是**单一全局版本串** `relay/v1`，一份契约�
 
 > **本表不参与 §0 计数**：它只有 3 列（v1 kind / v2 去向 / 说明），没有「标记」列。§0 的复算脚本只统计 4 列及以上表格的第 3 列。
 
-v1 共 12 值（`relay-schema.ps1:246` `$allowedKinds` 实读），v2 共 15 值。逐值去向：
+v1 共 12 值（`relay-schema.ps1:246` `$allowedKinds` 实读），v2 共 **16 值**（DHR_28 冻结时 15 + 批次 1 K-1 补 `human_input_requested`）。逐值去向：
 
 | v1 kind | v2 去向 | 说明 |
 |---|---|---|
 | `plan_proposed` | **弃用** | 归 `relay.resolved-plan/v1`（v0 形状，P6/P7 冻结），不再走事件账 |
 | `plan_activated` | **弃用** | 同上 |
-| `launch_receipt` | ⚠️ **无对应值** | `relay.launch-receipt/v2` 作为协议存在，但**回执签发在事件账上不留痕**。小审判为可能的遗漏——**本卡如实登记为缺口，移交 DHR_29**：若 Runtime 需要"何时签发了哪份回执"可回放，须在 v2 事件枚举补 `receipt_issued`；本卡不擅自加值（加值会改动已冻结的 `relay.event/v2`） |
-| `launch_failed` | ⚠️ **无对应值** | v2 用 `attempt_failed` + reason code 覆盖"起不来"的情形。但"Attempt 尚未成立就失败"与"Attempt 跑起来后失败"在 v2 里合并了——**语义损失如实登记**，DHR_29 若发现需要区分，同上补值 |
+| `launch_receipt` | **裁决：显式不补（DHR_29，2026-08-22）** | 原缺口描述成立过：小审判为可能的遗漏、移交 DHR_29 判定。**实现期裁决**：v2 的回执签发已双载体可回放——receipt 工件 create-new 落盘（文件名=`receipt_id`，内容含 `issued_seq` 锚点）+ 同拍 `attempt_started` 事件（`detail: "receipt:<id>"`）；幂等重投不产生新 seq。"何时签发了哪份回执"由工件+事件配对承载，补 `receipt_issued` 是冗余 |
+| `launch_failed` | **裁决：显式不补（DHR_29，2026-08-22）** | 原登记的"语义损失"由层级拆分消解而非合并：start 前置失败（`E_GITIGNORE_MISSING` / `E_RUN_ID_INVALID` 等）发生在 Run Store 存在之前——run root 尚未创建、无处落账，由调用方同步错误信封承载（归宿主层 DHR_51）；Attempt 成立后的失败已由 `attempt_failed` + reason code 全量覆盖。两者本就不是同一层的事件 |
 | `checkpoint_accepted` | `checkpoint_recorded` | 同义更名 |
-| `checkpoint_rejected` | ⚠️ **无对应值** | v2 的拒绝走 RPC 错误响应（`E_CHECKPOINT_CONFLICT` 等），不进事件账。**取舍**：事件账只记"发生了什么"，不记"什么被拒了"——但这意味着"有人反复投递冲突 checkpoint"在事件账上不可见。DHR_29 若需要审计该行为，补 `checkpoint_rejected` |
+| `checkpoint_rejected` | **裁决：显式不补（DHR_29，2026-08-22）** | 与批次 2 实现一致：拒绝是"未发生的写入"，不改变状态迁移集，同步返回信封（`E_CHECKPOINT_CONFLICT` / `E_IDENTITY_MISMATCH` / `E_TERMINAL_STATE_CONFLICT`）不留痕。原登记的审计盲区（反复投递冲突在账上不可见）**明知接受**；P8 审计若需要再走契约批次按 CANONICALIZATION 纪律批量补值 |
 | `result_accepted` | `result_recorded` | 同义更名 |
 | `result_stale` | `late_result_quarantined` | 合并 |
 | `result_rejected` | `late_result_quarantined` | 合并（与上一行同去向，v2 不区分"陈旧"与"被拒"，统一为"进隔离区"） |
 | `observation` | `host_observation_changed` | 同义更名 + G6 语义澄清 |
-| `control` | ⚠️ **无对应值** | v2 的控制动作由 `relay.launch-receipt/v2` 承载（`kind: start/stop/resume`），事件账不再单记。同 `launch_receipt` 一起移交 DHR_29 判定是否需要回放留痕 |
+| `control` | **裁决：显式不补（DHR_29，2026-08-22）** | v2 控制面动作 = `relay.rpc/v1` 方法 + lease 事件（`lease_acquired` / `lease_expired` 已在新增 12 值内）+ `run_finished`；start/stop/resume 的签发凭证在 launch-receipt 工件。控制动作逐笔回放留痕的需求归 DHR_52 服务端落地时评估，本卡不预留总类 kind |
 | `diagnosis` | **弃用** | 归 P8 诊断 Agent |
-| — | `run_created` / `node_started` / `attempt_started` / `attempt_succeeded` / `attempt_failed` / `attempt_orphaned` / `client_connected` / `client_disconnected` / `lease_acquired` / `lease_expired` / `run_finished` | **新增 11** |
+| — | `run_created` / `node_started` / `attempt_started` / `attempt_succeeded` / `attempt_failed` / `attempt_orphaned` / `human_input_requested`（批次 1 K-1 补）/ `client_connected` / `client_disconnected` / `lease_acquired` / `lease_expired` / `run_finished` | **新增 12** |
 
-**账**：v1 12 值 → 弃用 3（`plan_proposed` / `plan_activated` / `diagnosis`）+ 改名 3（`checkpoint_accepted` / `result_accepted` / `observation`）+ 合并 2→1（`result_stale` + `result_rejected` → `late_result_quarantined`）+ **无对应 4**（`launch_receipt` / `launch_failed` / `checkpoint_rejected` / `control`）；v2 另新增 11。**4 个无对应值全部登记为待 DHR_29 判定的缺口，不用"数字对得上"掩盖。**
+**账**：v1 12 值 → 弃用 3（`plan_proposed` / `plan_activated` / `diagnosis`）+ 改名 3（`checkpoint_accepted`→`checkpoint_recorded` / `result_accepted`→`result_recorded` / `observation`→`host_observation_changed`）+ 合并 2→1（`result_stale` + `result_rejected` → `late_result_quarantined`）+ **无对应 4**（`launch_receipt` / `launch_failed` / `checkpoint_rejected` / `control`）；v2 另新增 12（含批次 1 K-1 补的 `human_input_requested`）。3+3+1+0+12 = v2 现值 **16**，与 `relay.event.v2.schema.json` 的 kind enum 逐一对得上。**4 个无对应值全部登记为待 DHR_29 判定的缺口，不用"数字对得上"掩盖。**
+
+**DHR_29 裁决结账（2026-08-22，批次 2 收敛批落账）**：4 个无对应值**全部显式不补**，理由逐行见上表；无一静默带过。依据：Store 批次 2 实现（`relay-core/store/store.mjs`）与 `workspace/DHR_29/progress.md` E-009/E-013。若后续卡需要翻案（补值），按 CANONICALIZATION 纪律走新的契约修订批次并同批重生成三份基线。
 
 ## 5. fail-closed 口径对照
 

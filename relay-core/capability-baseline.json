@@ -4,31 +4,31 @@
     "protocols": [
       {
         "id": "relay.checkpoint/v2",
-        "digest": "ac84983503dd086c969ecb920b3aa04fcfdf269c34787a059537a15b4df5fa8f"
+        "digest": "e4faf96aaee20e1884d41f3460ad0c7f58a86dd30e42c1dc8df48c42e9983e1b"
       },
       {
         "id": "relay.common/v1",
-        "digest": "98cc3d69ef2506fa9233473a754f869088ee70f866e89eeca5117b84b93e1366"
+        "digest": "e8f252c8e6d62f06a534d40191088d037ce2a52ad4c1ac51129db34eb8e5c2c9"
       },
       {
         "id": "relay.event/v2",
-        "digest": "369383f89156e9aa05deca5849eb51ce677841227d55380ab1f5fe6a33eb42b3"
+        "digest": "1db0b5d8e5569511a7f2fe8537f470c8d4522af55f6f57cb0925b62452d644a1"
       },
       {
         "id": "relay.launch-receipt/v2",
-        "digest": "5fe9b5de9c02da705f69814fdbd00ab3f828e5cd0fcd8084fba02d3529808e5b"
+        "digest": "96a66e283618d1e4a433fd53f5489b11366f8e33c16e227a7e9844636be777db"
       },
       {
         "id": "relay.result/v2",
-        "digest": "76e8295e415b6bc2cb2bbdec9fe293543c39bc6208ea5305646aa8a21faca69f"
+        "digest": "4723afaf24d6d86e111c7108be6d1fa84465696321f799b4ee2a4f91791ad39b"
       },
       {
         "id": "relay.rpc/v1",
-        "digest": "95f1d6a966de1e8fdec56dd1555416d20ec434befed2e3181052a8b015f0ef78"
+        "digest": "74b1be764c105ad9e76cbdf9a05cdf3456e13e843c6d3b3ca671baaed4b21431"
       },
       {
         "id": "relay.run-state/v1",
-        "digest": "e2e6f3b277d787d3e57c23f6b4201304b9e1abfd3f90a8878782052916b41c98"
+        "digest": "7d45bdf6967f324177d9dba9b71adfe3b75a75b183d651dc1302896470c07dc3"
       },
       {
         "id": "relay.run/v2",
@@ -52,5 +52,5 @@
       "process"
     ]
   },
-  "capability_hash": "3ccf3b1043afbd8224dd2eadf61c80b29ab951d61db8b838fc3a58b97f58e4d3"
+  "capability_hash": "970b54601ae582a54942bfac1cec96a9b7cefcb36f216f112d3517cf1d763a60"
 }

@@ -18,13 +18,11 @@
       "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/attempt_id"
     },
     "receipt_id": {
-      "type": "string",
-      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
-      "description": "身份链回链。与当前 Attempt 的回执不符 → 迟到/越权 checkpoint，按 B11 隔离而非接受。"
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/identifier",
+      "description": "身份链回链（receipt_id + attempt_id 与当前 Attempt 的回执一致才受理；判定次序 = 身份链 → 幂等 → 终态守卫）。不符 → 拒识即返（E_IDENTITY_MISMATCH），不落盘不留痕——**v2 有意差异（DHR_29 收敛批更正，原写法『按 B11 隔离而非接受』沿袭 v1，与实现相悖）**：v1 对拒绝留事件痕迹，v2 的事件账只记已发生的写入、拒绝走同步错误信封。见 reason-codes §四 与 compat-matrix §4b checkpoint_rejected 行。"
     },
     "checkpoint_id": {
-      "type": "string",
-      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/identifier",
       "description": "同一 Attempt 内唯一。重复投递同一 checkpoint_id + 同一 payload_digest = 幂等接受（不重复记账）；同 id 异 digest = 冲突，拒绝（E_CHECKPOINT_CONFLICT）。"
     },
     "at": {

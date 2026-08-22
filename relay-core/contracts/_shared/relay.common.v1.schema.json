@@ -4,6 +4,11 @@
   "title": "relay.common/v1 — 共享定义模块",
   "description": "不是独立协议，是 P5 最小协议集共用的类型定义。随最小协议集同批冻结（DHR_28）。改动这里等于改动全部 7 份协议，须走契约变更流程。",
   "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+      "description": "所有身份标识的唯一公共形态。身份类属性不得内联 pattern，必须引用本定义（DHR_29 K-3）。"
+    },
     "locator": {
       "type": "string",
       "minLength": 1,
@@ -12,19 +17,16 @@
       "pattern": "^(?![A-Za-z][A-Za-z0-9+.-]*:)(?![\\\\/~%]).+$"
     },
     "run_id": {
-      "type": "string",
       "description": "Run 标识。规范化口径承接 design/02 B7 D23。",
-      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+      "$ref": "#/$defs/identifier"
     },
     "node_id": {
-      "type": "string",
       "description": "节点机器标识。与人话 title 分字段——承接 v1-gap-disposition G3，禁止一字段兼任。",
-      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+      "$ref": "#/$defs/identifier"
     },
     "attempt_id": {
-      "type": "string",
       "description": "Attempt 标识。Attempt 是最小失败单元（design/06 H7）；换 Executor 必产生 fresh attempt_id（H12），禁止复用旧 id 续写。",
-      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+      "$ref": "#/$defs/identifier"
     },
     "timestamp": {
       "type": "string",

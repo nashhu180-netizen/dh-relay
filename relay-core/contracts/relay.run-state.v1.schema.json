@@ -81,7 +81,7 @@
     },
     "state_signature": {
       "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/sha256",
-      "description": "状态签名。用于『强杀 Runtime 后从 Store 重建相同状态签名』（design/02 B7 D18 · P5-M3，由 DHR_29 承接验证）。 规范化口径见 contracts/CANONICALIZATION.md（RFC 8785 JCS + sha256 小写十六进制；摘要字段自身不参与计算）——不按该口径算出的值跨实现对不上。"
+      "description": "状态签名。用于『强杀 Runtime 后从 Store 重建相同状态签名』（design/02 B7 D18 · P5-M3）。**指名更正（DHR_29 契约批次，2026-08-22；B-15 拆卡后原文『由 DHR_29 承接验证』已失准）**：P5-M3 整条归 **DHR_51**（强杀宿主后新宿主重建相同签名），本卡 DHR_29 交付的 Store 回放与 `state_signature` 是它的支撑断言。 规范化口径见 contracts/CANONICALIZATION.md（RFC 8785 JCS + sha256 小写十六进制；摘要字段自身不参与计算）——不按该口径算出的值跨实现对不上。"
     }
   },
   "required": [

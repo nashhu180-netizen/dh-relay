@@ -10,8 +10,7 @@
   "properties": {
     "protocol": { "const": "relay.approval/v1" },
     "approval_id": {
-      "type": "string",
-      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/identifier"
     },
     "run_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/run_id" },
     "node_id": {
@@ -40,8 +39,7 @@
       ]
     },
     "decided_via_client_id": {
-      "type": ["string", "null"],
-      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+      "oneOf": [{ "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/identifier" }, { "type": "null" }],
       "description": "从哪个客户端提交的。**仅供审计留痕，不参与语义**——H8 要求经 DSH 或 CLI 提交生成语义相同的 Receipt。"
     },
     "receipt_digest": {

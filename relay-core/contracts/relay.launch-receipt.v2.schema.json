@@ -9,13 +9,11 @@
       "const": "relay.launch-receipt/v2"
     },
     "receipt_id": {
-      "type": "string",
-      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/identifier",
       "description": "回执唯一标识。一个 request_id 只对应一个 receipt_id——重复请求返回同一回执，不新签。"
     },
     "request_id": {
-      "type": "string",
-      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/identifier",
       "description": "客户端生成的请求标识，幂等键。"
     },
     "run_id": {

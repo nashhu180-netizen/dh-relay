@@ -11,6 +11,7 @@
 import { readFileSync, readdirSync, existsSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { loadAjv } from './validate.mjs';
 
 // D-22：不能用 URL.pathname —— 它是百分号编码的，路径含中文或空格时会坏
 // （实测 D:/MyFiles/玩蜂/… → D:/MyFiles/%E7%8E%A9%E8%9C%82/…，本项目恰有这样一个工作目录）。
@@ -298,7 +299,7 @@ function verifyConditionalNarrowing(doc, file, entryPath, errors, idRegistry, do
 function main() {
   if (!existsSync(CONTRACTS)) { console.error(`contracts/ 不存在: ${CONTRACTS}`); process.exit(2); }
   const allJson = listJsonFiles(CONTRACTS);
-  const report = { files: 0, closed: 0, open: [], ifThenSkipped: 0, vendorHits: [], structuralTokens: new Set(), unregisteredTokens: [], staleTokens: [], envelopeErrors: [], refs: {}, refErrors: [], narrowErrors: [], namingErrors: [], metaErrors: [], docSyncErrors: [] };
+  const report = { files: 0, closed: 0, open: [], ifThenSkipped: 0, vendorHits: [], structuralTokens: new Set(), unregisteredTokens: [], staleTokens: [], envelopeErrors: [], refs: {}, refErrors: [], narrowErrors: [], namingErrors: [], metaErrors: [], metaSchemaErrors: [], metaDivergence: [], identityPatternErrors: [], docSyncErrors: [] };
   const idRegistry = new Map();
   const docs = new Map();
 
@@ -328,6 +329,48 @@ function main() {
       else idRegistry.set(doc.$id, { name, doc });
     }
     collectRefs(doc, name, doc.$id, report.refs);
+  }
+
+  // ── K-3（DHR_29 批次 1）：身份 token 的 pattern 只允许存在于 _shared 唯一的 $defs/identifier ──
+  // 结构判据（不是计数、不是字符串扫描）：任何 *_id 键的子节点（properties 与 $defs 两处都要扫）
+// 不得自带 `pattern` 关键字，一律 `$ref` 到 identifier。把判据挂在正则写法上正是 F-056 记过的事故形态。
+  const CANONICAL_IDENTIFIER = '_shared/relay.common.v1.schema.json#$defs.identifier';
+  const scanIdentityPatterns = (doc, name) => {
+    const recurse = (node, path) => {
+      if (!node || typeof node !== 'object' || Array.isArray(node)) return;
+      for (const section of ['properties', '$defs']) {
+        const bucket = node[section];
+        if (!bucket || typeof bucket !== 'object' || Array.isArray(bucket)) continue;
+        for (const [key, child] of Object.entries(bucket)) {
+          const childPath = path ? `${path}.${section}.${key}` : `${section}.${key}`;
+          if (/_id$/.test(key) && child && typeof child === 'object' && !Array.isArray(child)
+            && Object.prototype.hasOwnProperty.call(child, 'pattern')
+            && `${name}#${childPath.replace(/\.\w+(\.\d+)?$/, '')}` !== CANONICAL_IDENTIFIER
+            && !(name === '_shared/relay.common.v1.schema.json' && path === '$defs' && key === 'identifier')) {
+            report.identityPatternErrors.push({ file: name, at: `${section}.${key}`, why: `身份键 ${key} 内联 pattern——K-3 要求一律 $ref 到 _shared/relay.common.v1 的 $defs/identifier（唯一规范定义）` });
+          }
+          recurse(child, childPath);
+        }
+      }
+    };
+    recurse(doc, '');
+  };
+  for (const f of files) scanIdentityPatterns(docs.get(relative(CONTRACTS, f).replace(/\\/g, '/')), relative(CONTRACTS, f).replace(/\\/g, '/'));
+
+  // ── F-042（DHR_29 批次 1 承接）：meta-schema 规则合一 ──
+  // 手写 KEYWORD_TYPES/metaCheck 与 ajv 自带的 validateSchema 曾是两套可能各自演化的规则。
+  // 现在 ajv 是权威裁判：每份契约过一遍 ajv.validateSchema；再做对账 tripwire——
+  // 两边结论不一致即审计失败，强制人工收敛，而不是静默漂移。
+  {
+    const { ajv } = loadAjv();
+    for (const [name, doc] of docs) {
+      const ajvOk = ajv.validateSchema(doc);
+      if (!ajvOk) {
+        for (const e of ajv.errors ?? []) report.metaSchemaErrors.push({ file: name, path: e.instancePath || '(root)', why: `ajv.validateSchema 拒绝：${e.message}` });
+      } else if (report.metaErrors.some((m) => m.file === name)) {
+        report.metaDivergence.push({ file: name, why: '手写 metaCheck 报错但 ajv.validateSchema 判合法——两套 meta 规则已分叉，按 F-042 必须先收敛再过闸' });
+      }
+    }
   }
 
   // ── D-21：真正解析每一个 $ref ──
@@ -451,6 +494,12 @@ function main() {
     for (const e of report.namingErrors) console.log(`  ! ${e.file} — ${e.why}`);
     console.log(`meta-schema 关键字类型错: ${report.metaErrors.length}`);
     for (const e of report.metaErrors) console.log(`  ! ${e.file} :: ${e.path} — ${e.why}`);
+    console.log(`ajv.validateSchema 拒绝: ${report.metaSchemaErrors.length}`);
+    for (const e of report.metaSchemaErrors) console.log(`  ! ${e.file} :: ${e.path} — ${e.why}`);
+    console.log(`meta 规则分叉（手写 vs ajv）: ${report.metaDivergence.length}`);
+    for (const e of report.metaDivergence) console.log(`  ! ${e.file} — ${e.why}`);
+    console.log(`K-3 身份键内联 pattern: ${report.identityPatternErrors.length}`);
+    for (const e of report.identityPatternErrors) console.log(`  ! ${e.file} :: ${e.at} — ${e.why}`);
     console.log(`JSON-only 信封 + 跨边界引用违规: ${report.envelopeErrors.length}`);
     for (const e of report.envelopeErrors) console.log(`  ! ${e.file} :: ${e.where} — ${e.why}`);
     console.log(`结构位置 token: 扫到 ${report.structuralTokens.size} 个，未登记 ${report.unregisteredTokens.length}，陈旧登记 ${report.staleTokens.length}`);
@@ -461,7 +510,8 @@ function main() {
   }
 
   const bad = unregistered.length + report.vendorHits.length + report.refErrors.length
-    + report.narrowErrors.length + report.namingErrors.length + report.metaErrors.length + report.docSyncErrors.length
+    + report.narrowErrors.length + report.namingErrors.length + report.metaErrors.length + report.metaSchemaErrors.length
+    + report.metaDivergence.length + report.identityPatternErrors.length + report.docSyncErrors.length
     + report.unregisteredTokens.length + report.staleTokens.length + report.envelopeErrors.length;
   process.exit(bad === 0 ? 0 : 1);
 }

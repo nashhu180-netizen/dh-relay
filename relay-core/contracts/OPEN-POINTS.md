@@ -61,11 +61,15 @@
 
 **为什么现在写下来**：P5-M3 要「强杀 Runtime 后从 Store 重建相同状态签名」。若状态只能从事件回放重建，而 `waiting_human` 没有事件能产生它，那这个状态要么重建不出来、要么得靠 Store 里的非事件数据——DHR_29 设计恢复路径时必须先回答这个。P7 冻结 attention 时一并收口。
 
+> ✅ **DHR_29 已裁决（K-1 结账，2026-08-22）**：走裁决①——批次 1 已为 `relay.event/v2` 增补 `human_input_requested` 事件 kind 并以 `if/then` 强制其携带 `node_id`（见该 schema 的 `$comment`「DHR_29 K-1」）；Store 回放把该事件投影为 `waiting_human`，状态可从事件账重建。P7 Attention 对象仍未冻结、本条不预冻结它；正文上段的现状描述就此成为历史记录。
+
 ### K-2 · v1 的 `stale` 判定依赖 `attempt_id` 的整数序，v2 的 `attempt_id` 是不透明串（F-E14-10）
 
 v1 用 `attempt_id -lt` 比大小区分「陈旧结果」与「被拒结果」（`stale` vs `rejected`）；v2 的 `attempt_id` 改成不透明字符串后**无序**，这个机制直接没了。兼容矩阵 §6 只写了「复验不弱于 v1」，没点名这个具体机制。
 
+
 **可恢复**：`relay.event/v2` 有单调 `seq`，能提供序。但 DHR_29 得知道要去找它——点名一句能省半天。（顺带：v2 把 `stale` 与 `rejected` 合并成了 `late_result_quarantined`，兼容矩阵 §4b 已如实登记这个信息损失。）
+> ✅ **DHR_29 已裁决（K-2 结账，2026-08-22）**：按本条预告落点实现——迟到判定挂 `relay.event/v2` 的单调 `seq`（receipt 签发时记 `issued_seq`，当前回执 = 该节点 `issued_seq` 最大者），与 `attempt_id` 的字典序完全解耦；反例（attempt 字典序与 seq 相反的两份迟到结果）钉在 `store.test.mjs`。v1 的 `stale`/`rejected` 二分在 v2 合并为 `late_result_quarantined`（§4b 已登记该信息损失）。
 
 ### K-3 · 身份 token 的 pattern 在 13 处逐字重复（F-E14-8）
 

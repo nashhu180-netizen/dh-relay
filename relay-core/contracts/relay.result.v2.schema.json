@@ -18,8 +18,7 @@
       "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/attempt_id"
     },
     "receipt_id": {
-      "type": "string",
-      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/identifier",
       "description": "身份链回链。迟到结果凭它判定接受还是隔离（design/02 B11）——回执不符 → quarantined，且不得改写已定终态。"
     },
     "executor_kind": {
