@@ -142,7 +142,7 @@
 
 `releasePacket: DHR_52-E10-v2`：机器证据为 E-079（主干 90/90、34/34、audit 0、fixture 57、capability 8、diff check）；代码增量复核为 E-072 `approved`，需求/E5/E14 均 `approved`（E-054/E-075/E-076）；DHR_51-F225 的两轮独立复核均已收敛。四项完成条件均为等价覆盖。H=0：无人判结果项、无 open 方向项、无风险接受项；P3 F-214~F-217 已按 E9 转入 `ACC-2026-08-23-01`，不以风险放行伪装为通过。F225 已 resolved，E12 主干集成复验通过。
 
-→ 当前状态：**E10 已刷新，但 E12 之后的 verify 被完整模块 dh-check 的 34 条历史失败强制拒绝（F226）；没有 verify SHA，也不得清理 worktree。**
+→ 当前状态：**E10 已刷新；E-081 已将完整模块 dh-check 清至 0 failure，F226 resolved，进入既有 E11 授权包的 verify。**
 
 ---
 

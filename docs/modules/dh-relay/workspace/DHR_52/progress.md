@@ -121,6 +121,7 @@
 | E-078 | fail | 主干 `npm test` → 89/90；定向 `node --test --test-name-pattern='host：租约被换手后旧会话自动停机且不释放别人的租约' test/runtime.test.mjs` → 0/1，均报 `E_LEASE_HELD:lease-lost`。 | fail | E12 集成复验失败，verify 不可执行；DHR_52 RPC 定向用例在全量中通过。 |
 | E-079 | pass | 用户授权 DHR_51-F225 维护；squash `e55a7f8` 后主干 `npm test` → **90/90**；`validate --selftest` → **34/34**；audit 0；fixture manifest **57**；capability baseline **8**（`970b54601ae582a5…`）；`git diff --check` 通过。 | pass | F225 已收敛；DHR_52 四条完成条件、复核、E5/E14 与刷新后的 E10 均保持成立，可进入既有 E11 授权包的 verify。 |
 | E-080 | blocked | 按既有 E11 与 F225 授权尝试 `verify(dh-relay)`；PreToolUse 强制钩子执行完整模块 `dh dh-relay`，以 34 条历史失败拒绝 commit，**未产生 verify SHA**。 | blocked | F226：必须先获得跨 design/DHR_03/29/49/51 的独立治理修复授权；不绕过强护栏、不清理 worktree。 |
+| E-081 | pass | 用户授权治理修复后，squash `89c0d5d`；主干 `dh dh-relay` → **0 failures / 37 historical warnings**；`relay-core` 全量 `npm test` → **90/90**、`validate --selftest` → **34/34**、audit 0、fixture manifest 57、capability baseline 8；`git diff --check` 通过。 | pass | F226 已收敛；既有 E11 本地收口授权包可继续执行 verify 与清理。 |
 
 ## OMP 可观测性实验
 
