@@ -9,7 +9,7 @@
 
 一句话：**控制面独立的承重内核的契约层**。协议在这里冻结，之后 Runtime（DHR_29）、Relay CLI（DHR_30）、以及任何客户端（DSH Bridge / Pi Adapter / 其他终端）**只认这一份契约来源**，谁都不再各自解释一遍字段含义。
 
-它**不是** Runtime。本卡不实现任何运行逻辑——没有 Store、没有 lease、没有事件回放、没有 CLI。目录里已经预留了 `runtime/` `store/` `rpc/` `cli/` `adapters/` `workflows/` 的位置，但**一个都还没建**。
+它不是单一 Runtime，也不是客户端。DHR_29 已实现 Store/回放，DHR_51 已实现 detached 宿主、lease 与发号，DHR_52 已实现本地 RPC 服务端；CLI、Adapter 与正式 Read Model 仍未实现。
 
 ## 2. A → B
 
@@ -33,10 +33,12 @@ relay-core/
 ├── capability-baseline.json  能力指纹基线（见 §5 第五道闸）
 ├── adr/                      ADR-001（语言与代码根）、ADR-002（Agent 宿主四问）
 ├── contracts/                协议本体 + 五份规范文档
-├── fixtures/                 golden 11 / negative 22 对 / manifest.json
+├── fixtures/                 golden 11 / negative 23 对 / manifest.json
 ├── tools/                    校验器、审计器、三个基线工具、JCS 实现
 ├── store/                    DHR_29 单 Run 账本：事件账 + 确定性回放（见 §3.5）
-└── test/                     node --test：contracts.test.mjs（10 条）+ store.test.mjs（11 条）
+├── runtime/                  DHR_51 detached 宿主、lease、发号与三态读数（见 §3.6）
+├── rpc/                      DHR_52 本地传输、能力握手与订阅服务端（见 §3.7）
+└── test/                     node --test：contracts/store/runtime/rpc 四组
 ```
 
 ### 3.1 `contracts/` —— 7 份冻结协议
@@ -59,7 +61,7 @@ relay-core/
 
 | 文件 | 回答什么 | 什么时候必须去读 |
 |---|---|---|
-| `reason-codes.md` | 全部 **23** 个 `E_*` 码，分六类（fail-closed 三条 / start 前置 / 契约结构 / 幂等冲突 / Executor 生命周期 / RPC） | 要加码时——加码有三步规矩：写进表、加一份能触发它的反例 + `.expect.json`、说明与既有码的边界 |
+| `reason-codes.md` | 全部 **24** 个 `E_*` 码，分六类（fail-closed 三条 / start 前置 / 契约结构 / 幂等冲突 / Executor 生命周期 / RPC） | 要加码时——加码有三步规矩：写进表、加一份能触发它的反例 + `.expect.json`、说明与既有码的边界 |
 | `v1-gap-disposition.md` | P4 主报告 §4 的 v1 六条缺口 G1~G6 逐条处置，含可 grep 锚点 `v1-gap-disposition: G<n>` | **DHR_30 开工前必读**（文件末尾有专门一节，见 §7） |
 | `compat-matrix.md` | v1 ↔ v2 字段级对照；event `kind` 逐值对照；fail-closed 口径对照；移交下游三条 | 要论证「v2 判定不弱于 v1」时 |
 | `CANONICALIZATION.md` | 摘要与签名口径 = RFC 8785（JCS）；五个指纹字段各对什么取摘要；`capability_hash` 的清单形状定死 | 要动任何 digest / signature 时 |
@@ -68,8 +70,8 @@ relay-core/
 ### 3.3 `fixtures/`
 
 - `golden/` **11 份**——每份已冻结协议至少一份正例（`relay.rpc/v1` 四分支各一份）。
-- `negative/` **22 对**——反例载荷 + `.expect.json`。`.expect.json` 写死的不只是 reason code，**还有出错位置 `at`**（JSON Pointer）。这是 F-052 加的：只钉码不钉位置，一条反例被别的原因拒也算过。
-- `manifest.json`——55 份 fixture（11 + 22 + 22）逐份的 canonical sha256。
+- `negative/` **23 对**——反例载荷 + `.expect.json`。`.expect.json` 写死的不只是 reason code，**还有出错位置 `at`**（JSON Pointer）。这是 F-052 加的：只钉码不钉位置，一条反例被别的原因拒也算过。
+- `manifest.json`——57 份 fixture（11 + 23 + 23）逐份的 canonical sha256。
 
 ### 3.4 `tools/`
 
@@ -119,6 +121,18 @@ relay-core/
 
 **host-lease.json 是运行现场内部形态，不是协议对象**：无 protocol 字段、不进契约、不进能力指纹（实施提示 3）；D18 的「宿主可执行指纹」要素有意不承接（F-107 登记，RPC 阶段需要时再评估）。
 
+### 3.7 `rpc/` —— DHR_52 的本地 RPC 服务端
+
+| 文件 | 干什么 |
+|---|---|
+| `capabilities.mjs` | 从权威 `capability-baseline.json` 复算本地 capability snapshot；握手只接受严格相等的 peer hash，格式合法但不等也返回 `E_CAPABILITY_MISMATCH`，不按交集降级。 |
+| `transport.mjs` | Windows Named Pipe / 非 Windows UDS 的本地端点、UTF-8 fatal NDJSON framing、单帧上限与 discard-until-LF；每连接有独立 handler seam，`close()` 先销毁已接受 socket 再关 server。 |
+| `server.mjs` | `createRpcServer({ runId, store, capability, endpoint, handlers })`：先验冻结信封、再验 capability、再仅分派注入的 handler；断连只清本连接订阅，绝不写 Store 或 cancel Run。 |
+
+**订阅与发送边界**：`subscribe` 通过注入 seam 注册连接本地的 `unsubscribe`，正常断连、server close 与迟到 resolve 都恰调一次。`sink.event` / `sink.runStateChanged` 只发送 descriptor-derived、null-prototype snapshot：拒绝 getter、Proxy 可变视图、稀疏/带额外键数组与 `toJSON` 污染；冻结 schema 校验与实际传输都使用该 snapshot。通知写入背压或连接已关时返回 `false`，并断开该连接，不能假称对端已收到。
+
+**F-057 的窄码**：仅当错误位置收到一份完整、可独立通过校验的另一已冻结顶层协议对象时返回 `E_PROTOCOL_MISMATCH`。缺字段、未知字段、同名异版及本协议普通坏值保留各自最具体既有码；新增码有双向反例，且 manifest / capability / structural-token 三份基线已同批重生。
+
 ## 4. 技术选型的裁决出处
 
 | 决策 | 结论 | 出处 |
@@ -136,10 +150,10 @@ relay-core/
 
 | 闸 | 命令 | 当前实际输出 | 它独占守住的是什么 |
 |---|---|---|---|
-| ① 单元测试 | `npm test` | **50 条全过**（contracts 10 + store 15 + runtime 25） | 把下面四道闸接进一个入口；Store 侧另钉：幂等/冲突/隔离、身份链、终态守卫、openStore fail-closed、快照切点等价、并发 seq、P1 fixture 复验、F-037/F-070 反例、F-011 raw 终态封堵、writeGuard fencing；Runtime 侧另钉：run_id 五反例、仓级锁（活锁超时/在途锁不偷/TTL 回收/只删自己）、lease 全生命周期（接管/过期/死持有人/僵尸 renew/损坏回收/有界超时）、detached 强杀恢复 M3、真并发发号（同仓+跨仓）、三态读数 |
-| ② 校验器 selftest | `node tools/validate.mjs --selftest` | **pass=33 fail=0**（golden 11 + negative 22） | 每条反例**逐条命中写死的 reason code 与出错位置 `at`**，两者都不对就红 |
+| ① 单元测试 | `npm test` | **90 条全过**（contracts/store/runtime/rpc 四组） | 把下面四道闸接进一个入口；RPC 侧另钉：能力 hash 严格比对、真实本地 socket 分帧/坏帧、断连零 Store/cancel、订阅帧冻结校验、背压、JSON snapshot 与 F-057 窄码边界。 |
+| ② 校验器 selftest | `node tools/validate.mjs --selftest` | **pass=34 fail=0**（golden 11 + negative 23） | 每条反例**逐条命中写死的 reason code 与出错位置 `at`**，两者都不对就红 |
 | ③ 契约静态审计 | `node tools/audit-contracts.mjs` | 扫 12 份 schema/shape；闭合对象 24；条件收窄 1；有意开放点 3；未登记开口 0；非白名单厂商 token 0；`$ref` 实解析 **98 条**失败 0（`$id` 注册表 12 项）；结构 token 164 个未登记 0；**F-042：ajv.validateSchema 0 拒、meta 分叉 0；K-3 身份键内联 pattern 0**（两闸 DHR_29 批次新增） | 「没有我没想到的那几种」——`$ref` 真解析、开口全登记、结构 token 全白名单、meta 规则单一权威、身份 pattern 结构受闸 |
-| ④ fixture 基线 | `node tools/fixture-manifest.mjs` | **55 份逐份 digest 相符**（golden 11 / negative 载荷 22 / expect 22） | fixture **还是过审时那批**。没有它，②的通过数只能证明「当下盘上这批自洽」 |
+| ④ fixture 基线 | `node tools/fixture-manifest.mjs` | **57 份逐份 digest 相符**（golden 11 / negative 载荷 23 / expect 23） | fixture **还是过审时那批**。没有它，②的通过数只能证明「当下盘上这批自洽」 |
 | ⑤ 能力指纹基线 | `node tools/capability-baseline.mjs` | **8 份**（7 顶层协议 + 1 共享定义模块）digest 相符，`capability_hash = 970b54601ae582a5…`（批次 1 K-1/K-3 与批次 2 两处 description 更正后同批重生成） | schema **本身**没被改软。②③④ 全都盯 fixture 与结构，唯独没人钉 schema 全文 |
 
 ### 三份基线互不覆盖（这一节最容易被后来人省掉）
@@ -276,11 +290,7 @@ relay-core/
 
 ## 9. 已知不覆盖的（说清楚，别当已兑现）
 
-**验收口径 1 的「能力不匹配 fail-closed」本卡只兑现了一半**（F-064，唯一 open 的 P1）：
-
-- **兑现的**：指纹的**可复算性**。`capability-baseline.json` 让「两个实现能不能算出同一个指纹」变成可机器复算的，红测已验（只在某份 schema 的顶层 `description` 末尾加一个空格 → `exit 1`）。
-- **没兑现的**：指纹的**运行期比对**。契约层只能校验 `capability_hash` 的**形态**（`^[0-9a-f]{64}$`）——`capability-mismatch` 反例实测命中的是 `E_BAD_VALUE @ /handshake/capability_hash`，而一份**形态合法但与对端不同**的指纹，schema 必然放行，也只能放行。
-- **移交状态**：比对移交 **DHR_29**，**但 DHR_29 与 DHR_30 的验收口径里一个字都没提能力 / capability**，DevPlan §4.1 的 P5-M6 承接卡也只写了 DHR_28。「是否在 DevPlan 给 P5-M6 补上 DHR_29/30 的承接标注」属计划层改动，已摆给用户，**AI 未自行修改计划**。→ **DHR_29 接手时请先确认这条有没有落到你的卡上。**
+**能力不匹配 fail-closed 已由 DHR_52 补足运行期一半**：契约层仍只校验 `capability_hash` 的形态；`rpc/capabilities.mjs` 复算权威 8 份 capability 基线，`server.mjs` 在冻结信封通过后严格比较 peer hash。形态合法但不同的 hash 返回 `E_CAPABILITY_MISMATCH`，不按交集降级；该路径由真实本地 socket 回归钉住。DHR_52 只负责握手比较，不把客户端类型、CLI 或 Read Model 偷渡进来。
 
 另两处 schema 层的固有边界（`OPEN-POINTS.md` §H6，**不是缺陷但别以为 H6 已被完全兜住**）：
 

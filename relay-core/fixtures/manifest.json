@@ -3,9 +3,9 @@
   "canonicalization": "RFC 8785 (JCS) + sha256, lowercase hex — contracts/CANONICALIZATION.md",
   "counts": {
     "golden": 11,
-    "negative_payload": 22,
-    "negative_expect": 22,
-    "total": 55
+    "negative_payload": 23,
+    "negative_expect": 23,
+    "total": 57
   },
   "files": [
     {
@@ -189,8 +189,16 @@
       "digest": "43e0fce2ee86e8731c969456d62a0ebb22c6b4622bcd3d27ac6cbed7b33133b2"
     },
     {
+      "path": "negative/rpc-notification-cross-payload-reverse.expect.json",
+      "digest": "291037e0b86708049170db551bdcab6b6703ed15c4a398832b4dcb5fcee79d5e"
+    },
+    {
+      "path": "negative/rpc-notification-cross-payload-reverse.json",
+      "digest": "5840050082135bd3f6a1d8447ffeaf0f9041c86b63fc05b1bd1ee4fde5e42d06"
+    },
+    {
       "path": "negative/rpc-notification-cross-payload.expect.json",
-      "digest": "ed6a694cb26ad26866c899dca5d79e8bea544700723f2ef39bbe8b8e090bbd06"
+      "digest": "a339d1e15db32f5939f2a9ca680085d5212b226d61a6d6d932bb6d2c80f0856e"
     },
     {
       "path": "negative/rpc-notification-cross-payload.json",

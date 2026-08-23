@@ -8,7 +8,7 @@
     "relay-validate": "./tools/validate.mjs"
   },
   "scripts": {
-    "test": "node --test test/contracts.test.mjs test/store.test.mjs test/runtime.test.mjs",
+    "test": "node --test test/contracts.test.mjs test/store.test.mjs test/runtime.test.mjs test/rpc.test.mjs",
     "audit": "node tools/audit-contracts.mjs",
     "validate": "node tools/validate.mjs"
   },

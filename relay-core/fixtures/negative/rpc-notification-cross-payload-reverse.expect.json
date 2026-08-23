@@ -1,0 +1,6 @@
+{
+  "schema": "relay.rpc/v1",
+  "reason": "E_PROTOCOL_MISMATCH",
+  "at": "/params/protocol",
+  "why": "F-057 反向边界：method=event 却塞入完整、可独立识别的 relay.run-state/v1 冻结对象，同样是发送目标错误。"
+}

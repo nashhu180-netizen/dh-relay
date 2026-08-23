@@ -1,6 +1,6 @@
 {
   "schema": "relay.rpc/v1",
-  "reason": "E_BAD_VALUE",
+  "reason": "E_PROTOCOL_MISMATCH",
   "at": "/params/protocol",
-  "why": "D-1 收窄后的交叉污染防护：method=runStateChanged 却塞 relay.event/v2 载荷，被 allOf 分支的 $ref 拒。【期望已更正】原写 E_UNKNOWN_METHOD 是 oneOf 四分支错误串味所致，校验器已改为取最佳分支的错误。"
+  "why": "F-057：method=runStateChanged 却塞入完整、可独立识别的 relay.event/v2 冻结对象，是发送目标错误而非本协议普通坏值；只要该对象不再完整或不可识别，就不得报本码。"
 }

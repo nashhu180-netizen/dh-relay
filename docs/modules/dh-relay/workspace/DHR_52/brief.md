@@ -28,8 +28,8 @@
 
 ## 边界 (Boundaries)
 
-- In scope：`relay-core/rpc/`、`relay-core/test/`、`workspace/DHR_52/`；仅 F-057 经明确裁决后才可触及 `relay-core/contracts/` 与相应基线。
-- Out of scope：`relay-core/package.json`、`runtime/`、CLI 与任何客户端 Adapter、正式 Read Model、attention/approve、per-method 参数 schema、O-2/O-3 收窄、DHR_30/31。
+- In scope：`relay-core/rpc/`、`relay-core/test/`、`workspace/DHR_52/`；`relay-core/package.json` 仅限将 `test/rpc.test.mjs` 纳入既有 `npm test`（F-208）；仅 F-057 经明确裁决后才可触及 `relay-core/contracts/` 与相应基线。
+- Out of scope：`runtime/`、CLI 与任何客户端 Adapter、正式 Read Model、attention/approve、per-method 参数 schema、O-2/O-3 收窄、其他 `package.json` 改动、DHR_30/31。
 - 停止条件：需要越界修改 `runtime/` 或 `package.json`；需要新增/改动冻结 reason code/schema 而 F-057 尚未裁决；任一 P0/P1 连续三轮不收敛。
 
 ## 触及子系统

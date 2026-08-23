@@ -73,8 +73,7 @@ function toReason(err, payload) {
     // ⚠️ 这里必须二分，不能一律判 E_UNSUPPORTED_VERSION（批次检查点 3 小审 P2-1）：
     //   同名不同版（relay.run/v2 ← relay.run/v3）= 版本不认识 → E_UNSUPPORTED_VERSION，
     //     语义是「连字段含义都不确定，别往下猜」，客户端该去升级；
-    //   异名（relay.run-state/v1 ← relay.event/v2）= 根本是另一种协议 → E_BAD_VALUE，
-    //     客户端该去改发送目标，不是升级。
+    //   异名但不是一个完整、可识别的已冻结协议对象 = 普通坏值 → E_BAD_VALUE。
     // 首版只对 protocol_version 一个字段映射，于是 7 份协议里 6 份的未来版本落进
     // E_BAD_VALUE 兜底桶；同一份载荷按调用方式不同还会给出两种码。
     if (/(^|\/)protocol(_version)?$/.test(path)) {
@@ -139,7 +138,7 @@ function bestBranchErrors(ajv, doc, payload) {
 
 // 一份载荷可能触发多条错误；按 reason 的"语义具体度"排序，取最具体的一条对外报告。
 const REASON_RANK = [
-  'E_UNSUPPORTED_VERSION', 'E_DSH_ONLY_REQUIRED_ROLE', 'E_ABSOLUTE_LOCATOR', 'E_UNKNOWN_METHOD',
+  'E_PROTOCOL_MISMATCH', 'E_UNSUPPORTED_VERSION', 'E_DSH_ONLY_REQUIRED_ROLE', 'E_ABSOLUTE_LOCATOR', 'E_UNKNOWN_METHOD',
   'E_UNKNOWN_FIELD', 'E_MISSING_FIELD', 'E_UNKNOWN_ENUM', 'E_BAD_TYPE', 'E_BAD_VALUE',
 ];
 // 返回 { reason, at }。`at` = **定下这个 reason 的那条错**的 instancePath——不是随便某条错。
@@ -147,15 +146,46 @@ const REASON_RANK = [
 // toReason 的兜底桶、21 份反例里占 9 份，判别力最低。只钉码的话，「换个地方错、码碰巧一样」
 // 照样绿——比如某条 allOf 分支被改坏，只要该 fixture 里另有任何一处也落 E_BAD_VALUE，测试不红。
 // 钉上位置，fixture 才真的钉住了它想测的那一处。
-function pickReason(errors, payload) {
+function isFrozenProtocolMismatch(ajv, byId, err, payload) {
+  const path = err.instancePath || '';
+  const expected = String(err.params?.allowedValue ?? '');
+  const parent = path.slice(0, path.lastIndexOf('/'));
+  const candidate = pointerGet(payload, parent);
+  const actual = candidate?.protocol;
+  if (typeof actual !== 'string' || actual === expected) return false;
+  if (!byId.frozenProtocolIds?.has(actual)) return false;
+
+  const other = byId.get(actual);
+  // 只认已冻结的顶层协议：v0 shape 和 shared 定义均不能触发本码。
+  const short = other?.$id?.replace('https://dh-relay.local/contracts/', '');
+  if (!other || short !== actual || short.startsWith('v0-shapes/') || other.properties?.protocol?.const !== actual) {
+    return false;
+  }
+  const validateOther = ajv.getSchema(other.$id);
+  return typeof validateOther === 'function' && validateOther(candidate) === true;
+}
+
+function isUnfrozenProtocolVersion(byId, err, payload) {
+  const path = err.instancePath || '';
+  const actual = pointerGet(payload, path);
+  if (typeof actual !== 'string' || byId.frozenProtocolIds?.has(actual)) return false;
+  const nameOf = value => value.slice(0, value.lastIndexOf('/'));
+  return [...(byId.frozenProtocolIds ?? [])].some(frozen => nameOf(frozen) === nameOf(actual));
+}
+
+function pickReason(ajv, byId, errors, payload) {
   // 判别字段优先：若 `protocol` / `protocol_version` 常量本身不对，说明载荷根本不是这份
   // 协议（或不是这个版本），其余错（未知字段、缺必填…）全是下游噪音。不这样排的话会报
   // E_UNKNOWN_FIELD，对使用者是误导——「我发的明明是合法 event，怎么说我字段未知」。
-  // ⚠️ 这里**不能硬编码返回值**（批次检查点 3 小审 P2-1）：判别字段有两种归宿
-  // （异名→E_BAD_VALUE、同名异版→E_UNSUPPORTED_VERSION），硬编码等于只兑现其中一种。
-  // 交给 toReason 判，本函数只负责「优先级」这一件事。
+  // 完整、可识别的另一已冻结协议对象是 F-057 的第三种窄归宿；其余仍交给 toReason
+  // 二分（同名异版→E_UNSUPPORTED_VERSION；本协议内或不完整异名→既有码）。
   const disc = errors.find(e => e.keyword === 'const' && /(^|\/)protocol(_version)?$/.test(e.instancePath || ''));
-  if (disc) return { reason: toReason(disc, payload), at: locOf(disc) };
+  if (disc && isUnfrozenProtocolVersion(byId, disc, payload)) {
+    return { reason: 'E_UNSUPPORTED_VERSION', at: locOf(disc) };
+  }
+  if (disc && isFrozenProtocolMismatch(ajv, byId, disc, payload)) {
+    return { reason: 'E_PROTOCOL_MISMATCH', at: locOf(disc) };
+  }
   const rs = errors.map(e => toReason(e, payload));
   for (const r of REASON_RANK) {
     const i = rs.indexOf(r);
@@ -178,6 +208,7 @@ export function loadAjv() {
   const ajv = new Ajv2020({ allErrors: true, strict: false, allowUnionTypes: true });
   addFormats(ajv); // F-024：不加载就等于 format 空转
   const byId = new Map();
+  byId.frozenProtocolIds = new Set();
   const walkDir = d => readdirSync(d, { withFileTypes: true }).flatMap(e =>
     e.isDirectory() ? walkDir(join(d, e.name)) : (/\.(schema|shape)\.json$/.test(e.name) ? [join(d, e.name)] : []));
   for (const f of walkDir(CONTRACTS).sort()) {
@@ -187,6 +218,7 @@ export function loadAjv() {
     // 同时接受短标识（relay.run/v2）
     const short = doc.$id?.replace('https://dh-relay.local/contracts/', '').replace('v0-shapes/', '');
     if (short) byId.set(short, doc);
+    if (typeof doc.properties?.protocol?.const === 'string') byId.frozenProtocolIds.add(doc.properties.protocol.const);
   }
   return { ajv, byId };
 }
@@ -200,7 +232,7 @@ export function validateOne(ajv, byId, schemaId, payload) {
   // oneOf 根：改用最佳分支的错误，避免四个分支的错误互相串味
   const errs = bestBranchErrors(ajv, doc, payload) ?? v.errors;
   if (errs.length === 0) return { ok: true, reason: null };
-  const { reason, at } = pickReason(errs, payload);
+  const { reason, at } = pickReason(ajv, byId, errs, payload);
   return { ok: false, reason, at, detail: ajv.errorsText(errs, { separator: ' | ' }) };
 }
 

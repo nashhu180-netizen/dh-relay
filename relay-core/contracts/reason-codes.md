@@ -9,7 +9,8 @@
 | code | 何时报 | 为什么不能宽容 |
 |---|---|---|
 | `E_UNKNOWN_FIELD` | 载荷含 schema 未声明的字段（**除 `OPEN-POINTS.md` 登记的 3 处有意开放点外**，全域 `additionalProperties: false`） | 未知字段常常是"新版本客户端在说旧版本听不懂的话"。放过它 = 单方面假设语义兼容，而真相账不能建立在假设上。v1 已是同口径（`unknown-field:<key>`），v2 继承 |
-| `E_UNSUPPORTED_VERSION` | **判别字段**（`relay.rpc/v1` 握手叫 `protocol_version`，其余 6 份协议叫顶层 `protocol`）取值是**同名协议的另一个版本**，如 `relay.run/v3` ← `relay.run/v2` | 同上，且更硬：版本不认识意味着**连字段含义都不确定**。v1 同口径（`schema_version` 精确等于 `relay/v1`，`-cne` 大小写敏感）。⚠️ **与 `E_BAD_VALUE` 的分界（批次检查点 3 小审 P2-1）**：判别字段**异名**（`relay.run-state/v1` 收到 `relay.event/v2`）不是版本问题、是**发错了协议**，报 `E_BAD_VALUE`——两者给客户端的行动不同（前者去升级，后者去改发送目标），混在一起等于让对方猜。首版只对 `protocol_version` 一个字段映射本码，于是 7 份协议里 6 份的未来版本落进 `E_BAD_VALUE` 兜底桶，同一份载荷按调用方式不同还会给出两种码 |
+| `E_UNSUPPORTED_VERSION` | **判别字段**（`relay.rpc/v1` 握手叫 `protocol_version`，其余 6 份协议叫顶层 `protocol`）取值是**同名协议的另一个版本**，如 `relay.run/v3` ← `relay.run/v2` | 同上，且更硬：版本不认识意味着**连字段含义都不确定**。v1 同口径（`schema_version` 精确等于 `relay/v1`，`-cne` 大小写敏感）。首版只对 `protocol_version` 一个字段映射本码，于是 7 份协议里 6 份的未来版本落进 `E_BAD_VALUE` 兜底桶，同一份载荷按调用方式不同还会给出两种码 |
+| `E_PROTOCOL_MISMATCH` | 在一个已冻结协议位置收到**完整且可识别的另一已冻结协议对象**，例如 `method=runStateChanged` 的 `params` 收到完整 `relay.event/v2`，或反过来 | 这是发送目标错了，不是升级问题：客户端应改投递位置。仅当错误位置上的整个对象可独立通过另一份已冻结顶层协议的校验时才报本码；缺字段、未知字段、同名异版及本协议内普通坏值仍分别报既有码，不能把宽泛的 `protocol` 不同都归到本码 |
 | `E_CAPABILITY_MISMATCH` | 握手 `capability_hash` 与 Runtime 不符 | 能力集不同 = 双方对"能做什么"的理解不同。按交集工作看似友好，实则让客户端以为某能力存在而它并不存在 |
 
 ## 二、start 前置
@@ -63,6 +64,6 @@
 
 ## 汇总
 
-共 **23** 个码（去重实测：`grep -oE '\bE_[A-Z][A-Z0-9_]+\b' reason-codes.md | sort -u | wc -l` → 23），覆盖 fail-closed 三条、start 前置、契约结构、幂等冲突、Executor 生命周期、RPC 六类。
+共 **24** 个码（去重实测：`grep -oE '\bE_[A-Z][A-Z0-9_]+\b' reason-codes.md | sort -u | wc -l` → 24），覆盖 fail-closed 三条、start 前置、契约结构、幂等冲突、Executor 生命周期、RPC 六类。
 
 **新增码的规矩**：加码必须同时 ①写进本表 ②在 `fixtures/negative/` 加一份能触发它的反例 + `.expect.json` ③说明它与既有码的边界（尤其别和 `E_EXECUTOR_HOST_LOST` / `observation_lost` 的分界线混淆）。

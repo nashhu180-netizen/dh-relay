@@ -9,7 +9,7 @@
 
 | 子 agent | 范围（只读 / 可写哪些文件） | 谁批准 |
 |---|---|---|
-| OMP `deepseek-v4-flash` | 可写 `relay-core/rpc/**`、`relay-core/test/rpc.test.mjs`、`workspace/DHR_52/progress.md`；只读其它上下文；禁止 contracts/package/runtime/CLI/主干提交/再派 agent | 用户 2026-08-22 对话确认开工；主控本文件精确限权 |
+| OMP `deepseek-v4-flash`（`thinking=xhigh`） | 可写 `relay-core/rpc/**`、`relay-core/test/rpc.test.mjs`、`workspace/DHR_52/progress.md`；`relay-core/package.json` 仅限 F-208 的标准 test 门面接线；只读其它上下文；禁止其它 contracts/package/runtime/CLI/主干提交/再派 agent | 用户 2026-08-22 对话确认开工；用户 2026-08-22 指定不用 low，主控本文件精确限权 |
 
 ## 收尾铁律
 
