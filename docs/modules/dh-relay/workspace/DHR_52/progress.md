@@ -119,6 +119,7 @@
 | E-076 | review | 主控只读横向比对：capability、协议错位、跨边界发送、连接订阅 4 维度 / 13 处同类实现与回归。 | approved | E14 无 P0/P1/P2；F-214/F-215 为 P3 尾巴，已分流。 |
 | E-077 | observed | `ACC-2026-08-23-01`（worktree `docs/acceptance/验收池.md`）。 | observed | E9：F-214~F-217 统一入验收池，不阻断本卡。 |
 | E-078 | fail | 主干 `npm test` → 89/90；定向 `node --test --test-name-pattern='host：租约被换手后旧会话自动停机且不释放别人的租约' test/runtime.test.mjs` → 0/1，均报 `E_LEASE_HELD:lease-lost`。 | fail | E12 集成复验失败，verify 不可执行；DHR_52 RPC 定向用例在全量中通过。 |
+| E-079 | pass | 用户授权 DHR_51-F225 维护；squash `e55a7f8` 后主干 `npm test` → **90/90**；`validate --selftest` → **34/34**；audit 0；fixture manifest **57**；capability baseline **8**（`970b54601ae582a5…`）；`git diff --check` 通过。 | pass | F225 已收敛；DHR_52 四条完成条件、复核、E5/E14 与刷新后的 E10 均保持成立，可进入既有 E11 授权包的 verify。 |
 
 ## OMP 可观测性实验
 
