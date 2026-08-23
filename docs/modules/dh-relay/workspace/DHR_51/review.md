@@ -1,7 +1,9 @@
 <!-- dh:v1 -->
 # review — DHR_51
 
-## E4 需求复核（2026-08-22，fresh 只读 · 需求视角）
+## 独立复核区
+
+### E4 需求复核（2026-08-22，fresh 只读 · 需求视角）
 
 - **复核实例**：E4Requirement（fresh subagent，零上下文，只读；未参与实施）。基线 `HEAD = f34f1a5`（wt/DHR_51），diff = `master..HEAD`（18 文件 +1203 −8）。只读验证命令实跑：`npm test` 41/41 绿、`validate --selftest` pass=33 fail=0、`audit-contracts` 全绿（token 164 未登记 0）、`fixture-manifest` 55 份相符、`capability-baseline` 8 份相符且 `capability_hash=970b54601ae582a5…` 与 DHR_29 收口值零漂移；`node runtime/status.mjs <run_id> --root <p>` 命令行形态冒烟通过（输出 JSON、exit 0）。
 - **复核依据**：brief.md 完成条件 7 条、DevPlan §3.2 DHR_51 卡（目标/非目标三条硬边界/验收 6 机器证+1 人判/实施提示 6 条）、relay-core/README.md 硬约束 6 条、compat-matrix §6 移交三条、reason-codes.md。
@@ -51,7 +53,7 @@
 
 ---
 
-## 第一轮·全面复核（2026-08-22，fresh 只读 · 代码视角）
+### 第一轮·全面复核（2026-08-22，fresh 只读 · 代码视角）
 
 - **复核实例**：ReviewRound1（fresh subagent，零上下文，只读；未参与实施）。基线：**复核期间 HEAD 三次前移——`f34f1a5`（原批次）→ `67cc8c4`（收敛批：移交② Oracle 复验 + 索引锁跨仓互斥 + F-009 测试隔离 + F-105~108）→ `8960ae3`（P1 修复批 66d24e3 + F-109 登记）**，三版全部复核；最终复核基线 `git diff master..8960ae3` = 21 文件 +1427 −8。worktree 余 Main 的 knowledge/progress 未提交增量（与代码无关）。
 - **只读验证实跑（最终 HEAD 8960ae3 + 在场测试）**：`npm test` **48/48** exit 0；`validate --selftest` pass=33 fail=0；`audit-contracts` 全绿（token 164 未登记 0）；`fixture-manifest` 55 份相符；`capability-baseline` 8 份相符、`capability_hash=970b54601ae582a5…` **零漂移**（契约零改动，与 DHR_29 收口逐字一致）。
@@ -92,7 +94,7 @@
 
 ---
 
-## E14 一致性复核（2026-08-22，fresh 只读 · 横向比对）
+### E14 一致性复核（2026-08-22，fresh 只读 · 横向比对）
 
 - **复核实例**：E14Consistency（fresh subagent，零上下文，只读；未参与实施）。基线 `HEAD = f34f1a5`（wt/DHR_51），diff = `master..HEAD`（18 文件 +1203 −8）。
 - **比对口径**：只扫「本次碰到的东西在别处有没有兄弟」——lease/锁/发号/宿主/三态读数相关既有实现与文档：v1 Oracle（`tools/contracts/relay-identity.ps1`、`tools/runner/relay-store.ps1`、`tools/tests/relay-runner-authority.ps1`、fixture `result-A1-wrong-generation.json`）、`design/02`（B7/D18/D23 原文）、DevPlan P5 DHR_51 卡、`contracts/{reason-codes.md,compat-matrix.md,relay.event.v2.schema.json,_shared/relay.common.v1.schema.json}`、as-built §3.5/§8.4。
@@ -125,7 +127,7 @@
 
 ---
 
-## E5 教训复核（2026-08-22，fresh 只读 · 教训库对照）
+### E5 教训复核（2026-08-22，fresh 只读 · 教训库对照）
 
 - **复核实例**：E5Lesson（fresh subagent，零上下文，只读；未参与实施）。基线 `HEAD = f34f1a5`（wt/DHR_51），diff = `master..HEAD`（18 文件 +1203 −8）。
 - **复核依据（在册）**：`docs/modules/dh-relay/knowledge/教训库-候选.md` 候选-1~14 全文 + `as-built/relay-core.md` §6 八条与 §3.5 已知边界。方法：先实跑基线（`npm test` 41/41 绿），再在**临时副本**（工作区零改动）做 9 个变异探针：7 个单元/库层变异验证"断言在咬"，2 个宿主会话层变异验证"删合法路径是否红"。
@@ -194,7 +196,7 @@
 
 ---
 
-## 第二轮·增量复核（2026-08-22，fresh 只读 · 核销 + 对抗证伪）
+### 第二轮·增量复核（2026-08-22，fresh 只读 · 核销 + 对抗证伪）
 
 - **复核实例**：ReviewRound2（fresh subagent，零上下文，只读；未参与实施、未参与轮1）。
 - **基线说明**：复核期间 HEAD 从 brief 记录的 f109c58 前移到 **7b98fde**（主控补提交 as-built 收口 + progress 收敛账，恰是本轮待核销的 R1-04 落点），最终复核基线 `git diff master..HEAD` = **20 文件 +1498 −13**（master=b441fc6）。worktree 未提交增量仅 `knowledge/教训库-候选.md`（E5 候选-15 登记，8 行）与 `workspace/DHR_51/review.md`（本文件），与代码无关。
@@ -287,6 +289,15 @@
 
 ---
 
+### 两轮独立复核结论
+
+| 轮次 | 复核人 | 结论 |
+|---|---|---|
+| 第一轮·全面复核 | ReviewRound1（fresh subagent，未参与实施） | changes-requested 已闭合 |
+| 第二轮·增量复核 | ReviewRound2（fresh subagent，未参与实施且未参与第一轮） | approved |
+
+## AI 提交区　⚠️ This is not human approval
+
 ## E8~E10 收口区（verify 备料，2026-08-22 主控）
 
 ### E8 完成条件逐条挂证据
@@ -300,6 +311,18 @@
 | 5 | F-011 封堵回归 | store.test.mjs「F-011 封堵——终态 kind 不得经 raw appendEvent」「writeGuard 失守拦截」 | PASS |
 | 6 | 移交② lease 等价性复核 | runtime.test.mjs「移交②：P1 恢复锁/CAS Oracle 复验」（result-A1-wrong-generation.json 实读）+ findings F-105 落账 + as-built §8.4 回写 | PASS |
 | 7 | 人判需求境（宪章#3） | E-201 机器侧预演已录（progress）；真实终端闭环待 E11 用户执行/确认 | 待人验 |
+
+### 完成条件逐条挂证据
+
+| # | 完成条件 | 谁验 | 证据 | 达成? |
+|---|---|---|---|---|
+| 1 | Detached 宿主在启动它的终端关闭后仍存活推进或可恢复；DSH 不参与。 | AI + 人 | E-201/E-202；`runtime.test.mjs` detached 场景；verify `bd6b3b5` | [x] |
+| 2 | 强杀宿主后新宿主从 Store 重建逐字节相同 `state_signature`；同 Run 第二宿主被拒（`E_LEASE_HELD`）；lease 过期（或持有人进程已死）可接管；三态读数正确区分活着/已死/lease 过期。 | AI | `runtime.test.mjs` 的强杀、拒第二宿主、接管与三态用例；E-202；verify `bd6b3b5` | [x] |
+| 3 | Store 根落 `<repo>/.dh-relay/<run_id>/`；`.gitignore` 前置缺失 start fail-closed（按 `git check-ignore` 语义判定，反例=任意深度模式）；不改业务仓 `.gitignore`；零误跟踪双证。 | AI | `runtime.test.mjs` 的 E_GITIGNORE_MISSING、任意深度与零误跟踪用例；verify `bd6b3b5` | [x] |
+| 4 | `run_id = R<nnn>-<slug>-<yyyyMMdd>` 规范化 + 仓级锁内发号：真并发两进程各得不同序号、无跳号无重号；`(repo, run_id)` 复合键唯一；slug 五反例（中文/大写/空格/超长/首尾短横线）拒绝且不静默截断；锁有超时与陈旧回收。 | AI | `runtime.test.mjs` 五反例、真并发、锁超时与回收用例；verify `bd6b3b5` | [x] |
+| 5 | F-011 封堵：终态 kind（`attempt_succeeded/failed/orphaned`）不能经 raw `appendEvent` 落账，只能经 `appendResult`；回归反例钉住。 | AI | `store.test.mjs` F-011 封堵回归；verify `bd6b3b5` | [x] |
+| 6 | lease 语义等价性复核：用 P1 恢复锁/CAS 用例（`result-A1-wrong-generation.json` 的权威代次拒收语义为 Oracle）证明 v2 lease+fencing 的唯一写者保证不弱于 v1 `authority_generation`；结论落账。 | AI | `runtime.test.mjs` 移交② Oracle 复验、findings F-105、as-built §8.4；verify `bd6b3b5` | [x] |
+| 7 | 人判需求境证据：真实开一个 Run → 关掉全部终端（或断 SSH）→ 隔一段时间回来 → 跑宿主状态读数看到宿主与账都在。实录留 progress.md。 | 人 | E-201/E-202；verify `bd6b3b5` 的 `Verified-Via: chat-confirm` 与真实终端演示记录 | [x] |
 
 ### E9 交付汇报（七段）
 
@@ -317,3 +340,9 @@
 - 变异探针实证（全部临时副本、仓库零改动）：F-011 封堵删→红；writeGuard 不接线→红；损坏租约当无锁→红（复现旧挂死）；新鲜度闸删→红；renew rename 覆写→红；MUT-C 删续租→红。
 - 真实场景（E-201）：临时仓 R001-demo-20260822 + detached 宿主 pid 13952 → 启动 shell 退出 → 新 shell `status.mjs` 输出 host=alive、events=2、租约在续 → SIGKILL → 接管 epoch 2 → 现场清理。
 - 人判需求境闭环操作路径（E11 供用户执行）：①我准备演示脚本（复用 E-201 现场流程）→ ②用户关掉全部终端 → ③新终端跑状态读数看到宿主与账都在 → ④结论回填 progress。
+
+## 人类签名区
+
+| 验什么 | 做什么 | 通过标准 | 结果 |
+|---|---|---|---|
+| DHR_51 人判需求境 | 审阅 E-201/E-202 的真实终端关闭与恢复演示 | 新终端读到宿主与账仍在，强杀后可安全接管 | [x] 用户于 2026-08-22 对话确认；`verify(dh-relay)` `bd6b3b5` 已记录 `Verified-Via: chat-confirm` |

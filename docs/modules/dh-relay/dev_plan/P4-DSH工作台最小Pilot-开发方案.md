@@ -1,7 +1,7 @@
 # P4-DSH 优先的多控制面最小 Pilot 开发方案
 
 <!-- dh:plan-type: 开发 -->
-<!-- dh:planning-event:v1 id=DHR-B-11 stage=B-adjust artifact=dev_plan/P4-DSH工作台最小Pilot-开发方案.md review=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#review-b11 understanding=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#understanding-b11 -->
+<!-- dh:planning-event:v1 id=DHR-B-16 stage=B-adjust artifact=dev_plan/P4-DSH工作台最小Pilot-开发方案.md review=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#review-b16 understanding=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#understanding-b16 -->
 <!-- dh:status
 汇报: 命令行看真实任务已验收可用（DHR_27 全验收通过，用户判 CLI 够格作独立控制面、值得继续建 Runtime）；桌面版还剩面板一张卡加收尾一张卡
 现状: DHR_25、DHR_26、DHR_27、DHR_49、DHR_50 均已完成；DHR_50 结论为 **passed-with-constraints**（CM4/CM6b 通过；P4-DM2 目标机 UI 未证、H-e2e 未做均保留为约束），用户选 DSH 为 Windows 日常首选控制面
@@ -129,7 +129,7 @@
 |---|---|---|---|---|---|---|---|
 | DHR_25 | 冻结客户端中立 Read Model、fixture 与 Windows/SSH CLI 必备控制面 | 轻 | 已完成 | - | [workspace/DHR_25/](../workspace/DHR_25/task.md) | 2026-08-18（轻档人判签收，无 verify 提交） | 必备控制面轨；开工前需用户对话确认；轻档 + 人判签收（用户 2026-08-18 拍板） |
 | DHR_26 | 树外装载 DSH Host Plugin、升级到 rc.7 并完成树外插件现场侦察 | 标准 | 已完成 | DHR_25 | [workspace/DHR_26/](../workspace/DHR_26/review.md) | `c90cf88`（2026-08-20 user-signed） | 桌面控制面轨 · Host 半程；DM1 / DM4a / DM5a 与版本基线事实已登记，未贴三态标签（三态归 DHR_50，B-11 前为 DHR_27）；侦察落档已交付，DHR_49 开工输入齐备；B-10 由原 DHR_26 缩范围而来 |
-| DHR_49 | 找到树外 Client Bundle 可复现构建配方并做出列表屏 + 详情屏面板 | 标准 | **已完成（含判否事实）** | DHR_26 | [workspace/DHR_49/](../workspace/DHR_49/review.md) | 2026-08-21 / `df8184d`（**带风险放行**，chat-confirm 代签） | 桌面控制面轨 · Client 半程；2026-08-20 开工（用户对话确认：标准档、不开 worktree、委托全留主会话，两轮换人复核仍派 fresh agent）；本阶段唯一真未知；允许命中止损并交**判否事实**（三态标签只在 DHR_50 由人判落——B-11 前为 DHR_27，本卡状态机仍用「已完成（含判否事实）」或「已取消并留因」）；B-10 新建（讨论中称「26b」） ⚠️ **2026-08-21 收口结论**：DM3 / DM6 / DM4b / DM5b 成立；**P4-DM2 不得记 pass**——判据①成立，判据②差最后一格「面板渲染出数据」（目标机没有开着的会话，用户点选暂不补）。人判项 H-midgate 通过、**H-e2e 未做**（用户答「没从零敲过」；零上下文机器代跑作旁证并抓到 `--port` 未写，旁证不顶人判）。两轮换人复核全闭合（轮 1 = CP1 / **CP2 补派** / CP3 两轮 / CP4；轮 2 fresh-context）。228 断言 skipped 0、六份变异脚本 89 条全见红、证据 133 条。三态不在本卡落。 |
+| DHR_49 | 找到树外 Client Bundle 可复现构建配方并做出列表屏 + 详情屏面板 | 标准 | 已完成 | DHR_26 | [workspace/DHR_49/](../workspace/DHR_49/review.md) | 2026-08-21 / `df8184d`（**带风险放行**，chat-confirm 代签） | 桌面控制面轨 · Client 半程；2026-08-20 开工（用户对话确认：标准档、不开 worktree、委托全留主会话，两轮换人复核仍派 fresh agent）；本阶段唯一真未知；允许命中止损并交**判否事实**（三态标签只在 DHR_50 由人判落——B-11 前为 DHR_27，本卡状态机状态为「已完成」，判否事实见本说明）；B-10 新建（讨论中称「26b」） ⚠️ **2026-08-21 收口结论**：DM3 / DM6 / DM4b / DM5b 成立；**P4-DM2 不得记 pass**——判据①成立，判据②差最后一格「面板渲染出数据」（目标机没有开着的会话，用户点选暂不补）。人判项 H-midgate 通过、**H-e2e 未做**（用户答「没从零敲过」；零上下文机器代跑作旁证并抓到 `--port` 未写，旁证不顶人判）。两轮换人复核全闭合（轮 1 = CP1 / **CP2 补派** / CP3 两轮 / CP4；轮 2 fresh-context）。228 断言 skipped 0、六份变异脚本 89 条全见红、证据 133 条。三态不在本卡落。 |
 | DHR_27 | 接 v1 只读投影并完成 CLI 控制面收口与 P4 主报告 | 标准 | 已完成 | DHR_25 | [workspace/DHR_27/](../workspace/DHR_27/brief.md) | 2026-08-20 / `252a131`（release_mode=full） | 必备控制面轨 · CLI 收口；CM3/CM6a/B1子集全绿、CM4 记「延后（DHR_50）」；H1「够，认可」+ H4「值得，继续」（用户 2026-08-20 点选）；两轮换人复核（3 批小审+E2 增量）+E4/E14 全闭合；尾巴入池 ACC-2026-08-20-01/02 |
 | DHR_50 | 补录 CLI↔DSH 跨客户端对证、由用户收敛 DSH 三态并写 P4 报告附录 | 轻 | 已完成 | DHR_49（通过或已落判否证据）、DHR_27 | [workspace/DHR_50/](../workspace/DHR_50/task.md) | 2026-08-21（轻档用户人判签收，无 verify 提交） | 桌面控制面轨收口；CM4/CM6b 通过，用户三态 = `passed-with-constraints`；约束为 P4-DM2 目标机 UI 未证、H-e2e 未做。H2 选 DSH 为 Windows 日常首选控制面；DHR_30 Bridge 条件部分与 DHR_31 DSH 附加客户端项解除“待 DHR_50”状态。 |
 

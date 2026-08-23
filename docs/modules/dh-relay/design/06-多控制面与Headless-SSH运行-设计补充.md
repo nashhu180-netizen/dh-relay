@@ -1,5 +1,5 @@
 <!-- dh:v1 -->
-<!-- dh:planning-event:v1 id=DHR-A-09 stage=A-full artifact=design/06-多控制面与Headless-SSH运行-设计补充.md review=evidence/09-P4至P9阶段计划-交叉审核记录.md#review-a09 understanding=evidence/09-P4至P9阶段计划-交叉审核记录.md#understanding-a09 -->
+<!-- dh:planning-event:v1 id=DHR-A-12 stage=A-full artifact=design/06-多控制面与Headless-SSH运行-设计补充.md review=evidence/09-P4至P9阶段计划-交叉审核记录.md#review-a12 understanding=evidence/09-P4至P9阶段计划-交叉审核记录.md#understanding-a12 -->
 # 多控制面、Headless 与 SSH 运行：设计补充
 
 > 状态：正式设计补充，按阶段闸生效。本文补充并修正 `design/05` 的控制面边界，可以作为 P4～P9 拆计划与 B-adjust 输入；本文不授权任何任务卡直接开工。
@@ -302,18 +302,18 @@ Windows 验证 DSH 工作台与 Relay CLI 两条并行、可配置替换的控�
 
 | ID | 验收命题 |
 |---|---|
-| H1 | DSH 未安装或完全停止时，Relay Runtime 可以启动、查询、运行和恢复 |
-| H2 | Relay CLI 能完成 list/status/inspect/watch/start/stop/resume/attention/approve 的基线控制 |
-| H3 | DSH、Pi 与 CLI 读取同一 Read Model，对同一 Run 的状态和终态一致 |
-| H4 | 客户端断开、DSH 插件卸载和 SSH 断开均不隐式取消 Run |
-| H5 | 没有客户端在线时，自动节点继续；需要人类输入时安全暂停并留下持久 Attention |
-| H6 | 任一必经 Workflow 角色至少存在一个非 DSH-only 合法 Executor Profile |
-| H7 | DSH-only Executor 丢失只影响对应 Attempt，不能污染其他节点或 Run 真相 |
-| H8 | 同一 Approval Request 经 DSH 或 CLI 提交后生成语义相同、hash 绑定的 Receipt |
-| H9 | Linux 无 GUI、仅 SSH 时，可以运行 Runtime、CLI、Herdr 和一条代表性工作流 |
-| H10 | Headless 缺少强证据能力时，启动前拒绝、路由或暂停，不静默降级 |
-| H11 | 更换控制客户端不改变 Authority、ResolvedPlan、Gate、Result 和 Verify |
-| H12 | 更换 Agent Executor 时产生 fresh Attempt，并重新经过相同质量链 |
+| HC-CTRL-H1 | DSH 未安装或完全停止时，Relay Runtime 可以启动、查询、运行和恢复 |
+| HC-CTRL-H2 | Relay CLI 能完成 list/status/inspect/watch/start/stop/resume/attention/approve 的基线控制 |
+| HC-CTRL-H3 | DSH、Pi 与 CLI 读取同一 Read Model，对同一 Run 的状态和终态一致 |
+| HC-CTRL-H4 | 客户端断开、DSH 插件卸载和 SSH 断开均不隐式取消 Run |
+| HC-CTRL-H5 | 没有客户端在线时，自动节点继续；需要人类输入时安全暂停并留下持久 Attention |
+| HC-CTRL-H6 | 任一必经 Workflow 角色至少存在一个非 DSH-only 合法 Executor Profile |
+| HC-CTRL-H7 | DSH-only Executor 丢失只影响对应 Attempt，不能污染其他节点或 Run 真相 |
+| HC-CTRL-H8 | 同一 Approval Request 经 DSH 或 CLI 提交后生成语义相同、hash 绑定的 Receipt |
+| HC-CTRL-H9 | Linux 无 GUI、仅 SSH 时，可以运行 Runtime、CLI、Herdr 和一条代表性工作流 |
+| HC-CTRL-H10 | Headless 缺少强证据能力时，启动前拒绝、路由或暂停，不静默降级 |
+| HC-CTRL-H11 | 更换控制客户端不改变 Authority、ResolvedPlan、Gate、Result 和 Verify |
+| HC-CTRL-H12 | 更换 Agent Executor 时产生 fresh Attempt，并重新经过相同质量链 |
 
 ## 12. 当前不做
 

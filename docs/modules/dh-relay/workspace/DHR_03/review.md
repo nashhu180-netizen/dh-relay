@@ -21,7 +21,7 @@
 |------|--------------|----------------------|---------|
 | 1 | 0（两轮均无 open P0/P1；R1-01 P1 在轮1 进行中已由 8a0fcbc 修掉并被轮1 亲验） | 主控一次性合并处理两轮 P2/P3：R2-01/附注A（阶段1 失败 kill-session + 可注入 ClientStopper 停窗口进程）、R2-02（stop 空列表∧pane 活→照样 kill 确认）、R2-03（launchCommand/clientLauncher/registry 落盘抛异常→`psmux-command-failed`）、R2-04（dogfood stop 有界重试 3 次 + 收尾列未回收会话）、R1-02/R2-05（worker-entry 只删空值 CLAUDE_CONFIG_DIR）、R1-03（证据拷贝改逐目录 + 不吞错）、R1-04/R2-08（`Get-RelayHostOutcome` 纯函数·`Invoke-RelayHost` done-with-paused 返 3·host-loop 套件 paused 用例）、R1-05（windows.txt 只记 RELAY:* + 已入仓 18+4 份就地清洗；preflight 写法同改）、R1-06（静态扫描加 run-dogfood + send-keys/paste-buffer/load-buffer）、R1-07/R2-06（E-012 措辞更正 + `Copy-RelayEvidence` 加 plans/）、R2-07（dogfood 截图名加 tick 序号）、附注B（默认窗口启动器改 ProcessStartInfo.ArgumentList）；**转 backlog**：R1-08 consumed 无轮转、R1-09 spawner 同步阻塞（有意设计·README 已述）、R2-09 Runner 提交 tmp 同名竞态（涉 Runner core，本卡"只扩不改"）——记 findings F-022；重跑：离线 `RELAY ALL PASS (SKIPPED: 1)`（adapter 53 / host-loop 35 / agent-tool 32）、真实套件 14/14、adapter 级 preflight 5/5、**dogfood blocked run6**（新代码路径全量重取 A3 证据·E-018）；主控 E10 备料自查又逮 F-024（整屏截图隐私面）→ 截图改 PrintWindow 只拍 RELAY 窗口、38 份旧 PNG 全删、preflight 5/5 与 **blocked run7**（E-020）重取 | 是（0 open P0/P1；P2 全修、P3 修 5 转 3；F-024 主控自查修） |
 
-**需求复核结论**：A3/A4/A7 三条机器证均满足，且轮1/轮2 独立复算签名、复现变异探针、核对迟到结果哈希后均判"证据链可信、未发现可伪造点"；H1 用户判通过、H2 判「有条件值得：先跑真实业务任务再定」（2026-08-16 对话）｜证据 E-012→E-018→E-020（run7 现役）/E-014/E-006+E-011｜由 主控(opus) 汇总 + 轮1 account4 + 轮2 account9｜派出=log:review-logs/review-r{1,2}-*.md
+**需求复核结论**：A3/A4/A7 三条机器证均满足，且轮1/轮2 独立复算签名、复现变异探针、核对迟到结果哈希后均判"证据链可信、未发现可伪造点"；H1 用户判通过、H2 判「有条件值得：先跑真实业务任务再定」（2026-08-16 对话）｜证据 E-012→E-018→E-020（run7 现役）/E-014/E-006+E-011｜由 主控(opus) 汇总 + 轮1 account4 + 轮2 account9｜派出=log:review-logs/review-r1-account4.md + log:review-logs/review-r2-account9.md
 
 **教训复核结论**：L-001～L-004 保留；本轮新增候选 L-005「失败分支清理要按"资源已创建时刻"逐条对表（阶段1 客户端已起但会话未现→漏 kill）」、L-006「进仓证据的窗口/进程枚举类文件先按白名单过滤（隐私面），不能事后靠扫描凭据兜底」｜由 主控(opus)，素材来自轮1 R1-05/轮2 R2-01｜派出=n/a（主会话）
 
@@ -33,7 +33,7 @@
 |---------|---------|-------------|------|---------|
 | psmux adapter 六动词返回形状 / 9 键 | `adapters/fake-adapter.ps1` + `adapters/README.md` v1 契约 | 一致（离线套件"adapter has exactly nine keys"+ launch 返回 `session_id`/`handle`、probe `terminal_state/probe_error`、stop `exited_after_ms` 同形） | 无需处置 | E-006/E-011 |
 | psmux 会话拉起（清 PSMUX_SESSION / 重名 fail-closed / 退出码） | dh-crew `dispatch-launch.ps1` `Invoke-PsmuxNewSession`（只读参考·不调用） | 不一致：dh-crew 走 `new-session -d` + 另开 attach 客户端；relay 改为窗口拥有会话（`new-session -s` 非 -d·不调 attach），因实测 psmux `attach -t` 无视目标（F-016） | 有意差异（dh-crew 侧多会话共存时同样会踩 F-016，已记 backlog 提示） | E-011 |
-| 宿主循环对 Runner 的调用面 | `as-built/relay-runner.md` 入口清单（只调不复制判定） | 一致（宿主只调 New/Open-RelayRun、Submit-Relay{Checkpoint,Result}File、Submit-RelayProposal、Invoke-RelayTick、Get-RelayReadyNodes、Start-RelayNodeAttempt、Read-RelayEvents；`git diff 6361b8d..HEAD -- tools/relay/runner` 为空） | 无需处置 | 复核轮1/轮2 A 项 |
+| 宿主循环对 Runner 的调用面 | `as-built/relay-runner.md` 入口清单（只调不复制判定） | 一致（宿主只调 New/Open-RelayRun、`Submit-RelayCheckpointFile`、`Submit-RelayResultFile`、Submit-RelayProposal、Invoke-RelayTick、Get-RelayReadyNodes、Start-RelayNodeAttempt、Read-RelayEvents；`git diff 6361b8d..HEAD -- tools/relay/runner` 为空） | 无需处置 | 复核轮1/轮2 A 项 |
 | 新增 params 键 | `as-built/relay-contracts.md` 参数表 | 一致（三键已补进 relay-contracts.md/relay-runner.md 参数行；authority 守卫迁八键 K-16） | 无需处置 | E-006 |
 
 > `定义是否一致` 二选一：`一致` / `不一致`。`裁决` 三选一：`无需处置` / `有意差异` / `遗漏待修`。
@@ -81,7 +81,7 @@
 
 | 接受人 | 授权依据 | 范围 | 影响 | 期限或复审点 | 恢复条件 | 持久去处 |
 |-------|---------|------|------|------------|---------|---------|
-| | | | | | | |
+| 无 | — | 无 | 无 | — | — | — |
 
 **材料齐没齐**：brief / task_plan / progress(证据) / 独立复核记录 / review 都有了？ [x]（两轮报告已落账 review-logs/·E-017）
 **as-built 更新了没**：`as-built/relay-psmux-host.md` 首份 + `relay-runner.md`/`relay-contracts.md` 补行？ [x]

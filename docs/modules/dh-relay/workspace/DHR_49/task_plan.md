@@ -10,7 +10,7 @@
 | C-001 | `docs/modules/dh-relay/dev_plan/P4-DSH工作台最小Pilot-开发方案.md` §3.2 DHR_49 卡 + §2.3 + §4.2 + §4.4 | 唯一权威验收口径、架构约束、DM 编号、止损条件 |
 | C-002 | `docs/modules/dh-relay/workspace/DHR_26/findings.md` §5 §6 §13 §14 +「交给 DHR_49 的硬输入」 | 本卡的**硬依赖输入**：`dsh.client` 声明形态、bundle 产物形态、类型定义位置、官方样板 |
 | C-003 | 本工作区 `findings.md`「现场侦察结论」F-A ~ F-G | 本轮只读侦察出的通路（`ctx.slots` / `ctx.remote.$mount` / codec 两侧严格度 / tgz 装法） |
-| C-004 | `<pilot>/relay-control-pilot/testdata/fake/runs-active.json`、`run-*.json` | 两屏要重建的**同一组 fixture**；列表 5 条（group ∈ {needs_you×2, blocked, running, done}），detail 5 份 |
+| C-004 | `<pilot>/relay-control-pilot/testdata/fake/runs-active.json`、`run-*.json` | 两屏要重建的**同一组 fixture**；列表 5 条（group 为 needs_you、blocked、running、done，needs_you 出现两条），detail 5 份 |
 | C-005 | `<pilot>/relay-control-pilot/src/dsh-host/index.mjs` | DHR_26 Host 服务面：`fixtureHash()` / `listRuns()` / `getRun(runId)` / `diagnostics()`；本卡网关只读它 |
 | C-006 | 官方样板（只读，不拷贝代码）：`…/@deepseek-ai/dsh-client-ui-plan/lib/client.js`（最小 UI 插件）、`…/dsh-client-ui-settings-plugin-inventory/lib/client.js`（列表屏 + `ctx.remote` 取数）、`…/dsh-host-plugin-inventory/lib/typert.host.js`（描述符样板） | 形状对照物 |
 | C-007 | `<pilot>/dsh-home/profiles/web/package.json` | 目标 profile 现状：bundles = base + web-app + `@personal/dsh-relay-host`（link 装） |
