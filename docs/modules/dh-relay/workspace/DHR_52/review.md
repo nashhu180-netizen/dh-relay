@@ -140,9 +140,9 @@
 
 ## E10 放行证据包
 
-`releasePacket: DHR_52-E10-v1`：机器证据为 E-073（90/90、34/34、audit 0、fixture 57、capability 8、diff check）；代码增量复核为 E-072 `approved`，需求/E5/E14 均 `approved`（E-054/E-075/E-076）；四项完成条件均为等价覆盖。H=0：无人判结果项、无 open 方向项、无风险接受项；P3 F-214~F-217 已按 E9 转入 `ACC-2026-08-23-01`，不以风险放行伪装为通过。建议 `release_mode=full`，但尚未获得 E11 对话确认，不预填人类签名区。
+`releasePacket: DHR_52-E10-v1`：机器证据为 E-073（90/90、34/34、audit 0、fixture 57、capability 8、diff check）；代码增量复核为 E-072 `approved`，需求/E5/E14 均 `approved`（E-054/E-075/E-076）；四项完成条件均为等价覆盖。H=0：无人判结果项、无 open 方向项、无风险接受项；P3 F-214~F-217 已按 E9 转入 `ACC-2026-08-23-01`，不以风险放行伪装为通过。E11 已获用户确认，但 E12 主干集成复验被 F-225（DHR_51 runtime 既有测试失败）阻断；修复并重跑后必须刷新本包，当前不可 verify。
 
-→ 当前状态：**待人验 / 待本地收口授权**
+→ 当前状态：**E12 集成复验阻塞，待授权修复 DHR_51 runtime 后重跑**
 
 ---
 

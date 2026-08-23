@@ -34,6 +34,7 @@
 | 2026-08-23 | 主控 | E5/E14/E6 自动收口：正册教训库为空，候选仅作去重参考；一致性横向比对 capability、reason 分类、跨边界 snapshot 与订阅生命周期共 13 处；`dh mine dh-relay DHR_52` 成功并备得两条候选。均无 P0/P1/P2。 | E-074；E-075；E-076 | E7 as-built、E8/E9 证据包与 E10 展示 |
 | 2026-08-23 | 主控 | E7 as-built 快照更新为当前 RPC 实现；E8 逐条完成条件引用最新机器闸；E9 将 F-214~F-217 统一裁决入验收池 `ACC-2026-08-23-01`，不在本卡顺手修。阶段汇报@E9 已向用户展示。 | E-073；E-077 | E10 向用户展示 releasePacket 与单一确认口 |
 | 2026-08-23 | 用户 / 主控 | E11：用户对 `DHR_52-E10-v1` 回复“认可”，授权精确本地 squash、主干复验、verify、回填和清理；不含 push/deploy/环境操作/下一卡。 | 用户对话；`review.md` 人类签名区 | E12/E13 连续机械收口 |
+| 2026-08-23 | 主控 | E12 主干复验：DHR_52 已 squash 到 `1571321`，但全量 `npm test` 89/90；DHR_51 lost-lease 用例失败，定向复跑仍失败。该用例的初始写账与外部换手 lease 竞态将 `E_LEASE_HELD:lease-lost` 直接抛出，需改 runtime/ 才能收敛。 | E-078；F-225 | 停在 verify 前，待用户授权 DHR_51 范围维护后重跑 E12/E10 |
 
 ## 证据账本 (Evidence Ledger)
 
@@ -117,6 +118,7 @@
 | E-075 | review | 主控只读：正册为空；对候选-1/-6/-11 与 F-057/F-219~F-224 的分支、变异、覆盖面证据逐项对照。 | approved | E5 无在册教训重蹈；无 P0/P1/P2/P3。 |
 | E-076 | review | 主控只读横向比对：capability、协议错位、跨边界发送、连接订阅 4 维度 / 13 处同类实现与回归。 | approved | E14 无 P0/P1/P2；F-214/F-215 为 P3 尾巴，已分流。 |
 | E-077 | observed | `ACC-2026-08-23-01`（worktree `docs/acceptance/验收池.md`）。 | observed | E9：F-214~F-217 统一入验收池，不阻断本卡。 |
+| E-078 | fail | 主干 `npm test` → 89/90；定向 `node --test --test-name-pattern='host：租约被换手后旧会话自动停机且不释放别人的租约' test/runtime.test.mjs` → 0/1，均报 `E_LEASE_HELD:lease-lost`。 | fail | E12 集成复验失败，verify 不可执行；DHR_52 RPC 定向用例在全量中通过。 |
 
 ## OMP 可观测性实验
 
