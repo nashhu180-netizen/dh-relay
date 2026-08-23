@@ -310,7 +310,7 @@
 | 4 | P5-M8b run_id 规范化 + 锁内发号 + 五反例 + 锁超时陈旧回收 | runtime.test.mjs「runid 五反例」「真并发两进程 seq=[1,2]」「跨仓并发不丢分段」「活锁超时/在途锁不偷/TTL 回收」 | PASS |
 | 5 | F-011 封堵回归 | store.test.mjs「F-011 封堵——终态 kind 不得经 raw appendEvent」「writeGuard 失守拦截」 | PASS |
 | 6 | 移交② lease 等价性复核 | runtime.test.mjs「移交②：P1 恢复锁/CAS Oracle 复验」（result-A1-wrong-generation.json 实读）+ findings F-105 落账 + as-built §8.4 回写 | PASS |
-| 7 | 人判需求境（宪章#3） | E-201 机器侧预演已录（progress）；真实终端闭环待 E11 用户执行/确认 | 待人验 |
+| 7 | 人判需求境（宪章#3） | E-201 机器侧预演已录（progress）；E-202 记录历史 E11 对话内点选与真实终端演示（verify `bd6b3b5`） | PASS（人判已确认） |
 
 ### 完成条件逐条挂证据
 
@@ -327,19 +327,19 @@
 ### E9 交付汇报（七段）
 
 ① 交付：`relay-core/runtime/` 八模块（runid/pidalive/repolock/lease/gitignore/startrun/host/host-main/status）+ store 两处最小触碰（F-011 封堵、writeGuard fencing）+ 测试 50 条。
-② 验收：六条机器证逐条挂证据见 E8；人判条件 7 待 E11。
+② 验收：六条机器证逐条挂证据见 E8；人判条件 7 已由 E-202（历史 E11 对话内点选）闭环。
 ③ 风险：无 open P0/P1/P2；P3 观察 7 项全登记（F-110）。
 ④ 尾巴：无未关闭 P2/P3 需另立卡；E5 新候选-15 已入教训库候选区待裁决。
 ⑤ 复核：轮1（fresh）changes-requested 全数返工闭合；轮2（fresh 换人）approved；E4/E5/E14 三路独立复核结论落账。
-⑥ 需求境：E-201 机器侧预演（关终端宿主仍活 + 强杀接管）已录；人判闭环待 E11。
-⑦ 落点：worktree wt/DHR_51 @ 1573a6d，待 E11 授权后 squash 合入 + verify(dh-relay)。
+⑥ 需求境：E-201 机器侧预演（关终端宿主仍活 + 强杀接管）已录；E-202 以 verify `bd6b3b5` 的历史 E11 对话内点选闭环。
+⑦ 落点：历史工作树 wt/DHR_51 已完成本地收口；verify(dh-relay) `bd6b3b5`。
 
 ### E10 证据展示区
 
 - 五道闸最终实跑：npm test **50/50** exit 0；validate --selftest **33/33**；audit-contracts **0 违规**（F-042 ajv 权威闸、K-3 结构闸、token 164 未登记 0）；fixture-manifest **55 份相符**；capability-baseline **8 份相符、capability_hash=970b54601ae582a5… 与 DHR_29 基线零漂移**（全程未触碰契约/基线文件）。
 - 变异探针实证（全部临时副本、仓库零改动）：F-011 封堵删→红；writeGuard 不接线→红；损坏租约当无锁→红（复现旧挂死）；新鲜度闸删→红；renew rename 覆写→红；MUT-C 删续租→红。
 - 真实场景（E-201）：临时仓 R001-demo-20260822 + detached 宿主 pid 13952 → 启动 shell 退出 → 新 shell `status.mjs` 输出 host=alive、events=2、租约在续 → SIGKILL → 接管 epoch 2 → 现场清理。
-- 人判需求境闭环操作路径（E11 供用户执行）：①我准备演示脚本（复用 E-201 现场流程）→ ②用户关掉全部终端 → ③新终端跑状态读数看到宿主与账都在 → ④结论回填 progress。
+- 人判需求境历史闭环（E11 已执行）：E-202 与 verify `bd6b3b5` 的 `Verified-Via: chat-confirm` 记录用户确认真实终端演示；演示路径为关闭启动 shell → 新 shell 读状态仍在 → SIGKILL 后安全接管 → 回填证据。
 
 ## 人类签名区
 
