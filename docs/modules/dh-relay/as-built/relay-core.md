@@ -114,7 +114,7 @@ relay-core/
 | `lease.mjs` | Run 级宿主 lease：`host-lease.json` 为唯一写者仲裁物；接管=过期或死持有人或损坏（`LEASE_CORRUPT` 区分，unlink+wx，fencing 兜底自愈）；`E_LEASE_HELD` 拒第二宿主；renew=**新鲜度闸 + unlink+wx**（绝不 rename 覆写接管者租约，R1-03）；有界超时 `E_LEASE_ACQUIRE_TIMEOUT` 防自旋；inspect 三态 alive/lease_expired/dead，与 acquire 成败构成可测不变量 |
 | `gitignore.mjs` | start 前置闸：`git check-ignore` 语义判定（F-009 任意深度反例），缺失 `E_GITIGNORE_MISSING`，不改业务仓文件；其它失败 `E_GITCHECK_FAILED` fail-closed |
 | `startrun.mjs` | 发号：slug 规范 → gitignore 闸 → **索引旁锁 `<indexPath>.lock`**（跨仓并发共享一把，E14 遗漏修复）→ runs.json 该仓分段 max+1 → 复合键查重 → 建 run 根 + createStore + `run_created` → 锁内原子回写索引；索引形状 `{version:1, repos:{[canonicalRepo]:{max_seq, runs}}}`（内部形态，演进归后续卡）；失败路径孤儿 run 根观察登记（F-106） |
-| `host.mjs` / `host-main.mjs` | 会话：闸 → 取/接管 lease → openStore（writeGuard=fencing）→ 补记 `lease_expired`/`lease_acquired` → tick 续租 → 优雅释放 / 失租停机不删别人；`startDetachedHost` detached+unref 脱离终端存活；本卡宿主=生命周期保持器，无 executor（DHR_31 行使） |
+| `host.mjs` / `host-main.mjs` | 会话：闸 → 取/接管 lease → openStore（writeGuard=fencing）→ 补记 `lease_expired`/`lease_acquired` → tick 续租 → 优雅释放 / 失租停机不删别人；**初始化写账期与 tick 期仅对精确 `E_LEASE_HELD:lease-lost` 同义收敛**，其它错误原样失败；`startDetachedHost` detached+unref 脱离终端存活；本卡宿主=生命周期保持器，无 executor（DHR_31 行使） |
 | `status.mjs` | 只读三态读数：`node relay-core/runtime/status.mjs <run_id> [--root <p>]`，输出 JSON；三态来源仅 lease 文件，账面只渲染 Store 产出的 state.json/events.jsonl，**不自造协议对象、不注册 bin** |
 
 **发号锁位置（E14 遗漏修复）**：锁挂在 `<indexPath>.lock` 而非仓内——每仓一把锁只能串行化同仓，跨仓并发会丢 runs.json 分段（后写覆盖先写 bucket）。共享索引锁 + wx 仲裁 + 超时陈旧回收，跨仓 4 仓大索引 10 轮 0 丢段（轮1 探针实证）。

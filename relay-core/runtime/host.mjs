@@ -14,6 +14,7 @@ import { assertStoreRootIgnored } from './gitignore.mjs';
 import { acquireLease } from './lease.mjs';
 
 const sleep = (ms) => new Promise((resolveSleep) => setTimeout(resolveSleep, ms));
+const isLostLease = (error) => error?.message === 'E_LEASE_HELD:lease-lost';
 
 export function runRootOf({ repoRoot, runId }) {
   return join(resolve(repoRoot), '.dh-relay', runId);
@@ -72,13 +73,18 @@ export async function runHostSession({
         await lease.renew();
         renewals += 1;
       } catch (error) {
-        if (String(error.message).startsWith('E_LEASE_HELD')) {
+        if (isLostLease(error)) {
           lostLease = true; // 写权已易主：立即停机且绝不释放别人的租约
           break;
         }
         throw error;
       }
     }
+  } catch (error) {
+    // 初始化期的首个 lease_* 事件同样受 writeGuard fencing；若此时已换手，
+    // 必须与 tick 期失租同义收敛，不能让会话以未处理错误退出。
+    if (isLostLease(error)) lostLease = true;
+    else throw error;
   } finally {
     for (const [signalName, handler] of traps) process.off(signalName, handler);
     if (!lostLease) await lease.release();
