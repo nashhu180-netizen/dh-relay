@@ -4,7 +4,7 @@
 >
 > 评估对象：CLI 优先的终端工作台、独立编排 Agent、节点级监控 Agent 与施工 Worker 双终端、Herdr 启动器、当前节点完成后的自动接力。
 >
-> 现有基线：[Runner v1](../../../tools/runner/README.md)、[Host v1](../../../tools/host/README.md)、[Herdr 底座研究](../03-完整流水-Herdr底座-产品设计与验收.md)、[跨平台运行时与可扩展编排评估](../04-跨平台运行时与可扩展编排-技术方案评估与决策.md)、[多控制面设计补充](../06-多控制面与Headless-SSH运行-设计补充.md)、[P4 Pilot 报告](./10-P4-多控制面Pilot报告.md)。
+> 现有基线：[Runner v1](../../../../../tools/runner/README.md)、[Host v1](../../../../../tools/host/README.md)、[Herdr 底座研究](../03-完整流水-Herdr底座-产品设计与验收.md)、[跨平台运行时与可扩展编排评估](../04-跨平台运行时与可扩展编排-技术方案评估与决策.md)、[多控制面设计补充](../06-多控制面与Headless-SSH运行-设计补充.md)、[P4 Pilot 报告](./10-P4-多控制面Pilot报告.md)。
 
 ## 1. 结论
 
