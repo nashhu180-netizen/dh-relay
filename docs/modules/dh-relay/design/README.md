@@ -37,6 +37,8 @@
 - [Claude 对 P4～P8 阶段计划的评估 + pi 替代 DSH 评估（待第三方评估）](./evidence/07-P4至P8阶段计划评估与pi替代评估-待第三方评估.md)
 - [Pi Agent 替代 DSH 的独立对比评估](./evidence/08-Pi-Agent替代DSH-独立对比评估.md)
 - [P4～P9 阶段计划 · B 交叉审核记录](./evidence/09-P4至P9阶段计划-交叉审核记录.md)
+- [P4 多控制面 Pilot 报告](./evidence/10-P4-多控制面Pilot报告.md)
+- [CLI 优先编排与节点级双 Agent 监控 · 方向评估报告](./evidence/11-CLI优先编排与节点级双Agent监控-方向评估报告.md)
 
 ## 冻结说明
 
