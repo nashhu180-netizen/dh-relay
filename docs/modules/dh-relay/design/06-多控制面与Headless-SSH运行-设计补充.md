@@ -2,7 +2,7 @@
 <!-- dh:planning-event:v1 id=DHR-A-12 stage=A-full artifact=design/06-多控制面与Headless-SSH运行-设计补充.md review=evidence/09-P4至P9阶段计划-交叉审核记录.md#review-a12 understanding=evidence/09-P4至P9阶段计划-交叉审核记录.md#understanding-a12 -->
 # 多控制面、Headless 与 SSH 运行：设计补充
 
-> 状态：多控制面与 Headless 主线冻结，不再属于当前 `designInputs[]`。本文保留历史兼容控制面的研究；当前只交 CLI + 三 Agent 终端，未来客户端须复用 [09 三 Agent 正式设计](./09-三Agent可交互终端与CLI优先编排-产品设计与验收.md) 的统一协议后另行立项与拆计划。本文不授权任何任务卡直接开工。
+> 状态：多控制面与 Headless 主线冻结，不再属于当前 `designInputs[]`。本文保留历史兼容控制面的研究；当前只交 CLI + 三类 Agent 终端，未来客户端须复用 [10 薄计划与显式节点边界](./10-薄RelayPlan与显式节点边界-产品设计调整.md) 的统一协议后另行立项与拆计划。本文不授权任何任务卡直接开工。
 >
 > 用户方向：2026-08-18。dh-relay 必须在 DeepSeek Harness 不存在、不可启动、升级失败或主动不用时继续运行；Linux 笔记本只通过 SSH 和终端使用，也必须完成同一套受控流水。
 >

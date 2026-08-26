@@ -2,7 +2,7 @@
 <!-- dh:planning-event:v1 id=DHR-A-15 stage=A-full artifact=design/09-三Agent可交互终端与CLI优先编排-产品设计与验收.md review=evidence/12-三Agent终端编排正式设计-交叉审核记录.md#review-a15 understanding=evidence/12-三Agent终端编排正式设计-交叉审核记录.md#understanding-a15 -->
 # 三 Agent 可交互终端与 CLI 优先编排：产品设计与验收
 
-> 状态：正式设计输入。2026-08-26 已完成独立复核和用户整版确认，并在同一晋升批次进入 `design/README.md` 的拆计划依据；本次不授权 B-adjust、任何开发卡开工，也不改变 DHR_30 的状态、范围或工作区。
+> 状态：A-15 历史正式形成稿，已归档且不再作为日常阅读入口。当前权威设计是 [design/10 薄计划与显式节点边界](../10-薄RelayPlan与显式节点边界-产品设计调整.md)；本文不属于 `designInputs[]`，只保留当时的完整推导与审核事实，自包含 Contract Brief、可靠 Message Router、固定三个实例及串行专用复核路径不得再作为当前拆计划依据。
 >
 > 用户方向：2026-08-25～2026-08-26。近期产品以三个用户可见、可交互的 Agent 终端完成编排闭环；Runner 是编排 Agent 调用的确定性程序，不是第四个 Agent；Agent 间按逻辑角色自由交流，复核路径可分别绑定 Agent/Profile，repo-local Relay 根改为可见且可治理的 `dh_relay/`；本地应用、DSH 工作台和多控制面建设延后。
 >
