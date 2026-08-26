@@ -4,11 +4,11 @@
 <!-- dh:planning-event:v1 id=DHR-B-19 stage=B-adjust artifact=dev_plan/P7-DevHarness单卡完整流水-开发方案.md review=../design/evidence/16-P7薄计划与显式节点实施重拆-交叉审核记录.md#review-b19 understanding=../design/evidence/16-P7薄计划与显式节点实施重拆-交叉审核记录.md#understanding-b19 -->
 <!-- dh:status
 汇报: P7 已按 design/10 重拆为薄 Plan/Resolver、Ticket 合同、Workflow/Actor、单 Node Pair、Role Relay、Review Batch、恢复与端到端八张卡；旧 DHR_36~40 保留历史并取消
-现状: DHR_36~40 已取消（被 DHR-B-19 替代）；DHR_53~60 均未开始；未创建新卡 workspace，未启用 dh_relay/runtime 新根
-进行到: P7 ▸ B-adjust 已确认并落盘，等待 P6 Gate、DHR_30 稳定接口进入 master 与逐卡开工确认
-下一步: 前置满足后单独分流 DHR_53；每张卡仍须独立确认，不因本计划确认自动开工
-看什么: design/10、design/evidence/16、P6 Gate 证据、DHR_30 收口后的 CLI/Read Model 接口
-阻塞: P6 Gate 未通过；DHR_30 尚未在 master 收口；DHR_53 尚未取得开工确认
+现状: DHR_36~40 已取消（被 DHR-B-19 替代）；DHR_53 进行中（2026-08-26 夜开工，workspace 已建，仍未启用 dh_relay/runtime 新根）；DHR_54~60 未开始
+进行到: P7 ▸ DHR_53 施工中（薄 Plan/Resolver 契约与解析层，离线可机判部分）
+下一步: DHR_53 四批施工 → 五路复核 → 待验收；E11 人闸与 verify 留给用户，未代签
+看什么: design/10、design/evidence/16、workspace/DHR_53/decisions.md（前置放宽理由）、workspace/DHR_53/progress.md
+阻塞: P6 Gate 未通过、DHR_30 尚未在 master 收口——DHR_53 按 workspace/DHR_53/decisions.md D-002 在「不启动 Agent、不启用新根 start、不消费 wt/DHR_30 代码」的限定下先行开工，该放宽待用户人验裁决
 -->
 
 ## 0. B 方案审核与理解确认
@@ -90,7 +90,7 @@ DHR_30 稳定接口/收口 + P6 Gate
 | DHR_38 | 历史：S0~S3 施工路径 | 标准 | 存量未冻结 | 已取消 | | 未创建 | | DHR-B-07 历史；被 DHR-B-19 替代 |
 | DHR_39 | 历史：E0~E10 收口路径 | 标准 | 存量未冻结 | 已取消 | | 未创建 | | DHR-B-07 历史；被 DHR-B-19 替代 |
 | DHR_40 | 历史：E11~E13 与真实卡 verify | 标准 | 存量未冻结 | 已取消 | | 未创建 | | DHR-B-07 历史；被 DHR-B-19 替代 |
-| DHR_53 | 薄 Plan/Resolver、永久历史与 Plan-Run 关联 | 标准 | heavy | 未开始 | P6 Gate；DHR_30 稳定接口进入 master | `workspace/DHR_53/`（开工时创建） | | blocked-by-phase-gate:P6；新根 start 禁用 |
+| DHR_53 | 薄 Plan/Resolver、永久历史与 Plan-Run 关联 | 标准 | heavy | 进行中 | P6 Gate；DHR_30 稳定接口进入 master | [`workspace/DHR_53/`](../workspace/DHR_53/) | | blocked-by-phase-gate:P6；新根 start 禁用；**前置未满足仍开工的放宽范围与理由见 [`workspace/DHR_53/decisions.md`](../workspace/DHR_53/decisions.md) D-002**（未改本计划正文的目标/范围/验收/依赖） |
 | DHR_54 | Ticket、控制回执、Lease 与正式工件合同 | 标准 | heavy | 未开始 | DHR_53 | `workspace/DHR_54/`（开工时创建） | | 不实现业务推进 |
 | DHR_55 | Workflow Engine、Lease 生命周期与 Actor 命令边界 | 标准 | heavy | 未开始 | DHR_54 | `workspace/DHR_55/`（开工时创建） | | 新窄范围，不继承旧候选 |
 | DHR_56 | Launcher 与单 Node Monitor+Executor Pair | 标准 | heavy | 未开始 | DHR_55；P6 Herdr/Profile 闸 | `workspace/DHR_56/`（开工时创建） | | P7 第一个真实中间 demo |
