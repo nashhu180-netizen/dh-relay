@@ -1,9 +1,15 @@
 # 薄 RelayPlan、节点启动票据与显式阶段边界：产品设计与验收
-<!-- dh:planning-event:v1 id=DHR-A-17 stage=A-full artifact=design/10-薄RelayPlan与显式节点边界-产品设计调整.md review=evidence/13-薄计划与显式节点边界-交叉审核记录.md#review-a17 understanding=evidence/13-薄计划与显式节点边界-交叉审核记录.md#understanding-a17 -->
+<!-- dh:planning-event:v1 id=DHR-A-19 stage=A-full artifact=design/10-薄RelayPlan与显式节点边界-产品设计调整.md review=evidence/14-停滞恢复与术语可读性-交叉审核记录.md#review-a19 understanding=evidence/14-停滞恢复与术语可读性-交叉审核记录.md#understanding-a19 -->
 
-> 状态：当前唯一正式 `designInputs[]`，事件 `DHR-A-17`。本文经用户整版确认后取代现已移入`design/archive/`的09形成稿，作为后续拆计划的产品权威输入；不修改DevPlan、DHR_30或现役运行合同，也不授权开发。
+> 状态：当前唯一正式 `designInputs[]`，先后经历 `DHR-A-17`、`DHR-A-19` 两次 A-full 确认。本文经用户整版确认后取代现已移入`design/archive/`的09形成稿，作为后续拆计划的产品权威输入；不修改DevPlan、DHR_30或现役运行合同，也不授权开发。
 >
 > 起因：用户确认第一版收缩为“薄 RelayPlan + Worker 自读 workspace + 最小节点启动票据 + best-effort Herdr 角色转发”，并要求施工、复核等步骤具有硬边界，施工 Worker 写完代码后不得自行进入复核。
+
+## 0. 阅读约定与核心术语
+
+本文中英文代码名均是尚待实现卡冻结的产品语义，不是可直接调用的现有命令。每段后的“术语说明”只解释该段新出现的词；同一含义不反复堆砌。`Run`（一次接力执行）、`Node`（Run 中不可跨越的一个步骤）、`Attempt`（某 Node 的一次执行尝试）、`Ticket`（Runner 签发给该 Attempt 的最小授权票据）是理解后文的四个基础词。
+
+> 术语说明：**持久**指已由 Runtime Store 原子落账、崩溃后可恢复；**权威工件**指可改变业务状态的 Result、Handoff、Attention 或 Approval，普通聊天和终端文本不属于它。
 
 ## 1. 调整目标
 
@@ -36,23 +42,25 @@
 每份计划源只回答：跑哪张任务卡、去哪个 workspace、节点怎样接力、哪些节点需要显式 Profile/Mode 覆盖。
 
 ```yaml
-plan_id: DHR_60-default
-task_id: DHR_60
-workspace: docs/modules/dh-relay/workspace/DHR_60
+plan_id: DHR_60-default # 计划唯一名称：DHR_60 的默认接力编排
+task_id: DHR_60 # 对应的 DevPlan 任务卡 ID
+workspace: docs/modules/dh-relay/workspace/DHR_60 # Worker 要自行读取的任务现场
 
-flow:
-  - construction
-  - review_recipe
+flow: # 大阶段顺序；不是完整业务说明书
+  - construction # 施工：实现当前任务
+  - review_recipe # 按复核配方展开复核节点
 
-review_recipe:
-  source: task_type_registry
+review_recipe: # 复核路径从任务类型配方解析，而非手写删除
+  source: task_type_registry # 读取 task_type 对应的必做复核路径
 
-profile_overrides:
-  code_round_2: reviewer-codex
-  requirement_direction: reviewer-claude
+profile_overrides: # 仅指定路径的执行 Profile，不能删减或降级路径
+  code_round_2: reviewer-codex # 代码复核第 2 轮使用 Codex reviewer
+  requirement_direction: reviewer-claude # 需求方向复核使用 Claude reviewer
 ```
 
 上例只表达语义，不冻结 YAML、文件名或字段拼写。`flow` 只能表达大阶段和依赖提示，不能手写删除 Review Recipe 的必做路径，也不能把上游要求 dedicated/fresh 的路径降为 inline。Resolver根据 `task_type` 展开唯一 `node_id`、依赖、applicability、execution mode和Review Work Item；缺路径、无N/A依据或非法降级时fail-closed。第一张承重契约卡再冻结物理Schema；不得在开发时扩回完整业务副本。
+
+> 术语说明：**Resolver（解析器）**把薄计划和任务类型展开为实际节点；**dedicated/fresh**表示必须使用独立、未参与施工的复核实例；**fail-closed（失败即阻断）**表示信息不全时不猜测、不启动。
 
 ### 3.2 解析时才冻结的内容
 
@@ -259,6 +267,34 @@ Worker提交final Result/Handoff
   -> 宽限期后仍未退出则强制停用Pair/终端，并记录cleanup_failed或Attention
 ```
 
+> 术语说明：**final Result** 是节点最终结论；**Handoff** 是下一位 Worker 恢复现场所需的正式交接；**Pair** 是一张 Ticket 对应的受控 Agent 终端组合。三者中只有前两项按节点合同持久化后，才算完成。
+
+### 5.4.1 已拉起但不推进：检测、诊断与恢复
+
+每个 Node 必须在 Resolved Plan 中冻结 `start_deadline`（启动确认时限）和 `checkpoint_deadline`（持久进展时限）；缺任一时限不得 launch。Worker 读取 Ticket 指定的 worktree、仓根 AGENTS 与 workspace 合同后，必须提交身份绑定的持久 `node_started`；正在运行的长步骤须在 `checkpoint_deadline` 内提交同一 Attempt 的 checkpoint。`node_started` 只证明已正确接单，checkpoint 只证明存在可恢复进展，二者都不证明质量或完成。
+
+> 术语说明：**Resolved Plan** 是本次 Run 已冻结的计划快照；**checkpoint（进度锚点）**是可恢复的持久进展记录；**身份绑定**指记录带 run/generation/node/pair/attempt/agent 等身份链，不能被别的实例冒用。
+
+Monitor 只能综合 Host Observation、`node_started`、checkpoint 和最终工件判断“未接单、停滞或失联”，不能由聊天文本、`done`、自然退出或屏幕静默判断质量或完成。`blocked`、`awaiting_input` 或 `decision_required` 表示正在等待人或决策：进展时钟暂停为短提醒，不得因无 checkpoint 自动撤权、自动输入或拉起替代 Worker。只有处于可运行状态且未见合法进展时，才触发停滞判定。
+
+> 术语说明：**Host Observation** 是 Herdr/宿主观察到的终端事实，不是业务结论；**blocked/awaiting_input** 是等待人类输入；**decision_required** 是 Worker 已把问题持久化、等待合法决策的状态。
+
+Host 不可达、probe error、Pane 消失和 Agent/进程确实退出必须分开记。只有当前 Ticket 所绑 Pane 与其进程都经宿主确认消失，才能记为 `exited`；宿主暂不可达或探测失败只产生 `host_unavailable`/`probe_error` Attention，并按有界重试与恢复合同处理，不能伪装成 Agent 已退出。
+
+> 术语说明：**probe** 是宿主对已登记终端的一次状态探测；**Pane** 是 Herdr 中承载一个终端的精确位置；**Attention** 是需编排者或用户关注的持久告警，不推进业务节点。
+
+命中启动/进展时限或失联时，Host 只读取当前身份匹配 Agent 的有限诊断快照：生命周期状态、退出/错误码、最后活跃时间，以及经字段白名单、脱敏、UTF-8 字节限长后的末段输出。先白名单、再脱敏、再限长；任一步失败就不落原文，只写不含原文的诊断码。原始 Pane 文本、普通聊天、临时文件、异常字符串和凭据值均不得进入 Attention、事件、Receipt 或证据。
+
+> 术语说明：**诊断快照**只服务恢复定位；**白名单**是允许保存的有限字段集合；**脱敏**在任何落盘前删除密钥、令牌、密码等值；**Receipt**是一次控制动作的不可变回执。
+
+停滞恢复必须由带 `expected generation/state` 与幂等 `recovery_request_id` 的业务命令完成：Workflow Engine 只生成该命令，HostSessionActor 按当前身份链和 CAS 原子写入 Attention、撤销旧 Ticket 能力并把旧 Attempt 标为 `recovery_pending`。同一时刻到达的 final Result 与 recovery 命令由这一次 CAS 裁决：final Result 先落账则恢复返回已关闭；恢复先落账则旧 Attempt 的迟到 checkpoint、Result 和 Role Relay 一律拒绝。旧 Pair 先获正常退出请求，宽限期后才强停；未确认释放或容量不足时保持 `capacity_wait`，不得启动替代者。
+
+> 术语说明：**CAS** 是“状态仍为预期值才写入”的原子比较写入；**幂等**指同一请求重试只返回同一 Receipt；**recovery_pending** 表示当前尝试已失效、等待安全恢复，不是节点完成。
+
+旧 Pair 确认关闭且容量足够后，Runner 才能签发新 Ticket、新 Attempt 与带 `source_attempt_id`、身份链和诊断摘要 digest 的恢复引用。新 Agent 从 workspace、合法 Handoff、旧 checkpoint 与诊断摘要恢复；这些都是只读历史输入，不能被当作新 Attempt 的当前写入。节点仍未关闭、下游仍未 ready。Review Batch 只恢复停滞或失联的未完成路径；同一 candidate revision 的已 terminal 路径保留，Monitor 失联仍按既有规则重建未完成子 Pair。
+
+> 术语说明：**digest（摘要）**是内容完整性校验值；**candidate revision** 是被复核代码/合同的版本；**terminal** 表示某条路径已经合法结束。
+
 四种结果必须区分：
 
 - 正常完成：durable commit后撤权，再正常退出；退出失败不推翻已提交结果，但必须留下清理告警。
@@ -293,12 +329,16 @@ dh tell <logical-role> <message>  # 作用域/发送者由当前Sender Context�
   -> 绑定source/target的run/generation/agent_instance及可用的node/pair
   -> Host Adapter在投递前复核精确实例并调用Herdr agent prompt
   -> 投递后再次对账Host generation/Agent identity
-  -> 返回sent / target_busy / target_offline / target_ambiguous / delivery_uncertain
+  -> 返回sent / target_offline / target_ambiguous / delivery_uncertain
 ```
+
+> 术语说明：**Role Relay（角色转发）**相当于“尝试给当前正确角色发一句普通话”；它不是可靠消息队列。**best-effort（尽力而为）**指尽量准确投递，但明确暴露失败或不确定，不承诺必达、已读、回复或执行。
 
 Sender Context只有两类：Agent Worker使用Runner签发的有效Work Item Ticket，Batch Monitor Ticket是其中绑定`role=monitor`和父`batch_id`的明确子类型；编排Agent使用Runner签发的run-scoped Orchestrator Lease。Lease绑定`run_id/generation/orchestrator_instance_id/host_generation/expires_at`，只能用于已批准Run的控制与普通角色转发，不把业务授权编码进聊天。两类Context均由CLI自动读取，用户和编排Agent不手填身份封套。
 
-Herdr 0.8.2不提供“按Agent identity原子compare-and-send”的传输原语，因此第一版不承诺零误投。前检查失败分别返回`target_busy`、`target_offline`或`target_ambiguous`；调用Herdr后若发现Host generation或目标实例变化，返回`delivery_uncertain`：旧实例可能已收到普通聊天，系统不会伪称未投递或尝试撤回。安全边界来自普通消息无业务权威，以及旧Ticket/Lease失效后无法提交Result、Handoff或控制命令；需要零误投的能力留待Herdr提供原子目标令牌后另行设计。
+Herdr 提供 Agent 状态/输出查询与 prompt 请求，足以作为一次普通交互的宿主能力；但它不提供“按 Agent identity 原子 compare-and-send（比较身份并发送）”原语，因此第一版不承诺零误投。Role Relay 先以 Sender Context 指定的 Run、session、host generation、node/pair、attempt 与 `agent_instance_id` 解析目标，再以唯一 live agent name 查询并用 Pane ID 回读校验；零目标、多目标、跨 Run/Session、身份不符、焦点或 Pane 顺序猜测均拒绝。目标处于 `working`、`idle` 或 `blocked` 都不是拒发条件：Host 一律直接尝试 prompt。调用 Herdr 前后只要 Host generation 或目标实例变化，就返回 `delivery_uncertain`：旧实例可能已收到普通聊天，系统不会伪称未投递或尝试撤回。
+
+> 术语说明：**live agent name** 是 Herdr 当前存活 Agent 的唯一名称；**agent_instance_id** 是 Relay 为该实例绑定的身份；**working** 只表示 Agent 正在处理一轮工作，不阻止普通消息投递；**compare-and-send** 缺失意味着“查到是谁”和“把话送出”之间仍可能发生替换。
 
 保留：
 
@@ -317,7 +357,9 @@ Herdr 0.8.2不提供“按Agent identity原子compare-and-send”的传输原语
 - `correlation_id`会话协议；
 - 普通聊天恢复或审计。
 
-目标忙碌、离线或不唯一时直接失败。`sent`只表示投递前后对账均未观察到身份变化且Host接受了本次prompt请求，不代表目标Agent已阅读、回复或业务同意；`delivery_uncertain`表示投递窗口内发生替换或无法完成后对账，消息可能已到旧实例。不能丢的信息必须写checkpoint、Result、Handoff、Attention或Approval，不得靠普通聊天保真。
+Role Relay 不存在 `target_busy`：目标正在工作时也直接尝试 prompt，以便发送补充或新的普通指令。`sent`只表示前后对账未观察到身份变化且Host接受了本次 prompt 请求，不代表目标Agent已阅读、回复或业务同意。普通消息可以补充当前 Node 的做法；如果意图是撤销当前 Ticket、停止 Agent、替换 Attempt、改变目标/范围/验收或启动下一 Node，仍必须走显式控制面，聊天不能绕过该边界。不能丢的信息必须写checkpoint、Result、Handoff、Attention或Approval，不得靠普通聊天保真。
+
+> 术语说明：**prompt 请求**是 Host 向 Herdr 请求把文字交给 Agent 的调用；**显式控制面**是 `continue`、取消、恢复等会改变节点状态的受控命令；**delivery_uncertain**是投递窗口有竞态，消息可能到旧实例也可能未到。
 
 ### 6.2 它不是业务裁决者
 
@@ -334,6 +376,7 @@ Role Relay只负责“把这句话尽力送到当前角色”。它不解释内�
 | 角色拓扑 | 只有orchestrator、monitor、executor三类逻辑Agent角色，Runner是确定性程序而不是第四Agent。单节点通常是一名Monitor加一名Executor；Review Batch允许一名Monitor加多名Reviewer Executor，所以实例数不固定为三个。 |
 | 编排权威 | 编排Agent面向用户、解释Read Model并发出显式控制意图；Workflow Engine是唯一业务转换裁决者；Runtime `HostSessionActor`是唯一物理Store写者，只执行Schema、身份、guard与CAS，不自行判断业务。 |
 | Worker边界 | Worker只执行Ticket指向的一个Node，不拥有Run控制权；施工者不复核自己的卡，任何跨阶段都必须由新Ticket、新Attempt和新的显式`continue`产生。 |
+| 停滞与恢复 | 终端拉起不等于接单或完成。启动确认、checkpoint和Host Observation共同发现未接单/停滞/失联；人等状态不自动恢复。恢复先由CAS撤销旧身份、确认旧Pair关闭与容量，再签发新Attempt；Host诊断仅供定位，不能单独改变业务节点。 |
 | 真相与恢复 | Git中的Plan/DevPlan/workspace是计划与任务源，runtime Store保存本Run解析快照和业务事实，Herdr/终端只提供Host Observation。终端退出、`done`文本和聊天均不能投影业务完成；旧generation/Pair/Attempt/Agent迟到输入只能拒绝或审计。 |
 | 计划变化 | tracked Plan变化不修改active generation。当前授权内的修订仍须发布新Resolved Plan；目标、范围、验收、权限、节点结构或永久治理规则变化，没有持久用户授权时fail-closed。 |
 | Review Recipe | 启动时按`task_type`冻结必做路径、applicability和execution mode；Binding只能选择执行者，不能删路径或把fresh/dedicated降级。`lessons-absent`只形成带依据N/A。Monitor监督过程与工件，不计作任何一路复核结论。 |
@@ -393,16 +436,18 @@ Role Relay只负责“把这句话尽力送到当前角色”。它不解释内�
 |---|---|
 | HC-3AT-A23 | `plans/`中的计划源只含任务/workspace locator、大阶段flow和必要覆盖；目标、验收、allowlist与task_plan只引用DevPlan/workspace，不维护可漂移副本；Resolver必须从`task_type`保留全部必做Review Work Item并冻结唯一node ID、依赖、Recipe/applicability/mode摘要，缺路径、非法降级、缺N/A依据、坏计划、缺workspace、路径/静态输入漂移均fail-closed；tracked Plan改变不影响active generation |
 | HC-3AT-A24 | 编排控制使用带expected generation/state和幂等request ID的`continue`，Worker Ticket使用`execute_node`；Runner自动封装完整Ticket/Pair/Attempt/Agent/Profile/Receipt/Plan/workspace/worktree身份并按摘要校验；合法轨迹严格为`candidate_accepted→monitor_report→handoff_ready→原子持久化final Result/Handoff/node_closed/next_ready→final_result_committed`，Worker无Run控制能力且node_closed后能力撤销；重复/并发continue、错node/generation、Result拒绝/重放/迟到、Worker越阶段和编排Agent离线均不能创建Ready Unit定义之外的Pair |
-| HC-3AT-A25 | Role Relay从有效Work Item Ticket或Orchestrator Lease自动绑定run/generation/source/target及可用的node/pair，只做当前逻辑角色到唯一Herdr Agent的即时best-effort投递；唯一返回枚举为`sent/target_busy/target_offline/target_ambiguous/delivery_uncertain`；替换竞态允许普通聊天误达但必须返回`delivery_uncertain`，旧身份不能借此写权威工件或控制Run；不排队、不重投、不保存普通聊天、不产生业务授权；多Run歧义和直接Herdr prompt/send-keys均有拒绝用例 |
+| HC-3AT-A25 | Role Relay从有效Work Item Ticket或Orchestrator Lease自动绑定run/generation/source/target及可用的node/pair，只做当前逻辑角色到唯一Herdr Agent的即时best-effort投递；唯一返回枚举为`sent/target_offline/target_ambiguous/delivery_uncertain`；目标`working`/`idle`/`blocked`均直接尝试prompt，替换竞态允许普通聊天误达但必须返回`delivery_uncertain`，旧身份不能借此写权威工件或控制Run；不排队、不重投、不保存普通聊天、不产生业务授权；多Run歧义和直接Herdr prompt/send-keys均有拒绝用例 |
 | HC-3AT-A26 | 重核卡在代码轮1及必要整改对当前revision闭合后，把代码轮2、需求、一致性、教训解析为一个父Review Batch和路径级子Pair；一次continue以`batch_allocated`原子转换全有或全无地创建Batch Receipt、一个Monitor intent及所有适用Reviewer的独立Ticket/Attempt/Pair intent；适用路径只有final Result与当前Monitor Report成对durable才产生`path_terminal`，N/A只有带applicability/evidence/resolver digest的`path_na_terminal`，用户例外只有有效同revision Approval才产生`path_user_overridden`；全部必做路径满足三类合法终态之一后才能原子产生`batch_joined`和`next_ready`，含override时Join固定为`proceeded_with_user_override`并持久引用Approval/缺失路径；单路失联只重试该路，Monitor失联重建未完成子Pair，新revision使整批失效并重新经过代码轮1和四路Batch；本Run真实存活Agent终端不超过六个，cleanup-pending也计入容量 |
 | HC-3AT-A27 | Worker只有在final Result及节点合同要求的Handoff原子durable后才算正常完成；随后Ticket撤权并由Host正常结束或超时强制停用；提前退出进入recovery_pending且不放行下游，commit后写入拒绝；单Node取消先durable再撤权，Review Batch只允许带CAS/幂等Receipt的整批原子取消，已terminal结果保留但排除join，不能删除一条必做路径后join；cancel与Result/join/launch的业务命令由Workflow Engine唯一生成，actor只按guard执行物理CAS；Batch Monitor在全部必做路径terminal并持久化Batch结论后退出 |
 | HC-3AT-A28 | 必做复核缺失默认阻断Batch join；只有绑定run/generation/batch/revision/path/scope的持久用户Approval可原子产生`path_user_overridden`并允许`proceeded_with_user_override`继续，普通聊天和Agent不能代签；override撤销旧Ticket且新revision自动失效，迟到Result/launch/recovery、重复Approval及与cancel/join的先后均按固定CAS结果裁决；已terminal/N/A路径拒绝override；该状态不得冒充pass/N/A，最终release/verify仍按治理红线独立裁决 |
+| HC-3AT-A29 | 每个可启动Node在Resolved Plan中冻结启动与进展时限；`node_started`、checkpoint、Attention诊断快照和恢复引用均先冻结版本化Schema、完整身份链、幂等键与digest。缺启动确认、运行态进展超时、Host不可达、probe error、Pane消失与进程退出严格区分；合法人等状态暂停为短提醒。停滞恢复仅由带expected generation/state与recovery request ID的Workflow命令经HostSessionActor CAS 原子撤权并落`recovery_pending`；Result/recovery竞态只有一个赢家，旧Attempt迟到输入拒绝，旧Pair确认关闭及容量足够前不启动替代者。诊断快照只准白名单→脱敏→UTF-8限长后落盘，任一步失败不存原文；Review Batch只恢复未完成停滞路径，保留同revision已terminal路径。 |
 
 | ID | 5分钟内操作 | 人验判断 |
 |---|---|---|
 | HC-3AT-H6 | 启动一张施工后接代码复核的任务；观察施工Worker读取workspace完成Result并停止；保持编排Agent离线并尝试让旧Worker越阶段，确认复核仍只ready且调用被拒；再恢复编排Agent单独continue拉起新的复核实例 | 用户能明显看到“代码写完”和“开始复核”是两个Node、两次启动、两个身份；施工Worker没有原地转成reviewer，测试通过、旧Worker越权或编排Agent离线都不会自动启动复核 |
 | HC-3AT-H7 | 在重核卡代码轮1闭合后执行一次continue，观察一次Store原子分配同一launch set、Monitor先ready、随后四条适用Reviewer被并发fan-out；让其中一路失联并让另一路先完成，再恢复失败路径；随后制造新candidate revision | 用户能看到一次控制动作形成一个并行批次，而不是误以为外部进程原子同时出现；各Reviewer独立退出且成功结果不因单路恢复丢失；新revision产生后旧批次明确失效并重新走代码轮1，不把旧结论冒充新代码的复核 |
 | HC-3AT-H8 | 让四路中一路失联，先观察默认阻断；再由用户授权该精确batch/revision/path带缺口推进，最后查看Batch与release状态 | 用户能看到授权前不推进，授权后流程可以继续但明确显示`proceeded_with_user_override`及缺失路径；界面和汇报不把它写成复核通过，治理红线仍在最终收口处生效 |
+| HC-3AT-H9 | 启动一个节点后分别制造未写`node_started`、正常长步骤checkpoint、等待用户输入、Herdr探测失败和终端/进程都退出；查看Attention及恢复前后的Agent身份 | 用户能区分“已启动但未接单”“正常进展”“在等人”“宿主探测故障”“确实退出”；恢复信息足以定位但不泄漏原始终端文本或凭据；旧Agent不能在替代者启动后再写结果 |
 
 ### 8.4 最小反例矩阵
 
@@ -410,10 +455,11 @@ Role Relay只负责“把这句话尽力送到当前角色”。它不解释内�
 |---|---|
 | `A23` | 坏计划、缺workspace、locator越界、静态输入digest漂移、tracked Plan在Run中修改、flow试图删除必做复核或降级fresh/dedicated |
 | `A24` | 无Ready→`no_ready`；多个互不属于同一launch group的Ready→`ambiguous_ready`，同一Review Batch的多Ready→一个合法Ready Unit；并发/重复continue→同一Receipt且不产生Ready Unit定义之外的新Pair；旧generation→`stale_generation`；错node/Pair/Attempt/Agent、Result reject/迟到、commit后继续写→拒绝且Store不推进；响应丢失/重放→同一durable Receipt；final Result原子转换前崩溃→整笔未提交且当前节点不关闭，转换后崩溃→Result/Handoff/node_closed/next_ready全存在；launch失败→失败Attempt关闭、Node退回ready、产生`launch_failed` Receipt/Attention且无working Pair；Executor或Monitor在原子收口前丢失→当前Attempt进入`recovery_pending`、当前Node不关闭、下一Node不ready；Host/Runtime crash恢复→只允许上述原子转换前或后两种durable投影，不出现部分收口；Worker自行调用continue、编排Agent离线→无新Pair |
-| `A25` | 多Run同名角色→按Sender Context唯一Run解析或`target_ambiguous`；目标busy/offline/ambiguous→对应`target_*`；Batch Monitor凭Monitor Ticket向`reviewer:<review_path_id>`发送→只解析到同batch/path的当前Agent，裸`executor`多实例→`target_ambiguous`；校验后Agent替换或后对账失败→`delivery_uncertain`；过期Ticket/Lease、直接Herdr prompt/send-keys→拒绝；`sent`后无回复→不重投、不推进业务状态 |
+| `A25` | 多Run同名角色→按Sender Context唯一Run解析或`target_ambiguous`；目标offline/ambiguous→对应`target_*`；目标`working`、`idle`、`blocked`均调用prompt且不得返回`target_busy`；Batch Monitor凭Monitor Ticket向`reviewer:<review_path_id>`发送→只解析到同batch/path的当前Agent，裸`executor`多实例→`target_ambiguous`；校验后Agent替换或后对账失败→`delivery_uncertain`；过期Ticket/Lease、直接Herdr prompt/send-keys→拒绝；`sent`后无回复→不重投、不推进业务状态 |
 | `A26` | `batch_allocated`前崩溃→无Batch子项，转换后崩溃→Batch Receipt、Monitor及全部适用Reviewer intent全存在；同一Batch并发/重放continue→同一Batch Receipt且每条路径至多一个active Attempt；Result已提交但Report未提交、Report已提交但Result未提交、Monitor在两者之间失联→路径均不terminal且重建未完成Pair；Result+当前Report匹配→一次path terminal；N/A缺applicability/evidence/digest→fail-closed；第一条/前三条路径terminal→下游仍不ready，全部必做路径terminal且身份匹配→一次`batch_joined`产生next_ready；四路必须绑定相同candidate revision/HEAD/digest；单路失联→只该路新Attempt；Monitor失联→旧Monitor迟到Report拒绝、未完成子Pair撤销并由新Monitor重建、已完成路径保留；revision变化→旧四路结果全部invalid且不得join新批次；旧终端cleanup-pending造成容量不足→`capacity_wait`且本Run真实存活终端始终不超过六个 |
 | `A27` | Worker自然退出但无final commit→`recovery_pending`且下游不ready；final commit后Agent不退出→Ticket写入拒绝、宽限期后强制停用并留清理告警；Batch cancel响应丢失/重放→同一durable Receipt；cancel先于Result/join/launch→后到动作返回`batch_cancelled`且无next_ready；join先于cancel→cancel返回`already_joined`；路径terminal后、join前取消→结果保留并标`excluded_by_batch_cancel`；尝试只取消一条必做路径并join→拒绝；已关闭Worker继续发送Result/控制调用→拒绝且Store不推进 |
 | `A28` | 无Approval、聊天授权、错run/generation/batch/revision/path/scope→override拒绝且Batch不join；已terminal/N/A路径→`path_already_terminal`且不改状态；合法Approval→一次`path_user_overridden`、旧Ticket撤权，迟到Result/launch/recovery→`path_user_overridden`；join先落账→override返回`already_joined`，cancel先落账→override返回`batch_cancelled`，override先落账→Join Result=`proceeded_with_user_override`且逐路引用Approval/缺失路径；重复Approval/响应丢失→同一Receipt；新revision→旧Approval失效；缺代码轮2或其他不可豁免证据时最终全验收/verify仍拒绝 |
+| `A29` | 缺deadline/Schema/身份字段→拒绝launch；未写`node_started`、运行态checkpoint超时→同一身份Attention且Node不关/下游不ready；`blocked/awaiting_input/decision_required`→短提醒、不自动撤权/输入/恢复；Host不可达、probe error、Pane消失但进程活→不得记exited；Pane与进程都消失→仅此时可记exited；`sk-`、PEM、password、bearer、环境值和屏幕回显进入诊断→先白名单、脱敏、限长，任一失败零原文落盘；final Result与recovery并发→单一CAS赢家，恢复先赢则旧Attempt所有迟到写入拒绝，Result先赢则恢复返回已关闭；重复recovery→同一Receipt；旧Pair未关闭/容量不足→`capacity_wait`且无新Attempt；Runtime/Host crash、Monitor替换、多Run同名角色、目标working/idle/blocked下的直接prompt、替换竞态和`sent`后无回复均不得越权或推进；Batch只新建停滞未完成路径，新revision仍使旧Batch结果失效。 |
 
 测试必须使用独立oracle从事件/Receipt/Host Observation重算“是否创建了新Pair、是否发生Store业务转换、消息是否只投向精确实例”；不能只断言CLI返回文本。
 
@@ -424,6 +470,8 @@ Role Relay只负责“把这句话尽力送到当前角色”。它不解释内�
 该决定把“三Agent”从固定三个实例改成三类逻辑角色；并行高峰最多六个Agent终端。其代价是更高的并发资源消耗，以及candidate revision变化时整批复核重跑；收益是四条独立复核路径缩短为一个并行等待窗口。
 
 用户对“必做路径缺失是否允许继续”的理解是“除非用户授权”。本文据此冻结§5.5：授权只能针对精确Run/Batch/revision/path形成持久Approval；它允许编排带缺口继续，但不能把缺失路径改写成pass/N/A，也不能代替最终治理验收。
+
+用户随后确认“终端已拉起但未接单/无进展”应自动进入可恢复处置：以持久`node_started`、checkpoint与Herdr Host Observation识别，先保存经脱敏的有限诊断、撤销旧Ticket并确认旧Pair关闭，再签发新Attempt；终端状态和聊天不构成完成证据。用户同时要求为英文术语补就地中文说明，并把 YAML 示例逐字段加中文解释。
 
 用户随后明确表示“改完没问题了，设计方案更新下”，构成事件`DHR-A-17`的整版确认与正式晋升授权；不构成B-adjust、开发、提交、推送或启用新目录授权。
 
