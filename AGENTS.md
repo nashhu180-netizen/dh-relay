@@ -19,7 +19,7 @@
 2. **【出口闸】** 高危五类（生产接入 / 迁移 / 上线 / 组件接线 / 数据口径）标"完成"前必须有 `verify(dh-relay):` 提交；无 verify 只能"待验收"。scope 必须是英文 `dh-relay`（中文 scope 会让 grep 闸门失效）。
 3. **【需求境闸】** 标准档进"待验收"前必须有「需求境证据」（需求/人验项 + 场景操作路径 + 证据 ID + 结论）；UI/交互/可视化任务必须有真实浏览器或等价渲染截图，单测/DOM 存在/代码复核不能替代。
 4. **【确认闸】** 没有用户对话里的明确确认（点选或明文），AI 不得代签 verify、不得勾人类签名区（文档勾选不算）。
-5. **【复核闸】** 标准档进"待验收"前需两轮独立换人复核（第一轮全面排查 + 第二轮换 agent 交叉评估）；**施工者不复核自己的卡**。
+5. **【复核闸】** 新卡的必做复核由启动时冻结的 `task_type` Recipe 决定：`heavy` 为代码轮 1、代码轮 2、需求方向、一致性、教训五路，`normal` 为代码轮 1、需求方向、教训三路，`light` 为教训、一致性两路；`heavy/normal` 另有有效单测要求。`lessons-absent` 只形成可核查 N/A，不拉 Pair、不要求 Binding；适用路径的 `inline_registration` 与 `dedicated_pair` 必须按冻结 Mode 执行，Binding 不能删路径或把独立/fresh 路径降级。存量无 `task_type` 的标准档仍需两轮独立换人复核；**施工者不复核自己的卡**。
 6. **【密钥红线】** 密钥 / 凭据值永不入任何工件（findings / progress / 设计文档 / commit）。进仓的窗口枚举、截图类证据先按白名单过滤，不能事后靠扫描凭据兜底。
 7. **【worktree 纪律】** 一个任务卡 = 一个 worktree，收口 squash 合并即删树；禁止长命 worktree。worker 进场第一动作自 rebase master。
 
@@ -69,7 +69,7 @@
 - 模块工件归 `docs/modules/dh-relay/`：`design/` 设计与验收、`dev_plan/` 计划与状态、`workspace/<卡>/` 任务工作区、`as-built/` 实现快照、`knowledge/` 教训、`backlog.md` 需求池。**与拆分前同路径**——历史留痕里的 doc 路径引用继续有效。
 - 生产代码落点 `tools/`（拆仓时由 `tools/relay/` **提级一层**，独立仓里只有 relay 一份代码，再套 `relay/` 是冗余）；测试入口 `tools/tests/run-relay-tests.ps1`（本仓自带，与任何外部 run-all 无关）。
 - verify scope = `dh-relay`；状态以 `docs/modules/dh-relay/dev_plan/` 为权威，本文件只登记不抄状态。
-- **运行现场不入仓**：P1 现役走 `.dh-runtime/relay/`，P2 决策 D21 换根到 `<repo>/.dh-relay/<run_id>/`；跨仓 run 索引在用户级 `~/.dh-relay/`。三者均已在 `.gitignore` 里锚定或本就在仓外。
+- **运行现场不入仓**：P1 现役走 `.dh-runtime/relay/`，历史 P2 决策根为 `<repo>/.dh-relay/<run_id>/`；新正式设计采用可跟踪的 `<repo>/dh_relay/plans/`、`archive/` 与仅忽略的 `runtime/<run_id>/`，但 resolver 迁移验收前禁止新根 start。跨仓 run 索引仍在用户级 `~/.dh-relay/`；旧根保持 legacy 读取，均不原地迁移。
 
 ### `dh` 命令
 

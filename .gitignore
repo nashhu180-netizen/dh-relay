@@ -16,6 +16,9 @@
 .dh-runtime/
 .dh-relay/
 
+# 新正式设计的 repo-local Relay 运行现场；plans/ 与 archive/ 保持可跟踪。
+/dh_relay/runtime/
+
 # 一卡一树（worktree 纪律：收口即删，不入仓）
 .dh-worktrees/
 
