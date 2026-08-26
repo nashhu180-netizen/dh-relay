@@ -1,95 +1,81 @@
-# P7-DevHarness 单卡完整流水 开发方案
+# P7-DevHarness 单卡显式接力 开发方案
 
 <!-- dh:plan-type: 开发 -->
-<!-- dh:planning-event:v1 id=DHR-B-07 stage=B-adjust artifact=dev_plan/P7-DevHarness单卡完整流水-开发方案.md review=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#review-b07 understanding=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#understanding-b07 -->
+<!-- dh:planning-event:v1 id=DHR-B-19 stage=B-adjust artifact=dev_plan/P7-DevHarness单卡完整流水-开发方案.md review=../design/evidence/16-P7薄计划与显式节点实施重拆-交叉审核记录.md#review-b19 understanding=../design/evidence/16-P7薄计划与显式节点实施重拆-交叉审核记录.md#understanding-b19 -->
 <!-- dh:status
-汇报: P7 已按 design/06 改为多控制面单卡流水：一张真实标准卡在 DSH 关闭状态下由 CLI + Herdr 跑完 S0~E13 并出 verify；等 P6 阶段闸
-现状: DHR_36~40 均未开始
-进行到: P7 ▸ 阶段闸阻塞（P6 未通过）
-下一步: P6 通过并经用户放行后，依据真实 Executor Profile、CLI/SSH 与 Herdr 证据做 B-调整 → fresh 审核 → 用户选真实卡 → 用户确认
-看什么: design/02、design/05 §9、design/06、design/04 Workflow Contract 部分、P6 证据
-阻塞: P6 Gate 未通过；真实卡尚未由用户选择
+汇报: P7 已按 design/10 重拆为薄 Plan/Resolver、Ticket 合同、Workflow/Actor、单 Node Pair、Role Relay、Review Batch、恢复与端到端八张卡；旧 DHR_36~40 保留历史并取消
+现状: DHR_36~40 已取消（被 DHR-B-19 替代）；DHR_53~60 均未开始；未创建新卡 workspace，未启用 dh_relay/runtime 新根
+进行到: P7 ▸ B-adjust 已确认并落盘，等待 P6 Gate、DHR_30 稳定接口进入 master 与逐卡开工确认
+下一步: 前置满足后单独分流 DHR_53；每张卡仍须独立确认，不因本计划确认自动开工
+看什么: design/10、design/evidence/16、P6 Gate 证据、DHR_30 收口后的 CLI/Read Model 接口
+阻塞: P6 Gate 未通过；DHR_30 尚未在 master 收口；DHR_53 尚未取得开工确认
 -->
 
 ## 0. B 方案审核与理解确认
 
 ### 0.1 白话说明：这个阶段做啥、解决啥、做完得到啥
 
-- **要解决的问题**：前面搭好了内核和执行底座，但还没跑过一张真正按 dev-harness 规矩走的任务卡（开工 S0~S3、收口 E0~E13、两轮复核、人验、verify）。P7 要把 dev-harness 的流程规矩变成机器能执行的「工作流合同」，用一张真实任务卡从头到尾跑通，全程只用命令行也能完成。
+P7 不再按“施工阶段、收口阶段”各包一大坨能力，而是把真正承担风险的八个对象逐个做实。这样出问题时能明确判断是计划解析、票据身份、状态推进、终端启动、普通消息、并行复核还是恢复出了错，也不会把新业务判断塞回 DHR_30。
 
-| 任务 | 用大白话说在做啥 | 解决什么问题 |
-|---|---|---|
-| DHR_36 | 把 dev-harness 的节点表和规则翻译成一份机器可读的冻结「工作流合同」，并做一个适配器去调用现有 dh 检查工具、返回结构化结果 | 内核不用重新实现 dh 规则，只按合同调用，规矩改了合同跟着改 |
-| DHR_37 | 做「授权启动」流程：任何客户端提交启动请求 → 内核校验 → 给你看启动预览 → 你确认 → 冻结授权快照 → AI 规划师出计划提案 → 编译成可执行计划 | 开工必须经过你确认，且确认的内容被冻结、事后可追溯 |
-| DHR_38 | 跑开工阶段 S0~S3：建工作树和工作区、AI 写 brief 和施工计划、Herdr + Codex/Claude Code 施工、分批 checkpoint 和小审；到达「S0~S3 完成 + 首轮机器闸」的中途证据点 | 真实任务卡的施工阶段能被内核编排 |
-| DHR_39 | 跑收口阶段 E0~E10：机器闸、两轮换人复核、需求复核、教训复核、as-built、交付材料准备；生成交付摘要给你看 | 收口的仪式全部机器化，命令行和 DSH 只是不同的显示方式 |
-| DHR_40 | 跑最后三步 E11 你批准 → E12 合入主干并打 verify → E13 销户；DSH 关闭状态下用命令行走全程，DSH 可用时只验证显示一致 | 一张真实任务卡从头到尾在内核里闭环 |
-
-- **完成后你手里有什么**：
-  1. 一份机器可读的 dev-harness 工作流合同（以后新卡都按它跑）。
-  2. 一张真实任务卡在接力内核里完整跑完、打上 verify 的实证。
-  3. 启动 / 待处理提醒 / 批准这三类要你出面的动作，都有持久记录，任何客户端都能处理。
-  4. 为 P8 多卡并行打下基础。
-
-### 0.2 审核与确认记录
-
-- **事件类型**：B-新建（2026-08-18 从 design/05 阶段主线拆出，接管冻结 P2 的单卡流水责任）+ 同日 B-调整（按 design/06 要求 DSH 关闭下完成核心路径、Start Preview / Attention / E11 Approval 均可由 CLI 完成、必经角色须有非 DSH-only Executor）。同一未确认事件内修订。
-- **审核记录**：已做闸前路线图级 fresh 审核——2026-08-18 claude-grok（fresh、只读、`--model grok-4.5`）R-P79 一致性与承接审，结论「有条件通过」；原文与只读形态见 [evidence/09](../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#review-b07)。P6 阶段闸通过、用户放行后，依据前序证据再做定向 B-调整 + 复审（不是「闸前不能审」）。
-- **主会话裁决**：已做——逐条采纳 / 待用户决定见 [evidence/09 §2 裁决总表](../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#2-主会话裁决总表2026-08-18)；已采纳项已回写本计划正文，「待用户决定」项在正文显式标注。
-- **讲解记录**：待补——重点讲清授权从哪进（authorization-request → Start Preview → 用户确认 → Authority Snapshot）、领域真相在业务仓 / 运行真相在 `.dh-relay`、E11 Receipt 承诺什么、如何用宿主外检查独立验证 verify、失败时怎么从 CLI 看到卡在哪。
-- **理解问题**：待补（候选：「E11 放行确认在纯终端里只给你 releasePacket 摘要 + 证据路径，你能据此签字吗？还是必须看到图形证据页？」）。
-- **用户回答 / 解释**：待补。
-- **调整与复审**：待补。
-- **用户确认**：待补。**DHR_36~40 为预留编号，落盘不等于 B 确认，也不构成开工授权；真实卡由用户在 P7 开工前选择，计划不代选。**
-
-## 1. 概述
-
-- **交付什么 / 不含什么**：
-  - 交付：①`dev-harness/task-standard@1` Workflow Contract；②DevHarness Contract Exporter 或受控人工 fixture；③Gate Adapter 与结构化 Gate Result；④Authorization Request、Authority Snapshot、Plan Proposal；⑤控制客户端中立的 Start Preview / Attention / Approval；⑥S0~S3 施工路径；⑦E0~E10 机器闸、两轮复核、需求与教训复核、收口备料；⑧E11 持久 Approval、E12 Finalizer、E13 销户；⑨一张真实卡的完整 verify 闭环；⑩同一 Run 在 CLI 与任一增强客户端中状态一致的证明。
-  - 不含：多卡调度、卡级重编排（用户 2026-08-18 拍板：重编排从 P8 起；P7 单卡路径命中依赖阻塞时暂停并留持久 Attention，不做卡内 replan；design/06 §10「P7」已同步改为「Start Preview、Attention 和 E11 Approval 均可由 Relay CLI 完成」）、通用诊断 Agent、周报 Outbox、run 级跨卡归档、远端 test push、Linux 完整产品定型、GUI 专属的流程完成条件。
-- **必须证明的核心路径**：DSH 完全关闭 → Relay CLI 发起和观察 Run → Herdr + Codex/Claude Code 施工 → CLI 处理 Attention 与 E11 Approval → Finalizer 完成 verify。DSH / Pi 可同时连接同一 Run 提供更好展示，但不能是单卡闭环的唯一入口。
-- **承接设计**（拆计划输入 = `design/README.md` 白名单）：
-  - [design/06](../design/06-多控制面与Headless-SSH运行-设计补充.md) · 「验收命题」节 **H2 / H6 / H7 / H8 / H10 / H11 / H12**（全称或主承接）以及 **H1 / H3 / H4 的单卡子集**（DSH 关闭下完整授权链 / CLI 与 DSH·Pi 对同一 Start Preview 一致 / 终端断开重连不取消 Run；全称分别由 P5、P8/P9 关闭）+ §6 Headless 下的人机交互与 Approval、§7 证据模型与无 GUI 场景、§8 更换终端对流程和结果的影响、§10「P7」。
-  - [design/05](../design/05-DeepSeek-Harness插件化与专属工作台-可行性评估.md) · §8.4 DevHarness 节点路由建议、§9 DevHarness 接入、§10.3 预运行请求、§10.4 Git 留档。
-  - [design/02](../design/02-完整流水-产品设计与验收.md) · **B2**（脚本节点机器事实）、**B3**（两轮复核 + 汇合 + 需求复核调度顺序）、**B8 子集**（只继承 Finalizer 幂等 / 崩溃续跑 / 快进前置校验谓词；B8 中 psmux 窗口截图、`decision_ack`、固定短语窗口作答等护栏在多控制面下由 design/06 H8 的 Relay Approval Receipt 取代——design/02 决策 6「不再有 relay approve」是否正式退役**待用户决定**）、**B11**（复核身份链与工件不可变）、**B13**（人判 verdict 留痕）、**B14**（授权工件与授权边界）、**B17**（落户棒完整性）、**B18**（教训复核棒真实执行）；人验 **H3**（自举跑真实卡）的单卡子集——作为契约 Oracle。**B16 / H5（远端 test push）本阶段不交付。**
-- **前置条件**：P6 Gate 通过；至少一个 Codex 与一个 Claude Code Executor Profile 已实测；Relay CLI、Store、Runtime 恢复与无 DSH 路径已通过 P5/P6；用户选择真实标准档任务卡；DevHarness Contract 来源 commit 与 Gate Bundle 可冻结；用户明确放行 P7。
-- **实施策略一句话**：Relay 不复制 DevHarness 全文、不重实现 `dh` 规则，而是冻结 Contract + 经 Gate Adapter 调冻结版本工具；先在 S0~S3 + E0/E1 设中途证据点尽早验真卡，再补 E2~E10 与 E11~E13。
-- **任务前缀 / 模块 slug**：`DHR_` / `dh-relay`。
-- **批次**：批次 1=`DHR_36 → DHR_37`（Contract + 授权链）；批次 2=`DHR_38`（S0~S3 + E0/E1 中途证据点）；批次 3=`DHR_39 → DHR_40`（E0~E10 + E11~E13，第一个端到端 demo 在 DHR_40 真实卡 verify）。
-
-## 2. 工程切分
-
-### 2.1 实现单元
-
-| 单元 | 职责 | 入口 / 主要文件 | 关联任务 |
+| 任务 | 用业务语言说在做啥 | 解决什么问题 | 做完预期效果 |
 |---|---|---|---|
-| dh-contract | `dev-harness/task-standard@1` Contract；Exporter 或受控 fixture；hard_required / default_enabled / optional / dynamic / crosscut_action 分类；节点能力声明 | Runtime `workflows/dev-harness/`、dev-harness 仓 Exporter | DHR_36 |
-| gate-adapter | 调冻结版本 `dh` 工具，返回结构化 Gate Result；source commit / Contract hash / Gate digest 变化检测 | Runtime `gates/dev-harness/` | DHR_36 / DHR_39 |
-| authority | authorization-request、Start Preview、Authority Snapshot、Plan Proposal、Compiler → ResolvedPlan | Runtime `authority/`、`planner/` | DHR_37 |
-| cli-devharness | `relay start preview --request <file>`、`relay start confirm <request_id>`、`relay plan show <run_id>`、`relay approve`（或等价窄命令）、`relay inspect` 显示 releasePacket 摘要 | `cli/` | DHR_37 / DHR_39 / DHR_40 |
-| build-path | S0 worktree + 工作区骨架；S1/S2 Planner/Author Profile；S3 Herdr 施工；checkpoint / 小审 / 修复动态展开 | Runtime `workflows/dev-harness/nodes/s*` | DHR_38 |
-| closeout-path | E0~E10 机器闸、两轮 fresh 复核、requirement / lesson review、miner、as-built、releasePacket | Runtime `workflows/dev-harness/nodes/e0-e10` | DHR_39 |
-| approval-finalizer | E11 持久 Approval Request / Receipt；E12 Privileged Process Finalizer（暂存分支 squash / 复验 / 回填 / verify / CAS 快进 / journal 恢复）；E13 销户 | Runtime `approval/`、`finalizer/` | DHR_40 |
-| real-card-evidence | 真实卡从 Start Preview 到 verify 的事件链、宿主外核对 | `workspace/DHR_40/evidence/` | DHR_40 |
+| DHR_53 | 把一份很薄的接力路线展开成这次真正要跑的步骤，并钉住 Plan、任务与快照指纹 | Plan 不复制 DevPlan，运行结束后仍能说清当时按哪份计划跑 | 同一 Plan 可多次运行；每个 Run 可追溯，历史不改写、不自动删除 |
+| DHR_54 | 冻结 Ticket、控制回执及 Result/Handoff/Attention/Approval 等正式工件 | 防止旧 Agent、错节点、错运行或伪造结果混入 | 每次接棒的身份、权限和停止点都能机判，错绑稳定拒绝 |
+| DHR_55 | 建立唯一决定“现在能不能推进”的 Workflow Engine，并让 actor 只按命令原子落账 | 避免 CLI、Launcher、Agent 各自改状态，出现半关闭或重复启动 | 一次 `continue` 只产生一个合法下一步，节点收口事实同生同灭 |
+| DHR_56 | 把一个步骤安全拉成“一名监督者 + 一名执行者”，完成后关闭终端并释放容量 | 解决外部 Agent 重复拉起、关不干净或占槽位 | 能真实完成一个显式 Node；永久历史目录不会冒充活 Agent 占容量 |
+| DHR_57 | 按当前身份即时转发三类角色的普通消息 | 避免猜 Pane，同时避免聊天变成第二套状态机 | 消息只有四种明确结果，永远不能直接推进 Run |
+| DHR_58 | 一次启动代码轮2、需求、一致性、教训四路复核并正确汇合 | 解决串行慢、漏一路误放行、Monitor 替换后串线 | 全部必做路径合法结束后才出现下一步，用户例外不冒充通过 |
+| DHR_59 | 区分未接单、正常长步骤、等人、宿主故障和真实退出，再安全换新 Agent | 解决卡住时只能看终端猜原因、旧新 Agent 同时写结果 | 留下脱敏诊断，只恢复未完成部分，旧身份迟到写入被拒绝 |
+| DHR_60 | 把前七卡接成一张真实 DevHarness 标准卡 | 解决各组件单测通过但整条业务链仍接不起来 | 显式节点、并行复核、恢复、角色消息和永久历史形成可签收的 P7 结果 |
 
-### 2.2 复用与禁改边界
+### 0.2 审核、问答与确认
 
-| 路径 | 禁改 / 扩展 / 新建 | 说明 |
-|---|---|---|
-| Runtime `workflows/`、`gates/`、`authority/`、`approval/`、`finalizer/`、`cli/` | 扩展 / 新建 | 在 P5/P6 Runtime 上增加 DevHarness 领域接入 |
-| dev-harness 仓 `dh-check` / 节点表 / 动作细则 | 只读（冻结版本调用） | Gate Adapter 调用冻结 commit 的工具；Contract 从机读锚点与节点表生成 |
-| 业务仓 DevPlan / workspace / review / progress / as-built / knowledge / Git commit / verify trailer | 领域真相，只由对应节点或 Finalizer 按 dev-harness 规矩写 | Relay 不改 DevPlan 目标 / 验收；Agent 不能直接调 Finalizer |
-| `<repo>/.dh-relay/<run_id>/` | 运行真相 | 每个 Run 冻结 `source_repo / source_commit / contract_id / contract_version / contract_content_hash / gate_bundle_id / gate_bundle_digest / required_capabilities / allowed_control_clients / executor_profile_candidates` |
-| 远端 push（test / master / main） | 禁止 | 本阶段不交付 B16 |
-| DSH 页面 / Pi TUI | 增强渲染 | `allowed_control_clients` 只描述可连接与提交请求的客户端种类，不赋予直接写 Store 的权限 |
+- **事件**：`DHR-B-19`。唯一规划输入为 [design/10](../design/10-薄RelayPlan与显式节点边界-产品设计调整.md)，不把旧 P7、records、evidence 或历史设计当任务终点来源。
+- **fresh 审核**：首轮 `changes-requested`，0 Blocker、2 High、2 Medium、1 Low；主会话全部采纳。补齐 `continue` request/Receipt、Orchestrator Lease、active P7 Gate、A20/A22 superseded 边界及两类 Oracle 区分后，定向复审为 `approved`，0 Blocker/High/Medium。完整记录见 [evidence/16](../design/evidence/16-P7薄计划与显式节点实施重拆-交叉审核记录.md#review-b19)。
+- **理解问题**：DHR_56 做完时只有“单步骤安全接力”，尚无并行复核、自动恢复和角色消息，是否接受先作为独立中间验收？
+- **用户回答**：“接受。”因此保持八卡拆分；DHR_56 可独立验收，但不等于 P7 完成。
+- **最终确认**：用户随后明文“确认”，授权按本方案更新 P7、索引和 P8 前置指针并本地提交；不授权创建 DHR_53~60 workspace、启用新 runtime 根、开发、推送或部署。
 
-### 2.3 阶段专属约束
+## 1. 范围、依赖与批次
 
-- **角色 → 能力路由**（不映射到唯一产品）：planner / brief / task plan（只读输入、结构化 Proposal、工件写入范围 → Pi / DSH Native / Herdr Agent）；build（交互、续接、编码、用户输入 → Herdr + Codex/Claude Code）；fresh review（独立上下文、通常只读 → Pi / DSH one-shot / fresh Herdr）；lead / requirement / lesson（结构化 verdict → Pi / DSH Native / fresh Herdr）；machine gate（确定性 → Process / Gate Adapter）；finalizer（高权限、幂等、Receipt 绑定 → Privileged Process）。任何 hard_required 角色在本次 Run 候选集合中至少一个非 DSH-only Profile；首选 DSH Executor 不可用时只允许预登记且能力等价的 fallback，无 fallback 则暂停 + Attention。
-- **授权流程**：任一合法控制客户端选择项目与任务卡 → authorization-request → Relay 校验仓 / 卡 / 状态 / Git / Contract → 客户端中立 Start Preview → DSH / Pi / CLI 渲染同一 Preview → 用户确认 → Relay 原子生成 Authority Snapshot → 选定 Planner Profile 生成 Proposal → Compiler 生成 ResolvedPlan。用户确认前不创建正式 Run 与跨仓索引。
-- **E11**：Relay 持久化 Approval Request，绑定 releasePacket hash / allowed effects / excluded effects / expected state；DSH / Pi / CLI 均可展示；用户回答由 Relay 保存不可变 Approval Receipt；客户端临时 Approval 不能替代 Relay Receipt。
-- **E12/E13**：只有 Runner 校验 Receipt 后签发 Privileged Process Receipt；Finalizer 在暂存分支执行 squash、复验、回填、verify，再一次 CAS 快进；崩溃从 journal 最后完成步恢复。
-- **中途证据点**（DHR_38 末）：S0~S3 完成 + E0/E1 Gate 运行，不执行 E11/E12/E13；用于尽早验真实代码 / 工件 / Gate 接线，不构成 P7 完成。
+- **交付**：薄 Plan/Resolver；Plan→Run→generation 关联；永久 runtime 历史；Ticket/Receipt/Lease 和正式工件合同；Workflow/Actor 单写边界；单 Node Pair；best-effort Role Relay；Review Batch；停滞恢复；一张真实标准卡端到端验收。
+- **不含**：P8 的多卡、卡内重编排、通用 Diagnoser、Hook/Outbox、run 级归档与跨卡 Oracle；P9 的 Linux 双平台定型、发布升级和最终迁移；自动删除/压缩/配额；扩写 DHR_30 当前卡。
+- **前置**：P6 Gate 通过并经用户放行；DHR_30 的 CLI/Read Model 稳定接口收口并进入 master；每张新卡另行完成入口分流与用户确认。
+- **新根闸**：DHR_53 只在 fixture/受控测试中实现新根与 Resolver；DHR_60 前置全绿前，禁止正式 `dh_relay/runtime/` start。
+
+```text
+DHR_30 稳定接口/收口 + P6 Gate
+  -> DHR_53 -> DHR_54 -> DHR_55 -> DHR_56
+                                      ├-> DHR_57 ───────┐
+                                      └-> DHR_58 -> DHR_59
+                                                        └-> DHR_60
+```
+
+- **批次 1**：DHR_53→54，交付“计划可确定性展开、票据可稳定验真”的离线合同，不启动真实 Agent。
+- **批次 2**：DHR_55→56，交付第一个可演示中间成果——单 Node Monitor+Executor Pair 安全接力。
+- **批次 3**：DHR_57 与 DHR_58 在 DHR_56 后并行；普通消息不是 Review Batch 的业务依赖。
+- **批次 4**：DHR_59→60；恢复不依赖普通聊天，最后再开放真实新根并跑标准卡整链。
+
+## 2. 工程切分与硬边界
+
+| 实现单元 | 职责 | 主要落点 | 任务 |
+|---|---|---|---|
+| plan-resolver | 薄 Plan/Resolved Plan、task_type Recipe、根发现、Plan/Run/generation 关联 | `relay-core/contracts/`、`relay-core/resolver/`、`relay-core/runtime/` 窄适配 | DHR_53 |
+| work-item-contracts | Ticket、`continue` Receipt、Orchestrator Lease、Result/Handoff/Report/Attention/Approval/Role Relay schema | `relay-core/contracts/`、`relay-core/fixtures/` | DHR_54 |
+| workflow-engine | 唯一业务转换、guard、CAS、单 Node continue/收口、Lease 生命周期 | `relay-core/workflow/`、Runtime actor 端口 | DHR_55 |
+| launcher-pair | 外部终端启动、Monitor/Executor Pair、容量与资源释放 | `relay-core/launcher/`、`relay-core/pair/` | DHR_56 |
+| role-relay | 当前身份解析与 Herdr prompt best-effort 转发 | `relay-core/role-relay/` | DHR_57 |
+| review-batch | Batch 分配、路径结果、N/A、Approval override、取消、join、revision | `relay-core/review-batch/` | DHR_58 |
+| recovery | deadline、checkpoint、Host Observation、脱敏诊断、Attempt 替代 | `relay-core/recovery/`、`relay-core/diagnostics/` | DHR_59 |
+| devharness-e2e | workspace/task_type 适配、CLI/RPC 窄装配、独立单卡 oracle 与真实证据 | `relay-core/workflows/dev-harness/`、`relay-core/test/e2e/` | DHR_60 |
+
+硬边界：
+
+1. DHR_30 继续只负责其既有 CLI、客户端中立 Read Model 与可选 Bridge 接缝；新卡只消费稳定接口。若后续需要兼容变化，由对应新卡记录，不回写或扩大旧卡。
+2. Workflow Engine 唯一判断业务转换；HostSessionActor 只做 schema/身份/guard/CAS 与物理持久化；CLI、Launcher、Role Relay 不直写 Store。
+3. DHR_59 只做节点级停滞检测与恢复，不提前实现 P8 的通用诊断 Agent、选项治理或自动修复。
+4. DHR_60 的单卡独立 E2E oracle 必做；它不同于 P8 的跨卡、归档、Outbox Oracle。
+5. `DHR_55/DHR_56` 是本事件重新定义的新范围，不继承旧候选或口头草案中的同号范围。
 
 ## 3. 任务表
 
@@ -97,131 +83,147 @@
 
 <!-- dh:tasks -->
 
-| 任务 ID | 一句话 | 档位（轻/标准） | 状态 | 依赖 | 工作区 | 验收时间 / verify SHA | 备注 |
-|---|---|---|---|---|---|---|---|
-| DHR_36 | 发布 DevHarness 标准档 Contract 与 Gate Adapter | 标准 | 未开始 | P6 阶段闸（P6-M 通过 + 用户放行） | <开工时回填 workspace/…> | | 阶段闸阻塞：blocked-by-phase-gate P6 |
-| DHR_37 | 接通客户端中立授权、Authority Snapshot 与棒 0 Proposal | 标准 | 未开始 | DHR_36 | <开工时回填 workspace/…> | | 阶段闸阻塞 |
-| DHR_38 | 跑通 S0~S3 落户与 Herdr 施工（含 E0/E1 中途证据点） | 标准 | 未开始 | DHR_37 | <开工时回填 workspace/…> | | 阶段闸阻塞；开工 B-调整时预计拆卡 |
-| DHR_39 | 接通 E0~E10 机器闸、复核与收口备料 | 标准 | 未开始 | DHR_38 | <开工时回填 workspace/…> | | 阶段闸阻塞；预计拆卡 |
-| DHR_40 | 接通多控制面 E11~E13 并用真实卡完成 verify | 标准 | 未开始 | DHR_39 | <开工时回填 workspace/…> | | 阶段闸阻塞；第一个端到端 demo；真实卡由用户选 |
+| 任务 ID | 一句话 | 档位 | task_type | 状态 | 依赖 | 计划工作区 | 验收时间 / verify SHA | 备注 |
+|---|---|---|---|---|---|---|---|---|
+| DHR_36 | 历史：DevHarness Contract 与 Gate Adapter | 标准 | 存量未冻结 | 已取消 | | 未创建 | | DHR-B-07 历史；被 DHR-B-19 替代 |
+| DHR_37 | 历史：授权、Authority Snapshot 与 Proposal | 标准 | 存量未冻结 | 已取消 | | 未创建 | | DHR-B-07 历史；被 DHR-B-19 替代 |
+| DHR_38 | 历史：S0~S3 施工路径 | 标准 | 存量未冻结 | 已取消 | | 未创建 | | DHR-B-07 历史；被 DHR-B-19 替代 |
+| DHR_39 | 历史：E0~E10 收口路径 | 标准 | 存量未冻结 | 已取消 | | 未创建 | | DHR-B-07 历史；被 DHR-B-19 替代 |
+| DHR_40 | 历史：E11~E13 与真实卡 verify | 标准 | 存量未冻结 | 已取消 | | 未创建 | | DHR-B-07 历史；被 DHR-B-19 替代 |
+| DHR_53 | 薄 Plan/Resolver、永久历史与 Plan-Run 关联 | 标准 | heavy | 未开始 | P6 Gate；DHR_30 稳定接口进入 master | `workspace/DHR_53/`（开工时创建） | | blocked-by-phase-gate:P6；新根 start 禁用 |
+| DHR_54 | Ticket、控制回执、Lease 与正式工件合同 | 标准 | heavy | 未开始 | DHR_53 | `workspace/DHR_54/`（开工时创建） | | 不实现业务推进 |
+| DHR_55 | Workflow Engine、Lease 生命周期与 Actor 命令边界 | 标准 | heavy | 未开始 | DHR_54 | `workspace/DHR_55/`（开工时创建） | | 新窄范围，不继承旧候选 |
+| DHR_56 | Launcher 与单 Node Monitor+Executor Pair | 标准 | heavy | 未开始 | DHR_55；P6 Herdr/Profile 闸 | `workspace/DHR_56/`（开工时创建） | | P7 第一个真实中间 demo |
+| DHR_57 | best-effort Role Relay | 标准 | normal | 未开始 | DHR_56 | `workspace/DHR_57/`（开工时创建） | | 可与 DHR_58 并行；触及身份/权限则停下重定类 |
+| DHR_58 | Review Batch、N/A、用户例外、取消与 join | 标准 | heavy | 未开始 | DHR_56 | `workspace/DHR_58/`（开工时创建） | | 可与 DHR_57 并行 |
+| DHR_59 | 停滞检测、脱敏诊断与安全恢复 | 标准 | heavy | 未开始 | DHR_58 | `workspace/DHR_59/`（开工时创建） | | 不依赖 Role Relay |
+| DHR_60 | DevHarness 适配与 P7 端到端验收 | 标准 | heavy | 未开始 | DHR_57、DHR_59；用户确认真实任务与环境 | `workspace/DHR_60/`（开工时创建） | | 前置全绿后才允许正式新根 start |
 
-> 状态列只填五枚举，阶段闸阻塞写「备注」列。P6 未通过时 DHR_36~40 均不得开工。
+> 本表只创建计划卡身份，不创建目录。状态列只用五枚举；阶段闸与说明只写备注。每张卡开工时把计划工作区改为真实链接。
 
 ### 3.2 任务卡
 
-#### DHR_36
+#### DHR_53 · 薄 Plan、Resolver 与运行历史关联
 
-- **目标**：从 DevHarness 机读锚点、节点表与动作细则生成或维护冻结的 `dev-harness/task-standard@1` Contract（区分 hard_required / default_enabled / optional / dynamic / crosscut_action，声明节点所需能力而非写死 DSH 页面或某 Agent 产品），并实现 Gate Adapter 调冻结版本工具返回结构化 Gate Result。
-- **非目标**：不重实现 `dh` 全部机器规则；不做授权链（DHR_37）；不跑真实卡。
-- **验收口径**：
-  - **机器证**：[design/05 §9 DevHarness 接入](../design/05-DeepSeek-Harness插件化与专属工作台-可行性评估.md#9-devharness-接入) · 本计划 P7-M1：S0~S3、E0~E13 与源节点表可追溯；两轮独立复核、E11、E12、E13 等硬节点不可省略；source commit、Contract hash、Gate digest 变化被检测；旧 Run 继续绑定旧版本，新 Run 不静默切换。
-  - **机器证**：[design/06 H10](../design/06-多控制面与Headless-SSH运行-设计补充.md#11-验收命题)：Headless 不具备视觉能力时相关节点启动前拒绝或路由，不静默通过。
-  - **机器证**：[design/06 H6](../design/06-多控制面与Headless-SSH运行-设计补充.md#11-验收命题)：Contract 每个 hard_required 角色的能力声明可被至少一个非 DSH-only Profile 满足（静态校验）。
-  - **机器证**：[design/02 B2](../design/02-完整流水-产品设计与验收.md#61-ai-自动验收栏)：Gate Result 为机器事实——exit 0 → pass、非 0 → fail 分支、超时 → error；Agent 伪造 gate_outcome 被拒。
-- **变更范围**：Runtime `workflows/dev-harness/`、`gates/dev-harness/`、dev-harness 仓 Exporter（若采用）；本卡 `workspace/DHR_36/`。
-- **档位**：标准（领域契约冻结 + 组件接线）。
-- **实施提示**：Contract 只声明能力不绑产品；Gate Adapter 只调用不复制规则；Exporter 做不成用受控人工 fixture 但须标注来源 commit。
+- **目标**：冻结版本化 RelayPlan/Resolved Plan；确定性读取 DevPlan 任务行、`task_type`、workspace 静态输入、Git/worktree 与 Profile registry，展开唯一 node/依赖/Recipe/applicability/mode；消费 DHR_30 稳定的旧根只读发现/Read Model 接缝，增加新根路由、Run 根不可变 `plan_id + task_id`、generation `resolved_plan_digest`、永久保留与 history/active 区分。
+- **非目标**：不实现 `continue`、Ticket 派发、外部 Agent、Review Batch、删除/压缩/配额；不修改 DHR_30 卡或 worktree。
+- **验收**：机器证回连 [design/10](../design/10-薄RelayPlan与显式节点边界-产品设计调整.md) `HC-3AT-A19/A21/A23/A30/A31`；坏计划、缺 workspace、路径越界、Recipe 缺路/非法降级、错 Plan/Task/digest、旧根写入、历史误计 active/容量、自动删除均有反例。同一 Plan 两次运行产生不同 Run，旧 generation 不改写。人判承接 `HC-3AT-H5/H10` 的计划与历史子集。
+- **范围**：`relay-core/contracts/` 的 Plan/Resolved Plan/关联 schema；新建 `relay-core/resolver/`；`relay-core/runtime/` 精确根与关联适配；fixtures/tests；必要的 `.gitignore` 断言。
+- **档位 / 工作区**：标准；`workspace/DHR_53/`。
+- **任务类型**：重核 <!-- dh:task-type:v1 task=DHR_53 type=heavy -->
 
-#### DHR_37
+#### DHR_54 · Ticket 与正式工件合同
 
-- **目标**：接通 §2.3 授权流程：任一合法控制客户端提交 authorization-request → Relay 校验 → 客户端中立 Start Preview → 用户确认 → 原子生成 Authority Snapshot → Planner Profile 生成 Proposal → Compiler 生成 ResolvedPlan；CLI 至少提供 `relay start preview --request <file>`、`relay start confirm <request_id>`、`relay plan show <run_id>`；DSH Bridge 与 Pi Extension 调用同一服务合同。
-- **非目标**：不实现 S0~S3；不做重编排（P8）；不让 Agent 生成 Snapshot。
-- **验收口径**：
-  - **机器证**：[design/02 B14](../design/02-完整流水-产品设计与验收.md#61-ai-自动验收栏) · P7-M2：Agent 只能写 request 与 proposal、不能生成 snapshot；未授权卡、目标变更、验收引用变化、范围越界被拒；ResolvedPlan 与 Authority、Contract、Profile 能力、effect 一致；用户确认前不创建正式 Run 与跨仓索引。
-  - **机器证**：[design/06 H3 / H11](../design/06-多控制面与Headless-SSH运行-设计补充.md#11-验收命题)：CLI 与 DSH/Pi 对同一 Start Preview 的任务卡、effect、hash 一致；更换控制客户端不改变 Authority / ResolvedPlan。
-  - **机器证**：[design/06 H1](../design/06-多控制面与Headless-SSH运行-设计补充.md#11-验收命题) · P7-M8（授权段）：DSH 不启动时可完成完整授权链。
-  - **机器证**：[design/05 §10.3 预运行请求](../design/05-DeepSeek-Harness插件化与专属工作台-可行性评估.md#103-预运行请求)：棒 0 Proposal 只含允许字段，不写 Relay state 与业务仓工件。
-- **变更范围**：Runtime `authority/`、`planner/`、`cli/`（start preview/confirm、plan show）；本卡 `workspace/DHR_37/`。
-- **档位**：标准（授权边界属权限红线相邻）。
-- **实施提示**：复用 P1 DHR_01/DHR_04 的 authority / snapshot 契约与守卫作 Oracle；具体命令名可在本卡冻结但服务合同唯一。
+- **目标**：冻结 Work Item/Monitor Ticket、`continue` request/Receipt、Orchestrator Lease、Result、Handoff、Report、Attention、Approval、Role Relay request/snapshot/result 与节点状态枚举的版本化 schema、JCS digest、身份链、能力、过期和停止点。
+- **非目标**：不决定下一节点、不写 Store、不启动 Agent、不投递聊天。
+- **验收**：机器证回连 design/10 `HC-3AT-A2/A7/A11`、`HC-P1-A1/A8` 与 `HC-3AT-A24` 票据子命题；缺/未知字段、旧 generation、错 node/pair/attempt/agent/batch/revision/HEAD/digest、过期 Ticket/Lease、错 expected state、request ID 冲突、凭据/原始聊天入工件均拒绝；同一 `continue` 重放只引用同一 Receipt。
+- **范围**：`relay-core/contracts/`、`relay-core/fixtures/`、独立 validator 与契约负例测试。
+- **档位 / 工作区**：标准；`workspace/DHR_54/`。
+- **任务类型**：重核 <!-- dh:task-type:v1 task=DHR_54 type=heavy -->
 
-#### DHR_38
+#### DHR_55 · Workflow Engine 与 Actor 命令边界
 
-- **目标**：S0 确定性创建任务 worktree 与工作区骨架；S1/S2 由已选 Planner/Author Profile 生成 brief 与 task plan（首选可为 Pi / DSH Native / Herdr）；S3 长时间施工用 Herdr + Codex/Claude Code，按批次动态展开 checkpoint / 小审 / 修复；在真实卡上到达「S0~S3 完成 + E0/E1 Gate 运行」中途证据点。
-- **非目标**：不执行 E2~E13；不做多卡；中途证据点不构成 P7 完成。
-- **验收口径**：
-  - **机器证**：[design/02 B17](../design/02-完整流水-产品设计与验收.md#61-ai-自动验收栏)：工作区文件齐备且非占位（逐文件谓词）。
-  - **机器证**：[design/02 B9 ①/②](../design/02-完整流水-产品设计与验收.md#61-ai-自动验收栏)（单卡子集）：一卡一 worktree，普通节点不写主工作树；写入 ⊆ 授权范围。
-  - **机器证**：[design/06 H7 / H12](../design/06-多控制面与Headless-SSH运行-设计补充.md#11-验收命题) · P7-M3/M9：build Receipt 绑定 Executor Profile、账号、Contract 与 Authority；Agent `done` 且无合法 Result 时保持 `awaiting_result`；DSH Executor 丢失只中断对应 Attempt，预登记 fallback 产生 fresh Attempt。
-  - **机器证**：[design/06 H2](../design/06-多控制面与Headless-SSH运行-设计补充.md#11-验收命题)：CLI 可显示当前节点、Herdr host_ref 与 Attention。
-  - **机器证**：中途证据点——真实卡 S0~S3 完成、E0/E1 Gate 结果为结构化事实，落 `workspace/DHR_38/evidence/`。
-- **变更范围**：Runtime `workflows/dev-harness/nodes/s*`、E0/E1 接线；本卡 `workspace/DHR_38/`（拆卡后各自）。
-- **档位**：标准（真实卡施工接线；开工 B-调整时拆卡）。
-- **实施提示**：真实卡由用户选、不代选；S3 复用 P6 Herdr Adapter 不另起宿主；中途证据点尽早暴露 Gate 接线问题。
+- **目标**：从权威 Read Model 计算 `continue`、单 Node 收口、授权与稳定拒绝，消费 DHR_54 合同，生成带 expected generation/state、幂等 request ID 和 guard 的业务命令；通过既有 Runtime HostSessionActor 原子落账；由 Runner 管理 run-scoped Orchestrator Lease 生命周期。
+- **非目标**：不拉终端、不让 CLI/Launcher/Agent 写 Store，不实现 Batch、Role Relay 或停滞探测。
+- **验收**：机器证回连 design/10 `HC-3AT-A9/A10/A14/A15/A17`、`HC-P1-A2/A5` 与 `HC-3AT-A24/A31` 状态转换子命题；`no_ready/ambiguous_ready/stale_generation`、重放同 Receipt、final Result/Handoff/node_closed/next_ready 原子同生同灭、无效 Lease/Worker continue、Plan/Task/digest 错绑均拒绝，actor 不自行作业务裁决。
+- **范围**：新建 `relay-core/workflow/`；Runtime 命令/actor 端口和 Store 事务测试；必要 RPC 装配。
+- **档位 / 工作区**：标准；`workspace/DHR_55/`。
+- **任务类型**：重核 <!-- dh:task-type:v1 task=DHR_55 type=heavy -->
 
-#### DHR_39
+#### DHR_56 · Launcher 与单 Node Pair
 
-- **目标**：E0/E1 使用 Process 与 Gate Adapter；代码复核两轮 fresh、施工者不复核自己；requirement review、lesson review、miner、as-built、证据挂接、交付材料按 Contract 执行；fresh review 通过能力匹配选 Pi / DSH one-shot / fresh Herdr；E9/E10 生成可序列化交付摘要与证据索引，DSH 页面与 CLI 只是不同渲染器。
-- **非目标**：不做 E11~E13；不做通用诊断 Agent；不做周报 Outbox。
-- **验收口径**：
-  - **机器证**：[design/02 B3](../design/02-完整流水-产品设计与验收.md#61-ai-自动验收栏) · P7-M4：R2 只在 R1 完成后 ready，汇合只在两轮齐全后 ready；rework 用 fresh Attempt 并重走受影响 Gate 与复核。
-  - **机器证**：[design/02 B11](../design/02-完整流水-产品设计与验收.md#61-ai-自动验收栏)：复核工件身份链与不可变。
-  - **机器证**：[design/02 B18](../design/02-完整流水-产品设计与验收.md#61-ai-自动验收栏)：lesson review 真正 launch 且诚实区分有候选 / 无候选 / 失败。
-  - **机器证**：[design/02 B13](../design/02-完整流水-产品设计与验收.md#61-ai-自动验收栏)（人判 verdict 留痕子集）：需人判 E-ID 必须携带用户原文 verdict，Agent 不得代填。
-  - **机器证**：[design/06 H10](../design/06-多控制面与Headless-SSH运行-设计补充.md#11-验收命题)：E10 生成绑定候选、证据与 effect 的 releasePacket；`relay inspect` 在纯终端显示 releasePacket 摘要与证据路径；无图形界面不能导致 E9/E10 被跳过。
-- **变更范围**：Runtime `workflows/dev-harness/nodes/e0-e10`、`cli/`（inspect releasePacket）；本卡 `workspace/DHR_39/`（拆卡后各自）。
-- **档位**：标准（复核链与收口备料接线；预计拆卡）。
-- **实施提示**：复核角色能力匹配不绑产品，但 fresh review 所需的 Pi / DSH one-shot / fresh Herdr Profile 必须已在 P6 DHR_32 名册登记（缺则本卡开工 B-调整前先补登，不得临时手写）；rework 是 fresh Attempt 不是续跑；releasePacket 结构承接 dev-harness design/05 E10 定义。
+- **目标**：消费 durable launch intent，容量预检后经 P6 Herdr Adapter 启动/确认一个 Monitor 与一个 Executor；签发 Ticket，绑定 Host Observation，处理 launch failure、正常退出、强停、撤权和 `pair_release_pending/failed`，确保每个角色至多一个 active 身份。
+- **非目标**：不做多 Reviewer Batch、Role Relay、聊天/`done`完成推断或超时替代恢复。
+- **验收**：机器证回连 design/10 `HC-3AT-A1/A4/A5/A12/A14/A27`、`HC-3AT-A24` launcher 子命题与 `HC-CTRL-H4/H12`；容量不足零分配、重复 launch 不增 Pair、部分启动可恢复、旧身份迟到拒绝、final commit 后撤权再关终端、永久 runtime 不占容量。人判承接 `HC-3AT-H1/H3/H6` 单节点子集。
+- **范围**：新建 `relay-core/launcher/`、`relay-core/pair/`；P6 Herdr 窄调用层；Host/Store/RPC 与 fake adapter 测试。
+- **档位 / 工作区**：标准；`workspace/DHR_56/`。
+- **任务类型**：重核 <!-- dh:task-type:v1 task=DHR_56 type=heavy -->
 
-#### DHR_40
+#### DHR_57 · best-effort Role Relay
 
-- **目标**：E11 持久 Approval Request / Receipt（DSH UI、Pi TUI、CLI `relay approve` 均可展示与提交同一请求）；E12 Privileged Process Finalizer（暂存分支 squash → 复验 → 回填 → verify → 一次 CAS 快进，崩溃从 journal 恢复）；E13 销户；用用户选定的真实卡走必测路径：DSH 关闭 → CLI Start Preview 与确认 → Herdr 施工 → CLI 查看 E9/E10 → CLI 提交 E11 → E12/E13 → `verify(<scope>)`；DSH 可用时再连接同一 Run 只验展示一致性。
-- **非目标**：不做远端 push；不做多卡；不把两次不同 Run 拼成结论。
-- **验收口径**：
-  - **机器证**：[design/06 H8](../design/06-多控制面与Headless-SSH运行-设计补充.md#11-验收命题) · P7-M5：E11 Receipt 绑定 releasePacket hash / allowed effects / excluded effects / expected state；同一 Approval Request 从 CLI 或 DSH 提交时 Receipt 语义与 hash 绑定一致；客户端临时 Approval 不能替代 Relay Receipt。
-  - **机器证**：[design/02 B8 子集](../design/02-完整流水-产品设计与验收.md#61-ai-自动验收栏)（仅 Finalizer 谓词；确认闸以 [design/06 H8](../design/06-多控制面与Headless-SSH运行-设计补充.md#11-验收命题) Approval Receipt 为准，不按 B8 窗口截图取证）· P7-M6：只有 Runner 校验 Receipt 后签发 Privileged Process Receipt；Agent 不能直接调 Finalizer；每步后模拟崩溃再续跑不重复 squash/verify；master 在快进前未动；外部提交后快进拒绝 → `closeout_blocked`。
-  - **机器证**：[design/06 H1 / H2 / H4 / H11](../design/06-多控制面与Headless-SSH运行-设计补充.md#11-验收命题) · P7-M7/M8：DSH 完全关闭时 CLI 完成 Start、Attention、E11 与最终查询；控制终端断开、SSH 重连、Herdr 重连、DSH 重启或缺席均不改变 Run 真相；DSH / Pi / CLI / Herdr 状态均不能越权改写 DevHarness 完成事实。
-  - **机器证**：[design/02 B10](../design/02-完整流水-产品设计与验收.md#61-ai-自动验收栏)（单卡子集）：宿主外检查核对 candidate、manifest、DevPlan、verify trailer 与 worktree 清理；从 Start Preview 到 verify 的事件链完整。
-  - **人判**：[design/02 H3](../design/02-完整流水-产品设计与验收.md#62-人类验收栏)（单卡子集；人判问题已按 design/06 改写，**不再以「不敲命令行 / 窗口作答」为通过标准**）· P7-H：向用户展示真实卡时间线、每次 Attention / E11 的 CLI 实录、E11 在终端与（若可用）图形界面的证据展示、verify 提交；用户判断真实单卡体验是否优于手动多终端接力、纯 CLI/SSH 路径的体验与证据是否够格作为日常正式控制面之一（产品位已定为与 DSH 并行，不再问「算不算备用」）、DSH/Pi 与 Herdr 切换是否清楚、E11 证据在两种界面是否都可信易懂、失败时能否知道卡在哪。
-- **变更范围**：Runtime `approval/`、`finalizer/`、`cli/`（approve）、E13 回填；`workspace/DHR_40/evidence/`。
-- **档位**：标准（高权限 Finalizer + 真实卡 verify + 人判；生产接入类高危）。
-- **实施提示**：DSH 关闭路径先测；同一 Run 再连 DSH 只验一致性；真实卡的 verify scope 由其 authority snapshot 冻结的 `verify_scope` 决定，不是 `dh-relay`。
+- **目标**：从有效 Ticket 或 Orchestrator Lease 解析 source/target，向唯一当前 Herdr Agent 即时 prompt，只返回 `sent/target_offline/target_ambiguous/delivery_uncertain`，前后对账 Host generation 与 Agent identity。
+- **非目标**：不排队、重投、保存普通聊天、解释内容、生成授权、改变业务状态或开放 send-keys 绕过。
+- **验收**：机器证回连 design/10 `HC-3AT-A3/A25`；多 Run 同名、裸 executor 多实例、offline/ambiguous、working/idle/blocked、过期 Ticket/Lease、替换竞态、`sent` 无回复与直接 Herdr 调用均有 oracle，Store 业务状态零变化。人判承接 `HC-3AT-H1` 转发子集。
+- **范围**：新建 `relay-core/role-relay/`；Herdr prompt 窄适配；RPC/CLI 窄入口与 fake adapter 测试。
+- **档位 / 工作区**：标准；`workspace/DHR_57/`。
+- **任务类型**：常规 <!-- dh:task-type:v1 task=DHR_57 type=normal -->
+- **复核配方边界**：代码轮1、需求、教训三路 + 有效单测；若施工发现必须改变身份/权限合同，立即停下由用户重定类为 heavy，不能现场自升级。
 
-### 3.3 标准档共同收口条件
+#### DHR_58 · Review Batch、N/A 与用户例外
 
-同 P5/P6：两轮独立换人复核；需求境证据（DHR_38/40 须有真实卡终端实录，Approval 若有图形界面须截图）；`dh dh-relay` 与证据命令可复跑；P0/P1 清零；用户对话确认后才 `verify(dh-relay):`。DHR_40 属高危：无 verify 提交不得标完成。
+- **目标**：代码轮1及整改闭合后，以一次 CAS 分配父 Batch、一个 Monitor 与全部适用 Reviewer intents；实现 Result+Report 成对收口、N/A、`path_user_overridden`、整批取消、revision 失效、join 与 capacity guard。真实停滞检测/替代由 DHR_59 承接。
+- **非目标**：不把 Monitor 当第五路结论、不删必做路径、不依赖 Role Relay、不做停滞诊断。
+- **验收**：机器证回连 design/10 `HC-3AT-A4/A5/A8/A26/A27/A28`；Batch 全有或全无、部分路径不放行、N/A 缺依据拒绝、Result/Report 半份不 terminal、override 只产生 `proceeded_with_user_override`、cancel/join/Result/launch 竞态固定、新 revision 使旧批次失效。人判承接 `HC-3AT-H5/H7/H8`。
+- **范围**：新建 `relay-core/review-batch/`；扩展 workflow 命令、actor 事务与 launcher Batch intents；Batch/Path/Approval fixtures 和竞态测试。
+- **档位 / 工作区**：标准；`workspace/DHR_58/`。
+- **任务类型**：重核 <!-- dh:task-type:v1 task=DHR_58 type=heavy -->
 
-## 4. P7 阶段闸
+#### DHR_59 · 停滞检测、诊断与安全恢复
 
-### 4.1 核心机器闸 P7-M
+- **目标**：执行 `start_deadline/checkpoint_deadline`；综合 `node_started`、checkpoint、Host Observation 区分未接单、长步骤、人等、宿主不可达、probe error 与真实退出；生成白名单→脱敏→UTF-8 限长诊断，CAS 撤权旧 Attempt，等 Pair 释放后为单 Node 或 Batch 未完成路径签发新 Attempt。
+- **非目标**：不凭聊天/屏幕静默/`done`判完成，不自动输入，不重跑已 terminal 路径，不依赖 Role Relay，不做 P8 通用 Diagnoser。
+- **验收**：机器证回连 design/10 `HC-3AT-A6/A13/A18/A29`、`HC-P1-A6`、`HC-CTRL-H7/H12` 与 `HC-3AT-A26` 恢复子命题；Result/recovery 只有一个 CAS 赢家、人等暂停、泄密反例零原文、旧 Pair 未释放无 replacement、Crash 后只恢复一个合法身份、Batch 只恢复未完成路径。人判承接 `HC-3AT-H4/H9`。
+- **范围**：新建 `relay-core/recovery/`、`relay-core/diagnostics/`；Host observation、workflow/actor/launcher 恢复端口；时间、竞态、脱敏与 crash fixtures。
+- **档位 / 工作区**：标准；`workspace/DHR_59/`。
+- **任务类型**：重核 <!-- dh:task-type:v1 task=DHR_59 type=heavy -->
 
-| ID | 命题 | 承接卡 |
+#### DHR_60 · DevHarness 适配与 P7 端到端验收
+
+- **目标**：以当前 dev-harness `task_type`/workspace 合同生成真实薄 Plan，接通现有 DHR_30 CLI/Read Model 与 DHR_53~59；用用户开工时另选的真实标准任务完成 construction→显式收口→Review Batch→必要恢复→最终交付/verify，并另造失败、取消和终态历史场景。前置全绿后才允许正式新根 start。
+- **非目标**：不做 P8/P9 能力，不重建 DHR_30 Read Model，不自动删除 runtime，不在本计划确认时预建真实任务 workspace。
+- **验收**：回连 design/10 `HC-3AT-A16` 与 `HC-3AT-H1~H10` 的整链前置；重放 active `A1~A19、A21、A23~A31`，A20/A22 只证 superseded 语义不回流。整链对证 `HC-P1-A1/A2/A5/A6/A8` 与 `HC-CTRL-H1/H2/H3/H4/H6/H7/H8/H10/H11/H12`，不改变分卡主承接；`HC-CTRL-H9` 留 P9 DHR_46。人判按 H1~H10 逐项展示并等用户签收。
+- **范围**：新建 `relay-core/workflows/dev-harness/` 与独立 E2E fixture/oracle；扩展现有 CLI/RPC 的 `continue/attention/approve/role-relay` 窄装配；`relay-core/test/e2e/` 与本卡证据目录。
+- **档位 / 工作区**：标准；`workspace/DHR_60/`。
+- **任务类型**：重核 <!-- dh:task-type:v1 task=DHR_60 type=heavy -->
+
+### 3.3 新卡共同收口条件
+
+- heavy：代码轮1及必要整改闭合后，代码轮2、需求、一致性、教训进入同一 Review Batch；有效单测必做。normal：代码轮1、需求、教训三路 + 有效单测。具体 execution mode 由开工时冻结的 registry 决定，不能降级或删路径。
+- 每卡一个独立 worktree；workspace 只在该卡逐卡确认开工后创建。施工者不复核自己的卡。
+- 标准档进入待验收前须有需求境证据；真实 Agent/CLI/终端交互必须提供可复查操作路径与证据，不能只报单测。
+- 高危性质的组件接线、迁移、新根启用在“完成”前必须有 `verify(dh-relay):`；用户不得由 Agent 代签。
+- 密钥、凭据、普通聊天和原始 Pane 文本不得进入工件；诊断证据先白名单、脱敏、限长。
+
+## 4. P7 新阶段闸
+
+### 4.1 核心机器闸
+
+| ID | 可机判终点 | 承接卡 |
 |---|---|---|
-| P7-M1 | DevHarness Contract 与冻结源一致，硬节点不可省略 | DHR_36 |
-| P7-M2 | Authority、Proposal、ResolvedPlan 权限链闭合 | DHR_37 |
-| P7-M3 | S0~S3 在真实卡上完成，Herdr 施工 Result 合法 | DHR_38 |
-| P7-M4 | E0~E10 的机器闸和复核链完整 | DHR_39 |
-| P7-M5 | E11 Receipt 绑定 releasePacket、effect 和 expected state | DHR_40 |
-| P7-M6 | E12/E13 崩溃恢复幂等，最终产生 verify | DHR_40 |
-| P7-M7 | DSH、Pi、CLI 和 Herdr 状态均不能越权改写 DevHarness 完成事实 | DHR_40 |
-| P7-M8 | DSH 完全关闭时，CLI 完成 Start、Attention、E11 和最终查询 | DHR_37 / DHR_40 |
-| P7-M9 | 必经角色均有非 DSH-only Executor，fallback 产生 fresh Attempt | DHR_36 / DHR_38 |
+| P7-M10 | 薄 Plan/Resolver、task_type Recipe、新旧根、永久历史与 Plan→Run→generation 关联全部 fail-closed | DHR_53 |
+| P7-M11 | Ticket、`continue` request/Receipt、Orchestrator Lease 与正式工件 schema/身份/digest 负例通过 | DHR_54 |
+| P7-M12 | Workflow Engine 唯一裁决、actor 只按 guard 落账；单 Node `continue`/收口幂等且无半状态 | DHR_55 |
+| P7-M13 | 单 Node Pair 可真实启动、收口、撤权与释放；永久目录不占容量 | DHR_56 |
+| P7-M14 | Role Relay 四结果枚举、身份对账与零业务副作用成立 | DHR_57 |
+| P7-M15 | Review Batch 原子分配、路径收口、N/A、用户例外、取消、revision 与 join 成立 | DHR_58 |
+| P7-M16 | 启动/进展时限、五类停滞、脱敏诊断、单 Node/Batch 安全替代及竞态恢复成立 | DHR_59 |
+| P7-M17 | 一张真实标准卡跑通 active A/H；三类终态历史永久可查不可继续；新根启用闸和独立 E2E oracle 通过 | DHR_60 |
 
-### 4.2 增强验收 P7-X 与人类闸 P7-H
+### 4.2 人类闸与解锁 P8
 
-- **P7-X**（决定日常首选体验，不决定单卡核心闭环）：DSH 图形化展示同一真实 Run；Pi TUI 处理一次 Attention 或 review；DSH 到 Herdr 的 pane 聚焦。
-- **P7-H**（用户判断，见 DHR_40 人判项）。
+- DHR_60 按 design/10 `HC-3AT-H1~H10` 提供一份逐项操作与证据索引，用户逐项签收。
+- `P7 Gate = P7-M10~M17 全部通过 + H1~H10 用户签收 + 用户明确放行 P8`。
+- P7 Gate 通过前，P8 `DHR_41~45` 继续保持 `blocked-by-phase-gate:P7`。
 
-### 4.3 解锁 P8 的规则
+## 5. 历史保留与后续阶段
 
-P7-M 全部通过 ∧ P7-H 明确 ∧ 用户对话同意进入 P8；P7-X 可以是通过 / 受限 / 不适用。
-
-## 5. 从旧 P2 吸收的责任
-
-P7 吸收旧 P2 的：workspace 八件套、标准流水节点、脚本 Gate、两轮代码复核、需求复核、教训复核、收口确认、Finalizer、Authority Snapshot、单卡真实垂直闭环。多卡、重编排、诊断、归档与 Oracle 留给 P8。旧 P2 文件级 PowerShell 实施提示不迁移。
+- `DHR_36~40` 与 `P7-M1~M9` 是 `DHR-B-07` 的历史路线，状态为已取消，不删除、不复用、不再解锁 P8。其完整旧卡面仍可由 Git 历史恢复。
+- P8 `DHR_41~45` 的多卡、重编排、通用诊断、Outbox、归档/Oracle范围不变；只把 P7 前置明确指向本计划新 Gate。
+- P9 `DHR_46~48` 范围、顺序和阶段闸不变；`HC-CTRL-H9` Linux 无 GUI 全链仍由 DHR_46 承接。
+- DHR_30 当前 worktree、卡面和验收不因本计划改变；新卡不得把 Workflow、Pair、Launcher、Review Batch、Role Relay、Resolver 或恢复塞回 DHR_30。
 
 ## 6. 覆盖、颗粒度与依赖查漏
 
 | 检查 | 结论 |
 |---|---|
-| 覆盖 | design/06 H2/H6/H7/H8/H10/H11/H12 由 DHR_36~40 承接，H1/H3/H4 只承接单卡子集（见 §1）；卡内重编排按用户拍板归 P8（§1 不含）；design/05 §9/§10.3 由 DHR_36/37 承接；design/02 B2/B3/B8/B11/B13/B14/B17/B18 与 H3 单卡子集作 Oracle 由 DHR_36~40 承接（B16/H5 明示本阶段不交付）；P7-M1~M9 每条至少一张卡 |
-| 颗粒度 | DHR_36=Contract + Gate 验收单元；DHR_37=授权链验收单元；DHR_38=施工路径 + 中途证据点单元；DHR_39=收口备料链单元；DHR_40=E11~E13 + 真实卡人判单元；DHR_38~40 开工时按安全边界拆卡 |
-| 依赖 | `DHR_36 → DHR_37 → DHR_38 → DHR_39 → DHR_40` 单链无环；DHR_36 额外依赖 P6 阶段闸；DHR_38 起额外依赖用户已选真实卡 |
+| 覆盖 | DHR_53=A19/A21/A23/A30/A31；DHR_54=A2/A7/A11+P1-A1/A8；DHR_55=A9/A10/A14/A15/A17+A24/A31状态转换+P1-A2/A5；DHR_56=A1/A4/A5/A12/A27单节点+A24启动；DHR_57=A3/A25；DHR_58=A8/A26/A27批次/A28；DHR_59=A6/A13/A18/A29+A26恢复+P1-A6；DHR_60=A16及整链人验/回归。A20/A22 不作 active 承接，CTRL-H9 留 P9。 |
+| 颗粒度 | 每张卡对应一个可独立制造反例和签收的承重对象；DHR_60 只做适配/整链，不吞回前七卡实现。 |
+| 依赖 | `53→54→55→56` 后 `57∥58→59`，最终 `57+59→60`，无环；59 不依赖普通聊天；P8/P9 边界不前移。 |
 
 ## 7. 计划完工
 
-- [ ] DHR_36~40 全部销户。
-- [ ] P7-M1~M9 全部有等价 pass 证据；P7-X 三态已登记。
-- [ ] 端到端证据：一张真实卡从 Start Preview 到 `verify(<scope>)` 的完整事件链 + 宿主外核对可复查；DSH 关闭路径实录。
-- [ ] P7-H 已向用户展示并由用户判断；P8 是否解锁由用户明确表态。
-- [ ] `dev_plan/README.md` 活跃计划表状态已更新。
+- [ ] DHR_53~60 全部销户；DHR_36~40 历史取消事实保持。
+- [ ] P7-M10~M17 全部有独立机器证，active A/H 与 legacy 分阶段验收无漏项。
+- [ ] 一张真实标准卡完成显式节点、Review Batch、恢复、Role Relay 和最终 verify；成功/失败/取消历史均永久可查、不可继续。
+- [ ] H1~H10 已向用户逐项展示并签收；P8 是否解锁由用户另行明确表态。
+- [ ] `dev_plan/README.md` 与 P8 前置指针已同步；未授权的 workspace/runtime/开发动作未提前发生。
