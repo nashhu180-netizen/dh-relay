@@ -1,7 +1,7 @@
 # 薄 RelayPlan、跨项目任务编排与显式节点边界：产品设计与验收
-<!-- dh:planning-event:v1 id=DHR-A-23 stage=A-full artifact=design/10-薄RelayPlan与显式节点边界-产品设计调整.md review=evidence/17-通用节点与运行中计划续接-交叉审核记录.md#review-a23 understanding=evidence/17-通用节点与运行中计划续接-交叉审核记录.md#understanding-a23 -->
+<!-- dh:planning-event:v1 id=DHR-A-24 stage=A-full artifact=design/10-薄RelayPlan与显式节点边界-产品设计调整.md review=evidence/19-PlanHome计划源与运行态续接-交叉审核记录.md#review-a24 understanding=evidence/19-PlanHome计划源与运行态续接-交叉审核记录.md#understanding-a24 -->
 
-> 状态：当前唯一正式 `designInputs[]`，先后经历 `DHR-A-17`、`DHR-A-19`、`DHR-A-21`、`DHR-A-23` 四次 A-full 确认。`DHR-A-23` 经用户明文“确认A23整版”晋升，取代本文此前的 repo-local、单任务、task_type Recipe 与业务 `node_type` 口径；不修改 DevPlan、DHR_30、DHR_53 工作现场，不初始化/启用 PlanHome，也不授权 B-adjust、开发、提交或推送。
+> 状态：当前唯一正式 `designInputs[]`，先后经历 `DHR-A-17`、`DHR-A-19`、`DHR-A-21`、`DHR-A-23`、`DHR-A-24` 五次 A-full 确认。`DHR-A-24` 固化独立 PlanHome 的计划源、项目注册、运行态续接与归档边界；它不创建/启用 PlanHome，不启动施工终端，也不改变任一业务 DevPlan 的任务、状态或授权。
 >
 > 起因：用户确认第一版收缩为“薄 RelayPlan + Worker 自读 workspace + 最小节点启动票据 + best-effort Herdr 角色转发”，并要求施工、复核等步骤具有硬边界，施工 Worker 写完代码后不得自行进入复核。
 >
@@ -32,7 +32,8 @@ dh-relay 的 RelayPlan 是一份独立接力执行计划，可以同时承载多
 |---|---|---|
 | 各项目 DevPlan + workspace | 业务任务、目标、范围、验收、allowed paths、施工步骤、复核配方、进度与签收 | Plan/Run 状态、跨项目编排 |
 | TaskRef | 唯一定位 `project_ref + devplan_ref + task_id` | 不复制业务任务全文，不授予项目权限 |
-| tracked PlanHome `plans/` | TaskRef 集合、通用 Node、依赖、instruction_ref、Executor 绑定、允许 route | 不重抄 DevPlan/workspace，不保存凭据或运行 Receipt |
+| tracked PlanHome `plans/<plan_id>/plan.yaml` | TaskRef 集合、通用 Node、依赖、instruction_ref、Executor 绑定、允许 route | 不重抄 DevPlan/workspace，不保存凭据或运行 Receipt |
+| tracked PlanHome `registry/projects.yaml` | `project_ref` 的 canonical repository identity、业务权威入口、policy 与 Authority 来源指针 | 不保存业务任务全文，不直接授予当次施工权限 |
 | ignored PlanHome `runtime/<run_id>/` | Resolved Plan、generation、Ticket/Attempt/Pair、Result/Handoff/Report、Attention/Approval、恢复事实 | 不保存可人工编辑的计划源或普通聊天正文 |
 | tracked PlanHome `archive/` | 归档与审计索引 | 不冒充 live Run |
 | ignored PlanHome `local/` | 本机 project_ref 到 checkout/worktree 的解析 binding | 不授予权限，不进入通用产品路径 |
@@ -45,7 +46,8 @@ PlanHome 是独立工作仓库。当前自举选址为 `D:/MyFiles/ai-workflow/0
 
 ```text
 <plan_home>/
-├─ plans/       # tracked：RelayPlan source
+├─ plans/       # tracked：RelayPlan source；每个计划为 plans/<plan_id>/plan.yaml
+├─ registry/    # tracked：受信项目注册与 policy/Authority 来源指针
 ├─ archive/     # tracked：归档与审计索引
 ├─ runtime/     # ignored：运行事实
 └─ local/       # ignored：本机项目绑定
@@ -53,7 +55,15 @@ PlanHome 是独立工作仓库。当前自举选址为 `D:/MyFiles/ai-workflow/0
 
 用户级 `~/.dh-relay/` 只保存 PlanHome/Run 定位索引。Plan、Archive、Runtime 按既有决定永久保留，不由 Runner 自动删除；Node/Run 收口仍须撤销 Ticket、关闭 Agent/Pair/终端并释放容量。PlanHome 备份、远端推送和配额不在本设计自动承诺范围内。
 
-`project_ref` 必须来自 PlanHome 所有者/编排控制面维护的受信项目注册表，注册表至少钉住 canonical repository identity、业务权威入口、binding policy、allowed-path/Finalizer policy 与 Authority 来源。本机 local binding 只把已登记项目解析到 checkout/worktree，并带 revision/digest。Resolver 冻结 registry revision 与 binding digest；Ticket 有效能力是“节点请求 ∩ 项目 policy ∩ 当次 Authority”的交集。Plan、registry、binding 任一项都不能自行授予权限。
+`project_ref` 必须来自 PlanHome 所有者/编排控制面维护的受信项目注册表，注册表至少钉住 canonical repository identity、业务权威入口、binding policy、allowed-path/Finalizer policy 与 Authority 来源。`registry/projects.yaml` 是这份注册表在 PlanHome 中的版本化权威副本；它是项目地址簿与 policy 指针，不是施工授权。本机 local binding 只把已登记项目解析到 checkout/worktree，并带 revision/digest。Resolver 冻结 registry revision 与 binding digest；Ticket 有效能力是“节点请求 ∩ 项目 policy ∩ 当次 Authority”的交集。Plan、registry、binding 任一项都不能自行授予权限。
+
+### 1.2.1 计划源、派生索引与运行态续接
+
+一份 RelayPlan 的唯一可编辑计划源为 `plans/<plan_id>/plan.yaml`。它以 YAML 承载 `plan_id`、TaskRef 集合、通用 Node 图、依赖、`instruction_ref`、Executor binding、route 和必要的变更记录；TaskRef 自身包含 `project_ref + devplan_ref + task_id`。因此“涉及项目”和“引用的开发方案”由 TaskRef 集合派生展示，不另建会与计划源竞争的 `projects.md` 或 `source-plans.md`。
+
+主控启动某个 Ready Node 时，先按 TaskRef 解析项目、DevPlan 与 workspace，再核验节点前置、local binding、项目 policy 和当次 Authority；只在这些检查都成立时签发 Ticket 并拉起终端。RelayPlan 只决定“轮到谁”，不凭计划文件本身使业务任务获得开工权。
+
+`runtime/<run_id>/` 才是状态接续的唯一事实来源：它保存 generation、Receipt、Ticket、Attempt、Result 与 Handoff。为便于人读，Handoff 可以是 runtime 下带完整身份链与摘要的 Markdown；它只是对同一 runtime 事实的可读说明，不另设可手填的 `status.md`，也不覆盖计划源、业务 workspace 或 runtime 的原子状态。
 
 ### 1.3 通用 RelayPlan
 
@@ -607,11 +617,13 @@ Role Relay只负责“把这句话尽力送到当前角色”。它不解释内�
 | HC-3AT-A36 | Core不读取task_type/Recipe、不包含业务节点枚举或DevHarness workflow目录，也能执行外部编排Agent写好的显式Plan；机器扫描与真实E2E同时证明不存在换名Adapter。 |
 | HC-3AT-A37 | Review Batch只使用Plan显式path set、candidate revision、执行绑定和join规则；缺路径、错revision、错权限、施工者自审或用户例外缺Authority均拒绝，Core不推导DevHarness review path。 |
 | HC-3AT-A38 | 至少两个项目的TaskRef在同一Plan中运行；每项目保留独立registry/binding、worktree、权限、DevPlan、B-adjust receipt与Finalizer。一个项目解析、权限、B-adjust或执行失败只冻结影响闭包，另一项目无依赖Ready节点可由显式`continue`启动；Run逐TaskRef列出部分结果。B-adjust成功而Plan激活失败、相同request ID重试、跨项目无自动回滚均有反例。 |
+| HC-3AT-A39 | PlanHome 的唯一可编辑计划源为 tracked `plans/<plan_id>/plan.yaml`；其中 TaskRef 集合可唯一派生涉及项目和引用 DevPlan，不另存竞争性项目/方案清单。tracked `registry/projects.yaml` 只提供 canonical repository identity、业务权威入口、policy 与 Authority 来源指针，不能单独使 Node 获得开工权；主控必须同时验证节点前置、local binding、项目 policy 与当次 Authority 后才签发 Ticket。`runtime/<run_id>/` 保存唯一状态事实；身份绑定 Markdown Handoff 仅作其可读说明，不能充当手填状态源。计划源重复、TaskRef 派生不一致、registry 越权、缺前置/binding/Authority 或 Handoff 试图改写状态均拒绝。 |
 
 | ID | 5分钟内操作 | 人验判断 |
 |---|---|---|
 | HC-3AT-H11 | 某任务三轮失败后观察Decision Executor提交拆分结论并关闭；编排Agent取得Authority并完成业务B-adjust，然后分别演示“新任务加入当前Plan”和“不加入当前Plan”，同时继续一个不受阻塞的其他项目任务 | 用户能区分Decision建议、业务任务调整、Plan generation激活和节点启动四个动作；Decision没有自动改计划，无关任务没有被整Run暂停 |
 | HC-3AT-H12 | 展示独立PlanHome中的tracked Plan、ignored runtime、两个项目TaskRef、registry/binding摘要、每generation完整摘要和各项目workspace/HEAD证据 | 用户能从一个Run追到各业务任务，又不会把PlanHome当成项目DevPlan、把绝对路径当产品合同或把runtime目录存在误判为Agent仍存活 |
+| HC-3AT-H13 | 展示一个 `plan.yaml` 的 TaskRef 与 Node，查看系统派生出的涉及项目/引用 DevPlan；随后让 Ready Node 缺少当次 Authority，再补齐相同任务的有效 Authority 后执行 continue | 用户能看到计划可正常定位任务，但无授权时主控不拉终端；补齐授权后才出现 Ticket 与施工终端，不需要维护额外状态 Markdown |
 
 ### 8.4 最小反例矩阵
 

@@ -1,7 +1,7 @@
 <!-- dh:v1 -->
 # brief — DHR_53 PlanHome、TaskRef 与通用计划合同
 
-> 状态：`superseded-by-DHR-A-23` 后的正式新卡面。旧 worktree/实现/测试/review 只作历史证据，不计入本卡新验收。当前未授权 archive/ref、重建或恢复施工。
+> 状态：`superseded-by-DHR-A-23` 后的正式新卡面。旧 worktree 与 `wt/DHR_53` 分支已于 2026-08-27 删除，完整旧实现由 `archive/DHR_53/pre-A23-fec9ec1` 和 `archive/legacy-fec9ec1-path-blob-manifest.md` 保留审计；旧测试/review 不计入本卡新验收。当前未授权创建新 worktree、重建或恢复施工。
 
 ## 覆盖任务
 
@@ -31,8 +31,8 @@
 - **In scope**：`relay-core/contracts/`、`relay-core/resolver/`、`relay-core/runtime/` 的精确 PlanHome/关联适配、fixtures/tests、必要的 ignore 断言、DHR_53 workspace。
 - **Out of scope**：真实跨项目调度、Workflow Effect/continue、Ticket 派发、Pair/Launcher、Review Batch、Role Relay、恢复、Decision 启动；P5/P6/DHR_30/DHR_31 卡面；正式 PlanHome 初始化；push/deploy。
 - DevPlan 的 `task_type` 继续由 dev-harness 自身使用，不属于“删除”范围；禁止的是 dh-relay Core 消费它。
-- 本文件与新 `task_plan.md` 是重建后的当前施工权威。旧 `execution_strategy.md`、`visual_map.md`、`review.md`、`decisions.md` 只保留历史形成事实，待重建授权后按新实现重新生成/回填，不得据其旧步骤施工。
+- 本文件与新 `task_plan.md` 是重建后的当前施工权威。主树中的旧 `execution_strategy.md`、`visual_map.md`、`review.md`、`decisions.md` 只保留历史形成事实；其旧版本也可由 archive tag 精确读取。待新施工授权后按新实现重新生成/回填，不得据其旧步骤施工。
 
 ## 当前停止点
 
-在用户另行授权前，只能维护计划文档。不得创建 archive ref/tag、生成 manifest、改动旧 worktree、创建新 worktree、实现代码、初始化 PlanHome 或继续旧批次。
+旧现场退役已完成。P5/P6 前置 Gate、DHR_30 稳定接口和新施工授权满足前，只能维护计划与退场证据；不得创建新 worktree、实现代码、初始化 PlanHome 或继续旧批次。

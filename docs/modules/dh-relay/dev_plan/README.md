@@ -1,5 +1,5 @@
 <!-- dh:devplan-index:v1 -->
-<!-- dh:planning-no-event:v1 artifact="dev_plan/README.md" reason="2026-08-18 索引措辞对齐；2026-08-20 随 DHR-B-11 同步 P4/P5；2026-08-21 随 DHR-B-15 同步 P5 拆卡；2026-08-26 随 DHR-B-19/B-20 同步 P7/P8；2026-08-27 随已确认 DHR-B-21 机械同步 P7/P8 当前范围、P8 由冻结改为阶段阻塞、DHR_44 取消和 P5/P6 不扩范围边界，实质任务调整在 P7/P8 正文，本索引不单独形成 planning event" -->
+<!-- dh:planning-no-event:v1 artifact="dev_plan/README.md" reason="2026-08-18 索引措辞对齐；2026-08-20 随 DHR-B-11 同步 P4/P5；2026-08-21 随 DHR-B-15 同步 P5 拆卡；2026-08-26 随 DHR-B-19/B-20 同步 P7/P8；2026-08-27 随已确认 DHR-B-21 机械同步 P7/P8 当前范围、P8 由冻结改为阶段阻塞、DHR_44 取消和 P5/P6 不扩范围边界；同日机械回填 DHR_53 旧现场已归档删除，不形成新 planning event" -->
 # DH Relay DevPlan 入口
 
 ## 当前主线
@@ -64,7 +64,7 @@ P9 仍冻结暂缓
 | [P4-DSH工作台最小Pilot](./P4-DSH工作台最小Pilot-开发方案.md) | 先证明 Windows/SSH CLI 必备控制面独立成立，再评估 DSH 树外桌面控制面（可判否，与 P5 并行） | DHR_25 已完成（2026-08-18）；`DHR-B-11`（2026-08-20）拆 DHR_27 为 CLI 收口 + DHR_50 补录、解锁 P5 不等 DSH 三态 | DHR_25、DHR_26、DHR_49、DHR_27、DHR_50 |
 | [P5-Relay-v2持久内核与DSH桥接](./P5-Relay-v2持久内核与DSH桥接-开发方案.md) | 建立客户端中立协议、Detached Runtime、参考 CLI、恢复和 basic-agent-task | DHR_28 已完成（verify `0e2dd54`）；`DHR-B-15`（2026-08-21）把 DHR_29 拆为 Store（DHR_29）/ 宿主·lease·发号（DHR_51）/ RPC·握手（DHR_52）三卡 | DHR_28~31、DHR_51、DHR_52 |
 | [P6-Herdr多账号执行底座](./P6-Herdr多账号执行底座-开发方案.md) | 接入多账号 Codex/Claude Code，验证 DSH-off 和 Linux SSH Herdr 路径 | blocked-by-phase-gate:P5 | DHR_32~35 |
-| [P7-DevHarness单卡完整流水](./P7-DevHarness单卡完整流水-开发方案.md) | 建立 PlanHome/TaskRef/通用节点与 Result 基础，并用一张真实外部任务验通 | `DHR-B-21` 已确认；DHR_53 进行中但旧实现 superseded、暂停待重建授权；DHR_54~60 未开始；blocked-by-phase-gate:P6，并等待 DHR_30 稳定接口 | DHR_53~60 |
+| [P7-DevHarness单卡完整流水](./P7-DevHarness单卡完整流水-开发方案.md) | 建立 PlanHome/TaskRef/通用节点与 Result 基础，并用一张真实外部任务验通 | `DHR-B-21` 已确认；DHR_53 旧实现已归档并删除 worktree/branch，当前暂停待前置 Gate 与新施工授权；DHR_54~60 未开始；blocked-by-phase-gate:P6，并等待 DHR_30 稳定接口 | DHR_53~60 |
 | [P8-多卡编排与运行治理](./P8-多卡编排与运行治理-开发方案.md) | 实现真实跨项目多 TaskRef 调度、Decision/B-adjust 后 Plan change、PlanHome archive 与独立 Oracle | `DHR-B-21` 已确认；DHR_41/42/43/45 未开始且 blocked-by-phase-gate:P7；DHR_44 已取消；未授权开工 | DHR_41~45 |
 
 文件名保留首次落盘时的 DSH/P5/P9 命名，文件内标题和责任已经按 design/06 更新。后续是否重命名路径放到 P9 统一迁移，当前避免产生额外链接和历史噪声。

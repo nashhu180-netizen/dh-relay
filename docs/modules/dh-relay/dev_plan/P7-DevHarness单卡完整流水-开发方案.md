@@ -1,14 +1,14 @@
 # P7-通用显式接力基础与单任务实卡 开发方案
 
 <!-- dh:plan-type: 开发 -->
-<!-- dh:planning-event:v1 id=DHR-B-21-P7 stage=B-adjust artifact=dev_plan/P7-DevHarness单卡完整流水-开发方案.md review=../design/evidence/18-P7P8通用节点与跨项目任务编排-交叉审核记录.md#review-b21-p7 understanding=../design/evidence/18-P7P8通用节点与跨项目任务编排-交叉审核记录.md#understanding-b21-p7 -->
+<!-- dh:planning-event:v1 id=DHR-B-22-P7 stage=B-adjust artifact=dev_plan/P7-DevHarness单卡完整流水-开发方案.md review=../design/evidence/19-PlanHome计划源与运行态续接-交叉审核记录.md#review-b22-p7 understanding=../design/evidence/19-PlanHome计划源与运行态续接-交叉审核记录.md#understanding-b22-p7 -->
 <!-- dh:status
-汇报: P7 已按 DHR-A-23 / DHR-B-21 调整为独立 PlanHome、全限定 TaskRef、通用节点与 Result、generation 更新、Pair、Role Relay、Review Batch、恢复和单任务真实链；Core 不读取 DevHarness task_type/Recipe，不建设 DevHarness workflow/adapter
-现状: DHR_36~40 已取消；DHR_53 保持进行中，但旧单任务/task_type Recipe/业务 node_type 实现已 superseded，当前暂停；DHR_54~60 未开始
-进行到: P7 ▸ DHR_53 等待旧实现归档与从精确 master SHA 重建的单独授权
-下一步: 用户另行授权后，先保存旧 DHR_53 archive ref + path/blob manifest，再从已登记的精确 master SHA 重建；不得 destructive reset
-看什么: design/10、design/evidence/18、workspace/DHR_53/brief.md、workspace/DHR_53/progress.md
-阻塞: P6 Gate、DHR_30 稳定接口和 DHR_53 重建授权均未满足；本次 B-adjust 不恢复施工、不启用 PlanHome 新根
+汇报: P7 已按 DHR-A-24 / DHR-B-22 调整为独立 PlanHome、YAML RelayPlan 源、受信项目注册、全限定 TaskRef、通用节点与 Result、generation 更新、Pair、Role Relay、Review Batch、恢复和单任务真实链；Core 不读取 DevHarness task_type/Recipe，不建设 DevHarness workflow/adapter
+现状: DHR_36~40 已取消；DHR_53 保持进行中，旧实现已由 archive tag/manifest 保留并删除旧 worktree/branch，当前暂停；DHR_54~60 未开始
+进行到: P7 ▸ DHR_53 旧现场已退役，等待 P5/P6 前置 Gate、DHR_30 稳定接口和新施工授权
+下一步: 项目主线先完成 DHR_30→DHR_31→P6 DHR_32~35；P6 Gate 放行后，从届时精确 master SHA 新建 DHR_53 施工树
+看什么: design/10、design/evidence/19、workspace/DHR_53/brief.md、workspace/DHR_53/progress.md
+阻塞: P5 尚在 DHR_30、P6 Gate 未通过、DHR_30 稳定接口未进入 master，且 DHR_53 新施工未授权；不得启用 PlanHome 新根
 -->
 
 ## 0. B 方案审核、理解与确认
@@ -34,13 +34,15 @@ P7 先把 dh-relay 的通用承重合同做实，再用一张真实 DevHarness �
 - `DHR-B-21` 的唯一 planning input 是 [design/10](../design/10-薄RelayPlan与显式节点边界-产品设计调整.md)。首轮 fresh review 为 `changes-requested`（P0=0、P1=6、P2=3）；修订及三次定向/窄域复审后最终 `approved`（P0=0、P1=0）。完整记录见 [evidence/18](../design/evidence/18-P7P8通用节点与跨项目任务编排-交叉审核记录.md#review-b21-p7)。
 - 理解问题中，用户正确回答：不把拆出的 A1/A2 加入当前 RelayPlan 时，当前 generation 不变，A1/A2 不纳入，不受影响的节点继续运行。见 [evidence/18](../design/evidence/18-P7P8通用节点与跨项目任务编排-交叉审核记录.md#understanding-b21-p7)。
 - 用户随后明文“更新”，构成 `DHR-B-21` 整版确认，授权更新 P7/P8/README 与 DHR_53 卡面；不授权 DHR_53 archive/ref、重建、施工、PlanHome 初始化、提交或推送。
+- 用户随后于 2026-08-27 明文“DHR53 旧实施可以删除了”，单独授权旧现场退役；主会话建立 archive tag/manifest 后删除旧 worktree/branch。该授权不启动新施工。
+- `DHR-B-22` 只承接 `DHR-A-24`：DHR_53 冻结 `plans/<plan_id>/plan.yaml` 为唯一计划源、`registry/projects.yaml` 为项目地址簿/policy 指针，涉及项目与引用 DevPlan 均由 TaskRef 派生；runtime 是唯一状态事实，身份绑定 Handoff 可作可读 Markdown 但不另设状态真相。fresh review 无 P0；用户确认主控必须在每次真正拉终端前核验节点前置、binding、policy 与当次 Authority。记录见 [evidence/19](../design/evidence/19-PlanHome计划源与运行态续接-交叉审核记录.md#review-b22-p7)。
 
 ## 1. 范围、依赖与批次
 
-- **交付**：独立 PlanHome；可承载多个 TaskRef 的通用 Plan/Resolved Plan；通用节点与 Result；Plan→Run→generation 不可变历史；Ticket/Pair；Workflow Effect；Role Relay；Review Batch；恢复；一张真实外部任务 E2E。
+- **交付**：独立 PlanHome；`plans/<plan_id>/plan.yaml` 计划源与 `registry/projects.yaml` 受信项目注册；可承载多个 TaskRef 的通用 Plan/Resolved Plan；通用节点与 Result；Plan→Run→generation 不可变历史；Ticket/Pair；Workflow Effect；Role Relay；Review Batch；恢复；一张真实外部任务 E2E。
 - **不含**：P8 的真实多任务/跨项目调度与受控 Plan change；P9 的发布迁移；Hook/Outbox/周报；业务仓 `docs/relay`；自动删除/压缩/配额；扩写 P5/P6 或 DHR_30/DHR_31。
 - **前置**：P6 Gate 通过并经用户放行；DHR_30 稳定接口进入 master；每卡另行完成开工确认。A23/B21 不反向解锁前置任务。
-- **新根闸**：Resolver 迁移验收前，禁止正式 PlanHome start；本计划确认不创建 `plans/archive/runtime/local`。
+- **新根闸**：Resolver 迁移验收前，禁止正式 PlanHome start；本计划确认不创建 `plans/registry/archive/runtime/local`。
 
 ```text
 DHR_30 稳定接口 + P6 Gate
@@ -93,7 +95,7 @@ P5/P6、DHR_30/DHR_31 的卡面、状态和授权不由本计划改变。DHR_30 
 | DHR_38 | 历史：S0~S3 施工路径 | 标准 | 存量未冻结 | 已取消 | | 未创建 | | DHR-B-07 历史；被 DHR-B-19 替代 |
 | DHR_39 | 历史：E0~E10 收口路径 | 标准 | 存量未冻结 | 已取消 | | 未创建 | | DHR-B-07 历史；被 DHR-B-19 替代 |
 | DHR_40 | 历史：E11~E13 与真实卡 verify | 标准 | 存量未冻结 | 已取消 | | 未创建 | | DHR-B-07 历史；被 DHR-B-19 替代 |
-| DHR_53 | PlanHome、TaskRef、通用 Plan/Node 与 generation 历史 | 标准 | heavy | 进行中 | P6 Gate；DHR_30 稳定接口进入 master；重建授权 | [`workspace/DHR_53/`](../workspace/DHR_53/) | | 旧实现 `superseded-by-DHR-A-23`；暂停，未授权 archive/ref 或重建 |
+| DHR_53 | PlanHome、TaskRef、通用 Plan/Node 与 generation 历史 | 标准 | heavy | 进行中 | P6 Gate；DHR_30 稳定接口进入 master；新施工授权 | [`workspace/DHR_53/`](../workspace/DHR_53/) | | 旧实现已归档并删除 worktree/branch；当前未启动新施工 |
 | DHR_54 | 通用 Ticket、Receipt、Result/Handoff/Report 身份合同 | 标准 | heavy | 未开始 | DHR_53 | `workspace/DHR_54/`（开工时创建） | | Result/Decision 不改 Plan |
 | DHR_55 | Workflow Effect、影响闭包、generation activation 与 continue | 标准 | heavy | 未开始 | DHR_54 | `workspace/DHR_55/`（开工时创建） | | activation 不自动 launch |
 | DHR_56 | 任意 Node 的 Monitor+Executor Pair | 标准 | heavy | 未开始 | DHR_55；P6 Herdr/Profile Gate | `workspace/DHR_56/`（开工时创建） | | 第一个真实中间 demo |
@@ -108,9 +110,9 @@ P5/P6、DHR_30/DHR_31 的卡面、状态和授权不由本计划改变。DHR_30 
 
 #### DHR_53 · PlanHome、TaskRef 与通用计划合同
 
-- **目标**：冻结独立 PlanHome、受信 project registry/local binding、`project_ref + devplan_ref + task_id` TaskRef、可含多个 TaskRef 的 RelayPlan/Resolved Plan、通用节点图、`plan_home_id + plan_id` Run 绑定，以及每 generation 的完整 TaskRef set/digest、Resolved Plan digest 与永久历史。
+- **目标**：冻结独立 PlanHome、唯一 YAML 计划源 `plans/<plan_id>/plan.yaml`、受信 `registry/projects.yaml`/local binding、`project_ref + devplan_ref + task_id` TaskRef、可含多个 TaskRef 的 RelayPlan/Resolved Plan、通用节点图、`plan_home_id + plan_id` Run 绑定，以及每 generation 的完整 TaskRef set/digest、Resolved Plan digest 与永久历史；项目/DevPlan 概览由 TaskRef 派生，runtime Handoff 仅为身份绑定的可读续接说明。
 - **非目标**：不读取 DevHarness task_type/Recipe；不定义业务 node_type；不实现真实跨项目并行调度；不创建正式新根。
-- **验收**：**机器证**回连 [design/10](../design/10-薄RelayPlan与显式节点边界-产品设计调整.md) `HC-3AT-A30/A32/A33/A36`：重号 task、未知项目、registry/binding 漂移、workspace 缺失、locator 越界、单 task Run 身份、业务 node_type、task_type/Recipe/workflow 换名适配、历史误计 active/容量均拒绝。**人判**承接 `HC-3AT-H12` 的 PlanHome 基础追溯子集。
+- **验收**：**机器证**回连 [design/10](../design/10-薄RelayPlan与显式节点边界-产品设计调整.md) `HC-3AT-A30/A32/A33/A36/A39`：重号 task、未知项目、registry/binding 漂移、workspace 缺失、locator 越界、单 task Run 身份、计划源/派生索引不一致、registry 越权、缺前置/binding/policy/Authority、业务 node_type、task_type/Recipe/workflow 换名适配、历史误计 active/容量均拒绝。**人判**承接 `HC-3AT-H12/H13` 的 PlanHome 基础追溯子集。
 - **范围**：`relay-core/contracts/`、`relay-core/resolver/`、`relay-core/runtime/` 精确适配、fixtures/tests；DHR_53 workspace。
 - **档位 / 任务类型**：标准 / 重核。<!-- dh:task-type:v1 task=DHR_53 type=heavy -->
 
@@ -181,7 +183,7 @@ P5/P6、DHR_30/DHR_31 的卡面、状态和授权不由本计划改变。DHR_30 
 
 | ID | 可机判终点 | 承接卡 |
 |---|---|---|
-| P7-M10 | PlanHome、registry/binding、TaskRef、多 TaskRef schema、通用 Node、Run/generation/digest/history fail-closed | DHR_53 |
+| P7-M10 | PlanHome、唯一 YAML 计划源、registry/binding、TaskRef 派生索引、多 TaskRef schema、通用 Node、Run/generation/digest/history，以及开工核验 fail-closed | DHR_53 |
 | P7-M11 | 通用 Ticket/Receipt/Result/Handoff/Report 的 TaskRef/Attempt/Pair 身份负例通过 | DHR_54 |
 | P7-M12 | 影响闭包、外部 receipt、generation activation 与显式 continue 分责、幂等、无半状态 | DHR_55 |
 | P7-M13 | 任意单 Node Pair 可启动、durable 收口、撤权与释放 | DHR_56 |
@@ -190,23 +192,23 @@ P5/P6、DHR_30/DHR_31 的卡面、状态和授权不由本计划改变。DHR_30 
 | P7-M16 | Node/Batch/TaskRef set 停滞、等待、诊断、替代与迟到写拒绝 | DHR_59 |
 | P7-M17 | 外部实卡跑通，Decision 关闭，activation 后另一次 continue，新根闸、Oracle 与零 DevHarness workflow/adapter 扫描通过 | DHR_60 |
 
-`P7 Gate = P7-M10~M17 全部通过 + H1~H10 用户签收 + H11/H12 的 P7 基础子命题通过 + 用户明确放行 P8`。P7 Gate 只解除 P8 阶段阻塞，不自动开工 P8。
+`P7 Gate = P7-M10~M17 全部通过 + H1~H10 用户签收 + H11~H13 的 P7 基础子命题通过 + 用户明确放行 P8`。P7 Gate 只解除 P8 阶段阻塞，不自动开工 P8。
 
 ## 5. DHR_53 旧现场处理
 
-本次只同步卡面，不操作 Git 现场。以后取得恢复/重建授权后：
+2026-08-27 用户单独授权删除旧实施后，已完成：
 
-1. 重验旧 worktree branch/HEAD/tree/clean/untracked，生成 path/blob manifest 和旧 evidence 指针。
-2. 为旧 HEAD 建受保护 archive ref/tag并验证 peeled commit；旧 worktree 隔离只读。
-3. 登记重建采用的精确 master SHA，从该 SHA 新建施工现场；不得写 latest，不得 destructive reset。
-4. locator/canonical digest/history 等只能逐项证明后复用；旧通过数和 review 不进入新验收。
-5. 新现场验证且另有清理授权后才退役旧 worktree；archive/ref/manifest 保留。
+1. 重验旧 worktree branch/HEAD/tree/clean/untracked，生成 61 路径 path/blob manifest 和旧 evidence 指针。
+2. 为旧 HEAD 建 annotated archive tag并验证 tag object、peeled commit 与 tree。
+3. 删除旧 `.dh-worktrees/DHR_53` 和 `wt/DHR_53` 分支；archive tag/manifest 保留，可恢复审计。
+
+以后取得新施工授权且 P5/P6 前置满足后，登记届时精确 master SHA，从该 SHA 新建施工现场；不得写 latest、不得 destructive reset、不得从 archive tag 恢复旧实现继续施工。locator/canonical digest/history 等只能逐项证明后复用，旧通过数和 review 不进入新验收。
 
 ## 6. 覆盖、颗粒度与依赖查漏
 
 | 检查 | 结论 |
 |---|---|
-| 覆盖 | A32→DHR_53/60；A33→DHR_53/54/55；A34→DHR_55/59；A35→DHR_54/56/59/60；A36→DHR_53/58/60；A37→DHR_54/58；A38 在 P7 只做 schema/解析负例，真实跨项目归 P8。H11/H12 先证基础动作分层和 PlanHome 追溯，完整跨项目场景归 P8。 |
+| 覆盖 | A32/A39→DHR_53/60；A33→DHR_53/54/55；A34→DHR_55/59；A35→DHR_54/56/59/60；A36→DHR_53/58/60；A37→DHR_54/58；A38 在 P7 只做 schema/解析负例，真实跨项目归 P8。H11~H13 先证基础动作分层、PlanHome 追溯与“计划排队、授权开工”，完整跨项目场景归 P8。 |
 | 颗粒度 | 每卡一个可独立制造反例和签收的通用承重对象；DHR_60 只做通用装配和 E2E，不吞回前七卡。 |
 | 依赖 | `53→54→55→56` 后 `57∥58→59`，最终 `57+59→60`，无环；P5/P6 卡面和授权不变。 |
 
@@ -216,4 +218,4 @@ P5/P6、DHR_30/DHR_31 的卡面、状态和授权不由本计划改变。DHR_30 
 - [ ] P7-M10~M17 及 design/10 的 P7 分账有独立机器证与反例。
 - [ ] 一张真实任务完成通用节点、Review Batch、恢复、Decision 关闭与 generation/continue 分层；成功/失败/取消历史永久可查、不可继续。
 - [ ] 人验项已展示并签收；P8 是否开工由用户另行明确表态。
-- [ ] `dev_plan/README.md` 与 P8 前置指针同步；未授权的 archive/ref/worktree/PlanHome/开发动作未提前发生。
+- [ ] `dev_plan/README.md` 与 P8 前置指针同步；旧现场退役证据可追溯，未授权的新 worktree/PlanHome/开发动作未提前发生。

@@ -1,7 +1,7 @@
 <!-- dh:v1 -->
 # task_plan — DHR_53 A23 重建施工说明书
 
-> **尚未授权执行。** 本文件只把下一次施工写到可重建粒度。执行者收到新的 Work Item Ticket 后，先读仓根 `AGENTS.md`、本文件、`brief.md`、P7 DHR_53 卡和正式 design/10；不得沿用旧 `task_plan`、旧 review 结论或旧通过数。
+> **新施工尚未授权。** 旧实施退场已于 2026-08-27 完成；本文件只把下一次施工写到可重建粒度。执行者收到新的 Work Item Ticket 后，先读仓根 `AGENTS.md`、本文件、`brief.md`、P7 DHR_53 卡和正式 design/10；不得沿用旧 `task_plan`、旧 review 结论或旧通过数。
 
 ## 0. 权威输入与现场锚点
 
@@ -10,18 +10,18 @@
 | C-001 | `docs/modules/dh-relay/design/10-薄RelayPlan与显式节点边界-产品设计调整.md`：唯一产品输入 |
 | C-002 | `docs/modules/dh-relay/dev_plan/P7-DevHarness单卡完整流水-开发方案.md` §3.2 DHR_53 |
 | C-003 | 本目录 `brief.md`、`progress.md`、`findings.md` |
-| C-004 | 旧现场快照：branch `wt/DHR_53`；HEAD `fec9ec1bbbab90813d7d3f3aad1dc847c317ca81`；tree `6452aebbab080ea6002ddd749b6cbc8061352744`；B21 审核时 clean |
+| C-004 | 旧现场已退役：HEAD `fec9ec1bbbab90813d7d3f3aad1dc847c317ca81`；tree `6452aebbab080ea6002ddd749b6cbc8061352744`；archive tag `archive/DHR_53/pre-A23-fec9ec1`；manifest `archive/legacy-fec9ec1-path-blob-manifest.md`；旧 worktree/branch 已删除 |
 | C-005 | 当前 master 只在真正重建当刻重新读取并登记完整 SHA；禁止写“latest master” |
 
-## 1. 恢复/重建前置（须单独授权）
+## 1. 旧实施退场与新施工前置
 
-1. 只读重验旧 worktree 的 canonical path、branch、HEAD、tree、`status --porcelain=v1 --untracked-files=all`。
-2. 生成确定性的 path/blob manifest，登记旧 commits、fixtures、tests、review、evidence、workspace 指针及其摘要。
-3. 为旧 HEAD 建受保护 archive ref/tag，核对 ref、tag object、peeled commit 与 manifest；旧 worktree 标为 audit-only，不再施工。
-4. 记录重建采用的精确 master SHA，从它创建新的 DHR_53 worktree/branch。不得 destructive reset，也不得在旧树上原地“删到像新实现”。
-5. 新 worktree 第一动作 rebase/确认精确 master；只将新卡允许路径写入新的 execution strategy。旧工作树在新验收和另行清理授权前不得删除。
+1. **已完成**：只读重验旧 worktree 的 canonical path、branch、HEAD、tree 与 clean/untracked 状态。
+2. **已完成**：生成 61 路径的确定性 path/blob manifest，登记旧 commits、fixtures、tests、review、evidence 与 workspace 指针。
+3. **已完成**：建立并核对 annotated archive tag、tag object、peeled commit 和 tree；按用户授权删除旧 worktree 与 `wt/DHR_53` 分支。
+4. **待前置 Gate 与开工授权**：在真正重建当刻记录精确 master SHA，从它创建新的 `wt/DHR_53` worktree。不得 destructive reset，也不得恢复 archive tag 上的旧实现继续施工。
+5. 新 worktree 第一动作 rebase/确认精确 master；只将新卡允许路径写入新的 execution strategy。
 
-任一步现场事实与 C-004 不同即停下，更新 `findings.md`，不得猜测继续。
+archive tag/manifest 对账失败，或新施工时 P5/P6 Gate、DHR_30 稳定接口、master SHA/工作区身份不满足，即停下更新 `findings.md`，不得猜测继续。
 
 ## 2. 实现批次
 
@@ -63,8 +63,8 @@
 
 ## 4. 明确禁止
 
-- 未获新授权就执行本文件任何 Git ref/worktree/代码动作。
+- 未获新开工授权就创建新 worktree或执行代码动作。
 - 修改 P5/P6/DHR_30/DHR_31，或读取 `.dh-worktrees/DHR_30` 未合入代码作为实现依赖。
-- 创建正式 PlanHome、启动真实 Run、删除旧 worktree/archive/runtime。
+- 创建正式 PlanHome、启动真实 Run、删除 archive tag/manifest 或 runtime 历史。
 - 把 dev-harness 的 `task_type` 字段从 DevPlan 删除；禁用范围仅是 dh-relay Core 消费它。
 - push、deploy、环境操作、凭据值落盘。
