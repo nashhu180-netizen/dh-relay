@@ -190,3 +190,16 @@
 - **优先级**：中 · 下次真要动仓根文件、或给本仓接 CI 时必须先修
 - **提出人 / 日期**：主控，2026-08-17（拆仓执行中暴露）
 - **进展**：未立项。
+
+### DHR-BL-10 zcode（GLM-5.3 独立 CLI）接进 v1 现役 headless 派活位
+
+- **需求 / 议题**：现役 `-Cli` 只认 `claude` / `codex` 两个值（`tools/host/relay-worker-entry.ps1:4` 的 `ValidateSet`）。新增第三个正式值 `zcode`，指向 Z.ai 桌面端内置的无头 CLI（`D:\Program Files\zcode\resources\glm\zcode.cjs`，zcode 0.16.5 / GLM-5.3 / 1M 上下文），**只接 headless 一次性位**（复核 worker + `Invoke-DogfoodSpawn` 类一次性 agent），不接常驻交互施工位。
+- **动机**：DHR_01~04 的 glm 复核全部靠 `claude` CLI 换 `CLAUDE_CONFIG_DIR=~/.claude-account4` 实现（见本文件 `DHR-BL-6` 账号池与 `workspace/DHR_04/review.md`）。那条路把「换模型」和「换 claude 账号」耦在一起：占账号槽、共享 `~/.claude*` 配置面、两轮换人复核的「不复用同一会话」只能靠换 config dir 保证。换成独立 CLI 后进程、配置、凭据、会话四层都天然隔离，第二轮换人复核的独立性更硬。顺带把派活账号池从 4 个扩到 5 个。
+- **不接常驻交互位的原因**：`zcode --prompt` 明确是 "Run a single prompt without opening the TUI"，跑完即退；铁律#4 要求施工 worker 能在窗口里问用户并等待，语义对不上。`zcode tui` 能否带初始 prompt 启动未验证，验证成本与收益不匹配，故本条只接 headless 位。
+- **现状证据（2026-08-27 主控实测）**：`--prompt` / `--cwd` / `--mode {build,edit,plan,yolo}` / `--json`（回 `sessionId` + token 用量 + 上下文占用）/ `-c` 续上次 session / `--resume sess_xxx` / `--allowed-tools` / `--disallowed-tools` 全部可用；实测能写文件、跑 python、回报结论。`--help` 列出的 `--max-turns` 实际报 `Unknown option`，不可用。
+- **已知坑**：CLI 用**自己的** `~/.zcode/cli/config.json`，与桌面端 `~/.zcode/v2/config.json` 不共享，缺失即报 `Model config is missing`；`model.main` 必须是 `"provider/model"` 字符串而非对象。apiKey 可走 `ZCODE_API_KEY` 环境变量，**不必落进配置文件**（`zIi/apiKeyEnvCandidates` 的候选顺序：`ANTHROPIC_API_KEY` → `<PROVIDER>_API_KEY` → `ZCODE_API_KEY`）。桌面端 `v2/config.json` 明文存 apiKey，属既有现状，本条不扩范围去治理它。
+- **改动点（预估）**：`tools/host/relay-worker-entry.ps1`（ValidateSet + dry-run 分支 + 实拉分支 + 凭据注入）、`tools/host/run-dogfood.ps1`（`-WorkerCli` ValidateSet）、`tools/tests/` 对应断言。**不动** `relay-core/` 契约——zcode 在 v2 里归既有 `executor_kind: process`，不新增枚举，`capability_hash` 不变。
+- **待核风险**：as-built/relay-core §开篇称「v1 现役且被 v2 只读作 Oracle」，须确认 Oracle 面只覆盖契约/转换矩阵（`tools/contracts/`）、不含宿主拉起层（`tools/host/`）；若覆盖则本条改动需另行评估。
+- **优先级**：中 · 用户 2026-08-27 已授权按计划外维护任务开工（标准档 · `task_type=normal`）
+- **提出人 / 日期**：用户，2026-08-27
+- **进展**：工作区 [workspace/DHR-BL-10/](workspace/DHR-BL-10/)；施工由 zcode 自己担任 headless worker（自举 dogfood），复核另派他人（施工者不复核自己的卡）。
