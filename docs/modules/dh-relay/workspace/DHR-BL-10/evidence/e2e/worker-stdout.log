@@ -1,0 +1,10 @@
+[relay-worker] session=S-0001 launch=L-0001 node=A attempt=1
+G3 复跑验证棒 4 步全部完成，已以 succeeded 交棒。
+
+- **身份校验**：`RELAY_RECEIPT` 确认 node_id=A、attempt_id=1、launch_id=L-0001、session_id=S-0001。
+- **checkpoint**：已写入 `attempts\A\1\checkpoint.json.tmp`（Status=working）。
+- **证据文件**：工作目录下创建了 `g3-rerun.md`（标题 + 当前日期 2026-08-27）、`session-log.txt`（四个身份值、前两步确认、一句话总结）、`handoff-body.txt`（指定的一行内容）。
+- **result 交棒**：工具返回 wrote `attempts\A\1\result.json.tmp`（Status=succeeded，TailFrom 与 ChangedPaths 均为绝对路径）。
+
+全程未触碰 Runner 状态文件，未派生 watcher，文件与命令参数中无任何密钥。按 brief 要求，任务到此结束。
+[relay-worker] cli exited 0

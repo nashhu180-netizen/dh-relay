@@ -1,0 +1,12 @@
+[relay-worker] session=S-0001 launch=L-0001 node=A attempt=1
+G3 provenance 复跑第3棒全部 4 步完成，交棒成功，无异常。
+
+执行结果：
+
+1. **身份校验 + checkpoint**：读取回执确认 node_id=A、attempt_id=1、launch_id=L-0001，`checkpoint -Status working` 写出成功（`FAKE-RUN/attempts/A/1/checkpoint.json.tmp`）。
+2. **g3-prov.md**：已创建，含证据行“DHR-BL-10 G3 provenance 复跑证据棒（zcode 第3棒）”和观察日期 2026-08-27。
+3. **session-log.txt**：已创建，记录四个身份字段、前两步完成确认和一句话总结，无任何密钥字样。
+4. **交棒**：`result -Status succeeded -NextAction none` 写出成功，工具同时生成了 handoff.md 和 session-tail.txt，未触发校验错误。
+
+未派活、未起 watcher、未改 Runner 状态文件。按简报要求，任务到此结束。
+[relay-worker] cli exited 0

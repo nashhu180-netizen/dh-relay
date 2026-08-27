@@ -27,9 +27,12 @@
 | 3 | 既有 `claude` / `codex` 两条分支的命令行拼装**逐字不变**（`claude --dangerously-skip-permissions <prompt>` / `codex --yolo <prompt>`） | AI（既有断言 `worker entry prints brief-derived command without launch` 保持绿） | 回归保护 |
 | 4 | `run-dogfood.ps1 -WorkerCli zcode` 参数校验通过（ValidateSet 已含 zcode） | AI（`Get-Command` 参数元数据断言或 dry 调用） | backlog DHR-BL-10「改动点」 |
 | 5 | `tools/tests/run-relay-tests.ps1` 全量 16 套件 `RELAY ALL PASS` | AI（一键复跑） | 回归保护 |
-| 6 | 仓内 diff 零密钥：`git diff` 不含任何 apiKey / token 字面量，也不含 zcode 安装绝对路径 | AI（grep 断言） | 宪章#6 密钥红线 |
+| 6 | 仓内 diff 零密钥：**生产代码（`tools/`）与 as-built 的新增行**不含任何凭据值、token 值或 zcode 安装绝对路径 | AI（grep 断言，范围限定 `git diff -U0 -- tools/ docs/.../as-built/` 的 `^+` 行） | 宪章#6 密钥红线 |
+| 6b | 工作区工件（findings / progress / review-briefs）中出现的检索**模式字面量**（如描述闸门写法的 `apiKey`、`.zcode`）不计为命中——它们是闸门自身的文档，不是凭据 | AI | 口径澄清，见 findings F-004 与需求复核 RQ-2 |
 | 7 | 真实拉起一棒 zcode worker，能写出 checkpoint 与 result，Runner 收得到 | 人 | 需求对齐证据（G3）：AI 在对话展示真实 run 的 result 文件内容与 exit code，用户判断这一棒是否真的按 relay 协议交了棒 |
 | 8 | 待核风险 F-001（v1 是否被 v2 当 Oracle、宿主层是否在 Oracle 面内）有明确结论 | AI（查证 + findings 登记） | backlog DHR-BL-10「待核风险」 |
+| 9 | `-Cli` 派发为**大小写敏感**且非法/非规范大小写值 **fail-closed**：在真实 launcher 形态（`pwsh -NoProfile -NoExit -File`）下，`-Cli CLAUDE` / `CODEX` 必须**进程真正退出且退出码 = 4**，并且**不得**拉起任何 CLI | AI（真实 launcher 形态断言 + sentinel stub 证明无 CLI 被调用 + 变异对照） | backlog DHR-BL-10「范围追加（RQ-1）」·用户 2026-08-27 对话点选授权 |
+| 10 | 上条对 **dry-run 分支（第 31 行）与实拉分支（第 34 行）两处都成立**——两处 `default` 同构且各自有直接断言，不靠「代码同构」推定 | AI（两处分别断言 + 各自变异对照） | 教训复核 E5 判违反候选-1/5/6/12 的收敛口径 |
 
 ## 边界 (Boundaries)
 

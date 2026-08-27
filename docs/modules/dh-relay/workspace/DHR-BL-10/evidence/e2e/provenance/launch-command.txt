@@ -1,0 +1,8 @@
+os-commandline (Win32_Process, captured while alive):
+"C:\Program Files\PowerShell\7\pwsh.exe" -NoProfile -File "D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR-BL-10\tools\host\relay-worker-entry.ps1" -Receipt "C:\Users\nash\AppData\Local\Temp\relay-zcode-e2e-prov-abbfaa4d43ec4f9a898e20d7c251fbc7\FAKE-RUN\launches\L-0001.json" -BriefRef "C:\Users\nash\AppData\Local\Temp\relay-zcode-e2e-prov-abbfaa4d43ec4f9a898e20d7c251fbc7\one-shot-brief.md" -Cli zcode -WorkDir "C:\Users\nash\AppData\Local\Temp\relay-zcode-e2e-prov-abbfaa4d43ec4f9a898e20d7c251fbc7\work"
+
+canonical replay form (paths of this run):
+pwsh -NoProfile -File "D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR-BL-10\tools\host\relay-worker-entry.ps1" -Receipt "C:\Users\nash\AppData\Local\Temp\relay-zcode-e2e-prov-abbfaa4d43ec4f9a898e20d7c251fbc7\FAKE-RUN\launches\L-0001.json" -BriefRef "C:\Users\nash\AppData\Local\Temp\relay-zcode-e2e-prov-abbfaa4d43ec4f9a898e20d7c251fbc7\one-shot-brief.md" -Cli zcode -WorkDir "C:\Users\nash\AppData\Local\Temp\relay-zcode-e2e-prov-abbfaa4d43ec4f9a898e20d7c251fbc7\work"
+
+sandbox: C:\Users\nash\AppData\Local\Temp\relay-zcode-e2e-prov-abbfaa4d43ec4f9a898e20d7c251fbc7
+launcher form: pwsh -NoProfile -File (NO -NoExit; plain -File form terminates on exit $code per E-019 probe 1)

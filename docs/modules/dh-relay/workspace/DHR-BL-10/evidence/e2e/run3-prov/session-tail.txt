@@ -1,0 +1,7 @@
+node_id=A
+attempt_id=1
+launch_id=L-0001
+session_id=S-0001
+步骤1确认：checkpoint -Status working 已由 relay-agent-tool 写出（attempts/A/1/checkpoint.json.tmp）。
+步骤2确认：g3-prov.md 已创建，含证据行与日期 2026-08-27。
+一句话总结：G3 provenance 复跑第3棒前三步均完成，准备交棒。

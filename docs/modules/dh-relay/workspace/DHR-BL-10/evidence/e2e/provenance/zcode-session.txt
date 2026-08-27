@@ -1,0 +1,14 @@
+# zcode 自有会话记录交叉引用（只含元信息：文件名/字节数/mtime；jsonl 内容从不拷贝或摘录）
+# 来源目录: %USERPROFILE%\.zcode\cli\rollout
+# 本棒进程生存期（严格窗，元信息口径一律 UTC）:
+#   t_start = 2026-08-27T14:01:49.6083986Z   (worker pid=45680 spawn)
+#   t_end   = 2026-08-27T14:04:07.3704556Z   (worker exit, code=0)
+# 运行前预快照（spawn 时刻取得）: 3 份 model-io-sess_*.jsonl（90283aac / 4e03676d / 50e60d0f）
+
+## 本棒归因集（spawn 时不存在、生存期内创建并写入 = 全新文件）
+name | bytes | mtime_utc
+model-io-sess_011c9160-3a05-4856-886c-a983d7b5df94.jsonl | 1158261 | 2026-08-27T14:04:01.1993113Z
+
+## 窗口边缘排除项（透明登记，不归因本棒）
+model-io-sess_50e60d0f-16ba-48a3-bd25-279e5a4d2cf6.jsonl | 6683668 | 2026-08-27T14:01:46.8054683Z
+  ^ 预快照中已存在；最后写入早于 spawn 2.8 秒——属编排方交互会话的滚动写入，非本棒产物

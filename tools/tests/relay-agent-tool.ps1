@@ -79,5 +79,70 @@ try{
   Assert-True ($LASTEXITCODE-eq0) 'worker entry dry run exits 0'
   Assert-True ($dryText-match'RELAY_RECEIPT='-and$dryText-match'RELAY_RUN_ROOT='-and$dryText-match'RELAY_ATTEMPT_DIR=') 'worker entry prints injected environment'
   Assert-True ($dryText-match'FAKE worker brief'-and$dryText-match'codex --yolo') 'worker entry prints brief-derived command without launch'
+  $dryZ=@(& pwsh -NoProfile -File $entry -Receipt $receipt -BriefRef (Join-Path $fixtures 'brief-A.md') -Cli zcode -WorkDir (Join-Path $root 'work') -DryRun 2>&1);$dryZText=$dryZ-join"`n"
+  Assert-True ($LASTEXITCODE-eq0) 'worker entry dry run accepts zcode'
+  Assert-True ($dryZText-match'RELAY_RECEIPT='-and$dryZText-match'RELAY_RUN_ROOT='-and$dryZText-match'RELAY_ATTEMPT_DIR=') 'zcode dry run prints injected environment'
+  Assert-True ($dryZText-match'FAKE worker brief'-and$dryZText-match'zcode --prompt') 'zcode dry run prints prompt-form command without launch'
+  # 返工轮2/F-009 收敛：原「大小写不敏感派发」断言与教训库候选-5 冲突，反转为 fail-closed——ValidateSet 大小写不敏感但不规范化取值，
+  # 派发必须 switch -CaseSensitive + default 抛错；旧 -ceq 时代 -Cli CLAUDE 会静默掉进 else 拉 codex（fail-open 静默错派），一并钉死
+  $dryCL=@(& pwsh -NoProfile -File $entry -Receipt $receipt -BriefRef (Join-Path $fixtures 'brief-A.md') -Cli CLAUDE -WorkDir (Join-Path $root 'work') -DryRun 2>&1);$dryCLText=$dryCL-join"`n"
+  Assert-True ($LASTEXITCODE-ne0-and$dryCLText-match"unsupported -Cli value 'CLAUDE'"-and$dryCLText-notmatch'claude --dangerously-skip-permissions'-and$dryCLText-notmatch'codex --yolo') 'worker entry rejects miscased cli instead of silently dispatching'
+  $dryCX=@(& pwsh -NoProfile -File $entry -Receipt $receipt -BriefRef (Join-Path $fixtures 'brief-A.md') -Cli CODEX -WorkDir (Join-Path $root 'work') -DryRun 2>&1);$dryCXText=$dryCX-join"`n"
+  Assert-True ($LASTEXITCODE-ne0-and$dryCXText-match"unsupported -Cli value 'CODEX'"-and$dryCXText-notmatch'claude --dangerously-skip-permissions'-and$dryCXText-notmatch'codex --yolo') 'worker entry rejects miscased codex instead of silently dispatching'
+  # 返工轮3/独立技术裁定实测：真实调用方（run-dogfood.ps1:57 / psmux-adapter.ps1:96）都以 -NoExit 拉 worker，而该形态下 throw 只中止脚本不退进程、
+  # 会话会被 psmux 判成 idle——fail-closed 必须落到显式 exit。按真实 launcher 形态断言子进程真退出且 exit=4；有界等待＋finally 兜底 kill，绝不允许套件留下挂起 pwsh。
+  $noExitProc=$null
+  try{
+    $noExitProc=Start-Process -FilePath 'pwsh' -ArgumentList @('-NoProfile','-NoExit','-File',"`"$entry`"",'-Receipt',"`"$receipt`"",'-BriefRef',"`"$(Join-Path $fixtures 'brief-A.md')`"",'-Cli','CLAUDE','-WorkDir',"`"$(Join-Path $root 'work')`"",'-DryRun') -PassThru -WindowStyle Hidden
+    $noExitDeadline=(Get-Date).AddSeconds(15)
+    while(-not$noExitProc.HasExited-and(Get-Date)-lt$noExitDeadline){Start-Sleep -Milliseconds 200}
+    Assert-True ($noExitProc.HasExited-and$noExitProc.ExitCode-eq4) 'worker entry exits nonzero under real -NoExit launcher on miscased cli'
+  }finally{if($null-ne$noExitProc){if(-not$noExitProc.HasExited){$noExitProc.Kill();[void]$noExitProc.WaitForExit(3000)};$noExitProc.Dispose()}}
+  $bogus=@(& pwsh -NoProfile -File $entry -Receipt $receipt -BriefRef (Join-Path $fixtures 'brief-A.md') -Cli bogus -WorkDir (Join-Path $root 'work') -DryRun 2>&1)
+  Assert-True ($LASTEXITCODE-ne0) 'worker entry rejects cli outside validateset'
+  # R1 收敛（返工轮1）：DryRun 只验第 31 行打印的命令行，真正执行的是第 34 行——用 PATH stub 抓实拉 argv 钉住执行形态。
+  # 不用返工 brief 原案 zcode.cmd/ECHO %*：prompt 含换行会被 cmd 按行切开致捕获残缺（rework 轮1 实测），故经 PATHEXT 前置让 & zcode 解析到 .ps1 stub，argv 原样落盘。
+  $stubDir=Join-Path ([IO.Path]::GetTempPath()) "relay-zcode-stub-$([guid]::NewGuid().ToString('N'))";[void](New-Item -ItemType Directory -Path $stubDir -Force)
+  $stubArgv=Join-Path $root 'zcode-stub-argv.txt'
+  $stubBody=@'
+param([Parameter(ValueFromRemainingArguments=$true)][string[]]$Rest)
+[IO.File]::WriteAllText('__ARGV_CAPTURE__',($Rest -join ' '))
+exit 0
+'@
+  [IO.File]::WriteAllText((Join-Path $stubDir 'zcode.ps1'),$stubBody.Replace('__ARGV_CAPTURE__',$stubArgv),[Text.UTF8Encoding]::new($false))
+  $oldEntryPath=$env:PATH;$oldPathExt=$env:PATHEXT;$env:PATH="$stubDir;$env:PATH";$env:PATHEXT=".PS1;$env:PATHEXT"
+  try{
+    [void](@(& pwsh -NoProfile -File $entry -Receipt $receipt -BriefRef (Join-Path $fixtures 'brief-A.md') -Cli zcode -WorkDir (Join-Path $root 'work') 2>&1))
+    $argvOut=if(Test-Path -LiteralPath $stubArgv){Get-Content -LiteralPath $stubArgv -Raw}else{''}
+    Assert-True ($argvOut-match'--prompt'-and$argvOut-match'--mode'-and$argvOut-match'yolo'-and$argvOut-match'--no-color') 'worker entry launches zcode with prompt-form argv'
+  }finally{$env:PATH=$oldEntryPath;$env:PATHEXT=$oldPathExt;if(Test-Path -LiteralPath $stubDir){Remove-Item -LiteralPath $stubDir -Recurse -Force}}
+  # 返工轮4/E5 收敛：上一条 -NoExit 断言传了 -DryRun，只覆盖第 31 行 dry-run 分支的 default；第 34 行实拉分支
+  # 的 default 至今无直接断言。此处复用 PATH/PATHEXT stub 技术放 claude/codex/zcode 三个哨兵，按真实 launcher
+  # 形态（-NoExit -File、无 -DryRun）拉起：进程须真退出且退出码=4，且任何一家 CLI 都不得被拉起（哨兵文件不落盘）
+  # ——codex 哨兵=旧 -ceq 时代「CLAUDE 静默掉进 else 拉 codex」错派的反向证据。
+  $sentDir=Join-Path ([IO.Path]::GetTempPath()) "relay-clisentry-$([guid]::NewGuid().ToString('N'))";[void](New-Item -ItemType Directory -Path $sentDir -Force)
+  foreach($sentry in @('claude','codex','zcode')){
+    $sentBody=@'
+param([Parameter(ValueFromRemainingArguments=$true)][string[]]$Rest)
+[IO.File]::WriteAllText('__SENTINEL__','invoked')
+exit 0
+'@
+    [IO.File]::WriteAllText((Join-Path $sentDir "$sentry.ps1"),$sentBody.Replace('__SENTINEL__',(Join-Path $root "sentinel-$sentry.txt")),[Text.UTF8Encoding]::new($false))
+  }
+  $oldEntryPath2=$env:PATH;$oldPathExt2=$env:PATHEXT;$env:PATH="$sentDir;$env:PATH";$env:PATHEXT=".PS1;$env:PATHEXT"
+  function Invoke-RealLaunchRejects([string]$CliValue,[string]$AssertName){
+    $proc=$null
+    try{
+      Remove-Item -LiteralPath @((Join-Path $root 'sentinel-claude.txt'),(Join-Path $root 'sentinel-codex.txt')) -ErrorAction SilentlyContinue
+      $proc=Start-Process -FilePath 'pwsh' -ArgumentList @('-NoProfile','-NoExit','-File',"`"$entry`"",'-Receipt',"`"$receipt`"",'-BriefRef',"`"$(Join-Path $fixtures 'brief-A.md')`"",'-Cli',$CliValue,'-WorkDir',"`"$(Join-Path $root 'work')`"") -PassThru -WindowStyle Hidden
+      $deadline=(Get-Date).AddSeconds(15)
+      while(-not$proc.HasExited-and(Get-Date)-lt$deadline){Start-Sleep -Milliseconds 200}
+      Assert-True ($proc.HasExited-and$proc.ExitCode-eq4-and-not(Test-Path -LiteralPath (Join-Path $root 'sentinel-claude.txt'))-and-not(Test-Path -LiteralPath (Join-Path $root 'sentinel-codex.txt'))) $AssertName
+    }finally{if($null-ne$proc){if(-not$proc.HasExited){$proc.Kill();[void]$proc.WaitForExit(3000)};$proc.Dispose()}}
+  }
+  try{
+    Invoke-RealLaunchRejects -CliValue 'CLAUDE' -AssertName 'worker entry real-launch branch rejects miscased cli without invoking any cli'
+    Invoke-RealLaunchRejects -CliValue 'CODEX' -AssertName 'worker entry real-launch branch rejects miscased codex without invoking any cli'
+  }finally{$env:PATH=$oldEntryPath2;$env:PATHEXT=$oldPathExt2;if(Test-Path -LiteralPath $sentDir){Remove-Item -LiteralPath $sentDir -Recurse -Force}}
 }finally{if($null-eq$oldReceipt){Remove-Item Env:RELAY_RECEIPT -ErrorAction SilentlyContinue}else{$env:RELAY_RECEIPT=$oldReceipt};if(Test-Path $root){Remove-Item -LiteralPath $root -Recurse -Force}}
 Write-Host "ASSERTIONS $script:assertions";if($script:failed){Write-Host "SUITE FAIL ($script:failed)";exit 1};Write-Host 'SUITE PASS';exit 0

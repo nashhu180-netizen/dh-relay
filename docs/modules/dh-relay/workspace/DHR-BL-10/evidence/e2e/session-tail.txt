@@ -1,0 +1,9 @@
+node_id=A
+attempt_id=1
+launch_id=L-0001
+session_id=S-0001
+
+step1 checkpoint(working)：已完成，工具返回 wrote attempts/A/1/checkpoint.json.tmp。
+step2 g3-rerun.md：已创建，含标题行与当前日期 2026-08-27。
+
+一句话总结：G3 复跑第2棒在真实 zcode 会话中依次完成身份校验、checkpoint、三个证据文件创建，即将以 succeeded 交棒。

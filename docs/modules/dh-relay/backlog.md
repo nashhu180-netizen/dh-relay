@@ -202,4 +202,28 @@
 - **待核风险**：as-built/relay-core §开篇称「v1 现役且被 v2 只读作 Oracle」，须确认 Oracle 面只覆盖契约/转换矩阵（`tools/contracts/`）、不含宿主拉起层（`tools/host/`）；若覆盖则本条改动需另行评估。
 - **优先级**：中 · 用户 2026-08-27 已授权按计划外维护任务开工（标准档 · `task_type=normal`）
 - **提出人 / 日期**：用户，2026-08-27
-- **进展**：工作区 [workspace/DHR-BL-10/](workspace/DHR-BL-10/)；施工由 zcode 自己担任 headless worker（自举 dogfood），复核另派他人（施工者不复核自己的卡）。
+- **范围追加（2026-08-27 用户对话裁决 · RQ-1）**：接线时必须把 `if/else` 二分支改成三分支，这一步**强制触发**了派发语义的决定，无法回避。原实现 `$Cli -ceq 'claude'` 大小写敏感、而 `ValidateSet` 校验不敏感且不规范化取值，导致 `-Cli CLAUDE` **静默掉进 else 去拉 codex**（fail-open 错派）。本卡范围因此正式追加一条：**`-Cli` 派发改为大小写敏感 + 非法值 fail-closed 退出**（`switch -CaseSensitive` + `default` 写 stderr 并 `[Environment]::Exit(4)`）。退出码 4 对齐同目录 `relay-agent-tool.ps1:128` 的「输入校验失败」惯例；用 `[Environment]::Exit` 而非 `throw`/`exit` 是因为两个真实调用方（`run-dogfood.ps1:57`、`psmux-adapter.ps1:96`）以 `pwsh -NoExit -File` 形态拉起，该形态下 `throw` 与 `exit` 均不终结进程（返工轮 3 实测）。
+  - **这是行为兼容性变更**：`-Cli CLAUDE` / `CODEX` 等非规范大小写入参，此前会被接受并（错误地）派发，现在会明确报错退出。
+  - **授权链**：AI 在返工轮 2 自行实施 → 需求复核（codex）判 `RQ-1 P1「扩大交付行为面、未获用户授权」` → 主控摆给用户 → **用户 2026-08-27 在对话里点选「接受，补进需求」** → 回填本条。
+  - 静默错派 bug 本身是**本卡之前就存在的**，非本卡引入。
+- **进展**：**已完成**（2026-08-27 用户 chat-confirm 人验通过并授权本地收口）。工作区 [workspace/DHR-BL-10/](workspace/DHR-BL-10/)。施工由 zcode 自任 headless worker（GLM-5.3 起手，用户中途指定改 GLM-5.3-Flash 并设 reasoning=max；共 1 轮施工 + 4 轮返工，其中 1 次因 `ECONNRESET` 网络中断续棒）；复核 4 路全部由 codex 独立只读完成（代码轮1 / 技术裁定 / 需求 E4 / 教训 E5），高于 `normal` 配方要求的 3 路。最终 agent-tool 断言 32→42，全量 `RELAY ALL PASS (SKIPPED: 1)`（主控 4 次独立复跑）。
+
+### DHR-BL-11 `-NoExit -File` 形态下 worker 成功路径不自行终结进程
+
+- **需求 / 议题**：`tools/host/relay-worker-entry.ps1:35` 的 `exit $code`（成功路径收尾）在 `pwsh -NoProfile -NoExit -File` 形态下**不终结进程**——脚本结束后 PowerShell 停在提示符。两个真实调用方（`run-dogfood.ps1:57`、`psmux-adapter.ps1:96`）用的正是该形态。
+- **来源**：`DHR-BL-10` findings **F-013**（P3，范围外只登记）。返工轮 3/4 实测确认：该形态下 `throw` 与 `exit` 均无效，只有 `[Environment]::Exit()` 会真正终结进程（同卡 `default` 分支已改用 `[Environment]::Exit(4)`，教训见 `lesson_candidates` L-006）。
+- **影响面**：三条 CLI 分支（claude / codex / zcode）**一视同仁**，非 zcode 引入、非本次回归。现状靠 psmux adapter 回收 pane 兜住，所以未在现役流水暴露成故障。
+- **为什么值得单列**：它与 `DHR-BL-1`（「在等人」检测）/ `DHR-BL-6`（额度耗尽无信号）同属「宿主分不清 pane 是在等人、卡死、还是已经干完了」这一族；成功后不退出的 pane 会被观察成 `idle`，与「卡住」同形。
+- **改动点（预估）**：把 `exit $code` 换成 `[Environment]::Exit($code)`，并补一条按**真实 launcher 形态**（`-NoExit -File`）验证成功路径也真退出的断言。注意评估 pane 立即消失是否影响人工查看 worker 输出——`-NoExit` 当初可能正是为此保留。
+- **优先级**：中 · 下次动 worker 拉起层或做宿主观测治理时一并处理
+- **提出人 / 日期**：`DHR-BL-10` 施工方（zcode），2026-08-27
+- **进展**：未立项。
+
+### DHR-BL-12 `as-built/relay-psmux-host.md`「测试与守卫」计数表快照过时
+
+- **需求 / 议题**：该表写「固定 15 套件」、agent-tool=32 断言；现势为 **16 套件**（漏列后加的 `relay-policy.ps1`）、agent-tool **42** 断言。
+- **来源**：`DHR-BL-10` findings **F-005**（P3，open）。该卡步骤 7 只授权改两行 `claude|codex` → `claude|codex|zcode`，刷新整张计数表超出范围，故只登记未顺手改。
+- **改动点（预估）**：按当前 `tools/tests/run-relay-tests.ps1` 的套件清单与各套件实跑断言数刷新该表；顺带确认 as-built 其余计数类描述有没有同类漂移。
+- **优先级**：低 · 下次更新该份 as-built 时一并刷新
+- **提出人 / 日期**：`DHR-BL-10` 施工方（zcode），2026-08-27
+- **进展**：未立项。

@@ -14,7 +14,7 @@ param(
   [Parameter(Mandatory)][ValidateSet('blocked','decision')][string]$Scenario,
   [string]$RunId,
   [string]$Root,
-  [ValidateSet('claude','codex')][string]$WorkerCli='claude',
+  [ValidateSet('claude','codex','zcode')][string]$WorkerCli='claude',
   [string]$WorkerConfigDir,
   [string]$PlannerConfigDir,
   [double]$TickSeconds=5,

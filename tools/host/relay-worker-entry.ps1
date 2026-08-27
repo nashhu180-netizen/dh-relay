@@ -1,7 +1,7 @@
 param(
   [Parameter(Mandatory)][string]$Receipt,
   [Parameter(Mandatory)][string]$BriefRef,
-  [Parameter(Mandatory)][ValidateSet('claude','codex')][string]$Cli,
+  [Parameter(Mandatory)][ValidateSet('claude','codex','zcode')][string]$Cli,
   [string]$ConfigDir,
   [string]$WorkDir,
   [switch]$DryRun
@@ -28,8 +28,8 @@ $banner="[relay-worker] session=$($value.session_id) launch=$($value.launch_id) 
 Write-Host $banner
 if($DryRun){
   Write-Host "RELAY_RECEIPT=$env:RELAY_RECEIPT";Write-Host "RELAY_RUN_ROOT=$env:RELAY_RUN_ROOT";Write-Host "RELAY_ATTEMPT_DIR=$env:RELAY_ATTEMPT_DIR";Write-Host "RELAY_TOOL=$env:RELAY_TOOL"
-  if($Cli-ceq'claude'){Write-Host "claude --dangerously-skip-permissions $prompt"}else{Write-Host "codex --yolo $prompt"}
+  switch -CaseSensitive ($Cli){'claude'{Write-Host "claude --dangerously-skip-permissions $prompt"}'codex'{Write-Host "codex --yolo $prompt"}'zcode'{Write-Host "zcode --prompt $prompt --mode yolo --no-color"}default{[Console]::Error.WriteLine("relay-worker-entry: unsupported -Cli value '$Cli' (case-sensitive: claude|codex|zcode)");[Environment]::Exit(4)}}
   exit 0
 }
-if($Cli-ceq'claude'){& claude --dangerously-skip-permissions $prompt}else{& codex --yolo $prompt}
+switch -CaseSensitive ($Cli){'claude'{& claude --dangerously-skip-permissions $prompt}'codex'{& codex --yolo $prompt}'zcode'{& zcode --prompt $prompt --mode yolo --no-color}default{[Console]::Error.WriteLine("relay-worker-entry: unsupported -Cli value '$Cli' (case-sensitive: claude|codex|zcode)");[Environment]::Exit(4)}}
 $code=$LASTEXITCODE;Write-Host "[relay-worker] cli exited $code";Start-Sleep -Seconds 5;exit $code

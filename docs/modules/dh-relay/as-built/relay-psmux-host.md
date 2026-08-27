@@ -6,7 +6,7 @@
 
 - `psmux` adapter 实现六动词 `launch/probe/suspend/resume/stop/emit_observation`，返回键恰为 `backend,launch,probe,suspend,resume,stop,emit_observation,calls,sessions`；adapter 只翻译终端宿主语义，不判代码质量、不写 Runner state。
 - 宿主循环负责摄入 worker 临时文件与 inbox 提案、调用 Runner tick、拉起 ready node、按 generation 触发一次性重编排，并输出每 tick 一行状态。
-- agent 侧工具负责从 receipt 取得身份链，生成 checkpoint/result/handoff/session-tail/proposal；worker 入口注入环境并拉起可见 `claude|codex`。
+- agent 侧工具负责从 receipt 取得身份链，生成 checkpoint/result/handoff/session-tail/proposal；worker 入口注入环境并拉起可见 `claude|codex|zcode`。
 - dogfood 包装负责渲染假需求、装配真实 adapter、启动 headless orchestrator/replanner、回收成功会话和复制证据。
 - 本层不提供人工输入 API，不读取或代答终端对话，不调用 `suspend/resume`，不实现通用 DAG/工作流引擎，不实现 orca adapter，也未修改 Runner core 判定。
 
@@ -54,7 +54,7 @@
 | `relay-agent-tool.ps1 checkpoint` | 从 `RELAY_RECEIPT` 取得七字段身份链，校验后两阶段写 `checkpoint.json.tmp`。 |
 | `relay-agent-tool.ps1 result` | 先写带身份头的 handoff 和脱敏限长 tail，再校验并两阶段写 `result.json.tmp`。 |
 | `relay-agent-tool.ps1 propose` | 补算 plan hash、校验 proposal，并写入 run inbox；允许无 receipt 时走 `RELAY_RUN_ROOT`。 |
-| `relay-worker-entry.ps1` | 注入 receipt/run/attempt/tool 环境，清继承标记，切到 work 目录并启动可见 `claude|codex`。 |
+| `relay-worker-entry.ps1` | 注入 receipt/run/attempt/tool 环境，清继承标记，切到 work 目录并启动可见 `claude|codex|zcode`（zcode 走 `--prompt … --mode yolo --no-color` headless 一次性形态，进程跑完即退、不驻留）。 |
 | `run-dogfood.ps1` | 渲染 blocked/decision 夹具，装配真实 psmux 与 headless spawner，循环执行、回收并复制证据。 |
 | `Invoke-RelayBackendPreflight.ps1` | 用 P1 句柄、P2 可见、P3 可交互、P4 probe、P5 回收与 P6 陷阱留痕评估后端。 |
 | `Invoke-LateResultCheck.ps1` | 用 A/1 旧 receipt 生成合法迟到 result，经真实 Runner 入口验证 stale 拒收与三份状态哈希不变。 |
