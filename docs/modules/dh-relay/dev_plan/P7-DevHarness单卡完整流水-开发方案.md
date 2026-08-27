@@ -1,81 +1,84 @@
-# P7-DevHarness 单卡显式接力 开发方案
+# P7-通用显式接力基础与单任务实卡 开发方案
 
 <!-- dh:plan-type: 开发 -->
-<!-- dh:planning-event:v1 id=DHR-B-19 stage=B-adjust artifact=dev_plan/P7-DevHarness单卡完整流水-开发方案.md review=../design/evidence/16-P7薄计划与显式节点实施重拆-交叉审核记录.md#review-b19 understanding=../design/evidence/16-P7薄计划与显式节点实施重拆-交叉审核记录.md#understanding-b19 -->
+<!-- dh:planning-event:v1 id=DHR-B-21-P7 stage=B-adjust artifact=dev_plan/P7-DevHarness单卡完整流水-开发方案.md review=../design/evidence/18-P7P8通用节点与跨项目任务编排-交叉审核记录.md#review-b21-p7 understanding=../design/evidence/18-P7P8通用节点与跨项目任务编排-交叉审核记录.md#understanding-b21-p7 -->
 <!-- dh:status
-汇报: P7 已按 design/10 重拆为薄 Plan/Resolver、Ticket 合同、Workflow/Actor、单 Node Pair、Role Relay、Review Batch、恢复与端到端八张卡；旧 DHR_36~40 保留历史并取消
-现状: DHR_36~40 已取消（被 DHR-B-19 替代）；DHR_53 进行中（2026-08-26 夜开工，workspace 已建，仍未启用 dh_relay/runtime 新根）；DHR_54~60 未开始
-进行到: P7 ▸ DHR_53 施工中（薄 Plan/Resolver 契约与解析层，离线可机判部分）
-下一步: DHR_53 四批施工 → 五路复核 → 待验收；E11 人闸与 verify 留给用户，未代签
-看什么: design/10、design/evidence/16、workspace/DHR_53/decisions.md（前置放宽理由）、workspace/DHR_53/progress.md
-阻塞: P6 Gate 未通过、DHR_30 尚未在 master 收口——DHR_53 按 workspace/DHR_53/decisions.md D-002 在「不启动 Agent、不启用新根 start、不消费 wt/DHR_30 代码」的限定下先行开工，该放宽待用户人验裁决
+汇报: P7 已按 DHR-A-23 / DHR-B-21 调整为独立 PlanHome、全限定 TaskRef、通用节点与 Result、generation 更新、Pair、Role Relay、Review Batch、恢复和单任务真实链；Core 不读取 DevHarness task_type/Recipe，不建设 DevHarness workflow/adapter
+现状: DHR_36~40 已取消；DHR_53 保持进行中，但旧单任务/task_type Recipe/业务 node_type 实现已 superseded，当前暂停；DHR_54~60 未开始
+进行到: P7 ▸ DHR_53 等待旧实现归档与从精确 master SHA 重建的单独授权
+下一步: 用户另行授权后，先保存旧 DHR_53 archive ref + path/blob manifest，再从已登记的精确 master SHA 重建；不得 destructive reset
+看什么: design/10、design/evidence/18、workspace/DHR_53/brief.md、workspace/DHR_53/progress.md
+阻塞: P6 Gate、DHR_30 稳定接口和 DHR_53 重建授权均未满足；本次 B-adjust 不恢复施工、不启用 PlanHome 新根
 -->
 
-## 0. B 方案审核与理解确认
+## 0. B 方案审核、理解与确认
 
-### 0.1 白话说明：这个阶段做啥、解决啥、做完得到啥
+### 0.1 这阶段交付什么
 
-P7 不再按“施工阶段、收口阶段”各包一大坨能力，而是把真正承担风险的八个对象逐个做实。这样出问题时能明确判断是计划解析、票据身份、状态推进、终端启动、普通消息、并行复核还是恢复出了错，也不会把新业务判断塞回 DHR_30。
+P7 先把 dh-relay 的通用承重合同做实，再用一张真实 DevHarness 任务验通。真实任务只是样本，不把 Core 变成 DevHarness 专用执行器，也不把 schema 限制为单任务。
 
-| 任务 | 用业务语言说在做啥 | 解决什么问题 | 做完预期效果 |
-|---|---|---|---|
-| DHR_53 | 把一份很薄的接力路线展开成这次真正要跑的步骤，并钉住 Plan、任务与快照指纹 | Plan 不复制 DevPlan，运行结束后仍能说清当时按哪份计划跑 | 同一 Plan 可多次运行；每个 Run 可追溯，历史不改写、不自动删除 |
-| DHR_54 | 冻结 Ticket、控制回执及 Result/Handoff/Attention/Approval 等正式工件 | 防止旧 Agent、错节点、错运行或伪造结果混入 | 每次接棒的身份、权限和停止点都能机判，错绑稳定拒绝 |
-| DHR_55 | 建立唯一决定“现在能不能推进”的 Workflow Engine，并让 actor 只按命令原子落账 | 避免 CLI、Launcher、Agent 各自改状态，出现半关闭或重复启动 | 一次 `continue` 只产生一个合法下一步，节点收口事实同生同灭 |
-| DHR_56 | 把一个步骤安全拉成“一名监督者 + 一名执行者”，完成后关闭终端并释放容量 | 解决外部 Agent 重复拉起、关不干净或占槽位 | 能真实完成一个显式 Node；永久历史目录不会冒充活 Agent 占容量 |
-| DHR_57 | 按当前身份即时转发三类角色的普通消息 | 避免猜 Pane，同时避免聊天变成第二套状态机 | 消息只有四种明确结果，永远不能直接推进 Run |
-| DHR_58 | 一次启动代码轮2、需求、一致性、教训四路复核并正确汇合 | 解决串行慢、漏一路误放行、Monitor 替换后串线 | 全部必做路径合法结束后才出现下一步，用户例外不冒充通过 |
-| DHR_59 | 区分未接单、正常长步骤、等人、宿主故障和真实退出，再安全换新 Agent | 解决卡住时只能看终端猜原因、旧新 Agent 同时写结果 | 留下脱敏诊断，只恢复未完成部分，旧身份迟到写入被拒绝 |
-| DHR_60 | 把前七卡接成一张真实 DevHarness 标准卡 | 解决各组件单测通过但整条业务链仍接不起来 | 显式节点、并行复核、恢复、角色消息和永久历史形成可签收的 P7 结果 |
+| 任务 | 唯一承接 | 明确不做 |
+|---|---|---|
+| DHR_53 | 独立 PlanHome、受信项目注册表/local binding、全限定 TaskRef、多 TaskRef RelayPlan/Resolved Plan、通用节点、Run/generation/digest/history | 不读 task_type/Recipe；不做真实跨项目调度 |
+| DHR_54 | 通用 Ticket/Receipt/Result/Handoff/Report 与 TaskRef/Attempt/Pair 身份链 | Result 不携带 Plan patch；Decision 不改计划 |
+| DHR_55 | Workflow Effect、受影响闭包、外部 B-adjust receipt 校验、generation 激活与显式 `continue` | 不执行业务 B-adjust；activation 不自动 launch |
+| DHR_56 | 任意显式节点的 Monitor+Executor Pair 启动、关闭与释放 | 不新增 Decision 角色；不让 Worker 跨节点 |
+| DHR_57 | 当前身份的 best-effort Role Relay | 不承担状态推进或授权 |
+| DHR_58 | Plan 显式 path set 驱动的通用 Review Batch | 不读取 DevHarness Recipe、不维护业务复核闭集 |
+| DHR_59 | Node/Batch/TaskRef set 作用域的停滞、诊断与恢复 | 不自动启动 Decision、不把局部等待当整 Run 停止 |
+| DHR_60 | 通用 Plan fixture + 一张真实外部任务的 P7 E2E | 不建 DevHarness workflow/adapter 或换名等价层 |
 
-### 0.2 审核、问答与确认
+### 0.2 当前事件
 
-- **事件**：`DHR-B-19`。唯一规划输入为 [design/10](../design/10-薄RelayPlan与显式节点边界-产品设计调整.md)，不把旧 P7、records、evidence 或历史设计当任务终点来源。
-- **fresh 审核**：首轮 `changes-requested`，0 Blocker、2 High、2 Medium、1 Low；主会话全部采纳。补齐 `continue` request/Receipt、Orchestrator Lease、active P7 Gate、A20/A22 superseded 边界及两类 Oracle 区分后，定向复审为 `approved`，0 Blocker/High/Medium。完整记录见 [evidence/16](../design/evidence/16-P7薄计划与显式节点实施重拆-交叉审核记录.md#review-b19)。
-- **理解问题**：DHR_56 做完时只有“单步骤安全接力”，尚无并行复核、自动恢复和角色消息，是否接受先作为独立中间验收？
-- **用户回答**：“接受。”因此保持八卡拆分；DHR_56 可独立验收，但不等于 P7 完成。
-- **最终确认**：用户随后明文“确认”，授权按本方案更新 P7、索引和 P8 前置指针并本地提交；不授权创建 DHR_53~60 workspace、启用新 runtime 根、开发、推送或部署。
+- `DHR-B-19` 的八卡身份与 `DHR_36~40` 取消历史继续保留；与 A23 冲突的单任务、task_type Recipe、业务 node_type 和 DevHarness Adapter 卡面由本事件取代。
+- `DHR-B-21` 的唯一 planning input 是 [design/10](../design/10-薄RelayPlan与显式节点边界-产品设计调整.md)。首轮 fresh review 为 `changes-requested`（P0=0、P1=6、P2=3）；修订及三次定向/窄域复审后最终 `approved`（P0=0、P1=0）。完整记录见 [evidence/18](../design/evidence/18-P7P8通用节点与跨项目任务编排-交叉审核记录.md#review-b21-p7)。
+- 理解问题中，用户正确回答：不把拆出的 A1/A2 加入当前 RelayPlan 时，当前 generation 不变，A1/A2 不纳入，不受影响的节点继续运行。见 [evidence/18](../design/evidence/18-P7P8通用节点与跨项目任务编排-交叉审核记录.md#understanding-b21-p7)。
+- 用户随后明文“更新”，构成 `DHR-B-21` 整版确认，授权更新 P7/P8/README 与 DHR_53 卡面；不授权 DHR_53 archive/ref、重建、施工、PlanHome 初始化、提交或推送。
 
 ## 1. 范围、依赖与批次
 
-- **交付**：薄 Plan/Resolver；Plan→Run→generation 关联；永久 runtime 历史；Ticket/Receipt/Lease 和正式工件合同；Workflow/Actor 单写边界；单 Node Pair；best-effort Role Relay；Review Batch；停滞恢复；一张真实标准卡端到端验收。
-- **不含**：P8 的多卡、卡内重编排、通用 Diagnoser、Hook/Outbox、run 级归档与跨卡 Oracle；P9 的 Linux 双平台定型、发布升级和最终迁移；自动删除/压缩/配额；扩写 DHR_30 当前卡。
-- **前置**：P6 Gate 通过并经用户放行；DHR_30 的 CLI/Read Model 稳定接口收口并进入 master；每张新卡另行完成入口分流与用户确认。
-- **新根闸**：DHR_53 只在 fixture/受控测试中实现新根与 Resolver；DHR_60 前置全绿前，禁止正式 `dh_relay/runtime/` start。
+- **交付**：独立 PlanHome；可承载多个 TaskRef 的通用 Plan/Resolved Plan；通用节点与 Result；Plan→Run→generation 不可变历史；Ticket/Pair；Workflow Effect；Role Relay；Review Batch；恢复；一张真实外部任务 E2E。
+- **不含**：P8 的真实多任务/跨项目调度与受控 Plan change；P9 的发布迁移；Hook/Outbox/周报；业务仓 `docs/relay`；自动删除/压缩/配额；扩写 P5/P6 或 DHR_30/DHR_31。
+- **前置**：P6 Gate 通过并经用户放行；DHR_30 稳定接口进入 master；每卡另行完成开工确认。A23/B21 不反向解锁前置任务。
+- **新根闸**：Resolver 迁移验收前，禁止正式 PlanHome start；本计划确认不创建 `plans/archive/runtime/local`。
 
 ```text
-DHR_30 稳定接口/收口 + P6 Gate
+DHR_30 稳定接口 + P6 Gate
   -> DHR_53 -> DHR_54 -> DHR_55 -> DHR_56
                                       ├-> DHR_57 ───────┐
                                       └-> DHR_58 -> DHR_59
                                                         └-> DHR_60
 ```
 
-- **批次 1**：DHR_53→54，交付“计划可确定性展开、票据可稳定验真”的离线合同，不启动真实 Agent。
-- **批次 2**：DHR_55→56，交付第一个可演示中间成果——单 Node Monitor+Executor Pair 安全接力。
-- **批次 3**：DHR_57 与 DHR_58 在 DHR_56 后并行；普通消息不是 Review Batch 的业务依赖。
-- **批次 4**：DHR_59→60；恢复不依赖普通聊天，最后再开放真实新根并跑标准卡整链。
+- 批次 1：DHR_53→54，冻结通用 Plan/TaskRef/工件身份合同。
+- 批次 2：DHR_55→56，交付第一个真实单 Node Pair。
+- 批次 3：DHR_57 与 DHR_58 在 DHR_56 后并行。
+- 批次 4：DHR_59→60，完成恢复与单任务实卡 E2E。
 
-## 2. 工程切分与硬边界
+## 2. 工程切分与迁移边界
 
-| 实现单元 | 职责 | 主要落点 | 任务 |
+| 单元 | 职责 | 主要落点 | 任务 |
 |---|---|---|---|
-| plan-resolver | 薄 Plan/Resolved Plan、task_type Recipe、根发现、Plan/Run/generation 关联 | `relay-core/contracts/`、`relay-core/resolver/`、`relay-core/runtime/` 窄适配 | DHR_53 |
-| work-item-contracts | Ticket、`continue` Receipt、Orchestrator Lease、Result/Handoff/Report/Attention/Approval/Role Relay schema | `relay-core/contracts/`、`relay-core/fixtures/` | DHR_54 |
-| workflow-engine | 唯一业务转换、guard、CAS、单 Node continue/收口、Lease 生命周期 | `relay-core/workflow/`、Runtime actor 端口 | DHR_55 |
-| launcher-pair | 外部终端启动、Monitor/Executor Pair、容量与资源释放 | `relay-core/launcher/`、`relay-core/pair/` | DHR_56 |
-| role-relay | 当前身份解析与 Herdr prompt best-effort 转发 | `relay-core/role-relay/` | DHR_57 |
-| review-batch | Batch 分配、路径结果、N/A、Approval override、取消、join、revision | `relay-core/review-batch/` | DHR_58 |
-| recovery | deadline、checkpoint、Host Observation、脱敏诊断、Attempt 替代 | `relay-core/recovery/`、`relay-core/diagnostics/` | DHR_59 |
-| devharness-e2e | workspace/task_type 适配、CLI/RPC 窄装配、独立单卡 oracle 与真实证据 | `relay-core/workflows/dev-harness/`、`relay-core/test/e2e/` | DHR_60 |
+| plan-resolver | PlanHome、registry/binding、TaskRef、通用 Plan/Resolved Plan、generation snapshot | `relay-core/contracts/`、`relay-core/resolver/`、`relay-core/runtime/` | DHR_53 |
+| work-item-contracts | Ticket/Attempt/Pair、Result/Handoff/Report、subject TaskRef set、外部 Authority/B-adjust refs | `relay-core/contracts/`、`relay-core/fixtures/` | DHR_54 |
+| workflow-engine | route effect、影响闭包、追加式 supersede、generation activation、显式 continue | `relay-core/workflow/`、Runtime actor 端口 | DHR_55 |
+| launcher-pair | 任意 Node 的 Monitor/Executor Pair 与容量释放 | `relay-core/launcher/`、`relay-core/pair/` | DHR_56 |
+| role-relay | 当前身份解析与 best-effort prompt | `relay-core/role-relay/` | DHR_57 |
+| review-batch | Plan 显式路径、candidate revision、N/A、override、cancel、join | `relay-core/review-batch/` | DHR_58 |
+| recovery | deadline、checkpoint、Host Observation、脱敏诊断与替代 Attempt | `relay-core/recovery/`、`relay-core/diagnostics/` | DHR_59 |
+| generic-e2e | 通用 Plan fixture、外部项目实卡与独立 Oracle | `relay-core/test/e2e/`、受控外部 fixture | DHR_60 |
 
-硬边界：
+旧实现必须按下表清理，不能只换名：
 
-1. DHR_30 继续只负责其既有 CLI、客户端中立 Read Model 与可选 Bridge 接缝；新卡只消费稳定接口。若后续需要兼容变化，由对应新卡记录，不回写或扩大旧卡。
-2. Workflow Engine 唯一判断业务转换；HostSessionActor 只做 schema/身份/guard/CAS 与物理持久化；CLI、Launcher、Role Relay 不直写 Store。
-3. DHR_59 只做节点级停滞检测与恢复，不提前实现 P8 的通用诊断 Agent、选项治理或自动修复。
-4. DHR_60 的单卡独立 E2E oracle 必做；它不同于 P8 的跨卡、归档、Outbox Oracle。
-5. `DHR_55/DHR_56` 是本事件重新定义的新范围，不继承旧候选或口头草案中的同号范围。
+| 旧实现 | 新合同 | 机器闸 |
+|---|---|---|
+| Run 绑定单一 `task_id` | Run 根绑定 `plan_home_id + plan_id`，generation 保存完整 TaskRef set/digest | 单/多 TaskRef 正反例 |
+| Core 读取 task_type/Recipe | Plan 显式 node/path/instruction/route | 生产面静态扫描 + E2E |
+| `construction/review/rework` 业务 node_type | 通用 Node + executor binding + result route | 未知业务动作不要求加枚举 |
+| `workflows/dev-harness/` | 通用 engine/test/e2e + 外部 Plan fixture | 目录/import/配置键/换名等价扫描为零 |
+| Herdr/Host/client adapter | 保留协议边界 adapter | 不得被“零 Adapter”误删 |
+
+P5/P6、DHR_30/DHR_31 的卡面、状态和授权不由本计划改变。DHR_30 只提供 Runtime/RPC/Read Model/Receipt/CLI；DHR_31 只行使 generic `basic-agent-task`；P6 只提供 Profile/Herdr/HostObservation。它们不得倒灌 P7 业务语义。
 
 ## 3. 任务表
 
@@ -83,147 +86,134 @@ DHR_30 稳定接口/收口 + P6 Gate
 
 <!-- dh:tasks -->
 
-| 任务 ID | 一句话 | 档位 | task_type | 状态 | 依赖 | 计划工作区 | 验收时间 / verify SHA | 备注 |
+| 任务 ID | 一句话 | 档位 | task_type | 状态 | 依赖 | 工作区 | 验收时间 / verify SHA | 备注 |
 |---|---|---|---|---|---|---|---|---|
 | DHR_36 | 历史：DevHarness Contract 与 Gate Adapter | 标准 | 存量未冻结 | 已取消 | | 未创建 | | DHR-B-07 历史；被 DHR-B-19 替代 |
 | DHR_37 | 历史：授权、Authority Snapshot 与 Proposal | 标准 | 存量未冻结 | 已取消 | | 未创建 | | DHR-B-07 历史；被 DHR-B-19 替代 |
 | DHR_38 | 历史：S0~S3 施工路径 | 标准 | 存量未冻结 | 已取消 | | 未创建 | | DHR-B-07 历史；被 DHR-B-19 替代 |
 | DHR_39 | 历史：E0~E10 收口路径 | 标准 | 存量未冻结 | 已取消 | | 未创建 | | DHR-B-07 历史；被 DHR-B-19 替代 |
 | DHR_40 | 历史：E11~E13 与真实卡 verify | 标准 | 存量未冻结 | 已取消 | | 未创建 | | DHR-B-07 历史；被 DHR-B-19 替代 |
-| DHR_53 | 薄 Plan/Resolver、永久历史与 Plan-Run 关联 | 标准 | heavy | 进行中 | P6 Gate；DHR_30 稳定接口进入 master | [`workspace/DHR_53/`](../workspace/DHR_53/) | | blocked-by-phase-gate:P6；新根 start 禁用；**前置未满足仍开工的放宽范围与理由见 [`workspace/DHR_53/decisions.md`](../workspace/DHR_53/decisions.md) D-002**（未改本计划正文的目标/范围/验收/依赖） |
-| DHR_54 | Ticket、控制回执、Lease 与正式工件合同 | 标准 | heavy | 未开始 | DHR_53 | `workspace/DHR_54/`（开工时创建） | | 不实现业务推进 |
-| DHR_55 | Workflow Engine、Lease 生命周期与 Actor 命令边界 | 标准 | heavy | 未开始 | DHR_54 | `workspace/DHR_55/`（开工时创建） | | 新窄范围，不继承旧候选 |
-| DHR_56 | Launcher 与单 Node Monitor+Executor Pair | 标准 | heavy | 未开始 | DHR_55；P6 Herdr/Profile 闸 | `workspace/DHR_56/`（开工时创建） | | P7 第一个真实中间 demo |
-| DHR_57 | best-effort Role Relay | 标准 | normal | 未开始 | DHR_56 | `workspace/DHR_57/`（开工时创建） | | 可与 DHR_58 并行；触及身份/权限则停下重定类 |
-| DHR_58 | Review Batch、N/A、用户例外、取消与 join | 标准 | heavy | 未开始 | DHR_56 | `workspace/DHR_58/`（开工时创建） | | 可与 DHR_57 并行 |
-| DHR_59 | 停滞检测、脱敏诊断与安全恢复 | 标准 | heavy | 未开始 | DHR_58 | `workspace/DHR_59/`（开工时创建） | | 不依赖 Role Relay |
-| DHR_60 | DevHarness 适配与 P7 端到端验收 | 标准 | heavy | 未开始 | DHR_57、DHR_59；用户确认真实任务与环境 | `workspace/DHR_60/`（开工时创建） | | 前置全绿后才允许正式新根 start |
+| DHR_53 | PlanHome、TaskRef、通用 Plan/Node 与 generation 历史 | 标准 | heavy | 进行中 | P6 Gate；DHR_30 稳定接口进入 master；重建授权 | [`workspace/DHR_53/`](../workspace/DHR_53/) | | 旧实现 `superseded-by-DHR-A-23`；暂停，未授权 archive/ref 或重建 |
+| DHR_54 | 通用 Ticket、Receipt、Result/Handoff/Report 身份合同 | 标准 | heavy | 未开始 | DHR_53 | `workspace/DHR_54/`（开工时创建） | | Result/Decision 不改 Plan |
+| DHR_55 | Workflow Effect、影响闭包、generation activation 与 continue | 标准 | heavy | 未开始 | DHR_54 | `workspace/DHR_55/`（开工时创建） | | activation 不自动 launch |
+| DHR_56 | 任意 Node 的 Monitor+Executor Pair | 标准 | heavy | 未开始 | DHR_55；P6 Herdr/Profile Gate | `workspace/DHR_56/`（开工时创建） | | 第一个真实中间 demo |
+| DHR_57 | best-effort Role Relay | 标准 | normal | 未开始 | DHR_56 | `workspace/DHR_57/`（开工时创建） | | 可与 DHR_58 并行 |
+| DHR_58 | Plan 驱动的通用 Review Batch | 标准 | heavy | 未开始 | DHR_56 | `workspace/DHR_58/`（开工时创建） | | Core 不读取 Recipe |
+| DHR_59 | Node/Batch/TaskRef set 停滞与安全恢复 | 标准 | heavy | 未开始 | DHR_58 | `workspace/DHR_59/`（开工时创建） | | 不自动启动 Decision |
+| DHR_60 | 外部项目实卡与 P7 通用 E2E | 标准 | heavy | 未开始 | DHR_57、DHR_59；用户确认真实任务/环境 | `workspace/DHR_60/`（开工时创建） | | 前置全绿后才允许正式新根 start |
 
-> 本表只创建计划卡身份，不创建目录。状态列只用五枚举；阶段闸与说明只写备注。每张卡开工时把计划工作区改为真实链接。
+> DevPlan 的 `task_type` 只决定 dev-harness 复核配方，不是 dh-relay Core 输入。状态列只使用五枚举；本表不创建目录或授权开工。
 
 ### 3.2 任务卡
 
-#### DHR_53 · 薄 Plan、Resolver 与运行历史关联
+#### DHR_53 · PlanHome、TaskRef 与通用计划合同
 
-- **目标**：冻结版本化 RelayPlan/Resolved Plan；确定性读取 DevPlan 任务行、`task_type`、workspace 静态输入、Git/worktree 与 Profile registry，展开唯一 node/依赖/Recipe/applicability/mode；消费 DHR_30 稳定的旧根只读发现/Read Model 接缝，增加新根路由、Run 根不可变 `plan_id + task_id`、generation `resolved_plan_digest`、永久保留与 history/active 区分。
-- **非目标**：不实现 `continue`、Ticket 派发、外部 Agent、Review Batch、删除/压缩/配额；不修改 DHR_30 卡或 worktree。
-- **验收**：机器证回连 [design/10](../design/10-薄RelayPlan与显式节点边界-产品设计调整.md) `HC-3AT-A19/A21/A23/A30/A31`；坏计划、缺 workspace、路径越界、Recipe 缺路/非法降级、错 Plan/Task/digest、旧根写入、历史误计 active/容量、自动删除均有反例。同一 Plan 两次运行产生不同 Run，旧 generation 不改写。人判承接 `HC-3AT-H5/H10` 的计划与历史子集。
-- **范围**：`relay-core/contracts/` 的 Plan/Resolved Plan/关联 schema；新建 `relay-core/resolver/`；`relay-core/runtime/` 精确根与关联适配；fixtures/tests；必要的 `.gitignore` 断言。
-- **档位 / 工作区**：标准；`workspace/DHR_53/`。
-- **任务类型**：重核 <!-- dh:task-type:v1 task=DHR_53 type=heavy -->
+- **目标**：冻结独立 PlanHome、受信 project registry/local binding、`project_ref + devplan_ref + task_id` TaskRef、可含多个 TaskRef 的 RelayPlan/Resolved Plan、通用节点图、`plan_home_id + plan_id` Run 绑定，以及每 generation 的完整 TaskRef set/digest、Resolved Plan digest 与永久历史。
+- **非目标**：不读取 DevHarness task_type/Recipe；不定义业务 node_type；不实现真实跨项目并行调度；不创建正式新根。
+- **验收**：**机器证**回连 [design/10](../design/10-薄RelayPlan与显式节点边界-产品设计调整.md) `HC-3AT-A30/A32/A33/A36`：重号 task、未知项目、registry/binding 漂移、workspace 缺失、locator 越界、单 task Run 身份、业务 node_type、task_type/Recipe/workflow 换名适配、历史误计 active/容量均拒绝。**人判**承接 `HC-3AT-H12` 的 PlanHome 基础追溯子集。
+- **范围**：`relay-core/contracts/`、`relay-core/resolver/`、`relay-core/runtime/` 精确适配、fixtures/tests；DHR_53 workspace。
+- **档位 / 任务类型**：标准 / 重核。<!-- dh:task-type:v1 task=DHR_53 type=heavy -->
 
-#### DHR_54 · Ticket 与正式工件合同
+#### DHR_54 · 通用 Work Item 与结果合同
 
-- **目标**：冻结 Work Item/Monitor Ticket、`continue` request/Receipt、Orchestrator Lease、Result、Handoff、Report、Attention、Approval、Role Relay request/snapshot/result 与节点状态枚举的版本化 schema、JCS digest、身份链、能力、过期和停止点。
-- **非目标**：不决定下一节点、不写 Store、不启动 Agent、不投递聊天。
-- **验收**：机器证回连 design/10 `HC-3AT-A2/A7/A11`、`HC-P1-A1/A8` 与 `HC-3AT-A24` 票据子命题；缺/未知字段、旧 generation、错 node/pair/attempt/agent/batch/revision/HEAD/digest、过期 Ticket/Lease、错 expected state、request ID 冲突、凭据/原始聊天入工件均拒绝；同一 `continue` 重放只引用同一 Receipt。
-- **范围**：`relay-core/contracts/`、`relay-core/fixtures/`、独立 validator 与契约负例测试。
-- **档位 / 工作区**：标准；`workspace/DHR_54/`。
-- **任务类型**：重核 <!-- dh:task-type:v1 task=DHR_54 type=heavy -->
+- **目标**：冻结 Ticket/Attempt/Pair、`continue` Receipt、Result/Handoff/Report/Attention/Approval 的通用外壳；工作节点绑定一个 TaskRef，控制/决策节点绑定 canonical 非空 `subject_task_refs[]` 与 set digest；账号、模型、推理、权限、fresh 与 route 可机判。
+- **非目标**：Result 不携带 Plan patch；Decision Executor 不修改 DevPlan/RelayPlan。
+- **验收**：**机器证**回连 design/10 `HC-3AT-A33/A35/A37` 及延续的 `HC-P1-A1/A8`：错 TaskRef/subject set/generation/Attempt/Pair/revision/route、旧身份重放、凭据落盘、Decision 越权均拒绝。
+- **范围**：`relay-core/contracts/`、`relay-core/fixtures/`、validator 与负例测试。
+- **档位 / 任务类型**：标准 / 重核。<!-- dh:task-type:v1 task=DHR_54 type=heavy -->
 
-#### DHR_55 · Workflow Engine 与 Actor 命令边界
+#### DHR_55 · Workflow Effect、generation 与显式 continue
 
-- **目标**：从权威 Read Model 计算 `continue`、单 Node 收口、授权与稳定拒绝，消费 DHR_54 合同，生成带 expected generation/state、幂等 request ID 和 guard 的业务命令；通过既有 Runtime HostSessionActor 原子落账；由 Runner 管理 run-scoped Orchestrator Lease 生命周期。
-- **非目标**：不拉终端、不让 CLI/Launcher/Agent 写 Store，不实现 Batch、Role Relay 或停滞探测。
-- **验收**：机器证回连 design/10 `HC-3AT-A9/A10/A14/A15/A17`、`HC-P1-A2/A5` 与 `HC-3AT-A24/A31` 状态转换子命题；`no_ready/ambiguous_ready/stale_generation`、重放同 Receipt、final Result/Handoff/node_closed/next_ready 原子同生同灭、无效 Lease/Worker continue、Plan/Task/digest 错绑均拒绝，actor 不自行作业务裁决。
-- **范围**：新建 `relay-core/workflow/`；Runtime 命令/actor 端口和 Store 事务测试；必要 RPC 装配。
-- **档位 / 工作区**：标准；`workspace/DHR_55/`。
-- **任务类型**：重核 <!-- dh:task-type:v1 task=DHR_55 type=heavy -->
+- **目标**：由 Workflow Engine 唯一裁决 route effect、节点收口、问题 seed + 显式下游 + 共享消费者的影响闭包、未启动对象追加式 supersede、外部逐项目 B-adjust receipt/result 校验、单次 generation activation 和另一次显式 `continue`。
+- **非目标**：不执行业务 B-adjust，不替编排 Agent选择任务，不自动 launch，不改写 active/closed 定义。
+- **验收**：**机器证**回连 design/10 `HC-3AT-A34` 及延续的 `HC-3AT-A9/A10/A14/A15/A17`：路径重叠/容量互斥不扩大业务闭包；错 parent digest/CAS/Authority/receipt、并发重放、改 active/closed 均拒绝；外部 B-adjust 成功而 activation 失败时旧 generation 不变、无 Worker 启动、同 request 幂等重试。
+- **范围**：`relay-core/workflow/`、Runtime actor 端口、Store 事务和 RPC 窄装配。
+- **档位 / 任务类型**：标准 / 重核。<!-- dh:task-type:v1 task=DHR_55 type=heavy -->
 
-#### DHR_56 · Launcher 与单 Node Pair
+#### DHR_56 · 通用 Node Pair
 
-- **目标**：消费 durable launch intent，容量预检后经 P6 Herdr Adapter 启动/确认一个 Monitor 与一个 Executor；签发 Ticket，绑定 Host Observation，处理 launch failure、正常退出、强停、撤权和 `pair_release_pending/failed`，确保每个角色至多一个 active 身份。
-- **非目标**：不做多 Reviewer Batch、Role Relay、聊天/`done`完成推断或超时替代恢复。
-- **验收**：机器证回连 design/10 `HC-3AT-A1/A4/A5/A12/A14/A27`、`HC-3AT-A24` launcher 子命题与 `HC-CTRL-H4/H12`；容量不足零分配、重复 launch 不增 Pair、部分启动可恢复、旧身份迟到拒绝、final commit 后撤权再关终端、永久 runtime 不占容量。人判承接 `HC-3AT-H1/H3/H6` 单节点子集。
-- **范围**：新建 `relay-core/launcher/`、`relay-core/pair/`；P6 Herdr 窄调用层；Host/Store/RPC 与 fake adapter 测试。
-- **档位 / 工作区**：标准；`workspace/DHR_56/`。
-- **任务类型**：重核 <!-- dh:task-type:v1 task=DHR_56 type=heavy -->
+- **目标**：对 Plan 中任意显式节点，经容量预检启动一名 Monitor 与一名 Executor，签发身份票据，durable 收口后撤权、关终端并释放容量；施工、复核、回归、fresh Decision 都使用同一通用机制。
+- **非目标**：不新增 Decision Agent 类型；不让 Worker 跨 Node；不凭聊天或 `done` 判完成。
+- **验收**：**机器证**回连 design/10 `HC-3AT-A35` 与延续的 `HC-3AT-A1/A4/A5/A12/A27`：重复/部分启动、旧身份迟到、Pair 释放失败、永久目录冒充 live Agent 均按合同处理。**人判**承接 `HC-3AT-H1/H3/H6` 单节点子集。
+- **范围**：`relay-core/launcher/`、`relay-core/pair/`、P6 Herdr 窄调用层与 fake adapter 测试。
+- **档位 / 任务类型**：标准 / 重核。<!-- dh:task-type:v1 task=DHR_56 type=heavy -->
 
 #### DHR_57 · best-effort Role Relay
 
-- **目标**：从有效 Ticket 或 Orchestrator Lease 解析 source/target，向唯一当前 Herdr Agent 即时 prompt，只返回 `sent/target_offline/target_ambiguous/delivery_uncertain`，前后对账 Host generation 与 Agent identity。
-- **非目标**：不排队、重投、保存普通聊天、解释内容、生成授权、改变业务状态或开放 send-keys 绕过。
-- **验收**：机器证回连 design/10 `HC-3AT-A3/A25`；多 Run 同名、裸 executor 多实例、offline/ambiguous、working/idle/blocked、过期 Ticket/Lease、替换竞态、`sent` 无回复与直接 Herdr 调用均有 oracle，Store 业务状态零变化。人判承接 `HC-3AT-H1` 转发子集。
-- **范围**：新建 `relay-core/role-relay/`；Herdr prompt 窄适配；RPC/CLI 窄入口与 fake adapter 测试。
-- **档位 / 工作区**：标准；`workspace/DHR_57/`。
-- **任务类型**：常规 <!-- dh:task-type:v1 task=DHR_57 type=normal -->
-- **复核配方边界**：代码轮1、需求、教训三路 + 有效单测；若施工发现必须改变身份/权限合同，立即停下由用户重定类为 heavy，不能现场自升级。
+- **目标**：按当前有效身份向唯一 Herdr Agent即时转发普通消息，只返回 `sent/target_offline/target_ambiguous/delivery_uncertain`。
+- **非目标**：不排队/重投/保存聊天，不生成授权，不改变业务状态。
+- **验收**：**机器证**回连 design/10 `HC-3AT-A25`：多 Run 同名、目标替换竞态、offline/ambiguous、sent 无回复和直接 Herdr 调用均不推进 Store。**人判**承接 `HC-3AT-H1` 转发子集。
+- **范围**：`relay-core/role-relay/`、Herdr prompt 窄适配、RPC/CLI 与 fake adapter 测试。
+- **档位 / 任务类型**：标准 / 常规。<!-- dh:task-type:v1 task=DHR_57 type=normal -->
 
-#### DHR_58 · Review Batch、N/A 与用户例外
+#### DHR_58 · 通用 Review Batch
 
-- **目标**：代码轮1及整改闭合后，以一次 CAS 分配父 Batch、一个 Monitor 与全部适用 Reviewer intents；实现 Result+Report 成对收口、N/A、`path_user_overridden`、整批取消、revision 失效、join 与 capacity guard。真实停滞检测/替代由 DHR_59 承接。
-- **非目标**：不把 Monitor 当第五路结论、不删必做路径、不依赖 Role Relay、不做停滞诊断。
-- **验收**：机器证回连 design/10 `HC-3AT-A4/A5/A8/A26/A27/A28`；Batch 全有或全无、部分路径不放行、N/A 缺依据拒绝、Result/Report 半份不 terminal、override 只产生 `proceeded_with_user_override`、cancel/join/Result/launch 竞态固定、新 revision 使旧批次失效。人判承接 `HC-3AT-H5/H7/H8`。
-- **范围**：新建 `relay-core/review-batch/`；扩展 workflow 命令、actor 事务与 launcher Batch intents；Batch/Path/Approval fixtures 和竞态测试。
-- **档位 / 工作区**：标准；`workspace/DHR_58/`。
-- **任务类型**：重核 <!-- dh:task-type:v1 task=DHR_58 type=heavy -->
+- **目标**：只消费 Plan 显式 path set、candidate revision、Executor binding、N/A 依据、override 与 join 规则，原子分配 Batch 并收口路径。
+- **非目标**：不读取 task_type/Recipe，不维护 DevHarness 复核路径闭集，不让 Monitor 冒充 reviewer。
+- **验收**：**机器证**回连 design/10 `HC-3AT-A37` 及延续的 `HC-3AT-A8/A26/A27/A28`：缺路径、错 revision、施工者自审、Binding 删除路径、fresh 降级、N/A/override 缺依据、半份 Result/Report 均拒绝。**人判**承接 `HC-3AT-H5/H7/H8`。
+- **范围**：`relay-core/review-batch/`、workflow/actor/launcher Batch 端口、fixtures 与竞态测试。
+- **档位 / 任务类型**：标准 / 重核。<!-- dh:task-type:v1 task=DHR_58 type=heavy -->
 
-#### DHR_59 · 停滞检测、诊断与安全恢复
+#### DHR_59 · 停滞、诊断与安全恢复
 
-- **目标**：执行 `start_deadline/checkpoint_deadline`；综合 `node_started`、checkpoint、Host Observation 区分未接单、长步骤、人等、宿主不可达、probe error 与真实退出；生成白名单→脱敏→UTF-8 限长诊断，CAS 撤权旧 Attempt，等 Pair 释放后为单 Node 或 Batch 未完成路径签发新 Attempt。
-- **非目标**：不凭聊天/屏幕静默/`done`判完成，不自动输入，不重跑已 terminal 路径，不依赖 Role Relay，不做 P8 通用 Diagnoser。
-- **验收**：机器证回连 design/10 `HC-3AT-A6/A13/A18/A29`、`HC-P1-A6`、`HC-CTRL-H7/H12` 与 `HC-3AT-A26` 恢复子命题；Result/recovery 只有一个 CAS 赢家、人等暂停、泄密反例零原文、旧 Pair 未释放无 replacement、Crash 后只恢复一个合法身份、Batch 只恢复未完成路径。人判承接 `HC-3AT-H4/H9`。
-- **范围**：新建 `relay-core/recovery/`、`relay-core/diagnostics/`；Host observation、workflow/actor/launcher 恢复端口；时间、竞态、脱敏与 crash fixtures。
-- **档位 / 工作区**：标准；`workspace/DHR_59/`。
-- **任务类型**：重核 <!-- dh:task-type:v1 task=DHR_59 type=heavy -->
+- **目标**：按 Node/Batch/TaskRef set 识别未接单、长步骤、人等、宿主故障与真实退出，生成脱敏诊断，CAS 撤权旧 Attempt，Pair 释放后只替代未完成路径；Decision 节点 durable 关闭后不保留 Worker。
+- **非目标**：不自动启动 Decision/诊断 Executor，不自动输入，不把一个影响闭包等待误判为整 Run 停止。
+- **验收**：**机器证**回连 design/10 `HC-3AT-A34/A35` 及延续的 `HC-3AT-A6/A13/A18/A29`：Result/recovery 单一 CAS 赢家、泄密反例零原文、旧 Pair 未释放无 replacement、无关 Ready 状态不变。**人判**承接 `HC-3AT-H4/H9`。
+- **范围**：`relay-core/recovery/`、`relay-core/diagnostics/` 与 Host/workflow/launcher 恢复端口。
+- **档位 / 任务类型**：标准 / 重核。<!-- dh:task-type:v1 task=DHR_59 type=heavy -->
 
-#### DHR_60 · DevHarness 适配与 P7 端到端验收
+#### DHR_60 · 外部项目实卡与 P7 E2E
 
-- **目标**：以当前 dev-harness `task_type`/workspace 合同生成真实薄 Plan，接通现有 DHR_30 CLI/Read Model 与 DHR_53~59；用用户开工时另选的真实标准任务完成 construction→显式收口→Review Batch→必要恢复→最终交付/verify，并另造失败、取消和终态历史场景。前置全绿后才允许正式新根 start。
-- **非目标**：不做 P8/P9 能力，不重建 DHR_30 Read Model，不自动删除 runtime，不在本计划确认时预建真实任务 workspace。
-- **验收**：回连 design/10 `HC-3AT-A16` 与 `HC-3AT-H1~H10` 的整链前置；重放 active `A1~A19、A21、A23~A31`，A20/A22 只证 superseded 语义不回流。整链对证 `HC-P1-A1/A2/A5/A6/A8` 与 `HC-CTRL-H1/H2/H3/H4/H6/H7/H8/H10/H11/H12`，不改变分卡主承接；`HC-CTRL-H9` 留 P9 DHR_46。人判按 H1~H10 逐项展示并等用户签收。
-- **范围**：新建 `relay-core/workflows/dev-harness/` 与独立 E2E fixture/oracle；扩展现有 CLI/RPC 的 `continue/attention/approve/role-relay` 窄装配；`relay-core/test/e2e/` 与本卡证据目录。
-- **档位 / 工作区**：标准；`workspace/DHR_60/`。
-- **任务类型**：重核 <!-- dh:task-type:v1 task=DHR_60 type=heavy -->
+- **目标**：用通用 Plan fixture 和一张真实 DevHarness 任务跑通显式 Plan、通用 Result、Pair、Review Batch、恢复、fresh Decision 关闭、generation activation 与另一次 continue；补离线跨项目解析反例，并由独立 Oracle 重算。
+- **非目标**：不建设 `relay-core/workflows/dev-harness/` 或换名等价层；不禁止合法 Herdr/Host/client adapter；不实现真实两项目同时调度。
+- **验收**：**机器证**回连 design/10 `HC-3AT-A32~A37`：移除 DevHarness 仍能执行显式 Plan；生产面零 task_type/Recipe/业务 node_type/DevHarness workflow；Decision durable 关闭；activation 成功未 continue 时零新 Pair。**人判**承接 `HC-3AT-H1~H10` 及 `H11/H12` 的 P7 基础子命题。
+- **范围**：`relay-core/test/e2e/`、通用 Plan fixtures、独立 Oracle、现有 CLI/RPC 窄装配与证据目录。
+- **档位 / 任务类型**：标准 / 重核。<!-- dh:task-type:v1 task=DHR_60 type=heavy -->
 
-### 3.3 新卡共同收口条件
+### 3.3 共同收口条件
 
-- heavy：代码轮1及必要整改闭合后，代码轮2、需求、一致性、教训进入同一 Review Batch；有效单测必做。normal：代码轮1、需求、教训三路 + 有效单测。具体 execution mode 由开工时冻结的 registry 决定，不能降级或删路径。
-- 每卡一个独立 worktree；workspace 只在该卡逐卡确认开工后创建。施工者不复核自己的卡。
-- 标准档进入待验收前须有需求境证据；真实 Agent/CLI/终端交互必须提供可复查操作路径与证据，不能只报单测。
-- 高危性质的组件接线、迁移、新根启用在“完成”前必须有 `verify(dh-relay):`；用户不得由 Agent 代签。
-- 密钥、凭据、普通聊天和原始 Pane 文本不得进入工件；诊断证据先白名单、脱敏、限长。
+- `task_type` 仅由 dev-harness 用于复核配方：heavy 五路 + 有效单测，normal 三路 + 有效单测；Core 不得消费。
+- 每卡独立 worktree，开工后 worker 先 rebase master；施工者不复核自己的卡。
+- 标准档进入待验收前须有需求境证据；高危接线/迁移/新根启用标完成前必须有 `verify(dh-relay):`。
+- 密钥、凭据、普通聊天和原始 Pane 文本不得进入工件。
 
-## 4. P7 新阶段闸
-
-### 4.1 核心机器闸
+## 4. P7 阶段闸
 
 | ID | 可机判终点 | 承接卡 |
 |---|---|---|
-| P7-M10 | 薄 Plan/Resolver、task_type Recipe、新旧根、永久历史与 Plan→Run→generation 关联全部 fail-closed | DHR_53 |
-| P7-M11 | Ticket、`continue` request/Receipt、Orchestrator Lease 与正式工件 schema/身份/digest 负例通过 | DHR_54 |
-| P7-M12 | Workflow Engine 唯一裁决、actor 只按 guard 落账；单 Node `continue`/收口幂等且无半状态 | DHR_55 |
-| P7-M13 | 单 Node Pair 可真实启动、收口、撤权与释放；永久目录不占容量 | DHR_56 |
-| P7-M14 | Role Relay 四结果枚举、身份对账与零业务副作用成立 | DHR_57 |
-| P7-M15 | Review Batch 原子分配、路径收口、N/A、用户例外、取消、revision 与 join 成立 | DHR_58 |
-| P7-M16 | 启动/进展时限、五类停滞、脱敏诊断、单 Node/Batch 安全替代及竞态恢复成立 | DHR_59 |
-| P7-M17 | 一张真实标准卡跑通 active A/H；三类终态历史永久可查不可继续；新根启用闸和独立 E2E oracle 通过 | DHR_60 |
+| P7-M10 | PlanHome、registry/binding、TaskRef、多 TaskRef schema、通用 Node、Run/generation/digest/history fail-closed | DHR_53 |
+| P7-M11 | 通用 Ticket/Receipt/Result/Handoff/Report 的 TaskRef/Attempt/Pair 身份负例通过 | DHR_54 |
+| P7-M12 | 影响闭包、外部 receipt、generation activation 与显式 continue 分责、幂等、无半状态 | DHR_55 |
+| P7-M13 | 任意单 Node Pair 可启动、durable 收口、撤权与释放 | DHR_56 |
+| P7-M14 | Role Relay 四结果、身份对账与零业务副作用 | DHR_57 |
+| P7-M15 | Plan 驱动的通用 Review Batch、revision、N/A、override、cancel、join | DHR_58 |
+| P7-M16 | Node/Batch/TaskRef set 停滞、等待、诊断、替代与迟到写拒绝 | DHR_59 |
+| P7-M17 | 外部实卡跑通，Decision 关闭，activation 后另一次 continue，新根闸、Oracle 与零 DevHarness workflow/adapter 扫描通过 | DHR_60 |
 
-### 4.2 人类闸与解锁 P8
+`P7 Gate = P7-M10~M17 全部通过 + H1~H10 用户签收 + H11/H12 的 P7 基础子命题通过 + 用户明确放行 P8`。P7 Gate 只解除 P8 阶段阻塞，不自动开工 P8。
 
-- DHR_60 按 design/10 `HC-3AT-H1~H10` 提供一份逐项操作与证据索引，用户逐项签收。
-- `P7 Gate = P7-M10~M17 全部通过 + H1~H10 用户签收 + 用户明确放行 P8`。
-- P7 Gate 通过前，P8 `DHR_41~45` 继续保持 `blocked-by-phase-gate:P7`。
+## 5. DHR_53 旧现场处理
 
-## 5. 历史保留与后续阶段
+本次只同步卡面，不操作 Git 现场。以后取得恢复/重建授权后：
 
-- `DHR_36~40` 与 `P7-M1~M9` 是 `DHR-B-07` 的历史路线，状态为已取消，不删除、不复用、不再解锁 P8。其完整旧卡面仍可由 Git 历史恢复。
-- P8 `DHR_41~45` 的多卡、重编排、通用诊断、Outbox、归档/Oracle范围不变；只把 P7 前置明确指向本计划新 Gate。
-- P9 `DHR_46~48` 范围、顺序和阶段闸不变；`HC-CTRL-H9` Linux 无 GUI 全链仍由 DHR_46 承接。
-- DHR_30 当前 worktree、卡面和验收不因本计划改变；新卡不得把 Workflow、Pair、Launcher、Review Batch、Role Relay、Resolver 或恢复塞回 DHR_30。
+1. 重验旧 worktree branch/HEAD/tree/clean/untracked，生成 path/blob manifest 和旧 evidence 指针。
+2. 为旧 HEAD 建受保护 archive ref/tag并验证 peeled commit；旧 worktree 隔离只读。
+3. 登记重建采用的精确 master SHA，从该 SHA 新建施工现场；不得写 latest，不得 destructive reset。
+4. locator/canonical digest/history 等只能逐项证明后复用；旧通过数和 review 不进入新验收。
+5. 新现场验证且另有清理授权后才退役旧 worktree；archive/ref/manifest 保留。
 
 ## 6. 覆盖、颗粒度与依赖查漏
 
 | 检查 | 结论 |
 |---|---|
-| 覆盖 | DHR_53=A19/A21/A23/A30/A31；DHR_54=A2/A7/A11+P1-A1/A8；DHR_55=A9/A10/A14/A15/A17+A24/A31状态转换+P1-A2/A5；DHR_56=A1/A4/A5/A12/A27单节点+A24启动；DHR_57=A3/A25；DHR_58=A8/A26/A27批次/A28；DHR_59=A6/A13/A18/A29+A26恢复+P1-A6；DHR_60=A16及整链人验/回归。A20/A22 不作 active 承接，CTRL-H9 留 P9。 |
-| 颗粒度 | 每张卡对应一个可独立制造反例和签收的承重对象；DHR_60 只做适配/整链，不吞回前七卡实现。 |
-| 依赖 | `53→54→55→56` 后 `57∥58→59`，最终 `57+59→60`，无环；59 不依赖普通聊天；P8/P9 边界不前移。 |
+| 覆盖 | A32→DHR_53/60；A33→DHR_53/54/55；A34→DHR_55/59；A35→DHR_54/56/59/60；A36→DHR_53/58/60；A37→DHR_54/58；A38 在 P7 只做 schema/解析负例，真实跨项目归 P8。H11/H12 先证基础动作分层和 PlanHome 追溯，完整跨项目场景归 P8。 |
+| 颗粒度 | 每卡一个可独立制造反例和签收的通用承重对象；DHR_60 只做通用装配和 E2E，不吞回前七卡。 |
+| 依赖 | `53→54→55→56` 后 `57∥58→59`，最终 `57+59→60`，无环；P5/P6 卡面和授权不变。 |
 
 ## 7. 计划完工
 
-- [ ] DHR_53~60 全部销户；DHR_36~40 历史取消事实保持。
-- [ ] P7-M10~M17 全部有独立机器证，active A/H 与 legacy 分阶段验收无漏项。
-- [ ] 一张真实标准卡完成显式节点、Review Batch、恢复、Role Relay 和最终 verify；成功/失败/取消历史均永久可查、不可继续。
-- [ ] H1~H10 已向用户逐项展示并签收；P8 是否解锁由用户另行明确表态。
-- [ ] `dev_plan/README.md` 与 P8 前置指针已同步；未授权的 workspace/runtime/开发动作未提前发生。
+- [ ] DHR_53~60 全部销户；DHR_36~40 与旧 DHR_53 实现的 superseded 历史可追溯。
+- [ ] P7-M10~M17 及 design/10 的 P7 分账有独立机器证与反例。
+- [ ] 一张真实任务完成通用节点、Review Batch、恢复、Decision 关闭与 generation/continue 分层；成功/失败/取消历史永久可查、不可继续。
+- [ ] 人验项已展示并签收；P8 是否开工由用户另行明确表态。
+- [ ] `dev_plan/README.md` 与 P8 前置指针同步；未授权的 archive/ref/worktree/PlanHome/开发动作未提前发生。

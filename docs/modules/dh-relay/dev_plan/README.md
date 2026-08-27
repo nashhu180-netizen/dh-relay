@@ -1,5 +1,5 @@
 <!-- dh:devplan-index:v1 -->
-<!-- dh:planning-no-event:v1 artifact="dev_plan/README.md" reason="2026-08-18 索引措辞对齐：状态列机读枚举 + 备注列记阶段闸、P4~P9 事件与证据落点说明、硬约束#1 改为 CLI 与 DSH 并行可配置替换（非回退）；同日随 DHR-B-10 机械同步 P4 行的任务 ID 清单与状态；2026-08-20 随 DHR-B-11 机械同步 P4/P5 行、P4 特殊阶段闸与通用规则的延后措辞（拆卡与闸规则变更本体在 P4/P5 计划正文，本索引不承载）；2026-08-21 随 DHR-B-15 机械同步 P5 行的任务 ID 清单（DHR_28~31 → 增 DHR_51/DHR_52）与状态备注（DHR_28 已 verify、DHR_29 拆三卡），拆卡本体在 P5 计划 §0.2 DHR-B-15 条；2026-08-26 随 DHR-B-19/B-20 机械同步 P7 新卡 DHR_53~60、旧卡取消历史与 P8 active P7 Gate 指针；同日按用户已确认方向，以 design/10 取代 design/05、06 的当前基准表述，并把不属于当前单卡显式接力范围的 P8/P9 标为冻结暂缓；不改变任何任务卡的目标、验收、依赖、状态或开工授权" -->
+<!-- dh:planning-no-event:v1 artifact="dev_plan/README.md" reason="2026-08-18 索引措辞对齐；2026-08-20 随 DHR-B-11 同步 P4/P5；2026-08-21 随 DHR-B-15 同步 P5 拆卡；2026-08-26 随 DHR-B-19/B-20 同步 P7/P8；2026-08-27 随已确认 DHR-B-21 机械同步 P7/P8 当前范围、P8 由冻结改为阶段阻塞、DHR_44 取消和 P5/P6 不扩范围边界，实质任务调整在 P7/P8 正文，本索引不单独形成 planning event" -->
 # DH Relay DevPlan 入口
 
 ## 当前主线
@@ -27,14 +27,14 @@ Herdr
 
 ## 当前总约束：design/10
 
-[design/10 薄 RelayPlan 与显式节点边界](../design/10-薄RelayPlan与显式节点边界-产品设计调整.md) 是当前阶段的产品设计基准，P7 是它的直接实施计划。P5~P9 必须围绕这份基准协作，不得创建与其冲突的 Plan、Ticket、Workflow、Pair、Review Batch、Role Relay、恢复或运行历史语义。
+[design/10 薄 RelayPlan 与显式节点边界](../design/10-薄RelayPlan与显式节点边界-产品设计调整.md) 是当前阶段的产品设计基准。P7 实施通用基础与单任务实卡，P8 实施真实多任务/跨项目调度和运行中 Plan change。P5~P9 必须围绕这份基准协作，不得创建与其冲突的 Plan、Ticket、Workflow、Pair、Review Batch、Role Relay、恢复或运行历史语义。
 
 | 计划 | 与 design/10 的关系 | 当前边界 |
 |---|---|---|
 | P5 | 前置基础 | DHR_30/31 只提供稳定 Runtime、CLI、Read Model 与 basic-agent-task 基础；不得倒灌 P7 的业务 Workflow、Pair 或 Review Batch。 |
 | P6 | 前置执行底座 | 提供 P7 所需的 Herdr/Profile 能力与真实执行证据；宿主观测不能替代 design/10 规定的业务状态或 Result。 |
-| P7 | 直接实施 | 以 design/10 为唯一正式设计输入，实施 DHR_53~60。 |
-| P8 | 范围外暂缓 | 多卡、重编排、通用诊断、Outbox、归档与跨卡 Oracle 未被 design/10 承接；当前冻结暂缓。 |
+| P7 | 基础实施 | 以 design/10 为唯一正式设计输入，实施 DHR_53~60；Core 不读取 dev-harness task_type/Recipe。 |
+| P8 | 跨项目实施 | 实施 DHR_41/42/43/45；DHR_44 历史 Hook/Outbox/周报已取消。P7 Gate 通过只解除阻塞，不自动开工。 |
 | P9 | 范围外暂缓 | 双平台定型、发布和迁移未被 design/10 承接；当前冻结暂缓。 |
 
 本节是跨计划的当前协作约束，不修改任何任务卡的目标、验收、依赖、状态或开工授权。各计划若要实质调整其范围或验收，仍须在对应阶段执行 B-adjust、审核与用户确认。
@@ -48,12 +48,14 @@ P5 Relay v2 持久内核与多控制面桥接
   ↓ P5 Gate 通过 + 用户明确放行
 P6 Herdr 多账号与 Headless 执行底座
   ↓ P6 Gate 通过 + 用户明确放行
-P7 薄计划与显式节点单卡接力
-  ↓ 当前阶段终点
-P8 / P9 已冻结暂缓（不随 P7 Gate 自动解锁）
+P7 通用显式接力基础与单任务实卡
+  ↓ P7 Gate 通过 + 用户明确放行
+P8 跨项目多任务编排与运行中计划调整
+  ↓ P8 Gate 通过不自动解锁 P9
+P9 仍冻结暂缓
 ```
 
-后一阶段已经落盘，只表示路线和责任边界预先可见。P6/P7 的前置阶段未通过时，任务表状态列仍填机读枚举「未开始」，阶段闸阻塞记在「备注」列（`blocked-by-phase-gate:Px`），一律不能开工。P8/P9 另受本入口的“冻结暂缓”约束，不因前置阶段通过或 P7 Gate 自动解锁；恢复讨论前须先有新的正式设计输入，再执行 B-adjust、审核与用户确认。P4~P9 每份计划文首均带规划事件 marker；初始事件与早期调整证据见 `design/evidence/09`，P7 最新事件为 `DHR-B-19`，P8 前置指针同步事件为 `DHR-B-20`，证据见 `design/evidence/16`。
+后一阶段已经落盘，只表示路线和责任边界预先可见。前置阶段未通过时，任务状态仍使用五枚举，阶段闸阻塞写在备注（`blocked-by-phase-gate:Px`）。P8 已有正式范围，但 P7 Gate 通过只解除阻塞，仍须用户另行授权开工；P9 继续冻结，须新的正式设计输入和 B-adjust 才能恢复。P7/P8 最新调整统称 `DHR-B-21`，机器事件分别为 `DHR-B-21-P7/P8`；审核、理解与确认见 [evidence/18](../design/evidence/18-P7P8通用节点与跨项目任务编排-交叉审核记录.md)。
 
 ## 活跃计划
 
@@ -62,11 +64,12 @@ P8 / P9 已冻结暂缓（不随 P7 Gate 自动解锁）
 | [P4-DSH工作台最小Pilot](./P4-DSH工作台最小Pilot-开发方案.md) | 先证明 Windows/SSH CLI 必备控制面独立成立，再评估 DSH 树外桌面控制面（可判否，与 P5 并行） | DHR_25 已完成（2026-08-18）；`DHR-B-11`（2026-08-20）拆 DHR_27 为 CLI 收口 + DHR_50 补录、解锁 P5 不等 DSH 三态 | DHR_25、DHR_26、DHR_49、DHR_27、DHR_50 |
 | [P5-Relay-v2持久内核与DSH桥接](./P5-Relay-v2持久内核与DSH桥接-开发方案.md) | 建立客户端中立协议、Detached Runtime、参考 CLI、恢复和 basic-agent-task | DHR_28 已完成（verify `0e2dd54`）；`DHR-B-15`（2026-08-21）把 DHR_29 拆为 Store（DHR_29）/ 宿主·lease·发号（DHR_51）/ RPC·握手（DHR_52）三卡 | DHR_28~31、DHR_51、DHR_52 |
 | [P6-Herdr多账号执行底座](./P6-Herdr多账号执行底座-开发方案.md) | 接入多账号 Codex/Claude Code，验证 DSH-off 和 Linux SSH Herdr 路径 | blocked-by-phase-gate:P5 | DHR_32~35 |
-| [P7-DevHarness单卡完整流水](./P7-DevHarness单卡完整流水-开发方案.md) | 以薄 Plan、显式节点、Ticket、Pair、Role Relay、Review Batch 与恢复跑通一张标准卡 | `DHR-B-19` 已确认；旧 DHR_36~40 已取消；新 DHR_53~60 未开始；blocked-by-phase-gate:P6，并等待 DHR_30 稳定接口 | DHR_53~60 |
+| [P7-DevHarness单卡完整流水](./P7-DevHarness单卡完整流水-开发方案.md) | 建立 PlanHome/TaskRef/通用节点与 Result 基础，并用一张真实外部任务验通 | `DHR-B-21` 已确认；DHR_53 进行中但旧实现 superseded、暂停待重建授权；DHR_54~60 未开始；blocked-by-phase-gate:P6，并等待 DHR_30 稳定接口 | DHR_53~60 |
+| [P8-多卡编排与运行治理](./P8-多卡编排与运行治理-开发方案.md) | 实现真实跨项目多 TaskRef 调度、Decision/B-adjust 后 Plan change、PlanHome archive 与独立 Oracle | `DHR-B-21` 已确认；DHR_41/42/43/45 未开始且 blocked-by-phase-gate:P7；DHR_44 已取消；未授权开工 | DHR_41~45 |
 
 文件名保留首次落盘时的 DSH/P5/P9 命名，文件内标题和责任已经按 design/06 更新。后续是否重命名路径放到 P9 统一迁移，当前避免产生额外链接和历史噪声。
 
-P7 旧 `DHR_36~40/P7-M1~M9` 作为 `DHR-B-07` 历史保留在 P7 正文，状态为已取消，不复用、不再解锁 P8。
+P7 旧 `DHR_36~40/P7-M1~M9` 作为 `DHR-B-07` 历史保留，状态为已取消且不复用；只有当前 P7 Gate 能解除 P8 的阶段阻塞。
 
 ## 控制面硬约束
 
@@ -102,7 +105,6 @@ P4-DM 桌面控制面轨（DSH，可判否）
 | [P1-最小接力PoC](./P1-最小接力PoC-开发方案.md) | 已完成的历史基线，继续保留 |
 | [P2-完整流水](./P2-完整流水-开发方案.md) | 冻结废弃。DHR_04 已完成成果保留，其余旧卡停止生效，能力由 P5~P8 重新承接 |
 | [P3-可配置终端后端与Herdr底座](./P3-可配置终端后端与Herdr底座-开发方案.md) | 冻结废弃。Herdr 方向保留，实施由 P6 接管 |
-| [P8-多卡编排与运行治理](./P8-多卡编排与运行治理-开发方案.md) | 冻结暂缓。多卡治理不在 design/10 当前范围；DHR_41~45 保留历史计划身份，不得开工或被 P7 Gate 自动解锁 |
 | [P9-双平台定型与迁移](./P9-双平台定型与迁移-开发方案.md) | 冻结暂缓。双平台定型、发布与迁移不在 design/10 当前范围；DHR_46~48 保留历史计划身份，不得开工 |
 
 旧任务 ID 不复用。历史计划全文可从 Git 历史读取。
