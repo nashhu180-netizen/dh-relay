@@ -23,8 +23,7 @@ const asJson = process.argv.includes('--json');
 // ── 已登记的有意开放点（与 contracts/OPEN-POINTS.md 同源，改一处必须改另一处）──
 const REGISTERED_OPEN = new Set([
   'relay.result.v2.schema.json::properties.structured',
-  'relay.rpc.v1.schema.json::$defs.request.properties.params',
-  'relay.rpc.v1.schema.json::$defs.response.properties.result',
+  'relay.rpc-methods.v1.schema.json::$defs.validate_params.properties.document',
 ]);
 
 // ── 节点级开着、但被同级 allOf/if-then 的 $ref 收窄的位置 ──
@@ -32,6 +31,7 @@ const REGISTERED_OPEN = new Set([
 // 这些位置**实际是闭合的**（$ref 目标自身 additionalProperties:false），只是闭合发生在条件分支里。
 // 登记项须在 OPEN-POINTS.md「已收窄」节有对应说明。
 const CONDITIONALLY_NARROWED = new Set([
+  'relay.rpc.v1.schema.json::$defs.request.properties.params',
   'relay.rpc.v1.schema.json::$defs.notification.properties.params',
 ]);
 
@@ -288,7 +288,10 @@ function verifyConditionalNarrowing(doc, file, entryPath, errors, idRegistry, do
     if (c === undefined) { errors.push({ file, entryPath, why: 'if 判别未用 const' }); return; }
     covered.add(c);
   }
-  const enumVals = owner.properties?.[discriminator]?.enum;
+  let enumVals = owner.properties?.[discriminator]?.enum;
+  if (!Array.isArray(enumVals) && owner.properties?.[discriminator]?.$ref) {
+    enumVals = resolveRef(owner.properties[discriminator].$ref, file, idRegistry, docs)?.enum;
+  }
   if (!Array.isArray(enumVals)) { errors.push({ file, entryPath, why: `判别字段 ${discriminator} 没有 enum，无法证明分支穷尽` }); return; }
   const missing = enumVals.filter(v => !covered.has(v));
   if (missing.length) {

@@ -7,24 +7,32 @@
         "digest": "e4faf96aaee20e1884d41f3460ad0c7f58a86dd30e42c1dc8df48c42e9983e1b"
       },
       {
+        "id": "relay.client-read-model/v1",
+        "digest": "2081c842f783a3df770095deed21d9750472fbe38c72c9293fbe86c8f7213c83"
+      },
+      {
         "id": "relay.common/v1",
-        "digest": "e8f252c8e6d62f06a534d40191088d037ce2a52ad4c1ac51129db34eb8e5c2c9"
+        "digest": "9339f22e66aefb5e593b4d965f90ff64c24e337c59c9288780fee8364454246a"
       },
       {
         "id": "relay.event/v2",
-        "digest": "1db0b5d8e5569511a7f2fe8537f470c8d4522af55f6f57cb0925b62452d644a1"
+        "digest": "76f26cf04dd2e6ee442914bc10f09777e006b432084aeb327e57706590dcb49c"
       },
       {
         "id": "relay.launch-receipt/v2",
-        "digest": "96a66e283618d1e4a433fd53f5489b11366f8e33c16e227a7e9844636be777db"
+        "digest": "38af9a220b70ad3b7ec740eb2b269b7cfa90a52579190b5bc0839593c6994e5d"
       },
       {
         "id": "relay.result/v2",
         "digest": "4723afaf24d6d86e111c7108be6d1fa84465696321f799b4ee2a4f91791ad39b"
       },
       {
+        "id": "relay.rpc-methods/v1",
+        "digest": "030aad7540a6c9487a3e105237968263f008a90b06e29c76e0944229c915dead"
+      },
+      {
         "id": "relay.rpc/v1",
-        "digest": "74b1be764c105ad9e76cbdf9a05cdf3456e13e843c6d3b3ca671baaed4b21431"
+        "digest": "45b4d043aab5ad344cf8638f9de40ea2858f5af00cf0cf45e4b2a7c3029817a3"
       },
       {
         "id": "relay.run-state/v1",
@@ -52,5 +60,5 @@
       "process"
     ]
   },
-  "capability_hash": "970b54601ae582a54942bfac1cec96a9b7cefcb36f216f112d3517cf1d763a60"
+  "capability_hash": "a990fddad486f669e8611417a69b7cdc0f36cdcc52498868874035401771a64b"
 }

@@ -1,0 +1,6 @@
+{
+  "schema": "relay.client-read-model/v1",
+  "reason": "E_BAD_VALUE",
+  "at": "/detail",
+  "why": "design/08 §1：status 与 detail 恰一非 null。两个都给=客户端可以自选真相来源"
+}

@@ -33,12 +33,13 @@
 // 依赖面：node 标准库 + 本仓 transport/capabilities/tools（零 Runtime、零 Store 依赖；
 //   runId/store 为签名预留，握手路径与断连语义均不触碰它们）。
 
-import { createTransportServer, E_TRANSPORT_FRAME_INVALID } from './transport.mjs';
+import { bindOwnedEndpoint, createTransportServer, E_TRANSPORT_FRAME_INVALID } from './transport.mjs';
 import { localCapabilityHash, E_CAPABILITY_MISMATCH } from './capabilities.mjs';
 import { loadAjv, validateOne } from '../tools/validate.mjs';
 
 /** RPC reason code（reason-codes.md §六）：方法不在 relay.rpc/v1 枚举或服务端未实现。 */
 export const E_UNKNOWN_METHOD = 'E_UNKNOWN_METHOD';
+export const E_CLIENT_NOT_AUTHORIZED = 'E_CLIENT_NOT_AUTHORIZED';
 
 /** JSON-RPC 2.0 保留数值码：语义以 error.data.reason 为准（schema 原文「排障看 reason，不看数字」）。 */
 const C_PARSE_ERROR = -32700;
@@ -49,6 +50,30 @@ const C_METHOD_NOT_FOUND = -32601;
 function frameId(frame) {
   const id = frame && typeof frame === 'object' && 'id' in frame ? frame.id : undefined;
   return typeof id === 'string' || (typeof id === 'number' && Number.isInteger(id)) ? id : null;
+}
+
+const RPC_METHODS = new Set(['contracts', 'listRuns', 'inspectRun', 'validate', 'start', 'control', 'subscribe']);
+
+// DHR_52 的注入式 server 是测试 seam：它在 DHR_30 前允许调用方注入任意 method payload/result，
+// 现有回归仍以此证明 transport、断连和订阅清理。正式 Runtime 传 formal:true，才走新冻结
+// method/read-model 合同；两条路径共用同一握手、capability 与传输实现。
+function validateLegacyRequest(frame) {
+  if (!frame || typeof frame !== 'object' || Array.isArray(frame)) return { ok: false, reason: 'E_BAD_TYPE' };
+  const allowed = new Set(['jsonrpc', 'id', 'method', 'handshake', 'params']);
+  if (Object.keys(frame).some(key => !allowed.has(key))) return { ok: false, reason: 'E_UNKNOWN_FIELD' };
+  for (const key of ['jsonrpc', 'id', 'method', 'handshake']) if (!(key in frame)) return { ok: false, reason: 'E_MISSING_FIELD' };
+  if (frame.jsonrpc !== '2.0') return { ok: false, reason: 'E_BAD_VALUE' };
+  if (!(typeof frame.id === 'string' || Number.isInteger(frame.id))) return { ok: false, reason: 'E_BAD_TYPE' };
+  if (!RPC_METHODS.has(frame.method)) return { ok: false, reason: 'E_UNKNOWN_METHOD' };
+  if (!frame.handshake || typeof frame.handshake !== 'object' || Array.isArray(frame.handshake)) return { ok: false, reason: 'E_BAD_TYPE' };
+  const handshakeKeys = new Set(['protocol_version', 'runtime_version', 'capability_hash', 'client_id', 'request_id']);
+  if (Object.keys(frame.handshake).some(key => !handshakeKeys.has(key))) return { ok: false, reason: 'E_UNKNOWN_FIELD' };
+  for (const key of handshakeKeys) if (!(key in frame.handshake)) return { ok: false, reason: 'E_MISSING_FIELD' };
+  if (frame.handshake.protocol_version !== 'relay.rpc/v1') return { ok: false, reason: 'E_UNSUPPORTED_VERSION' };
+  if (typeof frame.handshake.runtime_version !== 'string' || typeof frame.handshake.capability_hash !== 'string'
+    || typeof frame.handshake.client_id !== 'string' || typeof frame.handshake.request_id !== 'string') return { ok: false, reason: 'E_BAD_TYPE' };
+  if ('params' in frame && (!frame.params || typeof frame.params !== 'object' || Array.isArray(frame.params))) return { ok: false, reason: 'E_BAD_TYPE' };
+  return { ok: true };
 }
 
 /**
@@ -72,7 +97,7 @@ function frameId(frame) {
  *                                        只清连接本地订阅状态，不写 Store、不发 cancel。
  * @returns {Promise<object>} transport 服务端句柄（`{ server, endpoint, close }`）。
  */
-export function createRpcServer({ runId, store, capability, endpoint, handlers = {} }) {
+export function createRpcServer({ runId, store, capability, endpoint, handlers = {}, formal = false, authorize = null, ownerAware = false }) {
   const { ajv, byId } = loadAjv();
   const localHash = typeof capability === 'string'
     ? capability
@@ -91,8 +116,12 @@ export function createRpcServer({ runId, store, capability, endpoint, handlers =
     return typeof frame.method === 'string' && typeof frame.id !== 'undefined' && frame.handshake != null;
   }
 
-  function sendError(conn, id, code, reason, detail) {
-    const error = { code, message: 'RPC rejected', data: { reason } };
+  function sendError(conn, id, code, reason, detail, receipt = null) {
+    // design/08 §1 逐字：「RPC error response 一律为 `{reason, receipt:relay.launch-receipt/v2|null}`」。
+    // `receipt` **恒发**，不是「有才带」：客户端要靠字段在不在区分「这次 operation 确实失败了」
+    // （带 failed Receipt，同键重试拿回同一份）与「这次连 operation 都没开始」（null，重试安全）。
+    // 可省略时两种情况在线上完全同形，只能靠猜——冻结 schema 里它因此也是 required。
+    const error = { code, message: 'RPC rejected', data: { reason, receipt: receipt ?? null } };
     if (typeof detail === 'string' && detail.length > 0) error.data.detail = detail.slice(0, 4096);
     conn.send({ jsonrpc: '2.0', id, error });
   }
@@ -146,7 +175,7 @@ export function createRpcServer({ runId, store, capability, endpoint, handlers =
 
   function encodeValidatedFrame(frame) {
     const snapshot = jsonSnapshot(frame);
-    if (!validateOne(ajv, byId, 'relay.rpc/v1', snapshot).ok) throw new Error('invalid frame');
+    if (formal && !validateOne(ajv, byId, 'relay.rpc/v1', snapshot).ok) throw new Error('invalid frame');
     return snapshot;
   }
 
@@ -191,7 +220,17 @@ export function createRpcServer({ runId, store, capability, endpoint, handlers =
   function emitNotification(conn, method, params) {
     if (!connections.has(conn) || conn.socket.destroyed || conn.socket.writableEnded) return false;
     try {
-      const frame = encodeValidatedFrame({ jsonrpc: '2.0', method, params });
+      const frame = jsonSnapshot({ jsonrpc: '2.0', method, params });
+      if (formal) {
+        if (!validateOne(ajv, byId, 'relay.rpc/v1', frame).ok) return false;
+      } else if (method === 'event') {
+        if (!validateOne(ajv, byId, 'relay.event/v2', frame.params).ok) return false;
+      } else if (method === 'runStateChanged') {
+        if (!frame.params || typeof frame.params !== 'object'
+          || Object.keys(frame.params).length !== 2 || !Object.hasOwn(frame.params, 'state') || !Object.hasOwn(frame.params, 'caused_by_seq')
+          || !Number.isInteger(frame.params.caused_by_seq)
+          || frame.params.caused_by_seq < 0 || !validateOne(ajv, byId, 'relay.run-state/v1', frame.params.state).ok) return false;
+      }
       if (conn.send(frame) === false) {
         dropConnection(conn);
         return false;
@@ -202,7 +241,7 @@ export function createRpcServer({ runId, store, capability, endpoint, handlers =
 
   function handleFrame(conn, frame) {
     // ① 冻结信封校验：不合 schema → 用校验器产出的既有 reason 回错误。
-    const v = validateOne(ajv, byId, 'relay.rpc/v1', frame);
+    const v = formal ? validateOne(ajv, byId, 'relay.rpc/v1', frame) : validateLegacyRequest(frame);
     if (!v.ok) {
       sendError(conn, frameId(frame), C_INVALID_REQUEST, v.reason, v.detail);
       return;
@@ -216,6 +255,18 @@ export function createRpcServer({ runId, store, capability, endpoint, handlers =
       return;
     }
 
+    if (formal && frame.method !== 'contracts' && !conn.authorized) {
+      sendError(conn, frame.id, C_INVALID_REQUEST, E_CLIENT_NOT_AUTHORIZED, '先完成 contracts 身份确认');
+      return;
+    }
+    // contracts 是连接的**唯一首请求**（design/08 §2 的连接状态机）。已授权连接再发一次
+    // 不是「刷新身份」而是协议违例：允许它就等于允许在同一连接上换身份。仍以稳定拒绝回包，
+    // 不断连——断连会把一次可纠正的客户端错误升级成不可诊断的失联。
+    if (formal && frame.method === 'contracts' && conn.authorized) {
+      sendError(conn, frame.id, C_INVALID_REQUEST, E_CLIENT_NOT_AUTHORIZED, 'contracts 只能是连接的首请求');
+      return;
+    }
+
     // ③ 只分派注入 seam；未实现的方法（含未注入的 subscribe）→ E_UNKNOWN_METHOD，不发明方法。
     try {
       const handler = handlers[frame.method];
@@ -225,8 +276,15 @@ export function createRpcServer({ runId, store, capability, endpoint, handlers =
       }
       // subscribe 是唯一带连接本地 sink 的 seam：订阅者经 sink 推完整冻结对象；
       // 返回 `{ result, unsubscribe }`——result 回客户端，unsubscribe 挂到本连接记账。
+      const invoke = frame.method === 'contracts' && typeof authorize === 'function'
+        ? (params) => authorize(params, frame.handshake, conn)
+        : handler;
+      // ⚠️ 必须 `Promise.resolve().then(…)` 而不是 `Promise.resolve(invoke(…))`：
+      // 后者在 handler **同步抛错**时会把异常抛回本函数，被下面的 catch 当成「不可预期错误」
+      // 断掉连接——于是所有同步 throw 的稳定拒绝（authorize 的身份不符是最典型的一个）
+      // 都表现为静默断连，客户端连 reason 都收不到。这正是 design/07 §5.2 禁止的形态。
       if (frame.method === 'subscribe') {
-        Promise.resolve(handler(frame.params, makeSink(conn))).then(
+        Promise.resolve().then(() => invoke(frame.params, makeSink(conn), frame.handshake)).then(
           (out) => {
             const result = out && typeof out === 'object' && 'result' in out ? out.result : out;
             const unsub = out && typeof out === 'object' && typeof out.unsubscribe === 'function'
@@ -237,22 +295,37 @@ export function createRpcServer({ runId, store, capability, endpoint, handlers =
               if (subs) subs.push(unsub);
               else callUnsubscribe(unsub); // 连接已关闭（onClose 已删账）：立即清理一次，不挂账
             }
-            sendResponse(conn, frame.id, result);
+            const sent = sendResponse(conn, frame.id, result);
+            // `afterSend`：快照（本次响应）落线之后才排空缓冲。订阅方要保证的顺序是
+            // 「先快照、再按 seq 的增量」——在响应之前推增量会把这个顺序颠倒过来。
+            if (sent && out && typeof out === 'object' && typeof out.afterSend === 'function') {
+              try { out.afterSend(); } catch { /* 排空失败不牵连连接：订阅是连接本地状态 */ }
+            }
           },
-          () => dropConnection(conn),
+          (error) => error?.reason
+            ? sendError(conn, frame.id, C_INVALID_REQUEST, error.reason, error.message, error.receipt)
+            : dropConnection(conn),
         ).catch(() => dropConnection(conn));
         return;
       }
-      Promise.resolve(handler(frame.params)).then(
-        (result) => sendResponse(conn, frame.id, result),
-        () => dropConnection(conn),
+      Promise.resolve().then(() => invoke(frame.params, frame.handshake, frame)).then(
+        (result) => {
+          if (formal && frame.method === 'contracts') conn.authorized = true;
+          sendResponse(conn, frame.id, result);
+        },
+        (error) => error?.reason
+          ? sendError(conn, frame.id, C_INVALID_REQUEST, error.reason, error.message, error.receipt)
+          : dropConnection(conn),
       );
     } catch {
       dropConnection(conn);
     }
   }
 
-  return createTransportServer(endpoint, {
+  // 正式 service 走 owner-aware 绑定：bind 成功即 fencing，close 只清自己那一个端点。
+  // 注入式测试 seam 继续用一次性随机 endpoint 的无条件清理路径。
+  const bind = ownerAware ? bindOwnedEndpoint : createTransportServer;
+  return bind(endpoint, {
     // 连接级 handler seam：transport 按连接调用工厂，帧/错误/关闭直接回落具体连接对象，
     // 服务端不接管 socket 数据流、不 removeAllListeners（传输层 framer 保持原位）。
     createConnectionHandlers() {
@@ -274,6 +347,7 @@ export function createRpcServer({ runId, store, capability, endpoint, handlers =
     },
     onConnection(conn) {
       connections.add(conn);
+      conn.authorized = false;
       // 账目条目随连接生命周期：建立即登记空表，断开即删除——subscribe 解析时以条目
       // 是否存在判定连接是否存活：在 → 挂账留待断连清理；不在 → 连接已关，立即清理一次。
       // 与 onClose 的删账互斥，保证 unsubscribe 总被调用恰好一次（修复：此前从未登记，

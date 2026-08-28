@@ -6,7 +6,8 @@
     "message": "rejected",
     "data": {
       "reason": "E_UNKNOWN_FIELD",
-      "detail": "surprise"
+      "detail": "surprise",
+      "receipt": null
     }
   }
 }

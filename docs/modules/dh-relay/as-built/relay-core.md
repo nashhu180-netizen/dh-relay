@@ -9,7 +9,7 @@
 
 一句话：**控制面独立的承重内核的契约层**。协议在这里冻结，之后 Runtime（DHR_29）、Relay CLI（DHR_30）、以及任何客户端（DSH Bridge / Pi Adapter / 其他终端）**只认这一份契约来源**，谁都不再各自解释一遍字段含义。
 
-它不是单一 Runtime，也不是客户端。DHR_29 已实现 Store/回放，DHR_51 已实现 detached 宿主、lease 与发号，DHR_52 已实现本地 RPC 服务端；CLI、Adapter 与正式 Read Model 仍未实现。
+它不是单一 Runtime，也不是客户端。DHR_29 已实现 Store/回放，DHR_51 已实现 detached 宿主、lease 与发号，DHR_52 已实现本地 RPC 服务端；**DHR_30 已实现仓库级 Runtime service（唯一写者装配人 + operation ledger）、正式 Relay CLI 七命令、DSH Bridge 库接缝与客户端中立 fixture，并把正式 Read Model `relay.client-read-model/v1` 的字段级定义冻结进 design/06 §14**。
 
 ## 2. A → B
 
@@ -36,9 +36,12 @@ relay-core/
 ├── fixtures/                 golden 11 / negative 23 对 / manifest.json
 ├── tools/                    校验器、审计器、三个基线工具、JCS 实现
 ├── store/                    DHR_29 单 Run 账本：事件账 + 确定性回放（见 §3.5）
-├── runtime/                  DHR_51 detached 宿主、lease、发号与三态读数（见 §3.6）
+├── runtime/                  DHR_51 detached 宿主、lease、发号与三态读数；DHR_30 增仓库级 service / actor / endpoint / launcher / ledger / discovery / credentials（见 §3.6、§3.8）
 ├── rpc/                      DHR_52 本地传输、能力握手与订阅服务端（见 §3.7）
-└── test/                     node --test：contracts/store/runtime/rpc 四组
+├── cli/                      DHR_30 正式 Relay CLI：main / client / pending / render（见 §3.9）
+├── adapters/dsh-bridge/      DHR_30 DSH Host 可内嵌的库接缝（见 §3.10）
+├── fixtures/clients/         DHR_30 Pi/通用客户端纯 JSON 样例 5 份（不入 manifest，见 §3.10）
+└── test/                     node --test：12 个文件 153 用例（contracts/store/runtime/rpc/rpc-service/ledger/discovery/service/cli/dsh-bridge/client-fixtures/read-model-mirror）
 ```
 
 ### 3.1 `contracts/` —— 7 份冻结协议
@@ -132,6 +135,37 @@ relay-core/
 **订阅与发送边界**：`subscribe` 通过注入 seam 注册连接本地的 `unsubscribe`，正常断连、server close 与迟到 resolve 都恰调一次。`sink.event` / `sink.runStateChanged` 只发送 descriptor-derived、null-prototype snapshot：拒绝 getter、Proxy 可变视图、稀疏/带额外键数组与 `toJSON` 污染；冻结 schema 校验与实际传输都使用该 snapshot。通知写入背压或连接已关时返回 `false`，并断开该连接，不能假称对端已收到。
 
 **F-057 的窄码**：仅当错误位置收到一份完整、可独立通过校验的另一已冻结顶层协议对象时返回 `E_PROTOCOL_MISMATCH`。缺字段、未知字段、同名异版及本协议普通坏值保留各自最具体既有码；新增码有双向反例，且 manifest / capability / structural-token 三份基线已同批重生。
+
+### 3.8 `runtime/` 增量 —— DHR_30 的仓库级 Runtime service（唯一写者装配人）
+
+DHR_52 的 RPC seam 与 DHR_51 的 host 之间原本没有装配人（F-001）。DHR_30 补上：
+
+| 文件 | 干什么 |
+|---|---|
+| `endpoint.mjs` | canonical repo root（Windows 大小写折叠 / UNC 保留 / realpath）→ `repoHash` → 确定性本地端点；endpoint 名只含 hash 不含路径明文 |
+| `descriptor.mjs` + `launcher.mjs` | descriptor 原子发布 + **`ensureRuntimeService()`**：读 descriptor → 向端点上真正在跑的 service 发 `contracts` 回证（以服务端自报身份为准，陈旧/篡改 descriptor 全 fail-closed，F-005）→ 无 service 才 spawn；双 launcher 并发只产生一个 service |
+| `service.mjs` | 仓库级单进程 service：独占 bind 端点、内嵌 lease-fenced host actor（**唯一**写 Run Store 的路径）、`listRuns`/`inspectRun`/`subscribe`/`start`/`control` 全走 Read Model 出口；**run_list 出口统一套 `orderRunSummaries()`**（F-026） |
+| `actor.mjs` | per-run actor：ready 只在 lease 落定后兑现，控制走同一串行队列；失租拒一切写 |
+| `ledger.mjs` | `runtime-operations.json` operation ledger：`(client_id, request_id, method)` + JCS request digest 持久幂等；保留号跨崩溃收敛（accepted 相位现发号、其余相位沿用保留号，F-017/F-024） |
+| `discovery.mjs` | 启动引导（`bootstrapDiscovery`）与运行期重扫（`scanRuns`）分离（F-006）；损坏事件账 fail-closed（F-014）；孤儿 Store 投影 `read_only:true` 不隐藏不可写（F-013）；保守 seed（F-008）；**`orderRunSummaries()`**：分堆词表序 `needs_you → running → done → failed`、词表外首现堆、null 殿后、堆内 run_id 升序（design/06 §14.4 冻结） |
+| `credentials.mjs` | 本机私有凭据：**创建权只归首次成功 bind 端点的 service**（`readOrCreateLocalUserCapability`）；CLI/Bridge 只读（`readLocalUserCapability`），缺失即 `E_LOCAL_USER_UNAUTHORIZED`（引导路径，无独立 init 命令） |
+
+**Read Model 唯一来源**：`relay.client-read-model/v1` 四视图（run_list / status / detail / event_stream_snapshot），字段级定义冻结在 design/06 §14；分堆与排序**由源头给**（P4 B-13），两条镜像断言（改 group 必移动 / 只改 run_status 逐字不变）在 `test/read-model-mirror.test.mjs` 常驻。
+
+### 3.9 `cli/` —— DHR_30 正式 Relay CLI
+
+| 文件 | 干什么 |
+|---|---|
+| `main.mjs` | 七命令 `list/status/inspect/events/start/stop/resume`（`--json`）；positional 形状按命令声明、多余/缺失 usage 退出 1（F-025）；text 与 json 同源渲染、text 不自算字段；`events --follow` 断线按 `after_seq` 续传、`E_CURSOR_GAP` 整体重快照；**stdin 关闭 = 优雅结束 follow（退出码 0）** |
+| `client.mjs` | 唯一 RPC client：launcher 发现 → 只读凭据 → `contracts` 首请求回证；client identity `wx` 独占创建、EEXIST 短退避重读赢家绝不覆盖（F-018） |
+| `pending.mjs` | design/08 §2 客户端持久 request record：落点 `<repo>/.dh-relay/private/pending-operations.json`（owner-only：POSIX 0700/0600、win32 icacls `/reset`+断继承+只授当前用户，F-020 用户裁决）；跨进程锁 `{pid,token,at}`、owner token 双核验、**零自动回收**——外锁一律稳定拒绝并给恢复指引（pid 只是瞬时存活线索非所有权凭据，F-019 用户裁决 + F-031）；崩溃重试按残条原 `(client_id, request_id)` 收敛，绝不发第二个号 |
+| `render.mjs` | Read Model 的人读渲染，不产字段 |
+
+### 3.10 `adapters/dsh-bridge/` 与 `fixtures/clients/` —— 客户端接缝
+
+**`adapters/dsh-bridge/index.mjs`**：DSH Host 插件可内嵌的**库接缝**（非进程）。零 `store/**` import（Read Model 只经 RPC）；**不落本地 pending 账**——持久 request record 归宿主客户端，宿主要重试须自存并复用同一 `requestId`；`client_id` = `dsh-bridge-<repoHash>` 确定性形态。查询原样返回；窄 `control`（stop/resume）的 Receipt/error 原样透传、`E_LEGACY_READ_ONLY`/`E_ORPHAN_STORE_READ_ONLY` 不重试。订阅状态只来自快照与 `runStateChanged`；断线按已送达高水位 `after_seq` 续传（重连快照不抢先推高水位，服务端 cursor 补发不丢）；`E_CURSOR_GAP` 整体重快照回调 `onGap`；socket close 立即以 `E_CONNECTION_CLOSED` reject 全部在途请求；重试耗尽回调 `onClosed('retries-exhausted')` 绝不静默死（F-029）。
+
+**`fixtures/clients/` 5 份纯 JSON**（pi-run-list / pi-status / pi-detail / pi-event-stream / generic-control-receipt）：任何语言可解析的消费样例，逐份过冻结契约；配套「Pi 式中立消费」测试不 import 任何 relay 运行时代码。**是 `fixtures/golden|negative` 的兄弟目录，不入 manifest、不进基线**——manifest 只扫 golden/ + negative/，这是设计而非遗漏。
 
 ## 4. 技术选型的裁决出处
 
@@ -304,5 +338,6 @@ relay-core/
 | DHR_29（Runtime） | 本文 §7 硬约束 → §8.2 K-1~K-4 → §8.4 移交三条 → §9 F-064 → `ADR-002`（executor 生命周期语义的**唯一**来源） |
 | DHR_51（宿主/lease/发号） | 本文 §3.5（Store 边界）→ **§3.6（runtime 全貌）** → §5 闸表 → §8.4（lease 等价性已落账）→ `runtime/*.mjs` 源码 → `workspace/DHR_51/{findings,review}.md` |
 | DHR_52（RPC/握手） | **§3.6（host-lease.json 形态与 fencing 接线）** → §8.1 O-2/O-3 → F-107（指纹要素评估触发点） |
-| DHR_30（CLI / Read Model） | 本文 §8.3 → `v1-gap-disposition.md` 全文 → `OPEN-POINTS.md` O-3 |
+| DHR_30（CLI / Read Model，已完成） | 本文 §3.8~§3.10 → design/06 §14（Read Model 字段冻结）→ design/07、design/08（service 与 RPC/ReadModel 合同）→ `workspace/DHR_30/{findings,review}.md` |
+| DHR_31（端到端闭环） | 本文 §3.8（service 是唯一写者装配人，workflow/executor 不在其内）→ §9 第 1 条（H6 可达性推导归你）→ design/06 §14.4（排序合同，客户端不推导）→ DSH 附加客户端项含**真实 DSH 渲染截图**（DHR_30 收口移交，见其 review.md 条件 5） |
 | 要改 `contracts/` 任何一个字的人 | 本文 §5「三份基线互不覆盖」→ §6 全节 → `CANONICALIZATION.md` §三 |

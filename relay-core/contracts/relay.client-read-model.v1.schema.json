@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dh-relay.local/contracts/relay.client-read-model/v1",
+  "title": "relay.client-read-model/v1 — Runtime 面向客户端的只读模型",
+  "type": "object",
+  "properties": {
+    "protocol": { "const": "relay.client-read-model/v1" },
+    "view": { "type": "string", "enum": ["run_list", "status", "detail", "event_stream_snapshot"] },
+    "items": { "type": "array", "items": { "$ref": "#/$defs/run_summary" } },
+    "source": { "type": "string", "enum": ["runtime-v2", "legacy-v1"] },
+    "read_only": { "type": "boolean" },
+    "status": { "oneOf": [{ "$ref": "#/$defs/run_status_view" }, { "type": "null" }] },
+    "detail": { "oneOf": [{ "$ref": "https://dh-relay.local/contracts/relay.run-state/v1" }, { "type": "null" }] },
+    "run_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/run_id" },
+    "snapshot": { "$ref": "#/$defs/run_status_view" },
+    "snapshot_seq": { "type": "integer", "minimum": 0 },
+    "next_seq": { "type": "integer", "minimum": 0 }
+  },
+  "required": ["protocol", "view"],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": { "properties": { "view": { "const": "run_list" } }, "required": ["view"] },
+      "then": { "required": ["items"], "properties": { "items": { "type": "array", "items": { "$ref": "#/$defs/run_summary" } } } }
+    },
+    {
+      "if": { "properties": { "view": { "const": "status" } }, "required": ["view"] },
+      "then": { "required": ["source", "read_only", "status", "detail"], "properties": { "detail": { "const": null } } }
+    },
+    {
+      "if": { "properties": { "view": { "const": "detail" } }, "required": ["view"] },
+      "then": { "required": ["source", "read_only", "status", "detail"], "properties": { "status": { "const": null } } }
+    },
+    {
+      "if": { "properties": { "view": { "const": "event_stream_snapshot" } }, "required": ["view"] },
+      "then": {
+        "required": ["run_id", "snapshot", "snapshot_seq", "next_seq"],
+        "properties": { "next_seq": { "type": "integer", "minimum": 0 } }
+      }
+    }
+  ],
+  "$defs": {
+    "run_summary": {
+      "type": "object",
+      "properties": {
+        "run_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/run_id" },
+        "source": { "type": "string", "enum": ["runtime-v2", "legacy-v1"] },
+        "read_only": { "type": "boolean" },
+        "run_status": { "type": ["string", "null"] },
+        "group": { "type": ["string", "null"] },
+        "updated_at": { "type": ["string", "null"] }
+      },
+      "required": ["run_id", "source", "read_only", "run_status", "group", "updated_at"],
+      "additionalProperties": false
+    },
+    "run_status_view": {
+      "type": "object",
+      "properties": {
+        "run_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/run_id" },
+        "source": { "type": "string", "enum": ["runtime-v2", "legacy-v1"] },
+        "read_only": { "type": "boolean" },
+        "host": { "type": ["string", "null"] },
+        "host_detail": { "type": ["string", "null"] },
+        "ledger": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "run_status": { "type": "string" },
+                "group": { "type": "string" },
+                "progress": { "$ref": "https://dh-relay.local/contracts/relay.run-state/v1#/properties/progress" },
+                "updated_at": { "type": "string" },
+                "state_signature": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/sha256" }
+              },
+              "required": ["run_status", "group", "progress", "updated_at", "state_signature"],
+              "additionalProperties": false
+            },
+            { "type": "null" }
+          ]
+        },
+        "events": { "type": ["integer", "null"], "minimum": 0 }
+      },
+      "required": ["run_id", "source", "read_only", "host", "host_detail", "ledger", "events"],
+      "additionalProperties": false
+    }
+  }
+}

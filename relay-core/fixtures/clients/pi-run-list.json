@@ -1,0 +1,8 @@
+{
+  "protocol": "relay.client-read-model/v1",
+  "view": "run_list",
+  "items": [
+    { "run_id": "RUN-1", "source": "runtime-v2", "read_only": false, "run_status": "running", "group": "running", "updated_at": "2026-08-21T10:00:00+08:00" },
+    { "run_id": "RUN-0", "source": "legacy-v1", "read_only": true, "run_status": null, "group": null, "updated_at": null }
+  ]
+}

@@ -6,6 +6,8 @@
 
 <!-- dh:design-inputs:start -->
 - [薄 RelayPlan、跨项目任务编排与显式节点边界：产品设计与验收](./10-薄RelayPlan与显式节点边界-产品设计调整.md)
+- [DHR_30 仓库级 Runtime 服务](./07-DHR30-Runtime服务.md)
+- [DHR_30 RPC、Read Model 与操作账本合同](./08-DHR30-RPC与ReadModel合同.md)
 <!-- dh:design-inputs:end -->
 
 ## 内容目录
@@ -35,4 +37,6 @@
 - [P2 完整流水产品设计与验收](./02-完整流水-产品设计与验收.md)
 - [Herdr 底座研究](./03-完整流水-Herdr底座-产品设计与验收.md)
 - [跨平台运行时与可扩展编排](./04-跨平台运行时与可扩展编排-技术方案评估与决策.md)
+- [DHR_30 仓库级 Runtime 服务](./07-DHR30-Runtime服务.md)
+- [DHR_30 RPC、Read Model 与操作账本合同](./08-DHR30-RPC与ReadModel合同.md)
 - [设计与计划审核证据目录](./evidence/09-P4至P9阶段计划-交叉审核记录.md)

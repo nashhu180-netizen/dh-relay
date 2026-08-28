@@ -1,0 +1,6 @@
+{
+  "schema": "relay.rpc/v1",
+  "reason": "E_UNKNOWN_ENUM",
+  "at": "/params/action",
+  "why": "design/08 §1：control 只有 stop/resume；cancel 不存在（H4 断开永不取消）"
+}

@@ -2,15 +2,31 @@
   "$comment": "本文件是 fixture 基线对证清单（批次检查点 3 小审 P1-1，承接 P4 §2.1 的 manifest 对证做法）。 digest = lowercase_hex(sha256(utf8(JCS(载荷))))，口径见 contracts/CANONICALIZATION.md。 改任何 fixture 后必须跑 `node tools/fixture-manifest.mjs --write` 重新生成，并在 commit 里能看见 digest 变了—— 这正是它的用途：让 fixture 的语义改动不可能悄悄发生。",
   "canonicalization": "RFC 8785 (JCS) + sha256, lowercase hex — contracts/CANONICALIZATION.md",
   "counts": {
-    "golden": 11,
-    "negative_payload": 23,
-    "negative_expect": 23,
-    "total": 57
+    "golden": 17,
+    "negative_payload": 31,
+    "negative_expect": 31,
+    "total": 79
   },
   "files": [
     {
       "path": "golden/checkpoint.v2.json",
       "digest": "a36ba79c0798d9ecc0f2b49eccb9d267504d1565926c1d5248ef2769e84b50e4"
+    },
+    {
+      "path": "golden/client-read-model.v1.detail.json",
+      "digest": "ebf4460c7fef371fc5f96ded9a6b874187e6c33fb3e90e3be123de293c08b348"
+    },
+    {
+      "path": "golden/client-read-model.v1.event-stream-snapshot.json",
+      "digest": "438e6bf9436f251699d81edd617d0b3d159a654210b49e4567fc1ea2c74ef727"
+    },
+    {
+      "path": "golden/client-read-model.v1.run-list.json",
+      "digest": "61275ec2ac04ae581cd82c72230c0d77946b74d6faa86f80b1756321102d44c0"
+    },
+    {
+      "path": "golden/client-read-model.v1.status.json",
+      "digest": "6178e7a1289362f4c3dfa4699e6ae1070e9f0f5e4ab372666a103fe07856e9be"
     },
     {
       "path": "golden/event.v2.client-disconnect.json",
@@ -21,8 +37,16 @@
       "digest": "04e8bda3a41d03ccc05edb515fa28c2e5d66eacdc179111f00370ed47d4adb21"
     },
     {
+      "path": "golden/event.v2.operation-committed.json",
+      "digest": "29afc38ce1138ccda7ae2cf38b62eabbf32d3f4b6260dc2a6c24df3c0a6ce206"
+    },
+    {
       "path": "golden/launch-receipt.v2.json",
-      "digest": "d932b889e5a8df5cba9633bc40ae87be182e135820619788b5875dd56bdad2f9"
+      "digest": "dcc35f3c1cb77c34584a287df2e0a41452817c5f02fee2c03a08f34c81509004"
+    },
+    {
+      "path": "golden/launch-receipt.v2.operation-failed.json",
+      "digest": "b42583a1ec0ee3f2ef7be3785a4879f53e9d3f499da47fd8b4b87ed24a4b762e"
     },
     {
       "path": "golden/result.v2.json",
@@ -30,19 +54,19 @@
     },
     {
       "path": "golden/rpc.v1.error.json",
-      "digest": "d3420463239f71f206106c589c8f5bbabd5e4678d5dad8fb0b3a792c5ab1430a"
+      "digest": "3f047abdef32a37438172b7a7a6decd338027bf32d89ac513b8b987894c4552c"
     },
     {
       "path": "golden/rpc.v1.notification.json",
-      "digest": "269b1a04b78376379af42898d96e0b74a82619d56963c112d4d2afc4371b7210"
+      "digest": "640ddefecea702d1edb15a9fd9444061c751103f24d91d16fe2b7d9e3607c83e"
     },
     {
       "path": "golden/rpc.v1.request.json",
-      "digest": "2facc8aac169d3a20fce35e49fa474007017f8a4b6c490f139d9d0ca7ac2462b"
+      "digest": "1e23e95257f0393a8485f3449741a5f742cd983079046d82433188057cc9d29c"
     },
     {
       "path": "golden/rpc.v1.response.json",
-      "digest": "2b2eadce04dccd75f4e92c72821906751e32e16229cba5ec6343bd969a46c184"
+      "digest": "78ec8df118b58c5984a7b970c16b73d6fa08a615e5e8e11cda55b8eb999101eb"
     },
     {
       "path": "golden/run-state.v1.json",
@@ -66,7 +90,7 @@
     },
     {
       "path": "negative/capability-mismatch.json",
-      "digest": "5914d1e0c421f1ca568e022d667ce56d2b694b61b4db688e2f68f90845c2e66c"
+      "digest": "c0d292d89ed979a566ca866a9e2d7d85b6d8a044578634a574055d172c4833d8"
     },
     {
       "path": "negative/d25-empty-node-states.expect.json",
@@ -83,6 +107,70 @@
     {
       "path": "negative/d25-node-states-omitted.json",
       "digest": "8b628a88797a365df94a629bb7163ddf228c863043d88cec9f72489150cccb2c"
+    },
+    {
+      "path": "negative/dhr30-contracts-params-bad-repo-id.expect.json",
+      "digest": "3c8fcac0f39eae3b6f3e4f8c03832f40553f6805ecb4ff10fe60154a86d7a3f7"
+    },
+    {
+      "path": "negative/dhr30-contracts-params-bad-repo-id.json",
+      "digest": "79b085c585f57c844159cc946d19937bf68f227313449b98ce15c5284ba9f642"
+    },
+    {
+      "path": "negative/dhr30-error-data-omits-receipt.expect.json",
+      "digest": "cc66af366bfb815a3c943cf5a3e63e97653de6408eb36d5cc3efbd5900a7941e"
+    },
+    {
+      "path": "negative/dhr30-error-data-omits-receipt.json",
+      "digest": "2526e90f935d47de1bf27aedf99b8c6cb2c303a1cf9676ed747b169f210569ab"
+    },
+    {
+      "path": "negative/dhr30-operation-event-bad-detail.expect.json",
+      "digest": "7f064065c7e069a282d471683bac9085884c11a51446f742abcae8edfe372694"
+    },
+    {
+      "path": "negative/dhr30-operation-event-bad-detail.json",
+      "digest": "8499e2359e06bcc76072418664a9c48f7113cf5b68a7ea05bb446b47f3cf235d"
+    },
+    {
+      "path": "negative/dhr30-read-model-status-carries-detail.expect.json",
+      "digest": "d4d57fd9744436e753f44fe75befd51ce900b33222bf7f7d9784a25787f18aeb"
+    },
+    {
+      "path": "negative/dhr30-read-model-status-carries-detail.json",
+      "digest": "2bfd9b2bfb002e531c2a12f14af99ab36832f46720d664a215d00b20030bd874"
+    },
+    {
+      "path": "negative/dhr30-receipt-failed-reason-null.expect.json",
+      "digest": "22b48309330966e1811b63e8d48d1d28481360850e05abebd8f11a50b385c435"
+    },
+    {
+      "path": "negative/dhr30-receipt-failed-reason-null.json",
+      "digest": "d4e5982fa0e35dfe552f14da760faf5cc4e08230c7dfdf42ffe389afc1908714"
+    },
+    {
+      "path": "negative/dhr30-rpc-control-unknown-action.expect.json",
+      "digest": "1fa9c24fb133c23ae7c24f9254e86984cc307121fb429a6a18d034c711fae2b2"
+    },
+    {
+      "path": "negative/dhr30-rpc-control-unknown-action.json",
+      "digest": "eb4bfbb5a57851515d7b7a8f5593ba154d134eb2fc0887886ea1b9a6cf4a9b2f"
+    },
+    {
+      "path": "negative/dhr30-rpc-subscribe-unknown-param.expect.json",
+      "digest": "87211d3620bc7c09f4dd78e8b00467c7cf2ff70adf8305ce7bba2248b841c003"
+    },
+    {
+      "path": "negative/dhr30-rpc-subscribe-unknown-param.json",
+      "digest": "6d98be9b0894726ff96e52fcb6473b15642990a626cc696594e5a471cd0c73d9"
+    },
+    {
+      "path": "negative/dhr30-run-summary-unknown-field.expect.json",
+      "digest": "447fec7bd5d591beb04594f83cc3f2a8bc9fc3281a7ac02d75966f9027daf949"
+    },
+    {
+      "path": "negative/dhr30-run-summary-unknown-field.json",
+      "digest": "a1e2d5973bbe60a4434f4c2c30c2aea2c0c47a7328a520c8c31711e046998d08"
     },
     {
       "path": "negative/g1-human-trigger-without-by.expect.json",
@@ -198,11 +286,11 @@
     },
     {
       "path": "negative/rpc-notification-cross-payload.expect.json",
-      "digest": "a339d1e15db32f5939f2a9ca680085d5212b226d61a6d6d932bb6d2c80f0856e"
+      "digest": "e5449321bdf7c78e38732e8a6970ba62370ff3b4eb25fb7a6f8b6d891301b5d3"
     },
     {
       "path": "negative/rpc-notification-cross-payload.json",
-      "digest": "32abbae78f5bb1aac5b4ec00379d73b16ae677a2e702878aed3a36b800014b49"
+      "digest": "07434a7e553a380ed2681711b719136e2df4a70f0ad5a69ebbc5b49c052112f6"
     },
     {
       "path": "negative/rpc-unknown-method.expect.json",

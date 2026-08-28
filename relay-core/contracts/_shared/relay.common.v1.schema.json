@@ -6,7 +6,7 @@
   "$defs": {
     "identifier": {
       "type": "string",
-      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
       "description": "所有身份标识的唯一公共形态。身份类属性不得内联 pattern，必须引用本定义（DHR_29 K-3）。"
     },
     "locator": {

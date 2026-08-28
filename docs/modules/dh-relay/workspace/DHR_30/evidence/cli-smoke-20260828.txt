@@ -1,0 +1,224 @@
+# DHR_30 CLI 终端冒烟转录（E-061 重跑，可追溯落仓版）
+# 日期: 2026-08-28T03:58:53Z · 树: wt/DHR_30 @ b962d35
+# 环境: 真实终端 · 全新 git 仓（.gitignore 前置）· 每条命令独立 CLI 进程 · service 由 CLI 自行发现/拉起
+# 仓: C:/Users/nash/AppData/Local/Temp/claude/D--MyFiles-ai-workflow-dh-relay/8d616574-2d36-47e5-a5b1-fce9539ea175/scratchpad/cli-smoke-rerun
+
+## 1. start（service 冷启动 + 发号 + committed Receipt）
+$ relay start --run C:/Users/nash/AppData/Local/Temp/claude/D--MyFiles-ai-workflow-dh-relay/8d616574-2d36-47e5-a5b1-fce9539ea175/scratchpad/cli-smoke-rerun/run.json --json
+{
+  "protocol": "relay.launch-receipt/v2",
+  "receipt_id": "51e606a7-ca1e-4f0f-9499-d2fceb8209fb",
+  "request_id": "cli-7e43e4a5-446e-47ba-8150-085f9d3195da",
+  "client_id": "cli-4411d326-f002-487b-8aa5-486a09bee60c",
+  "method": "start",
+  "state": "committed",
+  "reason": null,
+  "run_id": "R001-smoke2-20260828",
+  "node_id": null,
+  "attempt_id": null,
+  "kind": "start",
+  "issued_at": "2026-08-28T03:58:59.545Z",
+  "issued_by_runtime": "runtime-9b58fe91-03ee-499c-9b9c-8ab5fb9c36d6",
+  "request_digest": "22e6841273196963f3e282e1f0be7b477ec05f7942a7a9b4cf25b1c029bc5bdf"
+}
+[exit=0]
+
+## 2. list：text 与 --json 同源对照（同一 Read Model，条件2 场景证据）
+$ relay list
+R001-smoke2-20260828  runtime-v2  status=pending  group=running  updated=2026-08-28T03:58:59.545Z
+[exit=0]
+
+$ relay list --json
+{
+  "protocol": "relay.client-read-model/v1",
+  "view": "run_list",
+  "items": [
+    {
+      "run_id": "R001-smoke2-20260828",
+      "source": "runtime-v2",
+      "read_only": false,
+      "run_status": "pending",
+      "group": "running",
+      "updated_at": "2026-08-28T03:58:59.545Z"
+    }
+  ]
+}
+[exit=0]
+
+## 3. status / inspect / events（text 与 json）
+$ relay status R001-smoke2-20260828
+run_id: R001-smoke2-20260828
+source: runtime-v2
+read_only: false
+host: alive (epoch:1)
+run_status: pending
+group: running
+progress: done=0 total=1
+updated_at: 2026-08-28T03:58:59.545Z
+state_signature: 8f73e5aa40296a825afe55081792e681e1a039617fabb0ab28b3aa7efa2d2ac8
+events: 3
+[exit=0]
+
+$ relay status R001-smoke2-20260828 --json
+{
+  "protocol": "relay.client-read-model/v1",
+  "view": "status",
+  "source": "runtime-v2",
+  "read_only": false,
+  "status": {
+    "run_id": "R001-smoke2-20260828",
+    "source": "runtime-v2",
+    "read_only": false,
+    "host": "alive",
+    "host_detail": "epoch:1",
+    "ledger": {
+      "run_status": "pending",
+      "group": "running",
+      "progress": {
+        "done": 0,
+        "total": 1
+      },
+      "updated_at": "2026-08-28T03:58:59.545Z",
+      "state_signature": "8f73e5aa40296a825afe55081792e681e1a039617fabb0ab28b3aa7efa2d2ac8"
+    },
+    "events": 3
+  },
+  "detail": null
+}
+[exit=0]
+
+$ relay inspect R001-smoke2-20260828
+run_id: R001-smoke2-20260828
+run_status: pending
+group: running
+progress: done=0 total=1
+updated_at: 2026-08-28T03:58:59.545Z
+state_signature: 8f73e5aa40296a825afe55081792e681e1a039617fabb0ab28b3aa7efa2d2ac8
+node_states:
+  - node-a: pending
+[exit=0]
+
+$ relay events R001-smoke2-20260828
+run_id: R001-smoke2-20260828
+host: alive (epoch:1)
+run_status: pending
+snapshot_seq: 2
+next_seq: 3
+[1] lease_acquired epoch:1
+[2] operation_committed operation:51e606a7-ca1e-4f0f-9499-d2fceb8209fb:22e6841273196963f3e282e1f0be7b477ec05f7942a7a9b4cf25b1c029bc5bdf:committed
+[exit=0]
+
+## 4. stop → Run 不取消（run 仍在列、账面保留）→ resume 宿主复活
+$ relay stop R001-smoke2-20260828
+receipt_id: a7dc182c-a75d-435b-83b2-b8527343dd0f
+state: committed
+kind: stop
+method: control
+run_id: R001-smoke2-20260828
+reason: -
+request_id: cli-cf1a071b-01b6-4684-b77b-045283b6041f
+client_id: cli-4411d326-f002-487b-8aa5-486a09bee60c
+issued_at: 2026-08-28T03:59:03.851Z
+[exit=0]
+
+$ relay status R001-smoke2-20260828
+run_id: R001-smoke2-20260828
+source: runtime-v2
+read_only: false
+host: dead
+run_status: pending
+group: running
+progress: done=0 total=1
+updated_at: 2026-08-28T03:59:03.851Z
+state_signature: 103638cc34d34de1e075934a838cb1bda7e7ab1fc8e2b21c63a9335e494313be
+events: 4
+[exit=0]
+
+$ relay list
+R001-smoke2-20260828  runtime-v2  status=pending  group=running  updated=2026-08-28T03:59:03.851Z
+[exit=0]
+
+$ relay resume R001-smoke2-20260828
+receipt_id: d9f2de0c-f039-4bcf-93d2-e21ed9860e45
+state: committed
+kind: resume
+method: control
+run_id: R001-smoke2-20260828
+reason: -
+request_id: cli-ee71324a-ff32-46ce-94f0-49bca645e8e1
+client_id: cli-4411d326-f002-487b-8aa5-486a09bee60c
+issued_at: 2026-08-28T03:59:06.203Z
+[exit=0]
+
+$ relay status R001-smoke2-20260828
+run_id: R001-smoke2-20260828
+source: runtime-v2
+read_only: false
+host: alive (epoch:1)
+run_status: pending
+group: running
+progress: done=0 total=1
+updated_at: 2026-08-28T03:59:06.203Z
+state_signature: c8bc50aeb2e52edd62e188c386f8f85f42151555ef07f0cd453f4b8b58cd5953
+events: 6
+[exit=0]
+
+## 5. events --follow 挂住时另一进程发 stop：实时推送验证
+$ ( sleep 12 | relay events R001-smoke2-20260828 --follow ) &  # stdin 撑住，模拟真实终端挂起
+$ relay stop R001-smoke2-20260828   # follow 挂着时从另一进程发
+receipt_id: d022a62e-16db-4072-96c0-946253fe253d
+state: committed
+kind: stop
+method: control
+run_id: R001-smoke2-20260828
+reason: -
+request_id: cli-83d71fe6-454d-421b-8fc7-c18f86b3111d
+client_id: cli-4411d326-f002-487b-8aa5-486a09bee60c
+issued_at: 2026-08-28T03:59:11.392Z
+[exit=0]
+
+--- follow 客户端在 stop 期间收到的流（follow.log 全文；stdin 关闭=优雅结束 follow 设计行为）---
+run_id: R001-smoke2-20260828
+host: alive (epoch:1)
+run_status: pending
+snapshot_seq: 5
+next_seq: 6
+[6] operation_committed operation:d022a62e-16db-4072-96c0-946253fe253d:12e85ad8dc90f9bab235b72783d2235c0f6865e8e0155a6d2f6484f6fd3a283b:committed
+state: run_status=pending caused_by_seq=6
+[exit=0]
+--- follow.log 结束 ---
+
+## 6. follow 客户端消亡后：断开不取消 Run（状态与账面零影响）
+$ relay status R001-smoke2-20260828
+run_id: R001-smoke2-20260828
+source: runtime-v2
+read_only: false
+host: dead
+run_status: pending
+group: running
+progress: done=0 total=1
+updated_at: 2026-08-28T03:59:11.392Z
+state_signature: d4309be21092a68b1ed9975967b63d78da050a9daf790ed236f4c27ffe6bb1db
+events: 7
+[exit=0]
+
+$ relay events R001-smoke2-20260828
+run_id: R001-smoke2-20260828
+host: dead
+run_status: pending
+snapshot_seq: 6
+next_seq: 7
+[1] lease_acquired epoch:1
+[2] operation_committed operation:51e606a7-ca1e-4f0f-9499-d2fceb8209fb:22e6841273196963f3e282e1f0be7b477ec05f7942a7a9b4cf25b1c029bc5bdf:committed
+[3] operation_committed operation:a7dc182c-a75d-435b-83b2-b8527343dd0f:12e85ad8dc90f9bab235b72783d2235c0f6865e8e0155a6d2f6484f6fd3a283b:committed
+[4] lease_acquired epoch:1
+[5] operation_committed operation:d9f2de0c-f039-4bcf-93d2-e21ed9860e45:77f4e61628e06e85faf0a75d7554a79c9cec4db6b93fcaa6e4845e2bfb25a536:committed
+[6] operation_committed operation:d022a62e-16db-4072-96c0-946253fe253d:12e85ad8dc90f9bab235b72783d2235c0f6865e8e0155a6d2f6484f6fd3a283b:committed
+[exit=0]
+
+$ relay list
+R001-smoke2-20260828  runtime-v2  status=pending  group=running  updated=2026-08-28T03:59:11.392Z
+[exit=0]
+
+
+# 自检: 命令头=17 · exit码=17 · exit=0计数=17 · 转录行数=223（每条命令都有 exit 码，全绿）

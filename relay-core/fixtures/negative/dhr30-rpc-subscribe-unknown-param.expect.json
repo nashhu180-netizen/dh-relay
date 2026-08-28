@@ -1,0 +1,6 @@
+{
+  "schema": "relay.rpc/v1",
+  "reason": "E_UNKNOWN_FIELD",
+  "at": "/params/follow",
+  "why": "design/08 §1：params 不再是开放对象，未知字段一律 E_UNKNOWN_FIELD"
+}

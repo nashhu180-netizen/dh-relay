@@ -6,6 +6,10 @@
 //   { version: 1, repos: { [<canonicalRepoPath>]: { max_seq, runs: [{ run_id, summary, created_at }] } } }
 // 形状演进归后续卡的 Read Model / 控制台需求；唯一性以 (canonicalRepoPath, run_id) 复合键在代码里强制。
 // 索引路径可注入——测试永不触真 home。
+//
+// 地位（design/07 §3.3）：本原语是 DHR_51 宿主/引导侧交付物；生产控制路径禁止直接调用——
+// RPC handler 与 CLI 建 Run 的唯一合法路径是 service 的 operation ledger（保留号→建 Store→Receipt）。
+// 该禁令由 test/control-plane-imports.test.mjs 静态钉住（含 service 自身，无豁免）。
 
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
@@ -45,7 +49,8 @@ async function writeRunsIndexAtomic(indexPath, index) {
 
 /**
  * 规范化创建一个 Run 并发号。返回 { run_id, root, seq, store }。
- * 抛 E_RUN_ID_INVALID / E_GITIGNORE_MISSING / E_REPO_LOCK_TIMEOUT / E_REQUEST_CONFLICT:run-id-exists。
+ * 抛 E_RUN_ID_INVALID / E_GITIGNORE_MISSING / E_REPO_LOCK_TIMEOUT /
+ * E_REQUEST_CONFLICT:run-id-exists / E_REQUEST_CONFLICT:run-root-exists。
  */
 export async function createRunWithNumbering({
   repoRoot,
@@ -74,6 +79,15 @@ export async function createRunWithNumbering({
       throw new Error(`E_REQUEST_CONFLICT:run-id-exists:${runId}`);
     }
     const root = join(repoRoot, '.dh-relay', runId);
+    // fail-closed：Run 根已存在（哪怕是没有 run.json 的残缺目录）一律拒绝——本原语在
+    // operation ledger 之外，无从对账残缺现场的来处，接管等于在 fencing 外续写无主目录（F-036）。
+    await mkdir(join(repoRoot, '.dh-relay'), { recursive: true });
+    try {
+      await mkdir(root);
+    } catch (error) {
+      if (error?.code === 'EEXIST') throw new Error(`E_REQUEST_CONFLICT:run-root-exists:${runId}`);
+      throw error;
+    }
     const store = await createStore({ root, run: { ...run, run_id: runId } });
     await store.appendEvent({ kind: 'run_created', at: new Date(clock()).toISOString() });
     bucket.max_seq = seq;

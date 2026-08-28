@@ -16,6 +16,23 @@
       "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/identifier",
       "description": "客户端生成的请求标识，幂等键。"
     },
+    "client_id": {
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/identifier"
+    },
+    "method": {
+      "type": "string",
+      "enum": ["start", "control"]
+    },
+    "state": {
+      "type": "string",
+      "enum": ["in_flight", "committed", "failed"]
+    },
+    "reason": {
+      "oneOf": [
+        { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/reason_code" },
+        { "type": "null" }
+      ]
+    },
     "run_id": {
       "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/run_id"
     },
@@ -67,11 +84,30 @@
     "protocol",
     "receipt_id",
     "request_id",
+    "client_id",
+    "method",
+    "state",
+    "reason",
     "run_id",
     "kind",
     "issued_at",
     "issued_by_runtime",
     "request_digest"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": { "properties": { "state": { "const": "failed" } }, "required": ["state"] },
+      "then": { "properties": { "reason": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/reason_code" } } },
+      "else": { "properties": { "reason": { "const": null } } }
+    },
+    {
+      "if": { "properties": { "method": { "const": "start" } }, "required": ["method"] },
+      "then": { "properties": { "kind": { "const": "start" } } }
+    },
+    {
+      "if": { "properties": { "method": { "const": "control" } }, "required": ["method"] },
+      "then": { "properties": { "kind": { "enum": ["stop", "resume"] } } }
+    }
+  ]
 }

@@ -337,3 +337,49 @@ Headless 与 SSH 路径参考 Herdr 官方文档：
 Pi 作为可选客户端与执行器的依据见：
 
 - [Pi Agent 替代 DSH 的独立对比评估](./evidence/08-Pi-Agent替代DSH-独立对比评估.md)
+
+## 14. Read Model 字段级定义（DHR_30 冻结）
+
+<!-- whitelist-exception-closed: DHR_30 -->
+
+本节关闭 P4 计划 §0.2 的「列表投影白名单例外」（2026-08-18 用户特批的临时口径）：列表投影自此有 design 正文的字段级定义，例外条在 P4 计划侧机械回注同一标记回链。
+
+**真相归属**：机器可判的唯一真相是冻结契约 `relay-core/contracts/relay.client-read-model.v1.schema.json`（受 capability 基线对证约束，`capability_hash` 变更即契约变更）。本节是它的人读镜像，若有出入以冻结 schema 为准。字段级血统：起点 = P4 冻结的 `relay.pilot-read-model/v1` + `relay.pilot-run-list/v1`（DHR_25 人判 H1 签收、DHR_27 真实数据验证），经 DHR_28 的 v1 缺口逐条处置表修订，DHR_30 定形为 `relay.client-read-model/v1` 四视图。
+
+### 14.1 信封与四视图
+
+每份 Read Model 都是 `{protocol, view, …}`，`protocol` 恒为 `relay.client-read-model/v1`，`view` 四选一，各视图必填面如下（信封 `additionalProperties: false`，无未登记字段）：
+
+| view | 必填字段 | 语义 |
+|---|---|---|
+| `run_list` | `items[]`（run_summary 数组） | 全量 Run 一览（legacy 需显式 `include_legacy` 才含） |
+| `status` | `source`、`read_only`、`status`（run_status_view）、`detail`（恒 `null`） | 单 Run 摘要 |
+| `detail` | `source`、`read_only`、`status`（恒 `null`）、`detail`（`relay.run-state/v1` 原样或 `null`） | 单 Run 深读（孤儿仍可读到真 run-state；legacy 无 v2 detail） |
+| `event_stream_snapshot` | `run_id`、`snapshot`（run_status_view）、`snapshot_seq`、`next_seq` | 订阅快照锚点（`next_seq` = 补发/续传游标基准） |
+
+### 14.2 run_summary（列表条目，六字段全必填）
+
+| 字段 | 类型 | 语义 |
+|---|---|---|
+| `run_id` | string（common/v1 `run_id` 形态） | Run 号 |
+| `source` | `runtime-v2` \| `legacy-v1` | 世代来源 |
+| `read_only` | boolean | 只读位（legacy 与孤儿 Store 恒 `true`） |
+| `run_status` | string \| null | 源头给出的状态（legacy 缺失为 null） |
+| `group` | string \| null | **分堆由源头给**——客户端不得推导、不得重排 |
+| `updated_at` | string \| null | 源头时间戳（**源头计量**——客户端不读时钟） |
+
+### 14.3 run_status_view（status/快照共用）
+
+| 字段 | 类型 | 语义 |
+|---|---|---|
+| `run_id` / `source` / `read_only` | 同上 | 同上 |
+| `host` | string \| null | 宿主可读态 |
+| `host_detail` | string \| null | 宿主细节 |
+| `ledger` | object \| null | 账面投影：`{run_status, group, progress, updated_at, state_signature}` 五字段全必填（progress 引 `relay.run-state/v1`；`state_signature` 为 sha256） |
+| `events` | integer ≥ 0 \| null | 事件账长度 |
+
+### 14.4 架构约束与机器证
+
+- **分堆与排序由源头给**（承 P4 架构约束）：`group` 与列表次序都是源头产物，任何客户端（CLI/DSH/Pi）只渲染不推导。机器证 = 两条镜像断言（`relay-core/test/read-model-mirror.test.mjs`，P5-M4 证据）：源头改 `group` 投影必须移动；只改 `run_status` 投影除该字段外逐字不变。
+- **run_list 源头排序规则**（DHR_30 定稿）：`items[]` 按分堆词表序 `needs_you → running → done → failed`（报警优先——unknown 状态映射进 needs_you 必须先被看见）；词表外的 `group` 自成一堆、排已知堆之后、堆间按首现顺序（承 P4「词表外自成一节原样打印」）；`group` 为 null（legacy / 无账面）殿后；堆内按 `run_id` 升序。实现落 `runtime/discovery.mjs · orderRunSummaries()`，`listRuns` 出口统一套用。
+- **客户端中立**：DSH/Pi 私有字段不进入 Read Model；通用客户端 fixture 见 `relay-core/fixtures/clients/`。

@@ -31,6 +31,7 @@ export async function runHostSession({
   tickMs = null,
   clock = () => Date.now(),
   shouldStop = () => false,
+  onReady = null,
   trapSignals = false,
   gitBin = 'git',
 }) {
@@ -66,6 +67,7 @@ export async function runHostSession({
       await store.appendEvent({ kind: 'lease_expired', at: new Date(clock()).toISOString(), detail: `epoch:${lease.previousEpoch}` });
     }
     await store.appendEvent({ kind: 'lease_acquired', at: new Date(clock()).toISOString(), detail: `epoch:${lease.epoch}` });
+    await onReady?.({ store, runId, epoch: lease.epoch, tookOver: lease.tookOver });
 
     while (!stopping && !shouldStop()) {
       await sleep(tickEvery);
@@ -97,6 +99,85 @@ export async function runHostSession({
     renewals,
     lost_lease: lostLease,
     graceful: !lostLease,
+  };
+}
+
+/**
+ * DHR_30 的 service 内嵌 HostSession actor（design/07 §3.2 的四接口合同）。
+ * 它只维持 lease 与 Store 单写者，不 import workflow / Process / executor，也不推进业务节点。
+ *
+ *   ready           成功仅当 lease 已取得、Store 已打开、lease_acquired 已写入
+ *   submitControl() 在 actor 串行队列内执行一段控制作业（写 Receipt、停或恢复）
+ *   stop()          请求优雅停止；同一队列释放 lease，且只释放自己取得的那一份
+ *   done            { outcome: 'graceful' | 'lost_lease' | 'failed', … }
+ *
+ * **失租后队列拒绝所有写**：这是「不出现双写者」的最后一道闸。Store 的 writeGuard 已经在
+ * 落盘前重验 lease，actor 队列这一层是把「已知失租」变成**立刻可判定的拒绝**，
+ * 免得调用方把一堆迟到写排进队列再一条条失败。
+ */
+export function createHostSessionActor(options) {
+  let resolveReady;
+  let rejectReady;
+  let stopping = false;
+  let context = null;
+  let lostLease = false;
+  let finished = false;
+  const ready = new Promise((resolveReadyPromise, rejectReadyPromise) => {
+    resolveReady = resolveReadyPromise;
+    rejectReady = rejectReadyPromise;
+  });
+  ready.catch(() => {}); // ready 的拒绝由调用方决定何时消费；这里只防未处理拒绝告警
+
+  // 控制队列与 Store 写队列是两层：Store 保证「一次变更内部」的串行，
+  // 这一层保证「一次控制作业整体」的串行——写 Receipt 与随后的停机不得被别的控制插进来。
+  let tail = Promise.resolve();
+
+  const done = runHostSession({
+    ...options,
+    shouldStop: () => stopping || options.shouldStop?.() === true,
+    onReady: async (ctx) => {
+      await options.onReady?.(ctx);
+      context = ctx;
+      resolveReady(ctx);
+    },
+  }).then(
+    (summary) => {
+      finished = true;
+      lostLease = summary.lost_lease === true;
+      return { outcome: lostLease ? 'lost_lease' : 'graceful', ...summary };
+    },
+    (error) => {
+      finished = true;
+      lostLease = true; // 会话已不在：无论何种原因，之后的写一律不许再进队列
+      rejectReady(error);
+      return { outcome: 'failed', error, run_id: options.runId, lost_lease: false, graceful: false };
+    },
+  );
+
+  function refuseIfClosed() {
+    if (!lostLease && !finished) return null;
+    const error = new Error('E_LEASE_HELD:actor-closed');
+    error.reason = 'E_LEASE_HELD';
+    return error;
+  }
+
+  return {
+    ready,
+    done,
+    get store() { return context?.store ?? null; },
+    get runId() { return options.runId; },
+    /** 在 actor 串行队列内跑一段控制作业；参数是本 actor 独占的 Store 句柄。 */
+    submitControl(job) {
+      const outcome = tail.then(async () => {
+        const refusal = refuseIfClosed();
+        if (refusal) throw refusal;
+        if (!context) await ready;
+        return job(context.store, context);
+      });
+      tail = outcome.then(() => undefined, () => undefined);
+      return outcome;
+    },
+    stop() { stopping = true; },
   };
 }
 

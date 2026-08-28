@@ -19,10 +19,10 @@
 | `fixtures/negative/` | 反例 + 写死期望 reason code **与出错位置 `at`** 的 `.expect.json` | DHR_28 |
 | `fixtures/manifest.json` | 基线对证清单：逐份 fixture 的 canonical sha256（承接 P4 §2.1）。改任何 fixture 后须跑 `node tools/fixture-manifest.mjs --write` | DHR_28 |
 | `tools/` | 独立校验器与静态中立性检查 | DHR_28 |
-| `store/` | 唯一写者 Store、不可变工件、追加事件账、原子快照、确定性回放 | DHR_29（尚未建） |
-| `runtime/` | Detached 宿主、PID/lease、`run_id` 规范化与仓级锁内发号、恢复、只读宿主三态读数（**不注册 `bin`、不占 `relay` 命令名**） | DHR_51（尚未建） |
-| `rpc/` | RPC 服务端：Named Pipe / UDS + NDJSON JSON-RPC 2.0，握手 `capability_hash` 比对 fail-closed | DHR_52（尚未建） |
-| `cli/` | Relay CLI 参考客户端 | DHR_30（尚未建） |
+| `store/` | 唯一写者 Store、不可变工件、追加事件账、原子快照、确定性回放、operation 回执与订阅 barrier | DHR_29 · DHR_30 |
+| `runtime/` | 仓库级 Runtime service、确定性 endpoint 与 descriptor、operation ledger、重启发现、launcher、宿主 lease 与 actor（**不注册 `bin`、不占 `relay` 命令名**） | DHR_51 · DHR_30 |
+| `rpc/` | RPC 服务端与本地传输：Named Pipe / UDS + NDJSON JSON-RPC 2.0，握手 `capability_hash` 比对 fail-closed，owner-aware 端点绑定 | DHR_52 · DHR_30 |
+| `cli/` | Relay CLI 参考客户端 | DHR_30 |
 | `adapters/` `workflows/` | 可选 DSH Bridge / Pi fixture；basic-agent-task | DHR_30 / DHR_31（尚未建） |
 
 ## 硬约束（施工前必读）
@@ -38,7 +38,7 @@
 ## 测试
 
 ```
-cd relay-core && npm test                        # node --test，10 条，含下面四项
+cd relay-core && npm test                        # node --test，含下面四项与真实进程回归
 node tools/validate.mjs --selftest               # golden + negative 全量（reason 与出错位置 at 双钉）
 node tools/audit-contracts.mjs                   # 契约静态审计 11 维度；--write-tokens 重生成结构 token 清单
 node tools/fixture-manifest.mjs                  # fixture 基线对证；--write 重新生成

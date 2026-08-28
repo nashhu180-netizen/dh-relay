@@ -4,7 +4,7 @@
 
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -15,7 +15,7 @@ import { runHostSession, runRootOf, startDetachedHost } from '../runtime/host.mj
 import { acquireLease, inspectHost, leasePath, readLease } from '../runtime/lease.mjs';
 import { isProcessAlive } from '../runtime/pidalive.mjs';
 import { acquireRepoLock } from '../runtime/repolock.mjs';
-import { assertValidRunId, formatRunId, isValidRunId, normalizeThemeSlug } from '../runtime/runid.mjs';
+import { assertValidRunId, formatRunId, isValidRunId, localDateStamp, normalizeThemeSlug } from '../runtime/runid.mjs';
 import { createRunWithNumbering } from '../runtime/startrun.mjs';
 import { readHostStatus } from '../runtime/status.mjs';
 import { createStore, openStore } from '../store/store.mjs';
@@ -329,6 +329,24 @@ test('startRun：缺忽略前置 → E_GITIGNORE_MISSING 且零落盘；任意�
 test('startRun：slug 违例在闸前被拒（E_RUN_ID_INVALID）', async (t) => {
   const repo = await initGitRepo(t, { ignoreLines: ['.dh-relay/'] });
   await assert.rejects(() => createRunWithNumbering({ repoRoot: repo, slug: '中文主题', run: runDoc() }), /E_RUN_ID_INVALID/);
+});
+
+test('startRun：Run 根已存在（无 run.json 的残缺目录）fail-closed 拒绝接管，零落盘（F-036）', async (t) => {
+  // R-K-01：本原语在 operation ledger 之外，残缺目录的来处无从对账；接管等于在 fencing 外
+  // 续写无主现场。必须整体拒绝——不写 run.json、不推进发号索引。
+  const repo = await initGitRepo(t, { ignoreLines: ['.dh-relay/'] });
+  const indexPath = join(await tempDir(t, 'dhr51-residual-'), 'runs.json');
+  const clock = () => Date.parse('2026-08-28T04:00:00Z');
+  const expectedId = formatRunId({ seq: 1, slug: 'probe', date: localDateStamp(clock()) });
+  const residualRoot = join(repo, '.dh-relay', expectedId);
+  await mkdir(residualRoot, { recursive: true });
+  await assert.rejects(
+    () => createRunWithNumbering({ repoRoot: repo, slug: 'probe', run: runDoc(), indexPath, clock }),
+    new RegExp(`E_REQUEST_CONFLICT:run-root-exists:${expectedId}`),
+    '残缺目录必须整体拒绝，绝不接管',
+  );
+  await assert.rejects(() => readFile(join(residualRoot, 'run.json'), 'utf8'), /ENOENT/, '拒绝路径不得往残缺目录写 run.json');
+  await assert.rejects(() => readFile(indexPath, 'utf8'), /ENOENT/, '拒绝路径不得推进发号索引');
 });
 
 test('startRun：同仓连发序号递增、复合键入账；零误跟踪双证（P5-M8a/M8b）', async (t) => {

@@ -363,3 +363,92 @@ test('Store：writeGuard 失守时拦截一切变更，事件与工件零落盘�
 async function readEventsFileHelper(root) {
   return readFile(join(root, 'events.jsonl'), 'utf8').catch(() => '');
 }
+
+test('Store：operation Receipt 与 operation_* 事件同批落账，同 receipt 重投幂等', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'dhr30-op-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const store = await createStore({ root, run });
+  await store.appendEvent({ kind: 'run_created', at: '2026-08-21T00:00:00Z' });
+  const receipt = {
+    protocol: 'relay.launch-receipt/v2', receipt_id: 'rcpt-a', request_id: 'req-a', client_id: 'cli-a',
+    method: 'start', state: 'committed', reason: null, run_id: run.run_id, node_id: null, attempt_id: null,
+    kind: 'start', issued_at: '2026-08-21T00:00:01Z', issued_by_runtime: 'runtime-1', request_digest: 'a'.repeat(64),
+  };
+  const first = await store.appendOperation(receipt);
+  assert.equal(first.ok, true);
+  assert.equal(first.idempotent, false);
+
+  // design/08 §3：Receipt 随 Run 事件账保存——service 重启后 Receipt 必须能从 Store 读回来，
+  // 不能只活在 ledger 里（ledger 是索引，Run Store 才是真相）。
+  assert.deepEqual(await store.readOperation('rcpt-a'), receipt);
+  const event = store.events.at(-1);
+  assert.equal(event.kind, 'operation_committed');
+  assert.equal(event.detail, `operation:rcpt-a:${'a'.repeat(64)}:committed`);
+  assert.equal(event.node_id, null);
+  assert.equal(event.attempt_id, null);
+
+  const again = await store.appendOperation(receipt);
+  assert.equal(again.idempotent, true, '同一 Receipt 重投必须幂等，不得重复记账');
+  assert.equal(store.events.filter(e => e.kind === 'operation_committed').length, 1);
+
+  // 同 receipt_id 不同内容 = 冲突，绝不静默覆盖。
+  const conflicting = { ...receipt, request_digest: 'b'.repeat(64) };
+  const clash = await store.appendOperation(conflicting);
+  assert.equal(clash.ok, false);
+  assert.equal(clash.reason, 'E_REQUEST_CONFLICT');
+
+  // 跨重启：openStore 必须把 operation 工件与事件一起装回来。
+  const reopened = await openStore({ root });
+  assert.deepEqual(await reopened.readOperation('rcpt-a'), receipt);
+  assert.equal((await reopened.appendOperation(receipt)).idempotent, true, '幂等判定必须跨重启成立');
+});
+
+test('Store：订阅 barrier 在写队列内取尾 seq，快照与增量之间零缝隙', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'dhr30-sub-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const store = await createStore({ root, run });
+  await store.appendEvent({ kind: 'run_created', at: '2026-08-21T00:00:00Z' });
+  await store.appendEvent({ kind: 'node_started', node_id: 'node-a', at: '2026-08-21T00:00:01Z' });
+
+  // 并发写与订阅注册同时发生：barrier 必须让 next_seq 之后的事件一条不漏、一条不重。
+  const buffered = [];
+  const pendingWrites = [
+    store.appendEvent({ kind: 'client_connected', at: '2026-08-21T00:00:02Z' }),
+    store.appendEvent({ kind: 'client_disconnected', at: '2026-08-21T00:00:03Z' }),
+  ];
+  const barrier = await store.subscribe(event => buffered.push(event));
+  t.after(() => barrier.unsubscribe());
+  pendingWrites.push(store.appendEvent({ kind: 'client_connected', at: '2026-08-21T00:00:04Z' }));
+  await Promise.all(pendingWrites);
+
+  const snapshot = store.events.filter(e => e.seq < barrier.next_seq);
+  assert.equal(snapshot.length, barrier.next_seq, '快照恰为 next_seq 之前的事件');
+  assert.equal(barrier.snapshot_seq, Math.max(0, barrier.next_seq - 1));
+  const delivered = buffered.map(e => e.seq);
+  assert.deepEqual(delivered, [...new Set(delivered)].sort((a, b) => a - b), '推送必须按 seq 严格递增且不重复');
+  assert.ok(delivered.every(seq => seq >= barrier.next_seq), '快照内的事件不得被重复推送');
+  const all = store.events.map(e => e.seq);
+  assert.deepEqual([...snapshot.map(e => e.seq), ...delivered], all, '快照 + 增量必须无缝拼回完整事件账');
+
+  barrier.unsubscribe();
+  await store.appendEvent({ kind: 'client_disconnected', at: '2026-08-21T00:00:05Z' });
+  assert.equal(buffered.length, delivered.length, '退订后不得再收到推送');
+});
+
+test('Store：cursor 补发严格连续，越界 cursor 报 E_CURSOR_GAP 而不猜测', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'dhr30-cursor-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const store = await createStore({ root, run });
+  for (let i = 0; i < 4; i += 1) await store.appendEvent({ kind: 'client_connected', at: '2026-08-21T00:00:00Z' });
+
+  assert.deepEqual((await store.readEventsAfter(1)).map(e => e.seq), [2, 3], 'cursor 只补严格大于 after_seq 的连续事件');
+  assert.deepEqual((await store.readEventsAfter(3)).map(e => e.seq), [], '追平的 cursor 补发空表，不是错误');
+  await assert.rejects(() => store.readEventsAfter(9), (error) => {
+    assert.equal(error.reason, 'E_CURSOR_GAP');
+    return true;
+  }, '客户端声称看过我们没有的 seq = 缺口，必须拒绝而不是从头补');
+  await assert.rejects(() => store.readEventsAfter(-2), (error) => {
+    assert.equal(error.reason, 'E_CURSOR_GAP');
+    return true;
+  }, '负 cursor 无可回放起点');
+});

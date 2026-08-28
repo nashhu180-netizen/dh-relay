@@ -62,11 +62,20 @@
         "params": {
           "type": "object",
           "additionalProperties": true,
-          "description": "按 method 定义的请求参数。**本卡不落 per-method schema**（最小协议集范围），因此此处是【有意开放点】之一，见 contracts/OPEN-POINTS.md。⚠️ **契约层未兑现的约束，如实说破**（批次检查点 2 小审 D-2，findings F-015）：『禁携带工作台私有类型』与『locator 参数走 relay.common/v1 的 locator（G5 禁绝对路径）』这两条在本卡**只是散文约定、不是机器闸**——`start`/`control` 的 params 里塞 `C:\\Users\\nash\\brief.md` 目前在契约层放行。落机器闸的责任归 P6/P7 的 per-method schema；在那之前，调用方须自行遵守，Runtime 实现应在参数解包处补运行时校验。"
+          "description": "按 method 定义的请求参数。DHR_30 通过同级 allOf 将全部已枚举方法收窄到 relay.rpc-methods/v1；顶层信封字段保持不变。"
         }
       },
       "required": ["jsonrpc", "id", "method", "handshake"],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "allOf": [
+        { "if": { "properties": { "method": { "const": "listRuns" } }, "required": ["method"] }, "then": { "properties": { "params": { "$ref": "https://dh-relay.local/contracts/relay.rpc-methods/v1#/$defs/listRuns_params" } } } },
+        { "if": { "properties": { "method": { "const": "inspectRun" } }, "required": ["method"] }, "then": { "properties": { "params": { "$ref": "https://dh-relay.local/contracts/relay.rpc-methods/v1#/$defs/inspectRun_params" } } } },
+        { "if": { "properties": { "method": { "const": "subscribe" } }, "required": ["method"] }, "then": { "properties": { "params": { "$ref": "https://dh-relay.local/contracts/relay.rpc-methods/v1#/$defs/subscribe_params" } } } },
+        { "if": { "properties": { "method": { "const": "start" } }, "required": ["method"] }, "then": { "properties": { "params": { "$ref": "https://dh-relay.local/contracts/relay.rpc-methods/v1#/$defs/start_params" } } } },
+        { "if": { "properties": { "method": { "const": "control" } }, "required": ["method"] }, "then": { "properties": { "params": { "$ref": "https://dh-relay.local/contracts/relay.rpc-methods/v1#/$defs/control_params" } } } },
+        { "if": { "properties": { "method": { "const": "contracts" } }, "required": ["method"] }, "then": { "properties": { "params": { "$ref": "https://dh-relay.local/contracts/relay.rpc-methods/v1#/$defs/contracts_params" } } } },
+        { "if": { "properties": { "method": { "const": "validate" } }, "required": ["method"] }, "then": { "properties": { "params": { "$ref": "https://dh-relay.local/contracts/relay.rpc-methods/v1#/$defs/validate_params" } } } }
+      ]
     },
 
     "response": {
@@ -75,8 +84,13 @@
         "jsonrpc": { "const": "2.0" },
         "id": { "type": ["string", "integer"] },
         "result": {
-          "description": "成功载荷。形状由 method 决定（如 inspectRun 返回客户端中立 Read Model；start 返回 relay.launch-receipt/v2）。",
-          "type": ["object", "array", "string", "number", "boolean", "null"]
+          "description": "成功载荷只可为 DHR_30 冻结的 Read Model、operation receipt、contracts 或 validate 结果；JSON-RPC response 不携带 method，故此处验证为封闭结果并集。",
+          "oneOf": [
+            { "$ref": "https://dh-relay.local/contracts/relay.client-read-model/v1" },
+            { "$ref": "https://dh-relay.local/contracts/relay.rpc-methods/v1#/$defs/receipt_result" },
+            { "$ref": "https://dh-relay.local/contracts/relay.rpc-methods/v1#/$defs/contracts_result" },
+            { "$ref": "https://dh-relay.local/contracts/relay.rpc-methods/v1#/$defs/validate_result" }
+          ]
         }
       },
       "required": ["jsonrpc", "id", "result"],
@@ -100,9 +114,16 @@
               "type": "object",
               "properties": {
                 "reason": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/reason_code" },
-                "detail": { "type": "string", "maxLength": 4096 }
+                "detail": { "type": "string", "maxLength": 4096 },
+                "receipt": {
+                  "oneOf": [
+                    { "$ref": "https://dh-relay.local/contracts/relay.launch-receipt/v2" },
+                    { "type": "null" }
+                  ],
+                  "description": "DHR_30：**必填**（design/08 §1「RPC error response 一律为 {reason, receipt}」）。可预期的 operation 失败连同 failed Receipt 一起回包，客户端凭它区分「确实失败了」（带 Receipt，同键重试拿回同一份）与「结果未知」；非 operation 类拒绝一律显式 null。做成可省略会让两种情况在线上完全同形，客户端只能靠猜决定要不要重试——那正是本字段存在的理由。"
+                }
               },
-              "required": ["reason"],
+              "required": ["reason", "receipt"],
               "additionalProperties": false
             }
           },
@@ -135,7 +156,11 @@
         },
         {
           "if": { "properties": { "method": { "const": "runStateChanged" } }, "required": ["method"] },
-          "then": { "properties": { "params": { "$ref": "https://dh-relay.local/contracts/relay.run-state/v1" } } }
+          "then": {
+            "properties": {
+              "params": { "$ref": "https://dh-relay.local/contracts/relay.rpc-methods/v1#/$defs/run_state_changed_notification" }
+            }
+          }
         }
       ]
     }

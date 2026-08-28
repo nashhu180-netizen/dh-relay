@@ -31,6 +31,9 @@
         "client_disconnected",
         "lease_acquired",
         "lease_expired",
+        "operation_accepted",
+        "operation_committed",
+        "operation_failed",
         "run_finished"
       ],
       "description": "事件类型。注意三组必须分开、永不互相推导：①attempt_* = 任务结果侧；②host_observation_changed = 会话/宿主观测侧（G6）；③client_connected/disconnected = 控制客户端侧。design/06 H4：客户端断开、DSH 插件卸载、SSH 断开均不隐式取消 Run——所以 client_disconnected 绝不得生成 cancel 或推动 run_status。"
@@ -83,6 +86,20 @@
   "additionalProperties": false,
 
   "allOf": [
+    {
+      "if": {
+        "properties": { "kind": { "enum": ["operation_accepted", "operation_committed", "operation_failed"] } },
+        "required": ["kind"]
+      },
+      "then": {
+        "required": ["detail"],
+        "properties": {
+          "node_id": { "const": null },
+          "attempt_id": { "const": null },
+          "detail": { "type": "string", "pattern": "^operation:[A-Za-z0-9][A-Za-z0-9._-]{0,127}:[0-9a-f]{64}:(in_flight|committed|failed)$" }
+        }
+      }
+    },
     {
       "if": {
         "properties": { "kind": { "const": "human_input_requested" } },

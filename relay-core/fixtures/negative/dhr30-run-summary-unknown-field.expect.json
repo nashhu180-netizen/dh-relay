@@ -1,0 +1,6 @@
+{
+  "schema": "relay.client-read-model/v1",
+  "reason": "E_UNKNOWN_FIELD",
+  "at": "/items/0/node_states",
+  "why": "design/08 §1：run_list 只含六字段，不得偷塞 node_states"
+}

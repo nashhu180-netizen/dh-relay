@@ -17,6 +17,9 @@ import { promises as fsp } from 'node:fs';
 /** RPC reason code（reason-codes.md §六）：NDJSON 帧不可解析或不符信封时拒绝。 */
 export const E_TRANSPORT_FRAME_INVALID = 'E_TRANSPORT_FRAME_INVALID';
 
+/** DHR_30：确定性 endpoint 已被别的活 service 持有（design/07 §3 的 bind fencing 输家侧）。 */
+export const E_ENDPOINT_IN_USE = 'E_ENDPOINT_IN_USE';
+
 const LF = 0x0a; // '\n'
 /** 默认单帧上限（1 MiB）：有界，防无界累积。调用方可按需收紧。 */
 export const DEFAULT_MAX_FRAME_BYTES = 1 << 20;
@@ -150,7 +153,7 @@ export function createTransportConnection(socket, handlers = {}) {
  * 必须等所有连接关闭才会回调；客户端仍连着时若只 await server.close() 会永久挂起），
  * 再等待 server.close() 完成。清理仅限本 server 接受的连接，不触碰任何外部连接。
  */
-export function createTransportServer(endpoint, handlers = {}) {
+function attachServer(endpoint, handlers) {
   /** 本 server 接受的、尚未关闭的服务端 socket。close() 时确定性清掉，避免挂起。 */
   const acceptedSockets = new Set();
   const server = net.createServer((socket) => {
@@ -163,7 +166,16 @@ export function createTransportServer(endpoint, handlers = {}) {
     handlers.onConnection?.(conn);
   });
   server.on('error', (err) => handlers.onError?.(err));
+  return { server, acceptedSockets };
+}
 
+async function destroyAccepted(server, acceptedSockets) {
+  for (const socket of [...acceptedSockets]) socket.destroy();
+  await new Promise((res) => server.close(() => res()));
+}
+
+export function createTransportServer(endpoint, handlers = {}) {
+  const { server, acceptedSockets } = attachServer(endpoint, handlers);
   return new Promise((resolve, reject) => {
     server.once('error', reject);
     server.listen(endpoint.address, () => {
@@ -172,10 +184,11 @@ export function createTransportServer(endpoint, handlers = {}) {
         server,
         endpoint,
         close: async () => {
-          // 确定性收掉本 server 自己的在线连接；已关闭的连接 destroy() 是空操作。
-          for (const socket of [...acceptedSockets]) socket.destroy();
-          await new Promise((res) => server.close(() => res()));
-          // 只清理本 helper 建的 UDS socket；named pipe 随最后句柄关闭自动消失，无文件可删。
+          await destroyAccepted(server, acceptedSockets);
+          // ⚠️ 无条件 unlink 只对 `localEndpoint()` 那种一次性随机路径成立（测试 seam）。
+          // 正式 service 的确定性 endpoint 必须走 bindOwnedEndpoint 的 owner-aware close，
+          // 否则旧 service 的 close continuation 会删掉新 service 刚 bind 的 socket
+          // （design/08 §2 明令不得沿用本分支的语义）。
           if (endpoint.kind === 'unix') {
             await fsp.unlink(endpoint.address).catch((e) => {
               if (e.code !== 'ENOENT') throw e;
@@ -185,6 +198,124 @@ export function createTransportServer(endpoint, handlers = {}) {
       });
     });
   });
+}
+
+/**
+ * 探测确定性 endpoint 上是否还有活 listener。
+ * 三值而非布尔：design/08 §2 只允许在**明确无 listener** 时回收残留——
+ * 超时、EACCES 之类的「说不清」必须与「确定没人」分开，否则不确定就变成了删别人的授权。
+ * @returns {Promise<'alive'|'absent'|'unknown'>}
+ */
+export function probeEndpoint(endpoint, { timeoutMs = 500 } = {}) {
+  return new Promise((resolve) => {
+    let settled = false;
+    const socket = net.connect(endpoint.address);
+    const finish = (verdict) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      socket.destroy();
+      resolve(verdict);
+    };
+    const timer = setTimeout(() => finish('unknown'), timeoutMs);
+    socket.once('connect', () => finish('alive'));
+    socket.once('error', (error) => finish(
+      error?.code === 'ECONNREFUSED' || error?.code === 'ENOENT' ? 'absent' : 'unknown',
+    ));
+  });
+}
+
+/**
+ * 是否允许把 EADDRINUSE 的残留端点回收掉再重试一次（design/08 §2 的唯一判据）。
+ * 抽成纯函数是为了让这条决策在**每个平台**都能被逐档钉住——真 UDS 残留只在非 Windows
+ * 可复现，但「什么时候允许删」不能只在一半平台上有回归。
+ */
+export function shouldReclaimEndpoint({ kind, probe, attempt }) {
+  if (kind !== 'unix') return false;   // Windows 不删 pipe
+  if (attempt !== 0) return false;     // 只 unlink 重试一次；第二次竞争失败须重新探测
+  return probe === 'absent';           // 只有「明确无 listener」才回收，unknown 一律不动
+}
+
+/** close 时是否允许清理 UDS 残留：只有端点仍是自己 bind 的那一个才行。 */
+export function shouldUnlinkOnClose({ kind, owner, current }) {
+  if (kind !== 'unix') return false;
+  if (!owner || !current) return false;
+  return owner === current;
+}
+
+/** endpoint 的 owner 凭证：UDS 的 dev:ino。新 owner 重建 socket 后 ino 必变，故可判归属。 */
+async function ownerToken(endpoint) {
+  if (endpoint.kind !== 'unix') return null;
+  try {
+    const stats = await fsp.stat(endpoint.address);
+    return `${stats.dev}:${stats.ino}`;
+  } catch {
+    return null;
+  }
+}
+
+function listenOnce(server, address) {
+  return new Promise((resolve, reject) => {
+    const onError = (error) => { server.removeListener('listening', onListening); reject(error); };
+    const onListening = () => { server.removeListener('error', onError); resolve(); };
+    server.once('error', onError);
+    server.once('listening', onListening);
+    server.listen(address);
+  });
+}
+
+function inUse(endpoint, cause) {
+  const error = new Error(`E_ENDPOINT_IN_USE:${endpoint.kind}:${cause?.code ?? 'unknown'}`);
+  error.reason = E_ENDPOINT_IN_USE;
+  error.cause = cause;
+  return error;
+}
+
+/**
+ * 正式 service 的 endpoint 绑定：**成功 bind 就是唯一服务的 fencing**（design/07 §3），
+ * 不按 PID 判活、不盲删。
+ *
+ *   EADDRINUSE → 无凭据探测 → 活 owner 存在则直接拒绝（输家复用赢家，不上位）；
+ *                            明确无 listener 才 unlink 一次并重试；
+ *                            重试仍失败则再探测一次后拒绝，绝不进入删-试循环。
+ *   close      → 只有端点仍是自己 bind 的那一个（owner token 相同）才清理残留；
+ *                新 service 已接手时旧 close 只关自己的句柄。
+ */
+export async function bindOwnedEndpoint(endpoint, handlers = {}) {
+  const { server, acceptedSockets } = attachServer(endpoint, handlers);
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      await listenOnce(server, endpoint.address);
+      break;
+    } catch (error) {
+      if (error?.code !== 'EADDRINUSE') {
+        await new Promise((res) => server.close(() => res()));
+        throw error;
+      }
+      const probe = await probeEndpoint(endpoint);
+      if (!shouldReclaimEndpoint({ kind: endpoint.kind, probe, attempt })) {
+        await new Promise((res) => server.close(() => res()));
+        throw inUse(endpoint, error);
+      }
+      await fsp.unlink(endpoint.address).catch((e) => {
+        if (e.code !== 'ENOENT') throw e;
+      });
+    }
+  }
+  const owner = await ownerToken(endpoint);
+  return {
+    server,
+    endpoint,
+    owner,
+    close: async () => {
+      await destroyAccepted(server, acceptedSockets);
+      const current = await ownerToken(endpoint);
+      if (!shouldUnlinkOnClose({ kind: endpoint.kind, owner, current })) return;
+      await fsp.unlink(endpoint.address).catch((e) => {
+        if (e.code !== 'ENOENT') throw e;
+      });
+    },
+  };
 }
 
 /** 连接本地端点，返回 Promise<NDJSON 连接>（connect 事件后 resolve）。 */

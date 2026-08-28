@@ -52,7 +52,8 @@ const BASELINE = fileURLToPath(new URL('../capability-baseline.json', import.met
 const REFERENCE_EXECUTOR_KINDS = ['process'];
 
 function frozenSchemas() {
-  // **顶层 7 份已冻结协议 + 1 份共享定义模块**（E2 代码复核轮 2 · P2-1）。
+  // **顶层 9 份已冻结协议 + 1 份共享定义模块**。DHR_30 增补 formal read model 与 method contract，
+  // 它们与原有协议一样参与 capability_hash。
   //
   // ⚠️ 首版只枚举 contracts/ 顶层的 7 份，把 `_shared/relay.common.v1.schema.json` 漏在外面。
   // 后果是 **F-033 缺口 A 下沉一层**（本卡此类第五次）：F-033 用 {id,digest} 把 7 份协议的
@@ -72,8 +73,8 @@ function frozenSchemas() {
     if (e.isFile() && e.name.endsWith('.schema.json')) files.push(e.name);
   }
   files.sort();
-  if (files.length !== 7) {
-    throw new Error(`contracts/ 顶层应有 7 份已冻结协议，实为 ${files.length} 份：${files.join(', ')}`
+  if (files.length !== 9) {
+    throw new Error(`contracts/ 顶层应有 9 份已冻结协议，实为 ${files.length} 份：${files.join(', ')}`
       + ' —— 协议集变了就是能力变了，先确认这是有意的，再跑 --write');
   }
   // 共享定义模块单独列：它不在顶层、不参与「7 份」计数，但**必须计入指纹**
@@ -133,7 +134,7 @@ if (argv.includes('--print')) {
 if (argv.includes('--write')) {
   const b = build();
   writeFileSync(BASELINE, JSON.stringify(b, null, 2) + '\n');
-  console.log(`已写 capability-baseline.json：${b.capability_manifest.protocols.length} 份（7 顶层协议 + 1 共享定义模块）`
+  console.log(`已写 capability-baseline.json：${b.capability_manifest.protocols.length} 份（9 顶层协议 + 1 共享定义模块）`
     + ` / ${b.capability_manifest.methods.length} methods / ${b.capability_manifest.notifications.length} notifications`
     + ` / executor_kinds=[${b.capability_manifest.executor_kinds.join(',')}]`);
   console.log(`capability_hash = ${b.capability_hash}`);
@@ -166,7 +167,7 @@ for (const k of ['methods', 'notifications', 'executor_kinds']) {
 }
 
 if (errors.length === 0) {
-  console.log(`capability 基线对证通过：${want.capability_manifest.protocols.length} 份（7 顶层协议 + 1 共享定义模块）digest 相符，capability_hash = ${got.capability_hash.slice(0, 16)}…`);
+  console.log(`capability 基线对证通过：${want.capability_manifest.protocols.length} 份（9 顶层协议 + 1 共享定义模块）digest 相符，capability_hash = ${got.capability_hash.slice(0, 16)}…`);
   process.exit(0);
 }
 console.error('capability 基线对证失败：');

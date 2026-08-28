@@ -1,0 +1,16 @@
+{
+  "protocol": "relay.client-read-model/v1",
+  "view": "event_stream_snapshot",
+  "run_id": "RUN-1",
+  "snapshot": {
+    "run_id": "RUN-1",
+    "source": "runtime-v2",
+    "read_only": false,
+    "host": "alive",
+    "host_detail": "epoch:2",
+    "ledger": null,
+    "events": 7
+  },
+  "snapshot_seq": 6,
+  "next_seq": 7
+}

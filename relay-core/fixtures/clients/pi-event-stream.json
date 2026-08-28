@@ -1,0 +1,13 @@
+[
+  {
+    "protocol": "relay.client-read-model/v1", "view": "event_stream_snapshot", "run_id": "RUN-1",
+    "snapshot": { "run_id": "RUN-1", "source": "runtime-v2", "read_only": false, "host": "alive", "host_detail": "epoch:2", "ledger": null, "events": 7 },
+    "snapshot_seq": 6, "next_seq": 7
+  },
+  {
+    "protocol": "relay.event/v2", "run_id": "RUN-1", "seq": 7, "at": "2026-08-21T10:00:00+08:00", "kind": "attempt_failed", "node_id": "fix", "attempt_id": "att-1", "executor_kind": "process", "executor_ref": "bin/fix.sh", "observation_status": null, "reason": "E_EXECUTOR_EXIT_NONZERO", "detail": "exit code 2"
+  },
+  {
+    "protocol": "relay.event/v2", "run_id": "RUN-1", "seq": 8, "at": "2026-08-21T10:00:01+08:00", "kind": "client_disconnected", "node_id": null, "attempt_id": null, "executor_kind": null, "executor_ref": null, "observation_status": null, "reason": null, "detail": "host stream disconnected"
+  }
+]

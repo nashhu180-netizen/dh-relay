@@ -1,0 +1,6 @@
+{
+  "schema": "relay.launch-receipt/v2",
+  "reason": "E_BAD_TYPE",
+  "at": "/reason",
+  "why": "design/08 §3：state=failed 的 Receipt 必须带 reason code，不得空着"
+}

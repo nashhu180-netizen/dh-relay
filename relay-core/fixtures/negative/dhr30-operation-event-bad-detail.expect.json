@@ -1,0 +1,6 @@
+{
+  "schema": "relay.event/v2",
+  "reason": "E_BAD_VALUE",
+  "at": "/detail",
+  "why": "design/08 §3：operation_* 事件的 detail 严格为 operation:<receipt_id>:<digest>:<state>"
+}

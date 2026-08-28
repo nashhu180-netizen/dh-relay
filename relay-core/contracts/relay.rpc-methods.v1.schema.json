@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dh-relay.local/contracts/relay.rpc-methods/v1",
+  "title": "relay.rpc-methods/v1 — Runtime RPC 方法参数与结果",
+  "type": "object",
+  "properties": {},
+  "required": [],
+  "additionalProperties": false,
+  "$defs": {
+    "listRuns_params": {
+      "type": "object",
+      "properties": { "include_legacy": { "type": "boolean", "default": false } },
+      "additionalProperties": false
+    },
+    "inspectRun_params": {
+      "type": "object",
+      "properties": {
+        "run_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/run_id" },
+        "view": { "type": "string", "enum": ["status", "detail"] }
+      },
+      "required": ["run_id", "view"],
+      "additionalProperties": false
+    },
+    "subscribe_params": {
+      "type": "object",
+      "properties": {
+        "run_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/run_id" },
+        "after_seq": { "type": ["integer", "null"], "minimum": 0, "default": null }
+      },
+      "required": ["run_id"],
+      "additionalProperties": false
+    },
+    "start_params": {
+      "type": "object",
+      "properties": { "run": { "$ref": "https://dh-relay.local/contracts/relay.run/v2" } },
+      "required": ["run"],
+      "additionalProperties": false
+    },
+    "control_params": {
+      "type": "object",
+      "properties": {
+        "run_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/run_id" },
+        "action": { "type": "string", "enum": ["stop", "resume"] }
+      },
+      "required": ["run_id", "action"],
+      "additionalProperties": false
+    },
+    "contracts_params": {
+      "type": "object",
+      "properties": {
+        "descriptor_version": { "const": 1 },
+        "repo_id": { "allOf": [{ "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/identifier" }, { "pattern": "^sha256:[0-9a-f]{64}$" }] },
+        "generation": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "local_user_capability": { "type": "string", "minLength": 1, "maxLength": 512 }
+      },
+      "required": ["descriptor_version", "repo_id", "generation", "local_user_capability"],
+      "additionalProperties": false
+    },
+    "validate_params": {
+      "type": "object",
+      "properties": {
+        "contract_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/identifier" },
+        "document": { "type": "object", "additionalProperties": true }
+      },
+      "required": ["contract_id", "document"],
+      "additionalProperties": false
+    },
+    "receipt_result": {
+      "type": "object",
+      "properties": { "receipt": { "$ref": "https://dh-relay.local/contracts/relay.launch-receipt/v2" } },
+      "required": ["receipt"],
+      "additionalProperties": false
+    },
+    "contracts_result": {
+      "type": "object",
+      "properties": {
+        "descriptor_version": { "const": 1 },
+        "repo_id": { "allOf": [{ "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/identifier" }, { "pattern": "^sha256:[0-9a-f]{64}$" }] },
+        "endpoint": {
+          "type": "object",
+          "properties": { "kind": { "type": "string", "enum": ["pipe", "unix"] }, "address": { "type": "string", "minLength": 1 } },
+          "required": ["kind", "address"],
+          "additionalProperties": false
+        },
+        "generation": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "runtime_version": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "capability_hash": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/sha256" },
+        "state": { "const": "ready" }
+      },
+      "required": ["descriptor_version", "repo_id", "endpoint", "generation", "runtime_version", "capability_hash", "state"],
+      "additionalProperties": false
+    },
+    "validate_result": {
+      "type": "object",
+      "properties": {
+        "valid": { "type": "boolean" },
+        "reason": { "oneOf": [{ "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/reason_code" }, { "type": "null" }] }
+      },
+      "required": ["valid", "reason"],
+      "additionalProperties": false
+    },
+    "run_state_changed_notification": {
+      "type": "object",
+      "properties": {
+        "state": { "$ref": "https://dh-relay.local/contracts/relay.run-state/v1" },
+        "caused_by_seq": { "type": "integer", "minimum": 0 }
+      },
+      "required": ["state", "caused_by_seq"],
+      "additionalProperties": false
+    }
+  }
+}

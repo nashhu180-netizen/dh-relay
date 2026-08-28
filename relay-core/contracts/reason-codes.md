@@ -61,9 +61,24 @@
 |---|---|
 | `E_UNKNOWN_METHOD` | 方法不在 `relay.rpc/v1` 的枚举内。**不为未来方法预留宽容通道**——P7/P8 增补 attention/approve 时 `capability_hash` 随之变化，握手自然拒绝旧 Runtime |
 | `E_TRANSPORT_FRAME_INVALID` | NDJSON 帧不可解析或不符 JSON-RPC 2.0 信封 |
+| `E_CLIENT_NOT_AUTHORIZED` | 本地连接尚未完成 `contracts` 身份确认就调用业务方法；客户端应先完成同一 descriptor 的确认，再重试 |
+| `E_SERVICE_IDENTITY_MISMATCH` | `contracts` 提供的 repo、generation、endpoint 或本机 capability 与已连接 service 不符；客户端必须重新发现，不得把 credential 改投别的 endpoint |
+| `E_SERVICE_NOT_READY` | 本地 service 尚未完成 endpoint、operation ledger 或 host actor 的就绪条件；可在短暂退避后重试同一请求 |
+| `E_REQUEST_IN_FLIGHT` | 相同 `(client_id, request_id, method)` 已被接受但尚未提交；客户端保留原 request 并安全重试，不得新开号 |
+| `E_CURSOR_GAP` | 订阅 cursor 不是该 Run 的连续可回放事件序号；客户端重新取快照，不得拼接猜测 |
+| `E_LEGACY_READ_ONLY` | legacy v1 Run 只可投影读取，任何现在或未来的 control action 都拒绝 |
+| `E_ORPHAN_STORE_READ_ONLY` | v2 Run 根在盘上、operation ledger 里却无人认领（design/08 §3 的孤儿 Store）。该 Run 仍以 `source:"runtime-v2"` + `read_only:true` 投影并可 list/status/inspect/subscribe，但一切 mutation 与 actor 建立（stop / resume / 取 lease / 写事件）一律拒绝。**重试语义：不可重试**——重试同一请求永远得到同一拒绝，恢复要靠人先裁决这个无人认领的现场（对账或归档），不是靠客户端退避 |
+
+> **`E_ORPHAN_STORE_READ_ONLY` 与近邻的边界**（新增码的第 ③ 条规矩）：
+> · 与 `E_LEGACY_READ_ONLY` 的分界是 **Run 的协议世代**——legacy 是 `.dh-runtime/relay/` 下的 v1 现场，压根没有 v2 事件账可读可写；孤儿是**完整的 v2 Run**（事件账逐行校验通过），只是来处对不上账。两者都只读，但客户端能做的事不同：孤儿的 `inspect` 有真 `relay.run-state/v1`，legacy 的恒为 null。
+> · 与 `E_RUN_NOT_FOUND` 的分界是**根在不在**：孤儿的根在、内容完整且可读；`E_RUN_NOT_FOUND` 是盘上根本没有这个 Run。把孤儿报成 not-found 等于用索引缺失否定事件账里的事实（design/07 §4「Run Store 才是 Run 真相」明令禁止）。
+> · 与 `E_SERVICE_NOT_READY` 的分界是**可否退避重试**：后者是 service 自身还没就绪，退避后同一请求会成功；孤儿是 Run 的属性，退避多久都还是拒绝。
+> · **反例形态**：本码与其余六个 DHR_30 Runtime 码同属运行期语义（不是契约结构违例），故其可复跑反例是 `test/rpc-service.test.mjs`「孤儿 Store 只读」而不是 `fixtures/negative/` 里的静态载荷——契约层能校验的只有它的**形态**（`reason_code` pattern）。
 
 ## 汇总
 
-共 **24** 个码（去重实测：`grep -oE '\bE_[A-Z][A-Z0-9_]+\b' reason-codes.md | sort -u | wc -l` → 24），覆盖 fail-closed 三条、start 前置、契约结构、幂等冲突、Executor 生命周期、RPC 六类。
+共 **31** 个码（去重实测：`grep -oE '^\| \`E_[A-Z0-9_]+\`' reason-codes.md | sort -u | wc -l` → 31），覆盖 fail-closed 三条、start 前置、契约结构、幂等冲突、Executor 生命周期与 DHR_30 Runtime 服务。
+
+> ⚠️ 计数只数**表格行首**的码。此前登记的命令是 `grep -oE '\bE_[A-Z][A-Z0-9_]+\b' …`，它把「边界声明」段里列举的**进程内异常前缀**（`E_STORE_CORRUPT` / `E_EVENT_LOG_CORRUPT` / `E_LEASE_ACQUIRE_TIMEOUT` …）也数了进去，实跑得 37 而非文中写的 30——那条命令从来对不上它自己的结论。协议码全集以表格为准。
 
 **新增码的规矩**：加码必须同时 ①写进本表 ②在 `fixtures/negative/` 加一份能触发它的反例 + `.expect.json` ③说明它与既有码的边界（尤其别和 `E_EXECUTOR_HOST_LOST` / `observation_lost` 的分界线混淆）。

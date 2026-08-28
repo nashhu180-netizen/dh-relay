@@ -1,0 +1,6 @@
+{
+  "schema": "relay.rpc/v1",
+  "reason": "E_BAD_VALUE",
+  "at": "/params/repo_id",
+  "why": "design/08 §2：contracts 的 repo_id 必须是 sha256:<canonical-root>，形态不符即拒"
+}

@@ -1,0 +1,12 @@
+{
+  "jsonrpc": "2.0",
+  "id": 7,
+  "error": {
+    "code": -32600,
+    "message": "RPC rejected",
+    "data": {
+      "reason": "E_RUN_NOT_FOUND",
+      "detail": "R404-nope-20260827"
+    }
+  }
+}

@@ -5,10 +5,11 @@
   "description": "Relay v2 persistent kernel: client-neutral JSON contracts, reason codes, golden fixtures and an independent validator. Runtime/CLI land in DHR_29/DHR_30.",
   "type": "module",
   "bin": {
+    "relay": "./cli/main.mjs",
     "relay-validate": "./tools/validate.mjs"
   },
   "scripts": {
-    "test": "node --test test/contracts.test.mjs test/store.test.mjs test/runtime.test.mjs test/rpc.test.mjs",
+    "test": "node --test test/contracts.test.mjs test/store.test.mjs test/runtime.test.mjs test/rpc.test.mjs test/rpc-service.test.mjs test/ledger.test.mjs test/discovery.test.mjs test/service.test.mjs test/cli.test.mjs test/dsh-bridge.test.mjs test/client-fixtures.test.mjs test/read-model-mirror.test.mjs test/control-plane-imports.test.mjs",
     "audit": "node tools/audit-contracts.mjs",
     "validate": "node tools/validate.mjs"
   },

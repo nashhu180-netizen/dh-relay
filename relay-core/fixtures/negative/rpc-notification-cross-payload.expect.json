@@ -1,6 +1,6 @@
 {
   "schema": "relay.rpc/v1",
   "reason": "E_PROTOCOL_MISMATCH",
-  "at": "/params/protocol",
+  "at": "/params/state/protocol",
   "why": "F-057：method=runStateChanged 却塞入完整、可独立识别的 relay.event/v2 冻结对象，是发送目标错误而非本协议普通坏值；只要该对象不再完整或不可识别，就不得报本码。"
 }

@@ -381,7 +381,7 @@ async function withRpcServer(handlers) {
 test('server：合法 request 只调 handlers[method] 并回其 result，响应帧过冻结信封', async () => {
   const called = [];
   const { endpoint, handle } = await withRpcServer({
-    contracts: (params) => { called.push('contracts'); return { ok: true, echo: params }; },
+    contracts: (params) => { called.push('contracts'); return { valid: true, reason: null }; },
     inspectRun: () => { called.push('inspectRun'); return { nope: true }; },
     listRuns: () => { called.push('listRuns'); return []; },
     validate: () => { called.push('validate'); return { valid: true }; },
@@ -399,7 +399,7 @@ test('server：合法 request 只调 handlers[method] 并回其 result，响应�
     client.send(makeRequest('contracts', { params: { run_id: 'RUN-1' } }));
     await until(() => received.length === 1);
     assert.deepEqual(called, ['contracts'], '合法 request 只应调用 handlers.contracts，不得串扰其他方法');
-    assert.deepEqual(received[0], { jsonrpc: '2.0', id: 1, result: { ok: true, echo: { run_id: 'RUN-1' } } });
+    assert.deepEqual(received[0], { jsonrpc: '2.0', id: 1, result: { valid: true, reason: null } });
     // 服务端响应本身必须过冻结信封（response 分支）。
     const { ajv, byId } = loadAjv();
     const v = validateOne(ajv, byId, 'relay.rpc/v1', received[0]);
@@ -643,6 +643,7 @@ const FULL_RUN_STATE = {
   node_states: [{ node_id: 'fix', status: 'pending' }],
   updated_at: '2026-08-21T10:00:00+08:00',
 };
+const FULL_RUN_STATE_CHANGED = { state: FULL_RUN_STATE, caused_by_seq: 1 };
 
 function proxyWithHiddenToJson(items) {
   const target = [...items];
@@ -700,11 +701,11 @@ test('server：subscribe 注入 seam——sink.event/runStateChanged 推送完�
     assert.equal(typeof sink, 'object');
     // 两个 sink 方法：有效完整载荷 → 返回 true 且逐字原样推送。
     assert.equal(sink.event(FULL_EVENT), true);
-    assert.equal(sink.runStateChanged(FULL_RUN_STATE), true);
+    assert.equal(sink.runStateChanged(FULL_RUN_STATE_CHANGED), true);
     await until(() => received.length === 3);
     assert.deepEqual(received[1], { jsonrpc: '2.0', method: 'event', params: FULL_EVENT }, 'event 通知逐字原样');
     assert.deepEqual(received[2],
-      { jsonrpc: '2.0', method: 'runStateChanged', params: FULL_RUN_STATE }, 'runStateChanged 通知逐字原样');
+      { jsonrpc: '2.0', method: 'runStateChanged', params: FULL_RUN_STATE_CHANGED }, 'runStateChanged 通知逐字原样');
     for (const frame of received.slice(1)) {
       const v = validateOne(ajv, byId, 'relay.rpc/v1', frame);
       assert.equal(v.ok, true, `推送通知须过冻结信封：${v.reason ?? ''} ${v.detail ?? ''}`);
@@ -736,12 +737,12 @@ test('server：sink 对三种无效载荷 fail-closed——返回 false、不发
     client.send(makeRequest('subscribe'));
     await until(() => received.length === 1); // 只有 subscribe 响应
     // ① 交叉协议：runStateChanged 塞 relay.event/v2 载荷（F-023 反例）、event 塞 run-state 载荷。
-    for (const [method, params] of [['runStateChanged', FULL_EVENT], ['event', FULL_RUN_STATE]]) {
+    for (const [method, params] of [['runStateChanged', { state: FULL_EVENT, caused_by_seq: 1 }], ['event', FULL_RUN_STATE]]) {
       const r = validateOne(ajv, byId, 'relay.rpc/v1', { jsonrpc: '2.0', method, params });
       assert.equal(r.reason, 'E_PROTOCOL_MISMATCH', '完整且可识别的另一冻结协议对象才报 F-057 新码');
-      assert.equal(r.at, '/params/protocol');
+      assert.equal(r.at, method === 'runStateChanged' ? '/params/state/protocol' : '/params/protocol');
     }
-    assert.equal(sink.runStateChanged(FULL_EVENT), false);
+    assert.equal(sink.runStateChanged({ state: FULL_EVENT, caused_by_seq: 1 }), false);
     assert.equal(sink.event(FULL_RUN_STATE), false);
     // ② 缺 protocol。
     const noProtocol = { ...FULL_EVENT };
@@ -752,33 +753,33 @@ test('server：sink 对三种无效载荷 fail-closed——返回 false、不发
     const crossMissingProtocol = { ...FULL_EVENT };
     delete crossMissingProtocol.protocol;
     assert.equal(validateOne(ajv, byId, 'relay.rpc/v1',
-      { jsonrpc: '2.0', method: 'runStateChanged', params: crossMissingProtocol }).reason, 'E_UNKNOWN_FIELD',
+      { jsonrpc: '2.0', method: 'runStateChanged', params: { state: crossMissingProtocol, caused_by_seq: 1 } }).reason, 'E_UNKNOWN_FIELD',
     '不完整的另一协议对象不报 F-057 新码，保留实际最具体的未知字段错误');
     assert.equal(sink.event(noProtocol), false);
     // ③ 未知字段。
     assert.equal(validateOne(ajv, byId, 'relay.rpc/v1',
-      { jsonrpc: '2.0', method: 'runStateChanged', params: { ...FULL_RUN_STATE, bogus: 1 } }).reason, 'E_UNKNOWN_FIELD',
+      { jsonrpc: '2.0', method: 'runStateChanged', params: { ...FULL_RUN_STATE_CHANGED, bogus: 1 } }).reason, 'E_UNKNOWN_FIELD',
     '未知字段不是完整冻结对象，保留 E_UNKNOWN_FIELD');
     assert.equal(validateOne(ajv, byId, 'relay.rpc/v1',
-      { jsonrpc: '2.0', method: 'runStateChanged', params: { ...FULL_EVENT, bogus: 1 } }).reason, 'E_UNKNOWN_FIELD',
+      { jsonrpc: '2.0', method: 'runStateChanged', params: { state: { ...FULL_EVENT, bogus: 1 }, caused_by_seq: 1 } }).reason, 'E_UNKNOWN_FIELD',
     '含未知字段的另一协议对象不完整，保留 E_UNKNOWN_FIELD 而非 F-057 新码');
-    assert.equal(sink.runStateChanged({ ...FULL_RUN_STATE, bogus: 1 }), false);
-    assert.equal(sink.runStateChanged({ ...FULL_RUN_STATE, bogus: undefined }), false,
+    assert.equal(sink.runStateChanged({ ...FULL_RUN_STATE_CHANGED, bogus: 1 }), false);
+    assert.equal(sink.runStateChanged({ ...FULL_RUN_STATE_CHANGED, bogus: undefined }), false,
       'undefined 未知字段不得先被 JSON.stringify 静默删除后放行');
-    assert.equal(sink.runStateChanged({ ...FULL_RUN_STATE, toJSON: () => FULL_RUN_STATE }), false,
+    assert.equal(sink.runStateChanged({ ...FULL_RUN_STATE_CHANGED, toJSON: () => FULL_RUN_STATE_CHANGED }), false,
       '不得调用生产者提供的 toJSON 把非法通知净化成合法帧');
     const nodeStatesWithToJson = [...FULL_RUN_STATE.node_states];
     nodeStatesWithToJson.toJSON = () => [];
-    assert.equal(sink.runStateChanged({ ...FULL_RUN_STATE, node_states: nodeStatesWithToJson }), false,
+    assert.equal(sink.runStateChanged({ state: { ...FULL_RUN_STATE, node_states: nodeStatesWithToJson }, caused_by_seq: 1 }), false,
       '数组自身的 toJSON 不得在原对象校验后改变通知载荷');
     const nodeStatesWithExtra = [...FULL_RUN_STATE.node_states];
     nodeStatesWithExtra.extra = true;
-    assert.equal(sink.runStateChanged({ ...FULL_RUN_STATE, node_states: nodeStatesWithExtra }), false,
+    assert.equal(sink.runStateChanged({ state: { ...FULL_RUN_STATE, node_states: nodeStatesWithExtra }, caused_by_seq: 1 }), false,
       '数组任意额外属性不得进入序列化路径');
     const nodeStatesWithAccessor = [...FULL_RUN_STATE.node_states];
     let accessorReads = 0;
     Object.defineProperty(nodeStatesWithAccessor, '0', { get: () => { accessorReads += 1; return FULL_RUN_STATE.node_states[0]; } });
-    assert.equal(sink.runStateChanged({ ...FULL_RUN_STATE, node_states: nodeStatesWithAccessor }), false,
+    assert.equal(sink.runStateChanged({ state: { ...FULL_RUN_STATE, node_states: nodeStatesWithAccessor }, caused_by_seq: 1 }), false,
       '数组索引 accessor 不得在预检时执行');
     assert.equal(accessorReads, 0, '拒绝 accessor 时不得执行其 getter');
     // ④ 本协议内普通坏值。
@@ -809,28 +810,28 @@ test('server：通知从数组 snapshot 发送，不受 Proxy 或原型 toJSON �
     client = await createTransportClient(endpoint, { onFrame: (o) => received.push(o) });
     client.send(makeRequest('subscribe'));
     await until(() => received.length === 1 && sink);
-    assert.equal(sink.runStateChanged({ ...FULL_RUN_STATE,
-      node_states: proxyWithHiddenToJson(FULL_RUN_STATE.node_states) }), true);
+    assert.equal(sink.runStateChanged({ state: { ...FULL_RUN_STATE,
+      node_states: proxyWithHiddenToJson(FULL_RUN_STATE.node_states) }, caused_by_seq: 1 }), true);
     const changingLength = proxyWithChangingLength([...FULL_RUN_STATE.node_states, { node_id: 'review', status: 'pending' }]);
-    assert.equal(sink.runStateChanged({ ...FULL_RUN_STATE, node_states: changingLength }), true);
+    assert.equal(sink.runStateChanged({ state: { ...FULL_RUN_STATE, node_states: changingLength }, caused_by_seq: 1 }), true);
     const inheritedToJson = [...FULL_RUN_STATE.node_states];
     Object.setPrototypeOf(inheritedToJson, { toJSON: () => [] });
-    assert.equal(sink.runStateChanged({ ...FULL_RUN_STATE, node_states: inheritedToJson }), true);
+    assert.equal(sink.runStateChanged({ state: { ...FULL_RUN_STATE, node_states: inheritedToJson }, caused_by_seq: 1 }), true);
     const savedArrayToJson = Array.prototype.toJSON;
     try {
       Array.prototype.toJSON = () => [];
-      assert.equal(sink.runStateChanged({ ...FULL_RUN_STATE, node_states: [...FULL_RUN_STATE.node_states] }), true);
+      assert.equal(sink.runStateChanged({ state: { ...FULL_RUN_STATE, node_states: [...FULL_RUN_STATE.node_states] }, caused_by_seq: 1 }), true);
     } finally {
       if (savedArrayToJson === undefined) delete Array.prototype.toJSON;
       else Array.prototype.toJSON = savedArrayToJson;
     }
     await until(() => received.length === 5);
-    assert.deepEqual(received[1], { jsonrpc: '2.0', method: 'runStateChanged', params: FULL_RUN_STATE });
+    assert.deepEqual(received[1], { jsonrpc: '2.0', method: 'runStateChanged', params: FULL_RUN_STATE_CHANGED });
     assert.deepEqual(received[2], { jsonrpc: '2.0', method: 'runStateChanged', params: {
-      ...FULL_RUN_STATE, node_states: [...FULL_RUN_STATE.node_states, { node_id: 'review', status: 'pending' }],
+      state: { ...FULL_RUN_STATE, node_states: [...FULL_RUN_STATE.node_states, { node_id: 'review', status: 'pending' }] }, caused_by_seq: 1,
     } });
-    assert.deepEqual(received[3], { jsonrpc: '2.0', method: 'runStateChanged', params: FULL_RUN_STATE });
-    assert.deepEqual(received[4], { jsonrpc: '2.0', method: 'runStateChanged', params: FULL_RUN_STATE });
+    assert.deepEqual(received[3], { jsonrpc: '2.0', method: 'runStateChanged', params: FULL_RUN_STATE_CHANGED });
+    assert.deepEqual(received[4], { jsonrpc: '2.0', method: 'runStateChanged', params: FULL_RUN_STATE_CHANGED });
   } finally {
     client?.destroy();
     await handle.close();
@@ -987,7 +988,7 @@ test('F-057：已注册同名新版本保持 E_UNSUPPORTED_VERSION，不误报�
   byId.set(future.$id, future);
   byId.set('relay.event/v3', future);
   const r = validateOne(ajv, byId, 'relay.rpc/v1', {
-    jsonrpc: '2.0', method: 'runStateChanged', params: { ...FULL_EVENT, protocol: 'relay.event/v3' },
+    jsonrpc: '2.0', method: 'runStateChanged', params: { state: { ...FULL_EVENT, protocol: 'relay.event/v3' }, caused_by_seq: 1 },
   });
   assert.equal(r.reason, 'E_UNSUPPORTED_VERSION');
 });

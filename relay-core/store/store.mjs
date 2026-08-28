@@ -81,7 +81,20 @@ async function writeAtomic(path, value) {
 
 export { replayRun };
 
-function createHandle({ root, run, events, receipts, checkpoints, results, enqueue, writeGuard = null }) {
+/** DHR_30：operation Receipt 的 state ↔ 事件 kind 是一一对应的，不允许第三种写法。 */
+const OPERATION_EVENT_KIND = {
+  in_flight: 'operation_accepted',
+  committed: 'operation_committed',
+  failed: 'operation_failed',
+};
+
+function cursorGap(detail) {
+  const error = new Error(`E_CURSOR_GAP:${detail}`);
+  error.reason = 'E_CURSOR_GAP';
+  return error;
+}
+
+function createHandle({ root, run, events, receipts, checkpoints, results, operations, enqueue, writeGuard = null }) {
   const runPath = join(root, 'run.json');
   const eventsPath = join(root, 'events.jsonl');
   const statePath = join(root, 'state.json');
@@ -89,6 +102,14 @@ function createHandle({ root, run, events, receipts, checkpoints, results, enque
   const checkpointsPath = join(root, 'checkpoints');
   const resultsPath = join(root, 'results');
   const quarantinePath = join(root, 'quarantine');
+  const operationsPath = join(root, 'operations');
+
+  /**
+   * 订阅者（连接本地，纯内存）。design/08 §5 的 barrier：注册发生在**写队列内**，
+   * 于是「快照截止到哪一条」与「从哪一条开始推」由同一次串行化决定，两者之间没有缝隙。
+   * 推送只做一次同步入列，真正的网络发送由订阅方在队列外做——不让慢客户端堵住 Store 写。
+   */
+  const subscribers = new Set();
 
   // fencing（DHR_51 · 移交②）：可选写权卫兵，在串行队列内、每次变更落盘前调用；
   // 抛错即中止本次变更（事件与工件都不落盘）。Store 不理解卫兵语义——保持域中立。
@@ -117,8 +138,24 @@ function createHandle({ root, run, events, receipts, checkpoints, results, enque
     return current ? results.get(current.receipt_id) : undefined;
   }
 
+  /** 本次写里新产生、尚未通知订阅者的事件。见 persistState 的顺序说明。 */
+  let pendingNotifications = [];
+
+  /**
+   * 写快照并**在此之后**通知订阅者。
+   * 顺序是有讲究的：订阅方要按 `(event, state)` 成对渲染，而 state 只有在 replay 完这条事件
+   * 之后才是对的。在 append 之后立刻通知，推出去的 state 会是上一条事件时的旧快照。
+   */
   async function persistState() {
-    await writeAtomic(statePath, replayRun({ run, events }));
+    const state = replayRun({ run, events });
+    await writeAtomic(statePath, state);
+    const emitted = pendingNotifications;
+    pendingNotifications = [];
+    for (const event of emitted) {
+      for (const listener of subscribers) {
+        try { listener(event, state); } catch { /* 订阅者自身的问题不回灌 Store 写路径 */ }
+      }
+    }
   }
 
   // 仅在写队列内调用：校验 → 守卫 → 落盘 → 进内存账。
@@ -155,6 +192,7 @@ function createHandle({ root, run, events, receipts, checkpoints, results, enque
 
     await appendFile(eventsPath, `${encode(event)}\n`, 'utf8');
     events.push(event);
+    pendingNotifications.push(event);
     return event;
   }
 
@@ -243,6 +281,72 @@ function createHandle({ root, run, events, receipts, checkpoints, results, enque
         return { ok: true, idempotent: false };
       });
     },
+    /**
+     * DHR_30 operation Receipt 落账（design/08 §3）：Receipt 与 operation_* 事件在同一次
+     * 串行写里落盘，故「Run Store 有这条 operation 事件」与「Receipt 可读回」永远同真同假。
+     * ledger 只是索引；恢复时以本函数写下的事实为准。
+     */
+    appendOperation(receipt) {
+      return runWrite(async () => {
+        const receiptId = requireId(receipt?.receipt_id, 'receipt-id');
+        const kind = OPERATION_EVENT_KIND[receipt?.state];
+        if (!kind) throw new Error(`E_BAD_VALUE:operation-state:${receipt?.state}`);
+        requireId(receipt?.request_digest, 'request-digest');
+        const prior = operations.get(receiptId);
+        if (prior) {
+          // 同 receipt_id 同内容 = 重投；内容不同 = 冲突，绝不静默覆盖（幂等的全部意义）。
+          return encode(prior) === encode(receipt)
+            ? { ok: true, idempotent: true }
+            : { ok: false, reason: 'E_REQUEST_CONFLICT' };
+        }
+        await mkdir(operationsPath, { recursive: true });
+        await writeCreateNew(join(operationsPath, `${receiptId}.json`), receipt);
+        operations.set(receiptId, receipt);
+        await emitEvent({
+          kind, at: receipt.issued_at, node_id: null, attempt_id: null,
+          detail: `operation:${receiptId}:${receipt.request_digest}:${receipt.state}`,
+        });
+        await persistState();
+        return { ok: true, idempotent: false };
+      });
+    },
+    async readOperation(receiptId) { return operations.get(receiptId) ?? null; },
+    get operations() { return [...operations.values()]; },
+
+    /**
+     * 订阅 barrier。返回 `{ snapshot_seq, next_seq, unsubscribe }`：
+     * 调用方应把 `seq < next_seq` 的事件作为快照读走，`seq >= next_seq` 的从推送里取。
+     * 用 next_seq 而不是 `> snapshot_seq` 作切分：空事件账时 snapshot_seq 无自然取值，
+     * 用 0 冒充会让第 0 条事件被当成「快照里已有」而丢掉。
+     */
+    subscribe(listener) {
+      if (typeof listener !== 'function') throw new Error('E_BAD_VALUE:listener-required');
+      return enqueue(async () => {
+        const nextSeq = events.length;
+        subscribers.add(listener);
+        let released = false;
+        return {
+          snapshot_seq: Math.max(0, nextSeq - 1),
+          next_seq: nextSeq,
+          unsubscribe: () => {
+            if (released) return;
+            released = true;
+            subscribers.delete(listener);
+          },
+        };
+      });
+    },
+
+    /**
+     * cursor 补发（design/08 §5）：只补**严格连续**的 seq。事件账里 seq 从 0 起密集，
+     * 所以「客户端声称看过的 seq 我们没有」就是缺口——拒绝，不从头重放也不拼接。
+     */
+    async readEventsAfter(afterSeq) {
+      if (!Number.isInteger(afterSeq) || afterSeq < -1) throw cursorGap(`not-a-cursor:${afterSeq}`);
+      const lastSeq = events.length - 1;
+      if (afterSeq > lastSeq) throw cursorGap(`ahead-of-log:${afterSeq}>${lastSeq}`);
+      return events.filter(event => event.seq > afterSeq);
+    },
     async readState() { return JSON.parse(await readFile(statePath, 'utf8')); },
     get runPath() { return runPath; },
   };
@@ -253,7 +357,7 @@ export async function createStore({ root, run, writeGuard = null }) {
   await mkdir(root, { recursive: true });
   const runPath = join(root, 'run.json');
   await writeCreateNew(runPath, run);
-  for (const dir of ['receipts', 'checkpoints', 'results', 'quarantine']) {
+  for (const dir of ['receipts', 'checkpoints', 'results', 'quarantine', 'operations']) {
     await mkdir(join(root, dir), { recursive: true });
   }
   // 建库即写初始快照：readState 在任何变更之前都可读，不留「首写前 ENOENT」的窗口。
@@ -265,6 +369,7 @@ export async function createStore({ root, run, writeGuard = null }) {
     receipts: new Map(),
     checkpoints: new Map(),
     results: new Map(),
+    operations: new Map(),
     enqueue: createWriteQueue(),
     writeGuard,
   });
@@ -296,6 +401,20 @@ async function loadEvents(root, run) {
     events.push(event);
   }
   return events;
+}
+
+/**
+ * 只读的事件账完整性校验（DHR_30 · discovery 的完整性判据）。
+ *
+ * 它就是 `openStore` 用的**同一段** `loadEvents`：逐行可解析、协议与 run 归属正确、
+ * seq 从 0 严格连续、逐条过冻结 `relay.event/v2`；任何一条不成立即抛
+ * `E_EVENT_LOG_CORRUPT:*`。discovery 不能直接调 `openStore` 判完整性——后者会
+ * **重写 state.json**，而发现是只读的（design/08 §5 第 1 步与第 4 步都写死了「不迁移、不改一个字节」）。
+ * 单独开这个出口，是为了让「discovery 认定完整」与「openStore 打得开」永远同真同假：
+ * 两条判据各写一份，迟早会分叉成「列表里能看见、一打开就 fail-closed」。
+ */
+export async function readEventLog({ root, run }) {
+  return loadEvents(root, run);
 }
 
 async function readArtifactJson(path) {
@@ -362,6 +481,7 @@ export async function openStore({ root, writeGuard = null }) {
   const receipts = await loadArtifacts(join(root, 'receipts'), (receipt) => requireId(receipt?.receipt_id, 'receipt-id'));
   const results = await loadArtifacts(join(root, 'results'), (result) => requireId(result?.receipt_id, 'receipt-id'));
   const checkpoints = await loadCheckpoints(join(root, 'checkpoints'));
+  const operations = await loadArtifacts(join(root, 'operations'), (operation) => requireId(operation?.receipt_id, 'receipt-id'));
   await writeAtomic(join(root, 'state.json'), replayRun({ run, events }));
   return createHandle({
     root,
@@ -370,6 +490,7 @@ export async function openStore({ root, writeGuard = null }) {
     receipts,
     checkpoints,
     results,
+    operations,
     enqueue: createWriteQueue(),
     writeGuard,
   });

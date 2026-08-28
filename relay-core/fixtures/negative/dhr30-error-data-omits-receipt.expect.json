@@ -1,0 +1,6 @@
+{
+  "schema": "relay.rpc/v1",
+  "reason": "E_MISSING_FIELD",
+  "at": "/error/data/receipt",
+  "why": "design/08 §1：error response 一律为 {reason, receipt}——非 operation 拒绝也必须显式 receipt:null。省略它，客户端就无法区分「operation 确实失败了」与「operation 根本没开始」，只能靠猜决定要不要按同一幂等键重试"
+}

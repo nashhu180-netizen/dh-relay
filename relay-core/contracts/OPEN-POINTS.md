@@ -11,14 +11,14 @@
 | # | 位置 | 形态 | 为什么开 | 谁在何时收窄 |
 |---|---|---|---|---|
 | **O-1** | `relay.result.v2.schema.json` → `properties.structured` | `additionalProperties: true` | **协议业务域无关这条硬约束的唯一泄压阀。** v1 把 `git_snapshot` / `changed_paths` / `tests_run` 写进契约必填（隐含假设"任务=改代码"）；v2 要中立就必须有一个通用载荷兜住领域特定的结果数据。代价已在 `compat-matrix.md` §4 如实登记：v2 不再对 git 证据做结构校验，该责任移交 Workflow 层。 | **不收窄**（有意长期开放）。但见下方「O-1 的已知代价」——需要 Workflow 层补校验，协议层不承诺。 |
-| **O-2** | `relay.rpc.v1.schema.json` → `$defs.request.properties.params` | `additionalProperties: true` | 请求参数形状**按 method 变**，而本卡范围是"P5 最小协议集"，不含 per-method 参数 schema。现在硬编一套会在 P6/P7 增补 `attention`/`approve` 时全部推翻。 | **P6/P7 的 per-method schema**。在那之前，description 里已如实说破"私有类型禁令与 locator 约束在此处不是机器闸"（见 F-015）。 |
-| **O-3** | `relay.rpc.v1.schema.json` → `$defs.response.properties.result` | 无 `additionalProperties`（缺省开放） | 成功载荷形状按 method 变，同 O-2。`inspectRun` 返回客户端中立 Read Model、`start` 返回 `relay.launch-receipt/v2`，两者结构完全不同。 | **DHR_30 冻结正式 Read Model 时**可先收窄 `inspectRun` / `listRuns` 两个 method 的返回；其余随 P6/P7。 |
+| **O-2** | `relay.rpc-methods.v1.schema.json` → `$defs.validate_params.properties.document` | `additionalProperties: true` | `validate` 的被校验文档天然是任意 JSON 对象；它不携带 Runtime 状态，且由所选 contract 自己校验。 | **不收窄**（协议验证的必要输入）。 |
 
 ### 已收窄（本卡内根据小审意见修掉，不再是开口）
 
 | 原位置 | 原形态 | 处置 |
 |---|---|---|
 | `relay.rpc.v1.schema.json` → `$defs.notification.properties.params` | 曾为 `additionalProperties: true` 且**零说明** | **已收窄**。推送只有两种载荷（`event` → `relay.event/v2`、`runStateChanged` → `relay.run-state/v1`），而这两份 schema 本卡已冻结——留开口是纯粹少做一步。现改为 `allOf` + `if/then` 按 method 分别 `$ref` 到对应协议。小审原话："最站不住"，判断成立。 |
+| `relay.rpc.v1.schema.json` → `$defs.request.properties.params` | 曾为 `additionalProperties: true` | **DHR_30 已收窄**。全部七个已枚举 RPC method 由 `relay.rpc-methods/v1` 的一一对应闭合参数对象约束；`allOf` 分支与 method 枚举必须同批维护。 |
 
 > **关于该位置的审计口径**：`tools/audit-contracts.mjs` 是**节点级**遍历，看不到同级 `allOf` 的条件收窄，因此它仍会把 `notification.properties.params` 报成"节点上开着"。脚本里用单独的 `CONDITIONALLY_NARROWED` 名单把它与"有意开放点"区分开，报告为「被 allOf/if-then 条件收窄（实际闭合）」。**它不是开放点**——`method` 枚举只有两个值，两条 `if/then` 必有其一命中，而两个 `$ref` 目标自身都是 `additionalProperties: false`。
 >

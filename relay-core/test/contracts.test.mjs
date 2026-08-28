@@ -33,7 +33,7 @@ test('校验器 selftest：golden 全过、negative 逐条命中写死的 reason
   const negOnDisk = readdirSync(join(dir, 'negative')).filter(f => f.endsWith('.json') && !f.endsWith('.expect.json')).length;
   assert.equal(j.golden.length, goldenOnDisk, `golden 跑到的份数与盘上文件数不等：${j.golden.length} vs ${goldenOnDisk}——有 fixture 被静默跳过`);
   assert.equal(j.negative.length, negOnDisk, `negative 跑到的份数与盘上文件数不等：${j.negative.length} vs ${negOnDisk}——有 fixture 被静默跳过`);
-  assert.ok(goldenOnDisk >= 10 && negOnDisk >= 21, `fixture 总量塌陷：golden=${goldenOnDisk} negative=${negOnDisk}`);
+  assert.ok(goldenOnDisk >= 17 && negOnDisk >= 30, `fixture 总量塌陷：golden=${goldenOnDisk} negative=${negOnDisk}`);
   for (const g of j.golden) assert.ok(g.ok, `golden 应通过：${g.file}`);
   for (const n of j.negative) assert.ok(n.ok, `negative 应被拒、且 reason 与出错位置均相符：${n.file} 期望=${n.expected}@${n.expectedAt} 实得=${n.got}@${n.gotAt}`);
   // 每份反例都必须登记 at，不给「老 fixture 可以不写」的宽容通道（批次检查点 3 小审 P3-1）
@@ -63,6 +63,68 @@ test('H6 契约级断言有反例钉住（验收口径第 3 条唯一落点）',
   assert.ok(reasons.includes('E_DSH_ONLY_REQUIRED_ROLE'), '缺少「必经角色只声明 dsh-agent」反例');
   // D-11：required 改必填后不再 fail-open —— 也要有反例
   assert.ok(readdirSync(dir).includes('h6-required-omitted.expect.json'), '缺少「不标 required」反例');
+});
+
+test('DHR_30 冻结的两份新协议各有正例，且六个新 reason code 全在权威全集里', () => {
+  // design/08 §1 把 relay.rpc-methods/v1 与 relay.client-read-model/v1 与既有七份一起冻结。
+  // README 的不变量是「每份已冻结 schema 至少一份正例」——新增两份如果没有 golden，
+  // 冻结的只是文件，不是可复算的形状。rpc-methods 的 params/result 都是 $defs，
+  // 它的正例由 relay.rpc/v1 的 request/response golden 承载（见下一条映射表用例）。
+  const goldenDir = join(ROOT, 'fixtures', 'golden');
+  const readModelGolden = readdirSync(goldenDir)
+    .filter(f => f.endsWith('.json'))
+    .map(f => JSON.parse(readFileSync(join(goldenDir, f), 'utf8')))
+    .filter(doc => doc.protocol === 'relay.client-read-model/v1');
+  const views = new Set(readModelGolden.map(doc => doc.view));
+  for (const view of ['run_list', 'status', 'detail', 'event_stream_snapshot']) {
+    assert.ok(views.has(view), `relay.client-read-model/v1 的 ${view} 视图缺正例`);
+  }
+  const codes = readFileSync(join(ROOT, 'contracts', 'reason-codes.md'), 'utf8');
+  for (const code of ['E_CLIENT_NOT_AUTHORIZED', 'E_SERVICE_IDENTITY_MISMATCH', 'E_SERVICE_NOT_READY',
+    'E_REQUEST_IN_FLIGHT', 'E_CURSOR_GAP', 'E_LEGACY_READ_ONLY', 'E_ORPHAN_STORE_READ_ONLY']) {
+    assert.ok(codes.includes(`\`${code}\``), `reason-codes.md 未登记 ${code}`);
+  }
+});
+
+test('design/08 §1 的 CLI↔RPC method↔Read Model 映射表逐行经冻结契约校验', async () => {
+  // 映射表此前只是文档里的一张表：改坏任何一行（换 view、换 result 形状）都不会红。
+  // 这里把七行逐行造成真帧，用同一份冻结 schema 校验 params 与 result 两端。
+  const { loadAjv, validateOne } = await import(new URL('../tools/validate.mjs', import.meta.url));
+  const { ajv, byId } = loadAjv();
+  const handshake = {
+    protocol_version: 'relay.rpc/v1', runtime_version: '0.0.0',
+    capability_hash: 'a'.repeat(64), client_id: 'cli-1', request_id: 'req-1',
+  };
+  const statusView = {
+    run_id: 'RUN-1', source: 'runtime-v2', read_only: false,
+    host: 'alive', host_detail: null, ledger: null, events: 3,
+  };
+  const receipt = JSON.parse(readFileSync(join(ROOT, 'fixtures', 'golden', 'launch-receipt.v2.json'), 'utf8'));
+  const rows = [
+    ['list', 'listRuns', { include_legacy: false },
+      { protocol: 'relay.client-read-model/v1', view: 'run_list', items: [] }],
+    ['status', 'inspectRun', { run_id: 'RUN-1', view: 'status' },
+      { protocol: 'relay.client-read-model/v1', view: 'status', source: 'runtime-v2', read_only: false, status: statusView, detail: null }],
+    ['inspect', 'inspectRun', { run_id: 'RUN-1', view: 'detail' },
+      { protocol: 'relay.client-read-model/v1', view: 'detail', source: 'runtime-v2', read_only: false, status: null,
+        detail: JSON.parse(readFileSync(join(ROOT, 'fixtures', 'golden', 'run-state.v1.json'), 'utf8')) }],
+    ['events --follow', 'subscribe', { run_id: 'RUN-1', after_seq: null },
+      { protocol: 'relay.client-read-model/v1', view: 'event_stream_snapshot', run_id: 'RUN-1', snapshot: statusView, snapshot_seq: 2, next_seq: 3 }],
+    ['start', 'start', { run: JSON.parse(readFileSync(join(ROOT, 'fixtures', 'golden', 'run.v2.json'), 'utf8')) },
+      { receipt }],
+    ['stop', 'control', { run_id: 'RUN-1', action: 'stop' }, { receipt }],
+    ['resume', 'control', { run_id: 'RUN-1', action: 'resume' }, { receipt }],
+  ];
+  for (const [cli, method, params, result] of rows) {
+    const request = validateOne(ajv, byId, 'relay.rpc/v1', { jsonrpc: '2.0', id: 1, method, handshake, params });
+    assert.ok(request.ok, `${cli} → ${method} 的 params 不合冻结契约：${request.reason}@${request.at}`);
+    const response = validateOne(ajv, byId, 'relay.rpc/v1', { jsonrpc: '2.0', id: 1, result });
+    assert.ok(response.ok, `${cli} → ${method} 的 result 不合冻结契约：${response.reason}@${response.at}`);
+  }
+  // 反向：control 的 result 不得是 Read Model，listRuns 的 result 不得是 Receipt——
+  // 结果并集是封闭的，但「哪一支属于哪个 method」只有映射表说了算，故逐行正校验。
+  const strayed = validateOne(ajv, byId, 'relay.client-read-model/v1', { receipt });
+  assert.equal(strayed.ok, false, 'Receipt 不该能冒充 Read Model');
 });
 
 test('fixture 基线对证：逐份 canonical sha256 与 manifest.json 相符，份数相等', () => {
@@ -138,7 +200,8 @@ test('G2 聚合条款①~⑥逐档红绿矩阵（allOf 自身的回归护栏）'
   assert.deepEqual(bad, [], `聚合条款红绿矩阵不符：\n  ${bad.join('\n  ')}`);
 });
 
-test('capability 基线：8 份（7 顶层协议 + 1 共享定义模块）的 digest 与 capability_hash 与基线相符', () => {
+test('capability 基线：10 份（9 顶层协议 + 1 共享定义模块）的 digest 与 capability_hash 与基线相符', () => {
+  // DHR_30 把 relay.rpc-methods/v1 与 relay.client-read-model/v1 一并纳入指纹，故从 8 份变 10 份。
   // E4 需求复核 P1-1 + E2 代码复核 P3-3。CANONICALIZATION.md §三末句与 §四表第 1 行**逐字**
   // 把「跑出可复算的固定 digest 作为回归基线」写成批 3 交付项，首版没做——
   // 这是本卡「写进冻结契约的交付承诺静默没做」的第四次（F-047 是第一次）。

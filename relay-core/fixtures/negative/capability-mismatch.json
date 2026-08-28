@@ -2,7 +2,7 @@
   "jsonrpc": "2.0",
   "id": 1,
   "method": "inspectRun",
-  "params": {},
+  "params": { "run_id": "RUN-1", "view": "status" },
   "handshake": {
     "protocol_version": "relay.rpc/v1",
     "runtime_version": "0",
