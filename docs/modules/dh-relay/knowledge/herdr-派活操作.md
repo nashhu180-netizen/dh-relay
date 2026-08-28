@@ -24,6 +24,8 @@ herdr agent prompt <名> "<指令文本>"          # 长活别加 --wait 卡住�
 #    ⚠️ 发完必须验证真提交了：herdr agent get <名> 看 state_change_seq 有没有动 / status 是否转 working。
 #    codex TUI 下长中文 prompt 会落在输入框不提交（herdr 报 agent_prompt_stalled 或 seq 不变）——
 #    补一发 herdr agent send-keys <名> enter 即提交（2026-08-28 两次实测）。
+#    ⚠️ 一发 enter 可能被吃成多行输入的换行（2026-08-29 实测一次）：补完必须再 agent get 验 seq，
+#    没动就再补一发；一律以 state_change_seq 变化 + status 转 working 为「真提交」判据。
 herdr agent wait <名> --timeout 5400000       # 挂后台催收：settle 到 idle/done/blocked 即返回
 
 # 4. 收结果
