@@ -21,6 +21,9 @@ herdr agent start <名> --kind codex --pane <paneID> -- <原生参数...>   # co
 
 # 3. 派活（herdr 会按 bracketed-paste 原子提交文本+回车；中文经 PowerShell argv 实测正常送达）
 herdr agent prompt <名> "<指令文本>"          # 长活别加 --wait 卡住自己
+#    ⚠️ 发完必须验证真提交了：herdr agent get <名> 看 state_change_seq 有没有动 / status 是否转 working。
+#    codex TUI 下长中文 prompt 会落在输入框不提交（herdr 报 agent_prompt_stalled 或 seq 不变）——
+#    补一发 herdr agent send-keys <名> enter 即提交（2026-08-28 两次实测）。
 herdr agent wait <名> --timeout 5400000       # 挂后台催收：settle 到 idle/done/blocked 即返回
 
 # 4. 收结果
@@ -41,6 +44,8 @@ herdr agent read <名> --source recent-unwrapped --lines 120
 2. **权限模式**：claude worker 建议 `--permission-mode acceptEdits`——改文件自动放行，bash/git 审批停在 `blocked`，由主控 `agent wait --until blocked` → `agent read` 核对 → `agent send-keys` 放行；权限决定权留主控，不要图省事上 `--dangerously-skip-permissions`（信任弹窗它也盖不住，见 backlog DHR-BL-2）。
 3. **worker 纪律**：拉起的交互终端 worker 读任务树里的 `CLAUDE.md`→`AGENTS.md` 编排协议段自我约束；派活 prompt 只给指针（task_plan / brief 路径）+ 硬边界摘要，不重抄业务全文。
 4. 老对照：codex 无头形态（companion/exec）在沙箱下**写不了主仓 `.git/worktrees/` 元数据**（DHR_31 F-004，提交要主控代打）且全量测试有 EPERM 假红——herdr 交互终端形态没有这层沙箱，worker 可自己 commit。
+5. **codex kind 直接 `agent start` 可用**（shim 坑只在 claude）；复核只读形态传 `-- --sandbox read-only`。
+6. **codex 模型要用完整 ID**：`terra` 的真名是 **`gpt-5.6-terra`**——裸写 `--model terra` 会 400「not supported when using Codex with a ChatGPT account」（2026-08-28 两种形态实测，曾被误判成账号不支持）。TUI 内 `/model` 选择器可见本账号全表（gpt-5.6-sol / **gpt-5.6-terra** / gpt-5.6-luna / gpt-5.5 / gpt-5.4 / gpt-5.4-mini / gpt-5.3-codex-spark）+ 推理档（Low/Medium/High/Extra high/More）；起进程时传 `-c model_reasoning_effort=high` 或进 TUI 用 `/model` 选。用户点名的复核档 = **gpt-5.6-terra + High**。
 
 ## 与 dh-relay 方案的关系
 
