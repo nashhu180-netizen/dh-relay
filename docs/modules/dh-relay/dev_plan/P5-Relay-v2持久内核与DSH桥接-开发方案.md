@@ -3,10 +3,10 @@
 <!-- dh:plan-type: 开发 -->
 <!-- dh:planning-event:v1 id=DHR-B-18 stage=B-adjust artifact=dev_plan/P5-Relay-v2持久内核与DSH桥接-开发方案.md review=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#review-b18 understanding=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#understanding-b18 -->
 <!-- dh:status
-汇报: P5 已按 design/06 重写为「控制面独立的承重内核」：Runtime + Store + 参考 CLI 必备，DSH/Pi 只是可替换客户端。B-11（2026-08-20）：解锁前置改为 P4-CM1/2/3/5/6a + 主报告 + 用户放行，不再等 DSH 三态收敛；DSH 轨与本阶段并行，汇合点在 DHR_30 的 DSH Bridge 条件部分与 DHR_31 的 DSH 附加客户端项（须有 DHR_50 结论才执行）
-现状: **P4 阶段闸已解锁**——CM1/2/3/5/6a 全绿 + 主报告落盘（P4 verify `252a131`）+ 用户 2026-08-20 对话放行；**DHR_28、DHR_29、DHR_51、DHR_52 已完成**——relay v2 最小协议集已冻结，`relay-core/` 是本仓唯一契约来源；DHR_30 已于 2026-08-23 经用户对话确认开工，DHR_31 未开始。
-进行到: P5 ▸ DHR_30 施工准备：正式设计已补齐仓库级 Runtime service、operation ledger、RPC/Read Model；接入正式 CLI 与条件执行的 DSH/Pi Bridge。
-下一步: DHR_30 在 `wt/DHR_30` 施工；DHR_31 不在本授权内。
+汇报: 后台接力内核的命令行控制面已经能独立干活：开一条命令就能启动、跟踪、停止、恢复任务，窗口关了活不丢；五张卡完成四张余一张（DHR_31 端到端闭环），无阻塞
+现状: **DHR_28、DHR_29、DHR_51、DHR_52、DHR_30 已完成**——终端控制面（CLI 七命令）真实跑通并带风险放行收口（2026-08-28，风险项=真实 DSH 渲染未证→移交 DHR_31）；relay v2 契约 `capability_hash a990fdda` 冻结零漂移；DHR_31 未开始。
+进行到: P5 ▸ DHR_30 已收口销户；主线下一张是 DHR_31（basic-agent-task 垂直闭环 + 承接 DSH 渲染截图）。
+下一步: DHR_31 开工需用户对话确认；G01-P5 阶段闸在 DHR_31 后。
 看什么: **`relay-core/README.md`（硬约束 6 条 + 「改了什么跑什么」基线对照表）与 [as-built/relay-core.md](../as-built/relay-core.md)（含「这套东西是怎么长成现在这样的」一节，动它之前先读）**；P4 主报告（evidence/10 §4 v1 协议缺口清单）、design/05、design/06
 阻塞: 无。DHR_28 已收口，DHR_29 的依赖（契约冻结）已满足；`DHR-B-15` 已由用户 2026-08-21 对话确认落盘
 -->
@@ -121,7 +121,7 @@
 | DHR_29 | 实现唯一写者 Store、追加事件账与确定性回放；顺带做契约修订批次 1 | 标准 · **高危** | 已完成 | DHR_28 | [workspace/DHR_29/](../workspace/DHR_29/) | | `DHR-B-15` 保 ID 缩范围（原含宿主与 RPC，已拆出 DHR_51 / DHR_52）。**verify `5971d8d`**（2026-08-22，用户对话明示「认可」、chat-confirm 代签）。交付：Store 纯库（追加事件账/确定性回放/openStore 恢复/身份链/终态守卫/串行写队列，测试 23/23）+ 契约修订批次 1 与漂移收敛指纹批（capability_hash=`970b5460…`，基线同批重生成）；两轮换人复核 + 需求/教训/一致性四路全落账（CP1 fail→修复→CP2 approved→轮 2 approved；需求漂移四处收敛 F-009）。移交 DHR_51：F-011（raw result-kind 绕终态锁）、§8.4 lease 语义等价性复核 |
 | DHR_51 | 实现 Detached 宿主、PID/lease、`run_id` 规范化与仓级锁内发号、恢复与宿主三态读数 | 标准 · **高危** | 已完成 | DHR_29 | [workspace/DHR_51/](../workspace/DHR_51/) | | `DHR-B-15` 新建。高危 = 组件接线 + 持久状态。**第一个「关窗不停工」可观察的节点**；交付的三态读数**不叫 `relay status`、不注册 `bin`**（命令名归 DHR_30）。**verify `95e2e6f`**（2026-08-22，用户 E11 对话内 AskUserQuestion 点选放行、chat-confirm 代签）。交付：runtime 九模块（runid/pidalive/repolock/lease/gitignore/startrun/host/host-main/status）+ store 两处最小触碰（F-011 终态入口封堵 / writeGuard fencing）+ 测试 50/50（五道闸全绿、capability_hash=`970b5460…` 零漂移）；两轮换人复核（轮1 changes-requested 全数闭合含 R1-01~03 三 P1 + 轮2 approved）+ E4/E5/E14 三路落账；移交 DHR_52：F-107 指纹要素评估触发点、as-built §3.6 |
 | DHR_52 | 实现 RPC 服务端与握手 fail-closed（含 `capability_hash` 比对） | 标准 · **高危** | 已完成 | DHR_51 | [workspace/DHR_52/](../workspace/DHR_52/brief.md) | 2026-08-23 / `b96b5b7` | `DHR-B-15` 新建。高危 = 组件接线。用户 2026-08-22 对话确认开工，2026-08-23 认可本地收口授权包；F225/F226 均已收敛，主干 `dh dh-relay` 0 failure 与 90/90 回归通过。 |
-| DHR_30 | 实现 Relay CLI 参考客户端与可选 DSH/Pi Bridge 接缝 | 标准 | 进行中 | DHR_52 | [workspace/DHR_30/](../workspace/DHR_30/) | | 阶段闸阻塞；DSH Bridge 条件部分以 P4 DHR_50 结论为开工判据（B-11 汇合点）：无结论→记「未执行，待 DHR_50」，判否→只留合同接口；CLI 部分不受影响 |
+| DHR_30 | 实现 Relay CLI 参考客户端与可选 DSH/Pi Bridge 接缝 | 标准 | 已完成 | DHR_52 | [workspace/DHR_30/](../workspace/DHR_30/) | 2026-08-28 / verify SHA 见本行下笔回填 | **带风险放行 `release_mode=risk-accepted`**（Risk-Count=1：`RISK-DHR30-DSH-RENDER` 真实 DSH 渲染未证→移交 DHR_31，用户 2026-08-28 对话 AskUserQuestion 确认整包）。交付：runtime service（唯一控制面 + operation ledger 幂等发号 + 凭据引导 + 双根发现 + 孤儿只读）+ CLI 七命令（text/json 同源、断开不取消、终端冒烟转录落仓 `workspace/DHR_30/evidence/`）+ DSH Bridge 库接缝（断线续传不重不漏、gap 重快照、退出路径全可观察、零 Store 直写）+ 契约批次（error receipt required、`E_ORPHAN_STORE_READ_ONLY`，capability_hash=`a990fdda` 三基线重生）。**过程**：两轮换人 + 需求/教训/一致性五路全收敛；findings F-001~F-038（P0 全程 0，open 归零，4 条入验收池）；全量 158/158 · audit 0 违规 · validator 48/48；design/06 §14 字段级冻结 + design/07/08 四条语义回写；教训候选-17~29 | 
 | DHR_31 | 以 DSH 关闭状态跑通 basic-agent-task 垂直闭环 | 标准 | 未开始 | DHR_30 | <开工时回填 workspace/…> | | 阶段闸阻塞；第一个端到端 demo；DSH 附加客户端项按 DHR_50 结论执行（B-11） |
 
 > 状态列只填五枚举；阶段闸阻塞写在「备注」列。P4-CM 未通过时 DHR_28~31 与 `DHR-B-15` 新建的 DHR_51 / DHR_52 均不得进入 D 开工。
