@@ -227,3 +227,12 @@
 - **优先级**：低 · 下次更新该份 as-built 时一并刷新
 - **提出人 / 日期**：`DHR-BL-10` 施工方（zcode），2026-08-27
 - **进展**：未立项。
+
+### DHR-BL-13 Herdr agent CLI 实测可作 Windows 交互式派活底座（P6 开工输入）
+
+- **需求 / 议题**：2026-08-28 DHR_31 施工期实测：主控在 Herdr pane 内经 `herdr pane split` → `agent start`（codex）/ `pane run` 起 claude → `agent prompt` / `agent wait` / `agent read` 完成派活-催收-回收全链路；`blocked` 态可识别审批/提问 UI（正是 `DHR-BL-1` 第 1 层「在等人」检测要的信号，会话内形态）。用户同日明文指示「后面派活用 win 下 herdr 拉起交互式终端的方式」。P6（Herdr 多账号执行底座）开工 B-adjust 时应把这批实测作为输入。
+- **已知坑**：`agent start --kind claude` 直接 spawn 撞 PATH 无扩展名 bash shim `claude`（「不是有效的 Win32 应用程序」+ 启动超时），绕法 = `pane run` 起 + 自动识别 + `agent rename`；操作规程与全部实测细节见 [knowledge/herdr-派活操作.md](knowledge/herdr-派活操作.md)。
+- **与既有记录的关系**：design/evidence/03（2026-08-16 Herdr preflight）验的是能力边界（原生 blocked 覆盖会话内确认框、不覆盖启动信任弹窗）；本条补的是主控侧 CLI 派活链路的可用性实证。二者合起来是 P6 的现状输入。
+- **优先级**：中 · 挂 P6 开工
+- **提出人 / 日期**：用户 + 主控实测，2026-08-28（DHR_31 批 2 派活切换现场）
+- **进展**：未立项；开发过程侧已即刻采用（见 knowledge 手册）。

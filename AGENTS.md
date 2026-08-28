@@ -64,6 +64,7 @@
 | 现役实现是什么样 | [docs/modules/dh-relay/as-built/](docs/modules/dh-relay/as-built/)（contracts / **relay-core** / runner / psmux-host / policy 四份快照） |
 | 未排期的需求与已知坑 | [docs/modules/dh-relay/backlog.md](docs/modules/dh-relay/backlog.md) |
 | 踩过的坑 | [docs/modules/dh-relay/knowledge/教训库-候选.md](docs/modules/dh-relay/knowledge/教训库-候选.md) |
+| 主控派活（Windows 默认走 Herdr 拉交互式终端；claude kind 有 PATH shim 坑） | [docs/modules/dh-relay/knowledge/herdr-派活操作.md](docs/modules/dh-relay/knowledge/herdr-派活操作.md)（2026-08-28 用户指示 + 实测） |
 
 ## dev-harness 落点 / slug
 
