@@ -82,6 +82,19 @@ export function renderEvent(params) {
   return `[${params.seq}] ${params.kind}${params.detail ? ` ${params.detail}` : ''}`;
 }
 
+/** focus 只转述事件对象已有字段；附着模板仅逐字插入 executor_ref，绝不拆解 detail。 */
+export function renderFocus(event) {
+  if (!event) return '无宿主观测';
+  return [
+    `node_id: ${dash(event.node_id)}`,
+    `at: ${dash(event.at)}`,
+    `observation_status: ${dash(event.observation_status)}`,
+    `executor_ref: ${dash(event.executor_ref)}`,
+    `detail: ${dash(event.detail)}`,
+    ...(event.executor_ref ? [`attach: herdr agent attach ${event.executor_ref}`] : []),
+  ].join('\n');
+}
+
 /** runStateChanged 通知：状态只来自通知本体，绝不从事件流推导。 */
 export function renderRunStateChanged(params) {
   return `state: run_status=${dash(params.state?.run_status)} caused_by_seq=${params.caused_by_seq}`;

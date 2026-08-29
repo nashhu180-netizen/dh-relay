@@ -1,10 +1,7 @@
 // agent-node.test.mjs — DHR_31 批 4：Agent 节点（条件项，**窄路径**）。
 //
-// 窄路径的定义（task_plan 4.1 + 主控 2026-08-28 决策）：`capability-baseline.json` 的
-// `executor_kinds` 是 `["process"]`，那是「本 Runtime **托管**哪些 Executor」的声明。让
-// Runtime 去托管 pi-agent / dsh-agent 就是能力变更，得动冻结基线——本卡不走那条路。
-// 走的是：**Agent 节点的 Attempt 由外部代持（Bridge / 手动），Runtime 只记账**。
-// 于是基线上的 `["process"]` 依然是真话：Runtime 一个 agent executor 都没托管过。
+// DHR_33 起基线 executor_kinds 是 ["herdr-agent","process"]：Herdr Agent 由 Runtime
+// 托管；pi-agent / dsh-agent 仍由外部代持（Bridge / 手动），不得被这条窄路径顺带接管。
 //
 // 要证的三条（design/06 H7 / H12；卡面「Agent 失败不推翻 Process 结论」）：
 //   ① 外部代持的 Attempt 其 executor 消失 → **只有那一个 Attempt** 记终态，其他节点与
@@ -30,8 +27,10 @@ import { localCapabilityHash } from '../rpc/capabilities.mjs';
 import { createTransportClient } from '../rpc/transport.mjs';
 import { endpointForRepo } from '../runtime/endpoint.mjs';
 import { startRuntimeService } from '../runtime/service.mjs';
+import { startWorkflowDriver } from '../runtime/workflow-driver.mjs';
 import { createStore, openStore } from '../store/store.mjs';
 import { digest } from '../tools/canonical.mjs';
+import { makeFakeHerdr } from './helpers/fake-herdr.mjs';
 import { settledState } from './helpers/settled-state.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -194,6 +193,62 @@ test('批4 边界钉：driver 不托管 agent 节点——不开 Attempt、不�
     assert.equal(agent.attempt_count, null,
       `${nodeId} 没开过 Attempt，attempt_count 必须是「没记」而不是 0`);
   }
+});
+
+test('DHR_33 窄路径：driver 托管 herdr-agent，开 Attempt、记心跳并按 stop 落 killed', async (t) => {
+  const repoRoot = await makeRepo('dhr33-herdr-driver-');
+  t.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const runId = 'R001-herdr-driver-20260829';
+  const run = runDoc([{
+    node_id: 'agent-herdr', title: 'agent-herdr', role: '执行', required: false, depends_on: [],
+    executor_profiles: [{ kind: 'herdr-agent', ref: 'herdr.codex.test' }],
+  }], runId);
+  const root = runRootOf(repoRoot, runId);
+  await mkdir(root, { recursive: true });
+  const registryPath = join(repoRoot, 'executor-profiles.json');
+  await writeFile(registryPath, JSON.stringify({ profiles: [{
+    executor_profile_id: 'herdr.codex.test', backend: 'herdr', product: 'codex-cli', command_alias: 'codex', account_alias: 'acct-test',
+    capabilities: { interactive: 'supported', resume: 'supported', readonly: 'supported', headless: 'supported', structured_result: 'supported', user_input_passthrough: 'supported' },
+    supported_platforms: ['win32'], headless_supported: true,
+  }] }), 'utf8');
+  const store = await createStore({ root, run });
+  await store.appendEvent({ kind: 'run_created', at: '2026-08-29T00:00:00Z' });
+  const fake = makeFakeHerdr({ statuses: ['idle', 'working', 'working'] });
+  const driver = startWorkflowDriver({ repoRoot, runId, actor: { submitControl: fn => fn(store) },
+    herdrCli: fake.cli, herdrRegistryPath: registryPath, herdrPollMs: 5 });
+  await untilAsync(async () => store.events.some(event => event.kind === 'checkpoint_recorded'), 1_000, 'herdr heartbeat');
+  await driver.stop();
+  const events = store.events;
+  assert.ok(events.some(event => event.kind === 'attempt_started' && event.node_id === 'agent-herdr'));
+  assert.ok(events.some(event => event.kind === 'checkpoint_recorded' && event.node_id === 'agent-herdr'));
+  assert.equal(events.find(event => event.kind === 'attempt_failed' && event.node_id === 'agent-herdr')?.reason, 'E_EXECUTOR_KILLED');
+});
+
+test('DHR_33 分叉顺序：同一节点同时声明 process 与 herdr-agent 时必须先走 process', async (t) => {
+  const repoRoot = await makeRepo('dhr33-process-first-');
+  t.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const runId = 'R001-dhr33-process-first';
+  const run = runDoc([{
+    node_id: 'dual', title: 'dual', role: '执行', required: false, depends_on: [],
+    executor_profiles: [{ kind: 'process', ref: 'process-step.mjs' }, { kind: 'herdr-agent', ref: 'herdr.codex.test' }],
+  }], runId);
+  const root = runRootOf(repoRoot, runId);
+  await mkdir(root, { recursive: true });
+  await writeFile(join(repoRoot, 'process-step.mjs'), "process.stdout.write(JSON.stringify({ source: 'process' }));\n", 'utf8');
+  const registryPath = join(repoRoot, 'executor-profiles.json');
+  await writeFile(registryPath, JSON.stringify({ profiles: [{
+    executor_profile_id: 'herdr.codex.test', backend: 'herdr', product: 'codex-cli', command_alias: 'codex', account_alias: 'acct-test',
+    capabilities: { interactive: 'supported', resume: 'supported', readonly: 'supported', headless: 'supported', structured_result: 'supported', user_input_passthrough: 'supported' },
+    supported_platforms: ['win32'], headless_supported: true,
+  }] }), 'utf8');
+  const store = await createStore({ root, run });
+  await store.appendEvent({ kind: 'run_created', at: run.created_at });
+  const fake = makeFakeHerdr();
+  const driver = startWorkflowDriver({ repoRoot, runId, actor: { submitControl: fn => fn(store) }, herdrCli: fake.cli, herdrRegistryPath: registryPath });
+  await driver.done;
+  assert.equal(fake.paneSplits, 0);
+  assert.ok(store.events.some(event => event.kind === 'attempt_started' && event.node_id === 'dual'));
+  assert.ok(store.events.some(event => event.kind === 'attempt_succeeded' && event.node_id === 'dual'));
 });
 
 test('批4 ①：外部代持的 Attempt 其 Adapter 消失 → 仅该 Attempt failed(E_EXECUTOR_ADAPTER_LOST)', async (t) => {

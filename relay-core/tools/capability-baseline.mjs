@@ -47,9 +47,9 @@ const CONTRACTS = fileURLToPath(new URL('../contracts/', import.meta.url));
 // 它也确实不是契约，是契约语料的**派生基线**，所以落在代码根顶层。
 const BASELINE = fileURLToPath(new URL('../capability-baseline.json', import.meta.url));
 
-// 参考实现的能力面：只托管 process。改这里等于声明「参考实现的能力变了」，
+// 参考实现的能力面：托管 process 与 herdr-agent。改这里等于声明「参考实现的能力变了」，
 // 指纹必然随之变化——这正是 executor_kinds 这个维度存在的意义。
-const REFERENCE_EXECUTOR_KINDS = ['process'];
+const REFERENCE_EXECUTOR_KINDS = ['herdr-agent', 'process'];
 
 function frozenSchemas() {
   // **顶层 9 份已冻结协议 + 1 份共享定义模块**。DHR_30 增补 formal read model 与 method contract，

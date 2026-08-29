@@ -57,8 +57,9 @@
       "runStateChanged"
     ],
     "executor_kinds": [
+      "herdr-agent",
       "process"
     ]
   },
-  "capability_hash": "a990fddad486f669e8611417a69b7cdc0f36cdcc52498868874035401771a64b"
+  "capability_hash": "994d5f038cd1bcbbb9463eed5ca04b2ffc324f07b374571899b8df3a6c5c971e"
 }

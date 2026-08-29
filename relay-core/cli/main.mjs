@@ -15,13 +15,13 @@ import { buildRequestEnvelope, clientError, connectCli } from './client.mjs';
 import { addPendingRecord, readPendingRecords, removePendingRecord } from './pending.mjs';
 import { requestDigest } from '../runtime/ledger.mjs';
 import {
-  renderDetailView, renderEvent, renderEventSnapshot, renderReceipt, renderRpcError,
+  renderDetailView, renderEvent, renderEventSnapshot, renderFocus, renderReceipt, renderRpcError,
   renderRunList, renderRunStateChanged, renderStatusView, renderTransportFailure, RESULT_UNKNOWN_HINT,
 } from './render.mjs';
 
-const COMMANDS = new Set(['list', 'status', 'inspect', 'events', 'start', 'stop', 'resume']);
+const COMMANDS = new Set(['list', 'status', 'inspect', 'events', 'focus', 'start', 'stop', 'resume']);
 /** 每个命令的 positional 形状（F-025）：多余或缺失一律 usage 退出码 1，绝不静默忽略。 */
-const POSITIONAL_COUNTS = { list: 0, status: 1, inspect: 1, events: 1, start: 0, stop: 1, resume: 1 };
+const POSITIONAL_COUNTS = { list: 0, status: 1, inspect: 1, events: 1, focus: 2, start: 0, stop: 1, resume: 1 };
 /** 非 follow 的 events 等补发收齐的 fail-out 上限：只作超时报错，绝不作完成判据（F-021）。 */
 const EVENTS_BACKFILL_TIMEOUT_MS = 30_000;
 const VALUE_FLAGS = new Set(['root', 'run', 'after']);
@@ -29,7 +29,7 @@ const BOOL_FLAGS = new Set(['json', 'follow', 'include-legacy']);
 
 export function usage() {
   return 'usage: relay list [--include-legacy] | status <run_id> | inspect <run_id>'
-    + ' | events <run_id> [--follow] [--after <seq>] | start --run <run.json>'
+    + ' | events <run_id> [--follow] [--after <seq>] | focus <run_id> <node_id> | start --run <run.json>'
     + ' | stop <run_id> | resume <run_id>  [--root <repo>] [--json]';
 }
 
@@ -310,6 +310,44 @@ async function runEvents({ repoRoot, flags, positional, json, out, err }) {
   }
 }
 
+/** focus 与 events 同路订阅：只从 RPC 通知收事件，绝不直读 events.jsonl。 */
+async function runFocus({ repoRoot, flags, positional, json, out, err }) {
+  const [runId, nodeId] = positional;
+  const conn = await connectCli({ repoRoot });
+  try {
+    await convergePending({ conn, repoRoot, err, json });
+    const events = [];
+    const received = new Set();
+    conn.setNotificationHandler((frame) => {
+      if (frame?.method === 'event') {
+        received.add(frame.params?.seq);
+        if (frame.params?.kind === 'host_observation_changed' && frame.params.node_id === nodeId) events.push(frame.params);
+      }
+    });
+    const outcome = await conn.call('subscribe', { run_id: runId, after_seq: 0 });
+    if (!outcome.ok) return report(outcome, { json, out, err });
+    const target = Math.max(0, outcome.result.next_seq - 1);
+    if (target > 0) {
+      await new Promise((resolve, reject) => {
+        const end = Date.now() + EVENTS_BACKFILL_TIMEOUT_MS;
+        const check = () => {
+          // host 事件也许不存在；用服务端事件尾作为唯一收齐判据，避免静默窗猜测。
+          if (received.has(target)) return resolve();
+          if (Date.now() >= end) return reject(new Error('focus: 未收齐 subscribe 回放事件'));
+          setTimeout(check, 10);
+        };
+        check();
+      });
+    }
+    const event = events.sort((a, b) => a.seq - b.seq).at(-1) ?? null;
+    const model = { event };
+    out.write(json ? `${JSON.stringify(model, null, 2)}\n` : `${renderFocus(event)}\n`);
+    return 0;
+  } finally {
+    conn.close();
+  }
+}
+
 async function run(argv) {
   const out = makeEmitter(process.stdout);
   const err = makeEmitter(process.stderr);
@@ -330,6 +368,7 @@ async function run(argv) {
     else if (command === 'status') exitCode = await runInspect({ repoRoot, flags, positional, json, out, err, view: 'status' });
     else if (command === 'inspect') exitCode = await runInspect({ repoRoot, flags, positional, json, out, err, view: 'detail' });
     else if (command === 'events') exitCode = await runEvents({ repoRoot, flags, positional, json, out, err });
+    else if (command === 'focus') exitCode = await runFocus({ repoRoot, flags, positional, json, out, err });
     else exitCode = await runMutating({ repoRoot, flags, positional, command, json, out, err });
   } catch (error) {
     if (error instanceof UsageError) {
