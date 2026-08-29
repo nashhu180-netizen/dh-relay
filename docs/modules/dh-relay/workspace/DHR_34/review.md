@@ -1,6 +1,18 @@
 <!-- dh:v1 -->
 # DHR_34 · Review
 
+## S1 开工预审（fresh Claude 实例；只读）
+
+- 派发：Herdr pane `w1:pQ`，实例 `opus_kickoff_dhr34_r2`，cwd=`.dh-worktrees/DHR_34`；启动命令为 `claude --model opus`。
+- 身份证据：启动屏显示 `Opus 5 with high effort`；实例自报 SessionStart `claude-fable-5`。来源互相矛盾，结论为**形态待证**，不登记为已核验 Opus。
+- 只读边界：实例仅执行读取命令；主控回收后 `git status --short` 与 `git diff --check` 均无输出。
+- 结论：**BLOCKED，不可派施工**。
+  - P0-1：`launch-receipt.v2` 不含身份四件套，签发点 `service.mjs` 不在允许路径；DevPlan 要求扩 Receipt schema，而 brief 禁改 `contracts/**`。
+  - P0-2：run-state 无 `paused`，全仓零命中；「无 fallback → paused + Attention」字面不可实现。
+  - P2：控制通道在 `rpc/cli` 禁改路径，身份展示只能依既有 event.detail 或 result.structured 的脱敏承载，不能借预审扩线。
+  - P3：registry 不可用与无 fallback 必须分作负例；可用 `attempt_id` 派生 agent 名作为 H12 的附加断言点。
+- 最小 TDD（仅待范围/语义裁决后执行）：quota 分类器正反样本 → 身份冻结纯函数 → driver fallback fresh Attempt → 非额度不切换 → 无 fallback 的已裁决状态/Attention → M7 两份回归断言 → `audit-contracts` 证明 contracts 零 diff（若裁决保持禁改）。
+
 ## 独立复核区
 
 ### 代码轮 1（Opus · fresh）
