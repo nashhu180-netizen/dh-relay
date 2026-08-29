@@ -6,6 +6,7 @@
 | 时间 | 谁 | 做了什么 | 证据 | 下一步 |
 |---|---|---|---|---|
 | 2026-08-29 | 主控 | 建立 DHR_34 标准档工作区并准备独立 worktree | E-001 | Opus fresh 开工预审 |
+| 2026-08-29 | 主控 | B-23 已确认；DHR_61 已发放为前置契约卡，DHR_34 范围收紧为 D3 并保持阻塞 | E-004 | DHR_61 按 D 动作开工并验收前，DHR_34 不施工 |
 
 ## 证据账本
 
@@ -14,6 +15,7 @@
 | E-001 | inspect | `git diff --check`；`docs/modules/dh-relay/workspace/DHR_34/` | pass | S0 工作区骨架已建立；不构成任一实现验收的通过证据。 |
 | E-002 | inspect | `task_plan.md` 的 quota 正反样本场景预填 | observed | 需求对齐表的创建期占位；尚未执行测试或作出人验结论。 |
 | E-003 | design | `design/11-P6身份与额度治理契约调整.md` + `design/evidence/20-P6身份与额度治理契约调整-交叉审核记录.md` | pass | 用户整版确认后，DHR-A-25 正式输入已原子晋级；不构成 B-adjust、任务发放或代码施工授权。 |
+| E-004 | plan | `dev_plan/P6-Herdr多账号执行底座-开发方案.md` + `design/evidence/21-P6前置契约卡-B调整交叉审核记录.md` | pass | 用户确认 DHR-B-23：DHR_61 承接 D1/D2，DHR_34 仅承接 D3 且 `blocked-by:DHR_61`；不构成任一卡开工授权。 |
 
 - 2026-08-29 主控：用户明确授权「继续 DHR_34，开 worktree，复核用 opus」。主树已建立标准档 8 件套并开独立 worktree；DHR_33 squash `66dd16a` 已在 master，故技术依赖可读。DHR_32/33 的人验、verify 和 B-22 追认均未被本卡代签或关闭。
 - 2026-08-29 worktree 已复核为 `D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_34`，branch=`wt/DHR_34`，base=`886c63a`（local `master`）；client=codex-cli。首次 `dh wt new` 误从 `origin/master` 建树且缺本卡工件，已在确认空树后移除并按 local `master` 重建。
@@ -22,3 +24,4 @@
 - 2026-08-29 主控：fresh 只读预审结论为 **BLOCKED，不派施工**。P0-1：`launch-receipt.v2` 字段闭集无 profile/account_alias/config_fingerprint/capability hash，签发点 `service.mjs` 也不在允许路径；DevPlan 要求 Receipt schema 扩展而 brief 禁改 `contracts/**`。P0-2：run-state 枚举没有 `paused`，全仓零命中，故「无 fallback → paused + Attention」按字面不可实现。待用户决定是否另开契约卡或按正式计划调整流程扩范围与状态语义；主控不得静默改 brief/task_plan 或运行时代码。
 - 当前节点：S0 已完成；S1 已完成只读预审并因 P0-1/P0-2 停在 blocked。未改运行时代码、用户配置、注册表或凭据。
 - 2026-08-29 用户对经 fresh 复审收敛的 DHR-A-25 整版设计明文“同意”。主控已将候选原子晋级为正式 `design/11` 并登记 A-25 审核/理解证据；尚未调整 P6 DevPlan、未发前置契约卡、未解除 DHR_34 blocked，也未改代码、用户配置、注册表或凭据。
+- 2026-08-29 用户完成 B-23 理解校验（回答“不能施工”）并明文“确认”。DevPlan 发放 DHR_61 承接 design/11 D1/D2，DHR_34 改为仅承接 D3 并保持 `blocked-by:DHR_61`；本记录不授权 DHR_61/DHR_34 开工、worktree、代码、用户配置、注册表或凭据操作。

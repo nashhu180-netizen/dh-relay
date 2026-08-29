@@ -1,15 +1,15 @@
 # P6-Herdr 多账号与 Headless 执行底座 开发方案
 
 <!-- dh:plan-type: 开发 -->
-<!-- dh:planning-event:v1 id=DHR-B-06 stage=B-adjust artifact=dev_plan/P6-Herdr多账号执行底座-开发方案.md review=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#review-b06 understanding=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#understanding-b06 -->
+<!-- dh:planning-event:v1 id=DHR-B-23 stage=B-adjust artifact=dev_plan/P6-Herdr多账号执行底座-开发方案.md review=../design/evidence/21-P6前置契约卡-B调整交叉审核记录.md#review-b23 understanding=../design/evidence/21-P6前置契约卡-B调整交叉审核记录.md#understanding-b23 -->
 <!-- dh:status
 汇报: DHR_33（heavy）**已收口合入 master 转待人验**（squash `66dd16a`，2026-08-29）。全链：预审19→施工 `596a49b`→轮1（代码19+需求16 全采纳）→返工1 `5ecd4b0`→代码轮2（20条+变异8有效4无效，E-3306 达成）→返工2 `4d68163`→一致性+教训复核（闭环✅14/⚠️3/❌3；候选-46~55 已回流教训库）→返工3 `ea88c1d`→主控终验：全量 npm test 5 次自行终止（挂死消灭），herdr 新测（15+7）零失败，残余红=既有 cli 双 CLI 并发抖动（F-1 豁免留档）；E-3306 终基线 `ea88c1d` 抽样 SM1/SM2/SM3 3/3 红→还原→绿；master 合并后 212/212 exit 0。验收表：E-3302/3305/3306 达成、E-3304 受限达成、E-3303 待人验、E-3307/3308（Oracle 差异）待人验受理。DHR_32 仍待人验（`2667f4a`）。
-现状: DHR_32、DHR_33 均待人验；DHR_34~35 未开始
-进行到: P6 ▸ DHR_33 待人验
-下一步: 用户批量人验（见待用户清单）→ DHR_34 开工（账号与额度治理，B 确认后）
+现状: DHR_32、DHR_33 均待人验；DHR_61 未开始；DHR_34 进行中但 blocked-by:DHR_61；DHR_35 未开始
+进行到: P6 ▸ DHR-B-23 已确认，待 DHR_61 开工
+下一步: 用户批量人验（见待用户清单）→ 按 D 动作开工 DHR_61；DHR_34 在 DHR_61 验收前不得施工
 待用户: ①B-22 追认（Linux 延后/审计白名单/代决策）；②DHR_32 E10+verify、F-3（ninth 未登录）；③DHR_33 签名区六项（E10 收口、E-3303 现场、E-3304 受限、E-3307/3308 受理、P6-M6 延后、候选-40 模型身份裁决——两卡五实例复发，建议定权威源或改换人定义）
 看什么: workspace/DHR_33/review.md（验收表+签名区）→ review-consistency-opus.md §六/§八；workspace/DHR_32/review.md 签名区
-阻塞: 无技术阻塞；人验项待用户批量处理。findings 下游移交：F-3/F-5→DHR_34/35、F-6/F-7/F-11→DHR_35、F-9/F-10→后续契约卡
+阻塞: DHR_34 的 Receipt/Store/RPC 协议责任 blocked-by:DHR_61；人验项待用户批量处理。findings 下游移交：F-3/F-5→DHR_34/35、F-6/F-7/F-11→DHR_35、F-9/F-10→DHR_61
 -->
 
 ## 0. B 方案审核与理解确认
@@ -22,7 +22,8 @@
 |---|---|---|
 | DHR_32 | 先把你本机 5 类 AI 入口（codex / claude 系列的各个账号）挨个查清楚：命令是什么、身份怎么认、能干什么、额度用完长什么样，整理成一份不含任何密钥的「执行者名册」 | 后面派活时不靠猜，名册里的每一项都是查证过的事实 |
 | DHR_33 | 接入 Herdr（一个能托管多个 AI 终端会话的工具）：内核能通过它启动 / 观察 / 附着 / 停止 AI 会话，把 Herdr 的状态翻译成内核的状态；Linux 上 SSH 断开重连后还能接着看 | 内核有了「盯着外部 AI 干活」的眼睛和手，且远程也能用 |
-| DHR_34 | 做账号与额度治理：每次派活都记录用了哪个账号 / 配置；只有确认额度真用光才切换到预登记的备用账号，普通报错不乱切；没有备用就暂停并留下待处理提醒 | 避免账号乱切、额度误判、以及切换后说不清是谁干的 |
+| DHR_61 | 先冻结 Attempt 身份、暂停/重试、Store 恢复与 RPC 兼容契约 | 让 fallback 的状态、身份和恢复有唯一可重放真相，不能靠页面文案或自由文本猜 |
+| DHR_34 | 再做账号与额度治理：只有确认额度真用光才选择已冻结的合格 fallback，普通报错不乱切 | 避免账号乱切和额度误判；协议债不再由本卡越界承担 |
 | DHR_35 | Windows 上用真实 Codex 和 Claude Code 各跑一遍完整闭环，Linux 笔记本用 SSH 跑一遍；全程 DSH 关闭 | 端到端证明多账号、多平台派活真的能闭环 |
 
 - **完成后你手里有什么**：
@@ -53,6 +54,11 @@
   - **审核记录**：本事件 fresh 只读审核由 claude opus 承担（与 DHR_32 brief/task_plan 预审同批派出）。**实际形态登记**：opus fresh 实例经 Herdr `pane run` 拉起（pane w1:p7，agent `rev-b22`），与调整③冻结形态一致；主控回收后 `git status` 核对确认零越权改动。审核原文 = [workspace/DHR_32/review-b22-opus.md](../workspace/DHR_32/review-b22-opus.md)（P1×8 / P2×11 / P3×4 共 23 条），主会话裁决 = workspace/DHR_32/review.md「B-22 预审」节（P1/P2 全采纳，P3-1① 驳回，已回写本计划与 brief/task_plan）。
   - **用户确认**：待用户回归追认（追认点：①Linux 延后、②审计范围与白名单、③本事件代决策本身）。
 
+- **B-23 前置契约卡调整（2026-08-29，`DHR-B-23`，已确认）**：
+  - **触发**：DHR_34 S1 fresh 预审的 F-003/F-004 证明原卡无权扩 `contracts/**`、Store 或 RPC，且“已暂停等待处理”的正确状态语义是既有 `waiting_human/needs_you`，不是新 `paused` 枚举。
+  - **审核与裁决**：fresh 只读审核结论为无新增 P0；P1 是必须同拍调整索引、卡面范围、批次和依赖，不能只加一条依赖。采纳后发放唯一新 ID `DHR_61`（`DHR_36~40` 为已取消历史 ID，不复用）。
+  - **理解与确认**：用户理解回答“不能施工”，随后明文“确认”本调整。该确认只授权本次 DevPlan/evidence 落盘；不授权 DHR_61 或 DHR_34 开工、工作区、代码、账号配置、凭据读取、verify、合并、推送、部署或环境操作。
+
 ## 1. 概述
 
 - **交付什么 / 不含什么**：
@@ -63,11 +69,12 @@
   - [design/06](../design/06-多控制面与Headless-SSH运行-设计补充.md) · 「验收命题」节 **H4 / H5 / H7 / H9 / H12** + §4 控制客户端与执行器必须分开、§5 Linux Headless 与 SSH 拓扑、§9 Fallback 规则（Herdr 不可用）、§10「P6」。
   - [design/05](../design/05-DeepSeek-Harness插件化与专属工作台-可行性评估.md) · §7 两种 Profile（7.1 Executor Profile 示例）、§8 Agent 执行策略（8.2 实际 Codex 和 Claude Code 产品）。
   - [design/02](../design/02-完整流水-产品设计与验收.md) · **B4**（用户级注册表执行侧生效、真实拉起 codex-ninth、receipt 记 profile/account_alias/config_fingerprint、零凭据）、**B5**（quota 高置信识别与预登记 fallback）、**B15 ⑤**（可信只读承载 = 注册表能力位而非 prompt）——作为契约 Oracle。
+  - [design/11](../design/11-P6身份与额度治理契约调整.md) · **P6-IQ-A1~A5**、D1~D3：Attempt Receipt 身份快照、原子 fallback pause/retry、fence/Attention、可恢复 Store mutation、v1/v2 RPC 兼容与 DHR_34 的 D3 边界。
   - 研究来源（非拆计划输入）：[design/03 Herdr 底座研究](../design/03-完整流水-Herdr底座-产品设计与验收.md) 与 [evidence/03 preflight 实测](../design/evidence/03-Herdr底座-preflight实测与审核记录.md) 的结论继续复用：Herdr 状态属宿主观测、不代表 Relay 节点成功；信任弹窗 / 漏事件 / 进程退出 / 版本漂移需对账补偿；psmux 只作 legacy 回退。
 - **前置条件**：P5 核心 Gate 通过；Runtime、RPC、Store、参考 CLI、basic-agent-task 稳定；用户明确放行 P6；本机审计任务已按安全边界确认；凭据值不入任何工件；Linux 笔记本能 SSH 登录——若当时不可达，DHR_33 先冻结 Headless fixture，DHR_35 收口前必须补真实 SSH smoke（`DHR-B-22` 调整① 延后：该「必须」的执行时点推迟至 P6 阶段闸裁决，标准不松动）。
 - **实施策略一句话**：先审计后冻结（Profile 名称与能力由本机事实决定，计划只引用稳定 ID），Herdr Adapter 以事件快路 + snapshot 慢路双通道对账，全部在「DSH 关闭」路径上验收，DSH/Pi 只作附加客户端对证。
 - **任务前缀 / 模块 slug**：`DHR_` / `dh-relay`。
-- **批次**：批次 1=`DHR_32`（审计 + 注册表）；批次 2=`DHR_33`（Adapter + CLI/SSH）；批次 3=`DHR_34 ∥ DHR_35`（身份/quota 与真实闭环可并行收口，第一个端到端 demo 在 DHR_35）。
+- **批次**：批次 1=`DHR_32`（审计 + 注册表）；批次 2=`DHR_33`（Adapter + CLI/SSH）；批次 3=`DHR_61`（前置协议契约）；批次 4=`DHR_34`（quota/fallback 编排）；批次 5=`DHR_35`（真实闭环，第一个端到端 demo）。
 
 ## 2. 工程切分
 
@@ -79,7 +86,8 @@
 | audit-evidence | 本机五类入口审计工件（脱敏）：命令、配置来源、身份信号、产品/模型、平台、能力、quota 样本、fallback、Herdr 启动方式 | `workspace/DHR_32/evidence/` | DHR_32 |
 | herdr-adapter | `launch / observe / capture / focus / attach / send / stop / reconcile`；Herdr 状态 → Relay 状态映射；HostObservation | Runtime `executors/herdr/` | DHR_33 |
 | cli-herdr | `relay status / inspect / events --follow` 接通 host_ref 与最后观测；新增 `relay focus <run_id> <node_id>` | `cli/` | DHR_33 |
-| identity-quota | Receipt 冻结 profile / account_alias / config_fingerprint / capability hash；quota 检测器与 fallback 决策 | Runtime `executors/identity/`、`quota/` | DHR_34 |
+| identity-quota-contract | Attempt Receipt、fallback pause/retry、Store mutation、fence/Attention、RPC v1/v2 兼容与 registry 容量校验 | `relay-core/contracts/`、`store/`、`rpc/`、`profiles/`、Runtime 签发接点 | DHR_61 |
+| identity-quota | quota 检测器、合格 fallback 选择与 fresh Attempt 编排 | Runtime `executors/identity/`、`quota/`、`workflow-driver.mjs` | DHR_34 |
 | e2e-evidence | Windows Codex + Claude Code 真实节点、Linux SSH Herdr smoke、DSH 关闭闭环实录 | `workspace/DHR_35/evidence/` | DHR_35 |
 
 ### 2.2 复用与禁改边界
@@ -112,7 +120,8 @@
 |---|---|---|---|---|---|---|---|
 | DHR_32 | 审计本机 Codex/Claude 多账号并冻结 Executor Profile 注册表 | 标准 | 待人验 | P5 阶段闸（已过，2026-08-29） | [workspace/DHR_32/](../workspace/DHR_32/) | squash `2667f4a`（2026-08-29 委托代合入；verify 待用户） | 任务类型=normal；复核收敛（代码13+需求14+教训，返工1闭环，E-3201~05 通过）；待用户：B-22 追认 + E10 确认 + F-3（ninth 未登录）裁决；worktree 保留待 E10 |
 | DHR_33 | 实现 Herdr Adapter、CLI/SSH 能力探测与状态对账 | 标准 | 待人验 | DHR_32（待人验，产物已合入） | [workspace/DHR_33/](../workspace/DHR_33/) | squash `66dd16a`（2026-08-29；verify 待用户） | 任务类型=heavy；复核与返工已收敛；Linux 项延后（B-22①）；人验项见 workspace/DHR_33/review.md |
-| DHR_34 | 接通身份、quota 与预登记 fallback | 标准 | 进行中 | DHR_33（产物已合入，待人验不阻塞施工准备） | [workspace/DHR_34/](../workspace/DHR_34/) | | 任务类型=heavy；2026-08-29 用户授权开 worktree；复核固定 Opus；P6-M4 可 passed / constrained |
+| DHR_61 | 冻结 Attempt 身份、暂停/重试、Store 恢复与 RPC 兼容契约 | 标准 | 未开始 | DHR_33（产物已合入，待人验不阻塞施工准备） | <开工时回填 workspace/…> | | 任务类型=heavy；B-23 已确认；协议/Store/RPC 高危边界；未获 D 开工授权 |
+| DHR_34 | 接通 quota 分类、合格 fallback 选择与 fresh Attempt 编排 | 标准 | 进行中 | DHR_33、DHR_61 | [workspace/DHR_34/](../workspace/DHR_34/) | | 任务类型=heavy；blocked-by:DHR_61；仅 D3，禁止 `contracts/**`、签发服务、Store 与 RPC；P6-M4 可 passed / constrained |
 | DHR_35 | 用 Codex、Claude Code 和 Linux SSH 跑真实执行闭环 | 标准 | 未开始 | DHR_33、DHR_34（Receipt 身份链字段由 DHR_34 冻结，DHR_35 验收依赖它） | <开工时回填 workspace/…> | | 阶段闸阻塞；第一个端到端 demo；须补真实 SSH smoke（B-22 ① 延后，汇合点 = P6 阶段闸） |
 
 > 状态列只填五枚举，阶段闸阻塞写「备注」列。P5 未通过时 DHR_32~35 均不得开工。
@@ -146,15 +155,27 @@
 - **档位**：标准（外部宿主组件接线 + SSH 真实路径）。
 - **实施提示**：复用 evidence/03 的 preflight 判据（handle 1:1、visible/interactive、有界退出）；Linux 不可达时冻结 fixture 并在备注登记「待真实 smoke」，不得以 fixture 冒充真实 SSH 证据（`DHR-B-22` 调整① 延后，汇合点 = P6 阶段闸裁决）。
 
+#### DHR_61
+
+- **目标**：冻结并实现 design/11 D1/D2 的 Attempt Receipt 身份快照、pause/retry 事件、fence/Attention、可恢复 Store mutation 与 RPC v1/v2 兼容，让无 fallback 的人工等待、旧 Attempt 拒写和人工 retry 有唯一可重放的持久真相。
+- **非目标**：不做 quota 分类器、自动选择 fallback 的业务编排或真实产品闭环；不读写凭据、用户级账号配置或自动登录；不解除 DHR_34 阻塞。
+- **验收口径**：
+  - **机器证**：[design/11 P6-IQ-A1](../design/11-P6身份与额度治理契约调整.md#3-验收清单)：Attempt Receipt 在开立、持久化、重放中同一身份，`launch-receipt/v2` 历史形态保持可读，工件零凭据。
+  - **机器证**：[design/11 P6-IQ-A3](../design/11-P6身份与额度治理契约调整.md#3-验收清单)：canonical `fallback_pause_created` 原子导出 fence、`waiting_human` 和 Attention；重复/冲突/损坏/截断及各 journal 强杀阶段均 fail-closed，迟到写入返回 `E_ATTEMPT_FENCED`，v1 不静默丢失 Attention。
+  - **机器证**：[design/11 P6-IQ-A5](../design/11-P6身份与额度治理契约调整.md#3-验收清单)：v2 `retry-with-profile` 仅接受冻结且仍匹配的 profile；幂等、关闭 pause、快照不匹配和部分失败均有定向反例。
+- **变更范围**：`relay-core/contracts/**`、`relay-core/store/**`、`relay-core/rpc/**`、`relay-core/profiles/**`、必要的 Runtime Receipt 签发接点及定向测试；本卡 `workspace/DHR_61/`。
+- **档位**：标准；任务类型=heavy（协议、持久 Store、RPC 组件接线与身份/权限相邻）。
+- **实施提示**：注册表、Receipt、事件 detail、journal 与测试样本只能包含已批准的脱敏字段；单卡完成 D1/D2 后由 DHR_34 消费，不得把 D3 quota 判定也纳入本卡。
+
 #### DHR_34
 
-- **目标**：Receipt 冻结 profile / account_alias / config_fingerprint / capability hash；只在高置信 quota 样本命中时切到预登记 fallback 并产生 fresh Attempt；普通 / 权限 / 网络错误不误判为额度耗尽；无合法 fallback 时 paused + 持久 Attention。
-- **非目标**：不做自由账号切换；不做凭据管理与自动登录；不在客户端离线时自动选未授权账号。
+- **目标**：仅消费 DHR_61 冻结的 Receipt、pause/retry 与 Store/RPC 契约：只在高置信 quota 样本命中时选择合格的已冻结 fallback 并编排 fresh Attempt；普通 / 权限 / 网络错误不误判为额度耗尽；无合法 fallback 时调用既有 `waiting_human/needs_you` 的 pause/Attention 合同。
+- **非目标**：不扩 Receipt schema、Store、RPC、事件或 registry 合同；不做自由账号切换、凭据管理与自动登录；不在客户端离线时自动选未授权账号。
 - **验收口径**：
-  - **机器证**：[design/02 B5](../design/02-完整流水-产品设计与验收.md#61-ai-自动验收栏) · P6-M4：冻结正反样本——高置信 quota → fallback fresh Attempt；非额度错误 → 不判 quota；无 fallback → paused + Attention。
-  - **机器证**：[design/02 B4](../design/02-完整流水-产品设计与验收.md#61-ai-自动验收栏) · P6-M2/M7：Codex 多账号身份不串用；Claude 多入口配置边界可观察；Receipt 身份链可证；客户端变化不改变 Executor Profile / Attempt / Result 身份链。
+  - **机器证**：[design/11 P6-IQ-A2](../design/11-P6身份与额度治理契约调整.md#3-验收清单) + [design/02 B5](../design/02-完整流水-产品设计与验收.md#61-ai-自动验收栏) · P6-M4：高置信 quota + 合格 fallback → fresh Attempt；非额度错误 → 不判 quota；无合法 fallback 不自动切换。
+  - **机器证**：[design/11 P6-IQ-A4](../design/11-P6身份与额度治理契约调整.md#3-验收清单) + [design/02 B4](../design/02-完整流水-产品设计与验收.md#61-ai-自动验收栏) · P6-M2/M7：客户端变化不改变已冻结的 Executor Profile / Attempt / Result 身份链。
   - **机器证**：[design/06 H12](../design/06-多控制面与Headless-SSH运行-设计补充.md#11-验收命题)：fallback 产生 fresh Attempt，不续用旧身份链。
-- **变更范围**：Runtime `executors/identity/`、`quota/`、Receipt schema 扩展；本卡 `workspace/DHR_34/`。
+- **变更范围**：Runtime `executors/identity/`、`quota/`、`workflow-driver.mjs` 的 D3 编排接线与定向回归；本卡 `workspace/DHR_34/`；禁止 `contracts/**`、Receipt 签发服务、Store 与 RPC。
 - **档位**：标准（身份与权限红线相邻）。
 - **实施提示**：P6-M4 允许 `passed / constrained`——固定 Profile 的身份与 Herdr 闭环成立时，用户可决定先进 P7、完整自动 fallback 延后到 P8；权限与身份红线不因此降级。
 
@@ -183,12 +204,12 @@
 | ID | 命题 | 承接卡 |
 |---|---|---|
 | P6-M1 | 至少一个 Codex 和一个 Claude Profile 完成真实节点 | DHR_35 |
-| P6-M2 | 身份、配置和 Receipt 可证且零凭据泄露 | DHR_32 / DHR_34 |
+| P6-M2 | 身份、配置和 Receipt 可证且零凭据泄露 | DHR_32 / DHR_61 / DHR_34 |
 | P6-M3 | working、blocked、done、unknown 均有真实或受控证据 | DHR_33 / DHR_35 |
 | P6-M4 | quota 正反样本和 fallback 有明确通过或受限结论 | DHR_34 |
 | P6-M5 | DSH 关闭时，CLI 能显示状态、Attention 和正确 Herdr host_ref | DHR_33 / DHR_35 |
 | P6-M6 | Linux SSH 断开/重连不丢 Herdr 会话和 Relay Run 真相 | DHR_33 / DHR_35（B-22 ① 延后） |
-| P6-M7 | 客户端变化不改变 Executor Profile、Attempt 和 Result 身份链 | DHR_34 |
+| P6-M7 | 客户端变化不改变 Executor Profile、Attempt 和 Result 身份链 | DHR_61 / DHR_34 |
 
 ### 4.2 增强验收 P6-X 与人类闸 P6-H
 
@@ -207,13 +228,13 @@ P6-M1、M2、M3、M5、M6、M7 必须通过；P6-M4 可以是通过或用户明�
 
 | 检查 | 结论 |
 |---|---|
-| 覆盖 | design/06 H4/H5/H9/H12 由 DHR_33/34/35 承接（H7「DSH-only Executor 丢失只影响 Attempt」不在 P6 关闭，归 P5-X / P7）；design/05 §7/§8 由 DHR_32/35 承接；design/02 B4/B5/B15⑤ 作 Oracle 由 DHR_32/34/35 承接；P6-M1~M7 每条至少一张卡 |
-| 颗粒度 | DHR_32=审计 + 注册表验收单元；DHR_33=Adapter + SSH 路径验收单元；DHR_34=身份/quota 验收单元；DHR_35=真实闭环 + 人判单元 |
-| 依赖 | `DHR_32 → DHR_33 → DHR_34 → DHR_35` 单链无环（DHR_35 的 Receipt 身份链验收依赖 DHR_34 冻结的字段，故不再并行）；DHR_32 额外依赖 P5 阶段闸与用户对审计范围的单独确认 |
+| 覆盖 | design/06 H4/H5/H9/H12 由 DHR_33/34/35 承接（H7「DSH-only Executor 丢失只影响 Attempt」不在 P6 关闭，归 P5-X / P7）；design/05 §7/§8 由 DHR_32/35 承接；design/02 B4/B5/B15⑤ 作 Oracle 由 DHR_32/34/35 承接；design/11 P6-IQ-A1/A3/A5 由 DHR_61 承接，A2/A4 由 DHR_34 承接；P6-M1~M7 每条至少一张卡 |
+| 颗粒度 | DHR_32=审计 + 注册表验收单元；DHR_33=Adapter + SSH 路径验收单元；DHR_61=协议/Store/RPC 契约验收单元；DHR_34=quota/fallback 编排验收单元；DHR_35=真实闭环 + 人判单元 |
+| 依赖 | `DHR_32 → DHR_33 → DHR_61 → DHR_34 → DHR_35` 单链无环；DHR_34 在 DHR_61 验收前保持 blocked，DHR_35 的 Receipt 身份链验收仍依赖 DHR_34；DHR_32 额外依赖 P5 阶段闸与用户对审计范围的单独确认 |
 
 ## 7. 计划完工
 
-- [ ] DHR_32~35 全部销户。
+- [ ] DHR_32~35、DHR_61 全部销户。
 - [ ] P6-M1~M7 全部有等价 pass 证据（M4 允许用户接受的受限；M6 因 B-22 ① 延后，允许记延后/受限并由用户裁决）；P6-X 三态已登记。
 - [ ] 端到端证据：Windows Codex + Claude Code 闭环实录、Linux 真实 SSH smoke 可复查；全部工件零凭据扫描通过。
 - [ ] P6-H 已向用户展示并由用户判断；P7 是否解锁由用户明确表态。
