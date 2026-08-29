@@ -16,22 +16,28 @@
 2. **机器证**：design/06 H5 · P6-M3：`blocked` 进入持久 Attention；`done` 只进 `awaiting_result`；漏事件、Herdr 重启、pane 消失、进程退出均有明确结果；启动信任弹窗等盲区进入 Attention 或启动失败。
 3. **机器证**：design/06 H1 · P6-M5：DSH 不启动时 CLI 可完成查询与附着（`relay status/inspect/events/focus`）。
 4. **机器证**：事件快路与 snapshot 慢路均可工作；HostObservation 记录版本、能力 hash、pane 句柄；`relay focus` 不保存任意拼接命令。
-5. **上游 Oracle 差异说明**（候选-42）：DevPlan 本卡目标未含 `work_dir_root` 字样，但 DevPlan DHR_33 承接备注（2026-08-29）明确 design/02 B4 的 `work_dir_root` 由本卡 Adapter `launch` 决定并登记——launch 必须显式接受并登记 work_dir_root（进 Receipt/observation 证据链）。
+5. **上游 Oracle 差异说明**（候选-42，预审 P1-2/P2-7 增补）：
+   - `work_dir_root`：DevPlan 本卡目标未含该字样，但 DevPlan DHR_33 承接备注（2026-08-29）明确由本卡 Adapter `launch` 决定并登记——launch 必须显式接受并登记 work_dir_root（进事件 detail 证据链）。
+   - `awaiting_result`：H5 的该词在冻结的 7 值状态机里**无对应取值**（全仓零命中）；本卡以 `running` + `host_observation_changed`（detail 标注宿主 done）表达 done ≠ succeeded；该语义替换是否可接受由验收人裁决。
+   - HostObservation「版本/能力 hash」：host-observation v0 形状与事件字段装不下，降级为真实 smoke 的 progress 证据；pane/agent 句柄经事件 `detail` 固定格式承载。
 
 ## 主控架构裁决（开工前冻结，worker 不得改道；依据 = 2026-08-29 只读侦察）
 
 1. **Adapter 落位与形状**：`relay-core/runtime/executors/herdr/`。形状照抄 `runtime/process-executor.mjs` 的契约：纯函数 + 句柄工厂，**不碰 Store、不认识节点依赖**，记账与调度归 workflow-driver。
-2. **托管走合法窄路径**（`test/agent-node.test.mjs` 文件头预设的那条）：driver 在 `workflow-driver.mjs:88` 分叉点新增 herdr 分支（`executor_profiles` 里 `kind === 'herdr-agent'`）；`appendResult` 的 `executor_kind` 传 `'herdr-agent'`；capability 基线 `capability_manifest.executor_kinds` 由 `["process"]` 更新为 `["process","herdr-agent"]`（**必须经 `tools/capability-baseline.mjs` 的既有机制再生成**，先读该工具搞清 executor_kinds 的来源；若来源是工具内常量，允许仅改该一处常量并登记 progress）；`agent-node.test.mjs` 的第一条钉按其文件头的合法路径更新——**pi-agent / dsh-agent 仍不托管的钉必须保留**。
-3. **状态映射塞进冻结契约，contracts/ 一个字不动**：7 值 node_state + 18 个事件 kind 是全集。映射冻结为：
-   - `working → running`：心跳 `checkpoint_recorded`（running 的合法产生 kind 之一）。
-   - `blocked → waiting_human`：`human_input_requested`（该状态唯一合法来源），Attention 内容按 `contracts/v0-shapes/relay.attention.v1.shape.json` 现有形状放 payload；重放后持久。
-   - `done → awaiting_result` 语义：**保持 `running`**，记 `host_observation_changed` 标注宿主已 done；只有 result 被 capture 并核验后才 `appendResult`（done ≠ succeeded）。
-   - `unknown / 观测断`：`host_observation_changed` 且 `observation_status='observation_lost'`——**不产生任何 reason code、不判 Attempt 死**（reason-codes.md:56 原文约束）。
-   - 进程/宿主真丢：按 `contracts/reason-codes.md` 既有码分界用 `E_EXECUTOR_ADAPTER_LOST` / `E_EXECUTOR_KILLED`；**不新增 reason code**（要新增就是 BLOCKED）。
-   - `host_observation_changed` 的 payload 用 `contracts/v0-shapes/relay.host-observation.v1.shape.json` 现有形状（required: protocol/run_id/observation_status/observed_at + locator 放 pane/agent/版本/能力 hash）；**若现有形状装不下必需信息 → 写 BLOCKED 停下，不许改 contracts**。
-4. **`relay focus` 与 host_ref 零契约变更**：不加 RPC method、不改 `control.action` 枚举、不动 `run_status_view` 字段。`focus` 是 CLI 本地命令：经既有 `inspectRun`（detail 视图，事件里含 host_observation payload）取 herdr 句柄，渲染安全 attach 指令（如 `herdr agent attach <名>`）。遵守 `cli/render.mjs:3-5` 硬规则（打印值必须在传入对象逐字可找）；不保存任意拼接命令。
+2. **托管走合法窄路径**（`test/agent-node.test.mjs` 文件头预设的那条；按预审 P2-8/P2-9 修订）：driver 在 `workflow-driver.mjs:88` 分叉点新增 herdr 分支（`executor_profiles` 里 `kind === 'herdr-agent'`）；`appendResult` 的 `executor_kind` 按 profile 传入（去掉 :72 硬编码，process 行为不变）。capability 基线来源已确认 = `tools/capability-baseline.mjs:52` 的 `REFERENCE_EXECUTOR_KINDS = ['process']` 常量，改为 `['herdr-agent','process']` 后再生成 baseline；**`capability_hash` 变化是预期**，`test/rpc.test.mjs` 与 `test/contracts.test.mjs` 走复算路径会自动跟随、不改这两个文件。**代价留档**：`contracts/CANONICALIZATION.md` §三示例（"1 个 executor kind"）自此与代码事实过时，contracts/ 本卡禁改 → 记 findings + 留后续契约变更卡修正。`agent-node.test.mjs`：**:130 的 pi/dsh 不托管钉原样保留**；**新增**一条 herdr 托管钉（herdr-agent 节点被 driver 驱动、开 Attempt、落事件）；更新文件头 :3-7 的窄路径说明。
+3. **状态映射塞进冻结契约，contracts/ 一个字不动**（按预审 P1-1/P1-2/P1-4/P2-12 修订）：7 值 node_state + 19 个事件 kind 是全集；**`relay.event/v2` 没有 payload 字段，`store/store.mjs:162` 的 `emitEvent` 逐字段组装、多余键静默丢弃**——观测/Attention 的结构化信息**只能落在事件既有字段 `executor_ref`（locator 字符串 ≤1024，禁 scheme 前缀与绝对路径形态）与 `detail`（≤4096 自由字符串）**。`detail` 编码格式冻结为 `k=v;k=v` 且键序固定：观测事件用 `herdr_status=<s>;agent=<名>;pane=<id>;seq=<n>;work_dir_root=<锚>`（herdr 版本与能力 hash 不入事件账，降级为真实 smoke 的 progress 证据——按候选-42 记 Oracle 差异）。映射冻结为：
+   - `working → running`：心跳 `checkpoint_recorded`。
+   - `blocked → waiting_human`：`human_input_requested`（该状态唯一合法来源）；重放后持久；离开 blocked 前只发一次。
+   - `done → awaiting_result` 语义：**保持 `running`**，记 `host_observation_changed`（detail 标注宿主已 done）；只有 result 被 capture 并有判定结论后才 `appendResult`（done ≠ succeeded）。
+   - `unknown / 观测断`：`host_observation_changed` 且 `observation_status='observation_lost'`——不产生任何 reason code、不判 Attempt 死。**观测断持续超过阈值（参数化，默认值 brief 定 60s，测试注入小值）→ 追发 `human_input_requested`（Attention 语义=observation_lost 类别），仍不落 Result、不判死**。
+   - **launch 盲区**：launch 后 T 秒（参数化）agent 从未进入 idle/working（信任弹窗等）→ 发 `human_input_requested`（needs_input 语义），不落 Result。
+   - 宿主真丢（pane/agent 确认消失）：`E_EXECUTOR_HOST_LOST`（reason-codes.md:53「承载 Executor 的宿主消失」——**不是** `E_EXECUTOR_ADAPTER_LOST`，那个专指 pi-agent，见 agent-node.test.mjs:247 既有裁决）；Runtime 重启后按句柄探活失败 → `E_EXECUTOR_ORPHANED`；driver `stop()` 主动杀 → `E_EXECUTOR_KILLED`。herdr CLI 起不来/超时/解析失败属包装层进程内错误，用 `E_BAD_VALUE:*` 前缀，不当协议码。**不新增 reason code**（要新增就是 BLOCKED）。
+4. **`relay focus` 与 host_ref 零契约变更**（按预审 P1-3 修订）：不加 RPC method、不改 `control.action` 枚举、不动 `run_status_view` 字段。**`inspectRun` 的 detail 视图不含事件（它就是 state.json）**——`focus` 走既有 `subscribe` 方法取事件流快照（`cli/main.mjs` 的 `runEvents` 同路），找该 node 最近一条 `host_observation_changed`，渲染附着指引。`renderFocus` 只逐字打印事件对象既有字段值（`executor_ref`/`detail`/`observation_status`/`at`/`node_id`），附着指令 = 固定模板 + 逐字插入 `executor_ref`，**不做任何字符串拆解**（遵守 `cli/render.mjs:3-5` 硬规则）；不保存任意拼接命令。CLI 侧受 control-plane import 纪律管辖：数据只能经 RPC，禁止直读 events.jsonl。
 5. **测试假宿主**：herdr 桩放 `relay-core/test/helpers/`（**严禁放 fixtures/**——manifest 工具对子目录/非 json 抛错）。测试照 `test/workflow.test.mjs` 骨架 + `test/helpers/settled-state.mjs` 的不变量等待（候选-35）。
 6. **Windows 真实 smoke 本卡必做、产品级闭环归 DHR_35**：用真实 herdr（本机可用）验证 adapter 的 pane split → 观察 → stop 最小链路，证据进 progress；跑真实 Codex/Claude 完整闭环不在本卡。
+
+7. **profile 两套结构的桥**（预审 P1-5 裁决）：run 文档里的 `executor_profile` 只有 `kind`+`ref` 两字段（contracts 冻结）——**`ref` 逐字承载 DHR_32 的 `executor_profile_id`**（`herdr.codex.main` 形态实测满足 locator pattern，零契约改动）。注册表读取器落 `runtime/executors/herdr/profile-registry.mjs`：只读、路径参数化（默认 `~/.dh-relay/executor-profiles.json`，测试注入临时文件）、**绝不写注册表**；载入后经 `profiles/validate-profiles.mjs` 校验（只读 import）。`ref` 在注册表查无此条 → **不开 Attempt、保持 pending**（对齐 F-007 既有语义），不发明新失败码。
+8. **attach / send 补齐**（预审 P1-6 裁决取「补」）：adapter 增 `sendToHerdrAgent`（承接 waiting_human 的出口：人给输入后经它送达，状态离开 blocked、心跳恢复）与 `attachHerdrAgent`（只返回附着所需句柄与指令文本、不执行）；八动作对齐 DevPlan 目标行。
 
 ## 非目标 / 硬边界
 
@@ -57,4 +63,6 @@
 4. `test/herdr-adapter.test.mjs` + `test/helpers/` herdr 桩（含 H5/P6-M3 各态、观测断、重放持久性断言）。
 5. capability 基线更新 + `agent-node.test.mjs` 钉更新（窄路径）。
 6. Windows 真实 herdr 最小 smoke 证据（progress）。
-7. Headless(Linux) fixture 冻结件 + 「待真实 smoke」备注。
+7. Headless(Linux) 场景桩剧本（**非 manifest 冻结件**，落 test/helpers/，不受 fixtures 钉保护）+ 「待真实 smoke」备注。
+
+> 附注（预审 P3-17）：`relay-core/README.md` 与 `as-built/` 的同步由主控在收口批处理，worker 不改、一致性复核也不算缺漏。

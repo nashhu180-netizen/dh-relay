@@ -6,8 +6,9 @@
 
 ## 开工预审（brief/task_plan fresh 审核）
 
-- 结论：（待回填）
-- 主会话裁决：（待回填）
+- 实例身份：claude fresh 实例，Herdr `pane run` 拉起（pane w1:pB，agent `rev-b33pre`，2026-08-29，`--model opus` 拉起；模型双证按候选-40 待补实例自报）。回收后 `git status` 仅新增 review-pre-opus.md，零越权。
+- 结论：19 条（P1×6 / P2×8 / P3×5），原文 [review-pre-opus.md](review-pre-opus.md)。P1 全部命中主控裁决里的事实错误：event.v2 无 payload 且多余键被 emitEvent 静默丢弃、host-observation v0 装不下版本/能力 hash、inspectRun detail 不含事件、reason code 错用 ADAPTER_LOST（专属 pi）、profile 两套结构无桥、attach/send 漏排。另附 9 项「已核实无误」留档。
+- 主会话裁决（2026-08-29）：**19 条全采纳**——P1-1/P1-2 取复核建议 (a)+(c)（executor_ref+detail 固定编码；版本/能力 hash 降级 progress 证据并记 Oracle 差异）；P1-3 focus 改走 subscribe；P1-4 码分界改 HOST_LOST/ORPHANED/KILLED + 包装层用进程内前缀；P1-5 立裁决 7（ref 逐字承载 profile_id + profile-registry.mjs 只读桥 + 查无即 pending）；P1-6 取「补」（裁决 8：sendToHerdrAgent/attachHerdrAgent）；P2/P3 逐条落实（含 P2-8 CANONICALIZATION 过时留档、P2-10 心跳幂等陷阱、P2-12 超阈值升级与 launch 盲区、P2-14 DSH 未运行取证）。brief/task_plan 已按裁决重写后再派工。
 
 ## 完成条件逐条挂证据（验收靶子）
 
