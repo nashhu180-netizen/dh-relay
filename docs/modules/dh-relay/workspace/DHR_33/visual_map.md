@@ -1,6 +1,16 @@
 <!-- dh:v1 -->
 # DHR_33 · 证据地图
 
+## 步骤证据表
+
+| 步骤 | 完成% | 要的证据 | 证据状态 |
+|---|---:|---|---|
+| 1 · Adapter 与状态映射 | 100 | E-3302/E-3305 | present |
+| 2 · CLI/DSH-off smoke | 100 | E-3303 | partial |
+| 3 · 快慢路与能力边界 | 100 | E-3304 | partial |
+| 4 · 变异与五路复核 | 100 | E-3306 | present |
+| 5 · Linux/Oracle 人验 | 0 | E-3301/E-3307/E-3308 | partial |
+
 ```text
 herdr CLI（真实/桩）
    │ 步骤2 包装层 herdr-cli.mjs（spawn，不拼 shell）

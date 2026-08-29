@@ -4,6 +4,40 @@
 > 任务类型 heavy：代码两轮换人 + 五路复核（代码1/代码2/需求/教训/一致性）+ 有效单测（变异点由轮 2 实例选定）。
 > 复核形态：claude 经 Herdr `pane run` 拉起、侦测型只读（提示词硬约束 + 回收后 git status 核对）；模型身份按候选-40 双证登记。
 
+## 独立复核区
+
+**第一轮（代码）**
+
+| 复核者 | 结论 | 派出证据 |
+|---|---|---|
+| rev-dhr33-code1 | changes-requested，返工 1 闭合 | log:review-code1-opus.md |
+
+**第二轮（代码）**
+
+| 复核者 | 结论 | 派出证据 |
+|---|---|---|
+| rev-dhr33-code2 | changes-requested，返工 2/3 后收敛 | log:review-code2-opus.md |
+
+**需求复核结论**：原始 changes-requested；后续无逐条复裁表，待人验项不改机器通过｜由 rev-dhr33-req｜派出=log:review-req-opus.md
+
+**教训复核结论**：既有候选复核并新增候选-46~55，已回流教训库｜由 rev-dhr33-final｜派出=log:review-lessons-opus.md
+
+| 路径 | 复核者 | 结论 | 原始记录 |
+|---|---|---|---|
+| 代码轮 1 | rev-dhr33-code1 · `--model opus`；SessionStart=fable-5（候选-40待裁） | changes-requested，返工后闭合 | review-code1-opus.md |
+| 代码轮 2 | rev-dhr33-code2 · `--model opus`；SessionStart=fable-5（候选-40待裁） | changes-requested，返工后闭合 | review-code2-opus.md |
+| 需求方向 | rev-dhr33-req · `--model opus`；SessionStart=fable-5（候选-40待裁） | 原始 changes-requested；三轮返工后未留逐条闭合表 | review-req-opus.md |
+| 一致性/教训 | rev-dhr33-final · 同一实例两条适用路径 | findings 落档后收敛 | review-consistency-opus.md / review-lessons-opus.md |
+
+## AI 提交区
+
+### 需求对齐证据
+
+| 需求 / 人验项 | 场景与操作路径 | 证据 | 结论 |
+|---|---|---|---|
+| Herdr 状态映射、DSH-off CLI 与快慢路边界 | fake-herdr 反例、真 Run 四命令 smoke、三轮返工与变异复算 | E-3302~E-3306 | 满足 |
+| Linux SSH 与 Oracle 差异受理 | fixture 仅作冻结，明确保留真实 smoke 与人验 | E-3301/E-3307/E-3308 | 待人验 |
+
 ## 开工预审（brief/task_plan fresh 审核）
 
 - 实例身份：claude fresh 实例，Herdr `pane run` 拉起（pane w1:pB，agent `rev-b33pre`，2026-08-29，`--model opus` 拉起；模型双证按候选-40 待补实例自报）。回收后 `git status` 仅新增 review-pre-opus.md，零越权。
@@ -20,8 +54,8 @@
 | 4 | 快路+慢路对账；HostObservation 记版本/能力/pane 句柄；focus 不存任意拼接命令 | 机器证：observe/reconcile 测试 + renderFocus 逐字断言 + 代码复核 | 机器+复核 | E-3304 | 受限达成 | consistency §六：慢路对账 ✅、pane 句柄六键 ✅（V6′ 咬合）、focus 零拼接 ✅（M4/V7′ 双向）；事件快路上游能力缺失（F-6→DHR_35）、能力 hash 未产出（F-11→DHR_35）、herdr 版本 0.8.2 已记 | **受限达成**（两处降级待人验受理，2026-08-29 主控裁决） |
 | 5 | work_dir_root 由 launch 决定并登记（DevPlan 承接备注） | 机器证：launch 必填断言 + 句柄字段逐字 | 机器 | E-3305 | 达成 | launch 缺参 `E_BAD_VALUE:WORK_DIR_ROOT` + handle/detail 六键逐字断言（consistency §六附） | 达成（来源规则恒取 repoRoot 的限制见 F-7，交 DHR_35） |
 | 6 | 有效单测：轮 2 选点变异改坏必红 | 机器证：红→还原(sha256)→绿三段 | 机器 | E-3306 | 达成 | [review-code2-opus.md §三](review-code2-opus.md)（基线 5ecd4b0：8 有效全红→还原→绿）+ [review-consistency-opus.md §三.2](review-consistency-opus.md)（4d68163 抽 5 复算全红 + 新护栏 7 点 6 红）+ **终基线 `ea88c1d` 主控抽样 SM1（恢复届判据）/SM2（分叉顺序）/SM3（idle+judge capture）3/3 红→git 还原→15/15 绿**（2026-08-29） | 达成（2026-08-29 主控裁决，候选-49 基线条款履行） |
-| 7 | brief 完成条件 5②：`awaiting_result` 语义替换为 `running`+`host_observation_changed`（Oracle 差异，候选-42） | 人验：验收人受理该替换 | 人 | E-3307 | 待人验 | brief 裁决 3 + design/03 §123 冻结口径；代码事实见 review-consistency §六 E-3302 分句 2 | |
-| 8 | brief 完成条件 5③：HostObservation 版本/能力 hash 降级为 smoke progress 证据（Oracle 差异，候选-42）；herdr 版本已记（0.8.2），能力 hash 未产出（findings 登记交 DHR_35） | 人验：验收人受理降级与未承接项 | 人 | E-3308 | 待人验 | progress C 段 herdr 版本取证；能力 hash 缺口见 review-consistency §六 E-3304 分句 4 | |
+| 7 | brief 完成条件 5②：`awaiting_result` 语义替换为 `running`+`host_observation_changed`（Oracle 差异，候选-42） | 人验：验收人受理该替换 | 人 | E-3307 | 待人验 | brief 裁决 3 + design/03 §123 冻结口径；代码事实见 review-consistency §六 E-3302 分句 2 | 待人验 |
+| 8 | brief 完成条件 5③：HostObservation 版本/能力 hash 降级为 smoke progress 证据（Oracle 差异，候选-42）；herdr 版本已记（0.8.2），能力 hash 未产出（findings 登记交 DHR_35） | 人验：验收人受理降级与未承接项 | 人 | E-3308 | 待人验 | progress C 段 herdr 版本取证；能力 hash 缺口见 review-consistency §六 E-3304 分句 4 | 待人验 |
 
 ## 代码轮 1（fresh）
 
@@ -43,7 +77,7 @@
 
 ## 需求方向复核（fresh）
 
-（待回填）
+原始结论见 [review-req-opus.md](review-req-opus.md)：16 条 changes-requested。三轮返工覆盖了其中多项，但未留下逐条闭合对账表；因此这里只登记原结论与后续工件，不宣称该路径已逐条复裁通过，待人验项仍保持待人验。
 
 ## 教训复核
 
@@ -53,11 +87,22 @@
 
 ## 一致性复核
 
+<!-- dh:consistency-review:v1 task=DHR_33 -->
+
+| 比对对象 | 同类路径 | 定义是否一致 | 裁决 | 派出证据 |
+|---|---|---|---|---|
+| Herdr 状态映射、恢复届、launch 清理与测试基线 | brief/task_plan、生产实现、测试、review findings | 返工前不一致，返工 3 后机器项收敛；受限项留 DHR_35 | 采纳未闭环项并完成 rework-3；F-3/F-6/F-11 保持遗留 | log:review-consistency-opus.md |
+
 - 实例身份：同上（rev-dhr33-final，与教训复核同批）。
 - 结论：轮 2 二十条闭环核对 **✅14 / ⚠️3 / ❌3**（P2-2 护栏零判别力、P2-4 并发抖动 6 跑 2 红未消灭、P2-7/P2-8 C 段文档整段未做）+ 三方对账矛盾 7 条 + 新报 5 条（N-1 idle 不 capture 与 task_plan 映射冲突【P2】、N-2 launch 失败泄漏 pane【P2】、N-3 测试隐式读家目录注册表、N-4 seq=null 进 detail、N-5 driver 内部异常届不可 retry）+ 变异探针 12 个（返工 2 新护栏 7 个中 6 红 1 绿、轮 2 旧点抽 5 复算全红）。原文 [review-consistency-opus.md](review-consistency-opus.md)。
 - 主会话裁决（2026-08-29）：未闭环 3 条 + N-1~N-4 采纳并入 [rework-3.md](rework-3.md)（返工第 3 轮，收尾轮）；P3-19 裁决=维持现状（contracts 冻结无合适既有码，HOST_LOST+reason_detail 标记为最小失真，findings 登记交契约卡）；N-5、能力 hash 未产出、候选-41 修正（findings 点名被阻断验收 ID）均走 findings。**A-0 硬门槛按候选-48 升级为「全量 npm test 连续 3 次 exit 0」**。E-3302 采纳复核侧意见判达成（终验以 rework-3 后 HEAD 复核为准）；E-3304 判**受限达成**（事件快路上游能力缺失 F-6 交 DHR_35、能力 hash 未产出补 findings，两处降级留人验受理）；E-3306 基线随 rework-3 后抽样复算更正。
 
 ## 人类签名区（待用户回归，AI 不得代勾）
+
+| 验什么 | 做什么 | 通过标准 | 结果 |
+|---|---|---|---|
+| DSH-off 与 Herdr 状态映射 | 读 E-3302~E-3306 账本及真实 smoke 记录 | 机器项可回链，受限项未冒充全达成 | [ ] |
+| Linux/Oracle 差异与下游遗留 | 查看 E-3301/E-3307/E-3308 及 findings F-3/F-6/F-11 | 接受延后与 DHR_35 承接范围 | [ ] |
 
 - [ ] **E10 收口确认与 verify**：已查看证据，认可收口（注：squash `66dd16a` 已按 2026-08-29 委托先行合入 master，不认可可指令回滚）。做什么：读本表验收行 + review-consistency-opus.md §六/§八。
 - [ ] **E-3303 现场人验**：真实 smoke 为一次性现场（DSH 未运行 + 真 Run 四命令 + 附着指令），复核只能核文本一致性。做什么：读 progress C 段，认可即勾。

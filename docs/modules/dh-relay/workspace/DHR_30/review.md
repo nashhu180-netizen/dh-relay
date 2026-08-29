@@ -108,7 +108,7 @@
 
 | 命题 | 事实证明方式 | 最终裁决者(machine\|human) | 稳定 ID | 覆盖态(等价覆盖\|部分\|否\|无法取证) | 等价判据 | 实际执行结果 | 版本环境 | 独立 oracle | 未覆盖边界 | contractVersion | arbiterCapability | arbiterAuthorization |
 |------|------------|----------|--------|-------|---------|-------------|---------|-----------|-----------|----------------|------------------|---------------------|
-| CLI 七命令无 DSH 可用 | 真实 RPC 端到端测试 + 真实终端转录 | machine | DHR30-M1 | 等价覆盖 | 每个命令经同一 Runtime/RPC 成功 | CLI 17 用例绿（E-046）+ 终端 17 命令头/17 exit 码全 0（E-061/E-063 转录，含自检行） | win32 · node ≥18 · 2026-08-28 | RPC server + test + 落仓转录 | DHR_31 闭环不在本卡 | relay.rpc/v1 | node test | 自动 |
+| CLI 七命令无 DSH 可用 | 真实 RPC 端到端测试 + 真实终端转录 | machine | DHR30-M1 | 等价覆盖 | 切点 = CLI 进程 → RPC client → 本卡 service；七命令均走该调用链，不以 mock 返回替代 | CLI 17 用例绿（E-046）+ 终端 17 命令头/17 exit 码全 0（E-061/E-063 转录，含自检行） | win32 · node ≥18 · 2026-08-28 | RPC server + test + 落仓转录 | DHR_31 闭环不在本卡 | relay.rpc/v1 | node test | 自动 |
 | Read Model 同源与字段定义 | text/json 对照、镜像断言、design 双端标记 | machine | DHR30-M2 | 等价覆盖 | 共享 Read Model，断言均通过 | 镜像双证 E-045 + 字段面钉子 E-050 + rg 双端命中 + E-061 同 Run text/json 对照 | 同上 | frozen schemas | 后续客户端未接入 | relay.run-state/v1 | node test/rg | 自动 |
 | 断连与 control 幂等 | 真实 socket 回归 | machine | DHR30-M3 | 等价覆盖 | Store 零 cancel、重连同态、Receipt 唯一 | E-011/E-018/E-029/E-037 全绿 + E-061 §5/§6 场景复证 | 同上 | Store event/state | 完整 workflow 留 DHR_31 | relay.rpc/v1 | node test | 自动 |
 | 条件 Bridge/Pi 接缝 | RPC adapter、fixture 解析（截图义务移交 DHR_31） | machine | DHR30-M4 | 部分（截图半部移交后，本卡面等价覆盖） | 无 Store 直写且 DSH/Pi 消费同一对象 | dsh-bridge 7 用例 + client-fixtures 2 用例绿（E-050/E-052）+ import 静态钉（E-057） | 同上 | RPC protocol | 目标机 UI/H-e2e 未证（风险项，随 E10 整包） | relay.rpc/v1 | node test | 自动 |

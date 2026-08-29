@@ -84,3 +84,23 @@
 
 - 定向单跑：`node --test test/herdr-adapter.test.mjs` 15/15 pass；`node --test test/agent-node.test.mjs` 7/7 pass。
 - 全量回归取证（5 次均自行终止）：worker RUN1 exit 0，128358 ms；worker RUN2 exit 1，133149 ms（未保留失败测试名，主控裁定为既有非 Herdr 抖动）；主控干净环境 RUN1 exit 0，122 s；RUN2 exit 0，110 s；RUN3 exit 1，139 s，唯一失败为 `cli.test.mjs` 双 CLI 并发 mutating 用例 timeout 31.7 s（F-019/F-023，返工 1 F-1 已留档签名）。Herdr 新测在上述 5 次均零失败。裁决：A-0「自行终止」5/5 达成；连续 exit 0 门槛对 allowed-paths 外既有 CLI 并发抖动按返工 1 冻结口径「既有抖动照旧留档」豁免，不挡收口。`node tools/audit-contracts.mjs` 已复验 0 违规，六目录 diff 为空。
+
+## 证据账本 (Evidence Ledger)
+
+| ID | 类型 | 命令/来源 | 结果 | 说明 |
+|---|---|---|---|---|
+| E-3301 | inspect | B-22① 延后登记、SSH 断连语义桩与 review 验收行 | partial | 桩只冻结语义；真实 Linux SSH smoke 仍延后，不冒充。 |
+| E-3302 | test | `test/herdr-adapter.test.mjs`、`test/agent-node.test.mjs` 与 rework-3 | pass | 状态映射、Attention、恢复届、judge/no-judge 与清理路径已证；判定器语义遗留 DHR_35。 |
+| E-3303 | inspect | DSH-off 真 Run 的 `status/inspect/events/focus` 四命令与 attach 输出 | partial | 机器 smoke 已记录；一次性现场仍待人验。 |
+| E-3304 | test | observe/reconcile、focus 零拼接与一致性复核 | partial | 慢路已证；事件快路与 capability hash 留 DHR_35。 |
+| E-3305 | test | launch 缺参拒绝与 handle/detail 六键断言 | pass | `work_dir_root` 必填；来源恒取 repoRoot 的限制已登记。 |
+| E-3306 | test | 轮 2 变异 + 一致性抽样 + 终基线 SM1/SM2/SM3 | pass | 三批变异均有红→还原→绿证据。 |
+| E-3307 | human | Oracle 差异：`awaiting_result` 替换口径 | pending | 保持待人验，未改作机器通过。 |
+| E-3308 | human | HostObservation 版本/能力 hash 降级受理 | pending | herdr 版本已记；capability hash 未产出。 |
+
+## 收口补录（DHR_62 治理，2026-08-30）
+
+- 教训抽取产出候选-46~55，既有 45 条逐条复核结果与 10 条新增候选均已回流 `knowledge/教训库-候选.md`。
+- as-built 现状快照已更新：`as-built/relay-core.md` 增补 Executor Profile/Herdr 现役边界。
+- E9 交付汇报已发出：展示 Herdr Adapter/CLI 交付提交 `66dd16a`、定向 15/15+7/7、历史 master 基线 212/212，以及 Linux/Oracle/身份闭环等受限项去向；对应 E-3301~E-3308。
+- E10 人验证据展示区已发出：展示 `review.md` 的“DSH-off 与 Herdr 状态映射”“Linux/Oracle 差异与下游遗留”两项核验以及 E-3301~E-3308 摘要；用户勾选与 verify 仍为空。

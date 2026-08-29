@@ -4,7 +4,7 @@
 
 - 解析形态：`function`；PATH 同时可解析到 `cmd-shim` `%USERPROFILE%\\bin\\codex-ninth.cmd`。
 - Function 为 9 行，设置环境变量名 `CODEX_HOME` 后转发参数并委派 Codex CLI；未收录 shim 正文或变量值。
-- 两级解析中，`where.exe codex-ninth` 成功，故不需 PowerShell fallback。
+- 两级解析中，`where.exe codex-ninth` 成功，故校验器不需 PowerShell fallback；同时 `Get-Command` 还可见同名 Function，二者是两种可用入口形态。
 
 ## 版本与产品
 
@@ -41,7 +41,7 @@
 ## Herdr 启动
 
 - `herdr agent start --kind codex`；见 `knowledge/herdr-派活操作.md`。
-- 拉起方式约束：该入口为 Function；按别名拉起必须经 PowerShell shell，不可直接 spawn Function。
+- 拉起方式约束：若解析到 Function，必须经 PowerShell shell；若显式使用 `where.exe` 命中的 `.cmd` shim，可由支持 cmd shim 的启动器直接执行，但该直接执行形态本卡未实测，须在 DHR_35 真实闭环时验证。不得把 Function 形态当作唯一入口。
 
 ## Linux
 

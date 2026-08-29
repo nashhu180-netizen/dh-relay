@@ -6,6 +6,12 @@
 > 执行者：codex `gpt-5.6-terra`（reasoning high）经 Herdr 交互终端；复核 claude（`--model opus` 拉起，实际模型按候选-40 取证登记）。
 > 开工授权：用户 2026-08-29 委托（见 DevPlan §0.2 B-22 授权依据）；人验与 verify 待用户回归。
 
+## 覆盖任务
+
+| 任务 ID | 所属计划 | 验收口径出处 |
+|---|---|---|
+| DHR_33 | P6-Herdr 多账号与 Headless 执行底座 | DevPlan §3.2 DHR_33 |
+
 ## 目标（一句话）
 
 实现 Herdr Adapter（launch / observe / capture / focus / attach / send / stop / reconcile）与 Herdr 状态 → Relay 状态映射（事件快路 + snapshot 慢路对账、HostObservation 记版本/能力/pane 句柄），接通 CLI 的 host_ref 展示与 `relay focus`。

@@ -61,6 +61,7 @@ evidence 模板（每份都用）：
   4. `fallback_profile_ids` 引用必须能在本注册表内解析，否则 `E_DANGLING_FALLBACK`。
   5. **`E_UNRESOLVED_CONFIG`**：`config_fingerprint_rule.path_template` 展开环境变量后路径必须存在（`fs.existsSync`），否则报此错。
   6. **`E_UNRESOLVED_ALIAS`**（BLOCKED-1 裁决①修订，2026-08-29 主控）：`command_alias` 必须可解析，判定为**两级**——先 `where.exe <alias>` 退出码 0；不中则退到受控只读解析 `pwsh -NoLogo -Command "Get-Command <alias> -ErrorAction Stop | Out-Null"` 退出码 0（覆盖 PowerShell Function/alias 形态，与 herdr pane run 经 shell 拉起的真实执行语义一致）；两级都不中才报此错。实现为可选检查（`{ resolveAlias: false }` 可跳过，测试里对 golden 开启）。evidence 里对每个入口登记解析形态（executable / cmd-shim / ps1-shim / function）。
+  7. `headless_supported` 必须与 `capabilities.headless === "supported"` 一致；不一致按 schema 类错误拒收。此规则由 rework-1 补入实现，DHR_62 治理补回施工合同索引。
 - CLI 入口：`node profiles/validate-profiles.mjs <文件路径>`，exit 0/1。
 
 ## 步骤 4 · fixture（Create `relay-core/profiles/fixtures/`）

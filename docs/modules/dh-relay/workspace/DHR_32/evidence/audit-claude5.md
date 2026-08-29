@@ -22,7 +22,12 @@
 
 ## 能力位
 
-- `interactive`、`resume`、`readonly`、`headless`、`structured_result`、`user_input_passthrough`：均不可证；目标 CLI 当前不可执行。
+- `interactive`：不可证；目标 CLI 当前不可执行。
+- `resume`：不可证；目标 CLI 当前不可执行。
+- `readonly`：不可证；目标 CLI 当前不可执行。
+- `headless`：不可证；目标 CLI 当前不可执行。
+- `structured_result`：不可证；目标 CLI 当前不可执行。
+- `user_input_passthrough`：不可证；目标 CLI 当前不可执行。
 
 ## quota 样本
 

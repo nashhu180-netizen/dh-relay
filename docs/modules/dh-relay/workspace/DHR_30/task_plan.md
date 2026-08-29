@@ -160,7 +160,7 @@
   - `connectDshBridge({repoRoot}) → bridge`；`bridge.close()`。
   - 查询：`listRuns({includeLegacy})` / `status(runId)` / `inspect(runId)`——RPC 结果里的 Read Model **原样返回**，不加工字段。
   - 订阅：`subscribe(runId, {afterSeq, onSnapshot, onEvent, onState, onGap}) → subscription`；状态只来自快照与 `runStateChanged`（不从 event 流推导）；断线自动重连按已送达高水位带 `after_seq` 续传；收到 `E_CURSOR_GAP` 时整体重新 snapshot 并回调 `onGap`（新快照重建、不拼接）。`subscription.stop()` 收尾。
-  - 窄控制：`control(runId, action, {requestId})`——action ∈ {stop, resume}；`requestId` 由**调用方提供**（幂等键归调用方所有），Receipt / error（含 `receipt: Receipt|null` 二分）**原样透传**，`E_LEGACY_READ_ONLY` / `E_ORPHAN_STORE_READ_ONLY` 不重试。
+  - 窄控制：`control(runId, action, {requestId})`——action 只允许 `stop` 或 `resume`；`requestId` 由**调用方提供**（幂等键归调用方所有），Receipt / error（含 `receipt: Receipt|null` 二分）**原样透传**，`E_LEGACY_READ_ONLY` / `E_ORPHAN_STORE_READ_ONLY` 不重试。
 
 ### C-2 client fixtures：`relay-core/fixtures/clients/`
 

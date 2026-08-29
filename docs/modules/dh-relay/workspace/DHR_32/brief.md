@@ -5,6 +5,12 @@
 > 档位：标准。任务类型：**normal**（代码轮1 + 需求方向 + 教训 + 有效单测）。
 > 执行者：headless/交互 worker——codex `gpt-5.6-terra`（reasoning high），经 Herdr 交互终端派发；复核 claude opus。
 
+## 覆盖任务
+
+| 任务 ID | 所属计划 | 验收口径出处 |
+|---|---|---|
+| DHR_32 | P6-Herdr 多账号与 Headless 执行底座 | DevPlan §3.2 DHR_32 |
+
 ## 目标（一句话）
 
 对本机五类 AI 入口（`codex / codex-ninth / claude / claude-grok / claude5`，别名仅为用户已知叫法，真实映射由审计取得）逐一做**事实审计**，产出脱敏的 Executor Profile 注册表候选与 schema，冻结 Profile 稳定 ID。

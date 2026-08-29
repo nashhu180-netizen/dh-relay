@@ -42,3 +42,20 @@
 - 2026-08-29 worker：新变异有效单测。变异前 `validate-profiles.mjs` SHA-256 = `8D8A1DE601AD2226AF5BEE236F9B766BD0B4CFFABA88859FF54C4266FE795422`。临时短路 `CREDENTIAL_VALUE` 正则数组后执行 `node --test --test-name-pattern "negative-credential-value" test/profiles.test.mjs`：exit 1，唯一目标反例被错误接受，证明变异有效。恢复后 SHA-256 仍为 `8D8A1DE601AD2226AF5BEE236F9B766BD0B4CFFABA88859FF54C4266FE795422`；`node --test test/profiles.test.mjs`：12 pass / 0 fail。
 - 2026-08-29 worker：`node tools/audit-contracts.mjs`：exit 0；未登记开口 0、$ref 失败 0、厂商 token 违规 0、meta-schema 拒绝 0。返工后凭据扫描沿用步骤7同一组命令：仓内 exit 0 的命中均为规则/复核文档自述、测试 fake 反例或白名单环境变量/字段名；仓外注册表 exit 1（零命中）。无其他项。
 - 2026-08-29 主控：复核轮1返工独立复算通过（真实环境 golden/仓外 validate PASS、12/12、注入移除、schema 收紧）。教训复核（rev-dhr32-req 复用实例）零否决+4 漏项，全采纳；其 L-3② 指控经复算不成立（现 HEAD 已含 -CommandType 限定，cmdlet 名实测被拒）。E-3201~05 全部回填「通过」。收口：本工作区文档落盘后 squash 合入 master（按 2026-08-29 用户委托代执行，保留 worktree 待用户 E10 确认），卡转待人验。
+
+## 证据账本 (Evidence Ledger)
+
+| ID | 类型 | 命令/来源 | 结果 | 说明 |
+|---|---|---|---|---|
+| E-3201 | inspect | 五份 `evidence/audit-*.md`；真实环境零注入运行 `validate-profiles.mjs` | pass | golden 与仓外注册表均可解析；不可证身份保持不可证。 |
+| E-3202 | test | schema closed-set 与七组 negative fixtures | pass | 初始五组见 task_plan；unresolved-alias 与 username-path 两组来自 rework-1。未知字段、凭据字段/值、路径、alias/config/fallback 反例均 fail-closed。 |
+| E-3203 | inspect | 仓内/仓外凭据扫描与脱敏复核 | pass | 仓外注册表零命中；仓内命中均为规则自述或 fake 反例。 |
+| E-3204 | test | `node --test test/profiles.test.mjs` | pass (12/12) | supported/unsupported/unproven 与证据行双向绑定。 |
+| E-3205 | test | `CREDENTIAL_VALUE` 变异红→还原 hash→绿 | pass | 目标反例变异时被错误接受并使测试红；还原后 12/12。 |
+
+## 收口补录（DHR_62 治理，2026-08-30）
+
+- 教训抽取产出已由 rev-dhr32-req 形成 4 项漏项候选并回流 `knowledge/教训库-候选.md`；不是本轮伪称新跑 miner。
+- as-built 现状快照已更新：`as-built/relay-core.md` 增补 Executor Profile/Herdr 现役边界。
+- E9 交付汇报已发出：展示内容为五个 Profile 审计结果、定向 12/12、凭据扫描 audit 0，以及 `codex-ninth` 未登录/不可派与移交 DHR_35 的边界；对应 E-3201~E-3205。
+- E10 人验证据展示区已发出：展示 `review.md` 的“注册表真实性与脱敏”“ninth 当前状态”两项核验以及 E-3201~E-3205 摘要；用户勾选与 verify 仍为空。

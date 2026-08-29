@@ -97,6 +97,21 @@
 | E-048 | command | 主控直修 F-031（`cli/pending.mjs` 两条锁拒绝文案）；`node --test test/cli.test.mjs` | pass | CLI 17/17 绿；恢复指引不再把 pid 当所有权凭据。 |
 | E-049 | command | **CLI 终端侧真实跑通冒烟**（用户 2026-08-28 点名重点）：scratchpad 全新真实 git 仓（`.gitignore` 前置），每条命令独立进程、service 由 CLI 自行发现拉起：`start`（receipt committed，run_id `R001-smoke-20260828`）→ `list` text/json 同源 → `status`（host alive、state_signature）→ `inspect`（node_states）→ `events`（seq 连续、快照+账面）→ `stop`（host 优雅停、Run 不取消、run_status 保持）→ `resume`（host 复活 epoch 不乱）→ `events --follow` 挂着时另一终端发 stop：**事件 [15] 与 runStateChanged 实时推达**；follow 客户端被杀后 Run 与账面零影响。转录 log:`scratchpad/cli-smoke-transcript.txt` | pass | 七命令真实终端全通；「客户端断开不取消 Run」在真实场景复证。**过程发现非缺陷行为一则**：后台跑 follow 时 stdin=/dev/null 立即 EOF 触发「stdin 关闭=优雅结束 follow」设计行为，表现为只打快照即退出——姿势问题，stdin 撑住后推送正常。 |
 | E-050 | command | 批次 C 返工主控复验：范围核过（`git diff --name-only 37d7bb9..HEAD` 仅 adapter + 两份授权测试 + workspace 两文档 + 主控自己的 review.md）；无沙箱全量 `npm test` **153/153 绿**（150→153，F-016 偶发未现）；validator 48/48；audit 0 违规（217 token 0 未登记）；capability baseline 10 份对证 `a990fdda` 零漂移；manifest 79 对证。抽查 `0287c1e`：closePending 幂等 + 清计时器 + `E_CONNECTION_CLOSED` 稳定 reason、请求短路、`onClosed` 摘除活动集；worker 自抓的「重连快照抢先推进高水位误滤 cursor 补发」修正方向正确（仅首订阅推进 deliveredSeq）。 | pass | F-029/F-030 修复在树且有牙；派返工定向复审（fresh-context 只读）。 |
+| E-020 | review-dispatch | `codex exec --sandbox read-only`；范围 `5790a37..3e160ad` | observed | F-012~F-015 定向复审 approved。 |
+| E-026 | review-dispatch | `codex exec --sandbox read-only`；批次 B 四提交 | observed | changes-requested，F-018~F-025。 |
+| E-033 | review-dispatch | fresh-context 定向复审；342e740 + 返工三提交 | observed | 5 闭 3 未闭，转返工二轮。 |
+| E-051 | review-dispatch | fresh-context；范围 `37d7bb9..0ce5ab3` | observed | changes-requested，转 F-032/F-033。 |
+| E-052 | test | F-032/F-033 两处变异双验 + 全量 | pass | 目标用例各自精准红，复原 7/7、全量 155/155。 |
+| E-053 | review-dispatch | fresh-context；只审 `5327cfb` | observed | approved，F-032/F-033 closed。 |
+| E-054 | review-dispatch | 第二轮全卡 fresh 复核 | observed | changes-requested，转 F-034/F-035。 |
+| E-055 | test | `2602eab`；全量与变异 | pass | F-034/F-035 直修，全量 157/157。 |
+| E-057 | test | `de79d05`；全量与两处变异 | pass | F-036/F-037 直修，全量 158/158。 |
+| E-059 | review-dispatch | fresh-context 教训复核 | observed | changes-requested，候选与 miner 映射整改。 |
+| E-060 | review-dispatch | fresh-context 需求复核 | observed | changes-requested，转 E-061/E-062。 |
+| E-061 | e2e | `evidence/cli-smoke-20260828.txt` | pass | 真实 CLI 17 命令头/17 exit code 全 0。 |
+| E-062 | remediation | review、DevPlan、教训候选整改 | observed | 需求/教训两路整改落地。 |
+| E-063 | review-dispatch | fresh-context 整改闭合窄审 | observed | 需求车道裁定成立，三处精度问题直修。 |
+| E-064 | review-dispatch | fresh-context R-P 终审 | observed | approved，五路复核收敛。 |
 
 阶段汇报@批次B（G6 停损摆用户 F-019/F-020，2026-08-28 对话）；阶段汇报@批次C（施工+小审+返工全景交付汇报，2026-08-28 对话）；阶段汇报@CLI终端冒烟（E-049 结果与条件5裁决落地汇报，2026-08-28 对话）。
 

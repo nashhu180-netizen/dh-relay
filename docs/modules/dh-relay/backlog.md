@@ -254,3 +254,21 @@
 - **优先级**：低 · 挂后续面板卡
 - **提出人 / 日期**：DHR_31 施工方，2026-08-29
 - **进展**：未立项。
+
+### DHR-BL-16 DHR_30 历史复核证据范围拆正
+
+- **需求 / 议题**：DHR_30 `progress.md` 将 E-020 定义为 review-dispatch，但历史 `review.md` 把 E-020~E-024 整段当作 CLI 测试证据；E-025/E-027/E-032/E-056/E-058 在 progress 散文有定义但未进 Evidence Ledger，其中 E-025/E-027 被 findings 引用、E-056 被 review 与 findings 引用。
+- **来源**：DHR_62 findings **F-004**（P2）与需求方向返工复查 R-2。DHR_62 只显性化冲突，不改历史裁决。
+- **改动点（预估）**：逐条回链 E-020~E-024 的原始记录，把 review 中的测试证据引用改为真正的 test 类型 ID；将 E-025/E-027/E-032/E-056/E-058 的散文定义拆入 Evidence Ledger，并给 DHR_30 当时事后插入的 15 行加“收口补录”来源标记；若历史无可证记录，保持未通过或明确不可证。
+- **优先级**：低 · 下次专项治理 DHR_30 工件时处理。
+- **提出人 / 日期**：DHR_62 正式复核，2026-08-30。
+- **进展**：未立项。
+
+### DHR_62 全模块 dh-check 存量治理（DHR_61 verify 前置）
+
+- **需求 / 议题**：DHR_61 的实现、人验与 heavy 五路复核已齐，但独立 `verify(dh-relay):` 提交被模块级 PreToolUse 闸门拒绝；`dh dh-relay` 报 70 个失败，全部落在已合入的 DHR-BL-10、DHR_30/31/32/33/53 工件，DHR_61 新增失败为 0。
+- **目标**：逐条核对源工件，只做结构补齐、证据引用纠错、状态枚举规范化与可验证的历史事实回链，使 `dh dh-relay` 失败清零；任何无法由现有材料证明的内容保持未通过或明确 N/A，不补写虚构证据。
+- **边界**：不改生产代码，不改变历史用户裁决/verify 事实，不处理 warning，不替仍在飞的卡签名，不绕过 hook。DHR_32/33/34 现有 worktree 只读保护。
+- **档位 / 任务类型**：标准档 · `task_type=normal`；用户 2026-08-30 已授权持续推进并代决策。施工 Codex，正式复核 Opus。
+- **验收**：`dh dh-relay` exit 0 且 failures=0；Opus 复核确认无事实篡改、无伪造证据、无并行 WIP 污染；`git diff --check` 通过。
+- **进展**：已完成本地收口；三路正式复核 approved，`dh dh-relay` 0 failures/60 warnings，零生产代码改动；工作区 [workspace/DHR_62/](workspace/DHR_62/)。

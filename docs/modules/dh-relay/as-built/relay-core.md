@@ -265,6 +265,12 @@ DHR_52 的 RPC seam 与 DHR_51 的 host 之间原本没有装配人（F-001）�
 
 > 当前基线取「只托管 `process` 的最小 P5 参考实现」：`methods` 7 个、`notifications` 2 个、`executor_kinds = ["process"]`。DHR_29 真做出 Pi Adapter 或 DSH Native 时，算出的是**另一个**指纹，那是设计意图不是回归。
 
+### 6.4a Executor Profile 与 Herdr Adapter 现役边界（DHR_32/33）
+
+- `relay-core/profiles/` 是闭字段 Executor Profile 注册表、校验器与 fixtures；用户级候选只保存路径模板、别名、能力位、掩码身份和 fallback 引用，不保存凭据值。注册表机读层目前不表达「当前可派/停用」；`codex-ninth` 未登录、当前不可派只由 DHR_32 evidence/findings 记录，下游不得仅凭六项 CLI 能力位推导它可派。
+- `relay-core/runtime/executors/herdr/` 通过 Herdr CLI 实现 launch/observe/capture/reconcile/stop，Runtime 的 `herdr-agent` 分支负责 Attempt 与事件账。`done` 不直接等于 succeeded；无 judge 时只形成有界 Attention，判定器语义留 DHR_35。
+- 当前只证明 Windows/DSH-off 慢路与安全 focus；真实 Linux SSH、事件快路和 capability hash 仍是 DHR_35 的受限项。fixture 不替代真实 SSH 证据。
+
 ### 6.5 `digestExcluding` 曾被 `__proto__` 键静默吃掉（F-062，P1）
 
 首版 `const copy = {}` 让 `copy["__proto__"] = X` 触发 `Object.prototype.__proto__` 的 **setter**（改 copy 的原型），而不是建一个同名自有属性——该键从此在 `Object.keys(copy)` 里消失，**两份不同载荷算出同一摘要**。而 `JSON.parse('{"__proto__":{…}}')` 产出的正是自有可枚举属性，不需要刁钻构造。

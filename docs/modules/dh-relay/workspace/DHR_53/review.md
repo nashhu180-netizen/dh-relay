@@ -52,22 +52,21 @@
 
 | 需求 / 人验项 | 场景与操作路径 | 证据 (E-00x) | 结论（满足 / 不满足 / 待人验） |
 |---|---|---|---|
-| H5 子集：含 dedicated / inline / `lessons-absent` N/A 的 Recipe 解析 | 对一张 heavy 卡与一张 light 卡各跑一次 `resolvePlan`，打印展开出的 node 表与 `required_path_ids` | <待填> | 待人验 |
-| H10 子集：三类终态 Run 的永久历史 | 构造 succeeded / failed / cancelled 三个 Run，跑 `listRuns` 展示 active/history 分堆、`canContinue`、`countsTowardCapacity`，并展示目录未被删除 | <待填> | 待人验 |
+| 当前正式 DHR_53 人验项 | 5 分钟内从 PlanHome 展示 Plan、generation digest、TaskRef、registry/binding digest、workspace/HEAD 与 runtime/live 区别 | E-005（仅证明旧实现已归档、新施工未启动） | 不满足（新施工未启动） |
+| 旧 Recipe/terminal 展示项 | 旧实现已归档退役，不作为新卡验收证据 | E-004/E-005 | 不满足（superseded） |
 
 **完成条件逐条挂证据**
 
 | # | 完成条件 | 谁验 | 证据 (E-00x) | 达成? |
 |---|---------|------|-------------|------|
-| 1 | 冻结 RelayPlan / Resolved Plan / Run 关联 schema，plans 不维护可漂移副本 | AI | <待填> | <待填> |
-| 2 | Resolver 确定性展开唯一 node/依赖/Recipe/applicability/mode 并冻结源摘要 | AI | <待填> | <待填> |
-| 3 | 新根可跟踪 / runtime 被忽略 / 旧根只读 / 用户级索引不变 / tracked Plan 不改 active generation | AI | <待填> | <待填> |
-| 4 | Run 根不可变 `plan_id + task_id`，每 generation 有 `resolved_plan_digest`，身份错配 fail-closed | AI | <待填> | <待填> |
-| 5 | terminal runtime 不被删除、不进 active、不占容量，半写 fail-closed 且不殃及其他 Run | AI | <待填> | <待填> |
-| 6 | 反例矩阵逐条 fail-closed | AI | <待填> | <待填> |
-| 7 | 同一 Plan 两次解析产生不同 Run，旧 generation 不被改写 | AI | <待填> | <待填> |
-| 8 | 三份基线重生成且五条命令全绿 | AI | <待填> | <待填> |
-| 9 | 人判：Recipe 展示 + 三类终态历史展示 | 人 | <待填> | <待填> |
+| 1 | Plan source/archive/runtime/local 归独立 PlanHome；业务仓和 dh-relay 源码仓不是产品级 Plan 根。 | AI | —（未施工） | 否（未施工） |
+| 2 | TaskRef = `project_ref + devplan_ref + task_id`；同一 Plan 可含多个 TaskRef，task ID 重号、未知项目、registry/binding 漂移、任务/workspace 不存在或 locator 越界均 fail-closed。 | AI | —（未施工） | 否（未施工） |
+| 3 | 工作节点绑定精确 TaskRef，控制/join/Decision 节点绑定 canonical 非空 `subject_task_refs[]` 与 set digest；节点以 instruction、depends_on、executor binding 和允许 route 定义，不含业务 node_type。 | AI | —（未施工） | 否（未施工） |
+| 4 | Run 根只绑定 `plan_home_id + plan_id`；每 generation 保存完整 TaskRef set/digest 与 Resolved Plan digest；同一 Plan 可多 Run，旧 generation 不可变。 | AI | —（未施工） | 否（未施工） |
+| 5 | Core 生产 Schema/Resolver/Workflow/Ticket/状态/测试零 `task_type`、Recipe、施工/复核/返修枚举、`workflows/dev-harness` 及换名等价层；合法 Herdr/Host/client adapter 保留。 | AI | —（未施工） | 否（未施工） |
+| 6 | terminal runtime 永久保留但不可 continue、不占 Agent/Pair 容量；目录存在不代表 live Agent；半写/缺失 fail-closed 且不删除其他历史。 | AI | —（未施工） | 否（未施工） |
+| 7 | 离线反例证明 schema/Resolver 没退回 repo-local、single task 或单项目假设；真实两项目同时调度留给 P8。 | AI | —（未施工） | 否（未施工） |
+| 8 | 人判：5 分钟内从 PlanHome 展示 Plan、generation digest、TaskRef、registry/binding digest、workspace/HEAD 与 runtime/live 区别。 | 人 | —（未施工） | 否（未施工） |
 
 **验收项元数据表**
 
@@ -125,6 +124,12 @@
 | 三类终态都还查得到、但不能继续 | 看 AI 展示的 `listRuns` 输出与目录清单 | 三类均从 active 消失、仍可 inspect、continue 被拒、目录文件仍在 | [ ] |
 | 永久目录不占容量 | 看容量口径断言 | `countsTowardCapacity === false` | [ ] |
 
+### 目的三：展示当前正式卡的 PlanHome 追溯链（完成条件 8）
+
+| 验什么 | 做什么 | 通过标准 | 结果 |
+|---|---|---|---|
+| 人判：5 分钟内从 PlanHome 展示 Plan、generation digest、TaskRef、registry/binding digest、workspace/HEAD 与 runtime/live 区别。 | 展示正式新实现的追溯链 | 全部来自正式新实现且可回链 | [ ] 未施工 |
+
 ---
 
 - 确认记录：<AI 回填>
@@ -139,4 +144,3 @@
 
 | 确认时间 | 确认人 | 确认对象=releasePacket | 展示版本(shownVersion) | 证据摘要或哈希(evidenceDigest) | 关联稳定ID列表 | 确认结论(通过\|带风险放行\|否) |
 |---------|--------|----------------------|----------------------|-------------------------------|---------------|--------------------------------|
-| | | | | | | |
