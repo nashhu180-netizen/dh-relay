@@ -22,6 +22,7 @@
 | 2026-08-30 | 主会话 | DHR_62 已合入 master 并清除治理基线；DHR_61 rebase 后确认 `relay-core/` 与原 237/237 提交字节零差异。新一轮全量 236/237，唯一失败为 Windows 临时目录删除 `EBUSY`；DHR_61 与 master 隔离复跑同一桥接文件均 7/7。audit/selftest/capability/fixture/diff 闸均通过。 | E-022 | 补齐 R18 标准收口登记，重跑 `dh dh-relay`。 |
 | 2026-08-30 | 主会话 | 教训复核的 miner 备料产出已完成：复核结论与可搬运候选已落 `review-lessons-opus.md` / `lesson_candidates.md`；as-built 已更新 `as-built/relay-core.md` §3.12；E9 交付汇报已生成，摘要为 Attempt 身份、pause/retry、RPC v2、五路复核、机器闸与 DHR_34 边界；E10 证据展示区已生成并落 `review.md` 的 `DHR_61-E10-v1`。 | E-023 | 模块闸通过后提交收口证据并形成 verify。 |
 | 2026-08-30 | 主会话 | 收口证据提交 `35df80d` 上再次执行全量，取得 237/237、exit 0；前一轮 Windows `EBUSY` 清理竞态未复现。 | E-026 | 回填 E10 后形成独立 verify 提交。 |
+| 2026-08-30 | 主会话 | DHR_61 已 squash 合入 master=`84eb2bf`，master 独立 verify=`45233b9`；主树与已验证分支 tree 全等，模块闸 0 failure，DHR_34 前置阻塞解除。 | E-027 | 删除短命工作树/分支，恢复 DHR_34 D3。 |
 
 ## 证据账本 (Evidence Ledger)
 
@@ -53,3 +54,4 @@
 | E-024 | review-dispatch | Herdr pane `dhr61_r1`，`claude --model opus`，状态栏 `Opus 5` | pass | 代码轮 1 由未参与施工的 Opus 实例执行，结论落 `review-code1-opus.md`。 |
 | E-025 | review-dispatch | Herdr Review Batch panes `dhr61_code2` / `dhr61_req` / `dhr61_consistency` / `dhr61_lessons`，状态栏均为 `Opus 5` | pass | 代码轮 2、需求、一致性、教训四路独立派发与落件可回链。 |
 | E-026 | test | HEAD=`35df80d`；`cd relay-core; npm test` | pass (237/237，exit 0) | 当前提交字节的最终全量终态；此前 `EBUSY` 清理竞态未复现。 |
+| E-027 | integration + verify | master `84eb2bf` + `45233b9`；`git diff --quiet wt/DHR_61 master`；`dh dh-relay`；audit/selftest/capability/fixture/diff check | pass（tree 全等；dh 0 failure/59 存量 warning；audit 0；57/57；19；90；diff clean） | 高危出口闸与主树集成闭合，DHR_61 可标完成并解除 DHR_34 前置。 |
