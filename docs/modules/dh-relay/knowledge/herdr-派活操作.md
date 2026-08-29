@@ -26,6 +26,9 @@ herdr agent prompt <名> "<指令文本>"          # 长活别加 --wait 卡住�
 #    补一发 herdr agent send-keys <名> enter 即提交（2026-08-28 两次实测）。
 #    ⚠️ 一发 enter 可能被吃成多行输入的换行（2026-08-29 实测一次）：补完必须再 agent get 验 seq，
 #    没动就再补一发；一律以 state_change_seq 变化 + status 转 working 为「真提交」判据。
+#    ⚠️ 但 agent 自身还挂着后台终端时（如 npm test 未终止），status 本来就是 working、seq 也会因
+#    后台输出而动——上述判据会误判（2026-08-29 DHR_33 实测漏发一次）。终极判据 = agent read 看
+#    **输入框已清空**（提示符回到「Ask Codex to do anything」且 › 后无残留文本）。
 herdr agent wait <名> --timeout 5400000       # 挂后台催收：settle 到 idle/done/blocked 即返回
 
 # 4. 收结果
