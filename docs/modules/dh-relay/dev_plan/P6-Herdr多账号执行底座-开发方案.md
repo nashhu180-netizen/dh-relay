@@ -141,6 +141,7 @@
   - **机器证**：[design/06 H1](../design/06-多控制面与Headless-SSH运行-设计补充.md#11-验收命题) · P6-M5：DSH 不启动时 CLI 可完成查询与附着（`relay status/inspect/events/focus`）。
   - **机器证**：事件快路与 snapshot 慢路均可工作；HostObservation 记录版本、能力 hash、pane 句柄；`relay focus` 不保存任意拼接命令。
 - **变更范围**：Runtime `executors/herdr/`、`cli/`（focus + host_ref）、Headless fixture；本卡 `workspace/DHR_33/`。
+- **承接备注（2026-08-29 DHR_32 需求复核 P2-1 裁决）**：design/02 B4 的 `work_dir_root`（run 起在哪个仓/目录）由本卡 Adapter `launch` 决定并登记，DHR_32 注册表不承接该字段。
 - **档位**：标准（外部宿主组件接线 + SSH 真实路径）。
 - **实施提示**：复用 evidence/03 的 preflight 判据（handle 1:1、visible/interactive、有界退出）；Linux 不可达时冻结 fixture 并在备注登记「待真实 smoke」，不得以 fixture 冒充真实 SSH 证据（`DHR-B-22` 调整① 延后，汇合点 = P6 阶段闸裁决）。
 
