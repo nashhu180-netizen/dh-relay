@@ -1,12 +1,12 @@
 # P6-Herdr 多账号与 Headless 执行底座 开发方案
 
 <!-- dh:plan-type: 开发 -->
-<!-- dh:planning-event:v1 id=DHR-B-23 stage=B-adjust artifact=dev_plan/P6-Herdr多账号执行底座-开发方案.md review=../design/evidence/21-P6前置契约卡-B调整交叉审核记录.md#review-b23 understanding=../design/evidence/21-P6前置契约卡-B调整交叉审核记录.md#understanding-b23 -->
+<!-- dh:planning-no-event:v1 artifact=dev_plan/P6-Herdr多账号执行底座-开发方案.md reason=DHR_61-S0开工状态与工作区链接回填；B-23已由bbf78f9落盘，本次不改变任务终点范围依赖或验收口径 -->
 <!-- dh:status
 汇报: DHR_33（heavy）**已收口合入 master 转待人验**（squash `66dd16a`，2026-08-29）。全链：预审19→施工 `596a49b`→轮1（代码19+需求16 全采纳）→返工1 `5ecd4b0`→代码轮2（20条+变异8有效4无效，E-3306 达成）→返工2 `4d68163`→一致性+教训复核（闭环✅14/⚠️3/❌3；候选-46~55 已回流教训库）→返工3 `ea88c1d`→主控终验：全量 npm test 5 次自行终止（挂死消灭），herdr 新测（15+7）零失败，残余红=既有 cli 双 CLI 并发抖动（F-1 豁免留档）；E-3306 终基线 `ea88c1d` 抽样 SM1/SM2/SM3 3/3 红→还原→绿；master 合并后 212/212 exit 0。验收表：E-3302/3305/3306 达成、E-3304 受限达成、E-3303 待人验、E-3307/3308（Oracle 差异）待人验受理。DHR_32 仍待人验（`2667f4a`）。
-现状: DHR_32、DHR_33 均待人验；DHR_61 未开始；DHR_34 进行中但 blocked-by:DHR_61；DHR_35 未开始
-进行到: P6 ▸ DHR-B-23 已确认，待 DHR_61 开工
-下一步: 用户批量人验（见待用户清单）→ 按 D 动作开工 DHR_61；DHR_34 在 DHR_61 验收前不得施工
+现状: DHR_32、DHR_33 均待人验；DHR_61 进行中（S0 工作区已落户，尚未施工）；DHR_34 进行中但 blocked-by:DHR_61；DHR_35 未开始
+进行到: P6 ▸ DHR_61 已获 D 开工确认，正在完成 S0/S1 施工合同
+下一步: 完成 DHR_61 S1/S2 后才可施工；DHR_34 在 DHR_61 验收前不得施工
 待用户: ①B-22 追认（Linux 延后/审计白名单/代决策）；②DHR_32 E10+verify、F-3（ninth 未登录）；③DHR_33 签名区六项（E10 收口、E-3303 现场、E-3304 受限、E-3307/3308 受理、P6-M6 延后、候选-40 模型身份裁决——两卡五实例复发，建议定权威源或改换人定义）
 看什么: workspace/DHR_33/review.md（验收表+签名区）→ review-consistency-opus.md §六/§八；workspace/DHR_32/review.md 签名区
 阻塞: DHR_34 的 Receipt/Store/RPC 协议责任 blocked-by:DHR_61；人验项待用户批量处理。findings 下游移交：F-3/F-5→DHR_34/35、F-6/F-7/F-11→DHR_35、F-9/F-10→DHR_61
@@ -58,6 +58,8 @@
   - **触发**：DHR_34 S1 fresh 预审的 F-003/F-004 证明原卡无权扩 `contracts/**`、Store 或 RPC，且“已暂停等待处理”的正确状态语义是既有 `waiting_human/needs_you`，不是新 `paused` 枚举。
   - **审核与裁决**：fresh 只读审核结论为无新增 P0；P1 是必须同拍调整索引、卡面范围、批次和依赖，不能只加一条依赖。采纳后发放唯一新 ID `DHR_61`（`DHR_36~40` 为已取消历史 ID，不复用）。
   - **理解与确认**：用户理解回答“不能施工”，随后明文“确认”本调整。该确认只授权本次 DevPlan/evidence 落盘；不授权 DHR_61 或 DHR_34 开工、工作区、代码、账号配置、凭据读取、verify、合并、推送、部署或环境操作。
+
+- **DHR_61 D 开工（2026-08-29，已确认）**：用户在 B-23 落盘、`DHR_34 blocked-by:DHR_61` 与“下一关为 DHR_61 独立工作区”说明后明文“确认”。本次只开启 DHR_61 的标准档 S0/S1/S2：主树建八件套、冻结施工合同并切独立 `wt/DHR_61`；不授权 DHR_34 施工、凭据读取、账号配置、真实产品操作、verify、推送、部署或环境操作。
 
 ## 1. 概述
 
@@ -120,7 +122,7 @@
 |---|---|---|---|---|---|---|---|
 | DHR_32 | 审计本机 Codex/Claude 多账号并冻结 Executor Profile 注册表 | 标准 | 待人验 | P5 阶段闸（已过，2026-08-29） | [workspace/DHR_32/](../workspace/DHR_32/) | squash `2667f4a`（2026-08-29 委托代合入；verify 待用户） | 任务类型=normal；复核收敛（代码13+需求14+教训，返工1闭环，E-3201~05 通过）；待用户：B-22 追认 + E10 确认 + F-3（ninth 未登录）裁决；worktree 保留待 E10 |
 | DHR_33 | 实现 Herdr Adapter、CLI/SSH 能力探测与状态对账 | 标准 | 待人验 | DHR_32（待人验，产物已合入） | [workspace/DHR_33/](../workspace/DHR_33/) | squash `66dd16a`（2026-08-29；verify 待用户） | 任务类型=heavy；复核与返工已收敛；Linux 项延后（B-22①）；人验项见 workspace/DHR_33/review.md |
-| DHR_61 | 冻结 Attempt 身份、暂停/重试、Store 恢复与 RPC 兼容契约 | 标准 | 未开始 | DHR_33（产物已合入，待人验不阻塞施工准备） | <开工时回填 workspace/…> | | 任务类型=heavy；B-23 已确认；协议/Store/RPC 高危边界；未获 D 开工授权 |
+| DHR_61 | 冻结 Attempt 身份、暂停/重试、Store 恢复与 RPC 兼容契约 | 标准 | 进行中 | DHR_33（产物已合入，待人验不阻塞施工准备） | [workspace/DHR_61/](../workspace/DHR_61/) | | 任务类型=heavy；D 开工已确认；当前 S0/S1/S2，仅工作区与施工合同，尚未施工 |
 | DHR_34 | 接通 quota 分类、合格 fallback 选择与 fresh Attempt 编排 | 标准 | 进行中 | DHR_33、DHR_61 | [workspace/DHR_34/](../workspace/DHR_34/) | | 任务类型=heavy；blocked-by:DHR_61；仅 D3，禁止 `contracts/**`、签发服务、Store 与 RPC；P6-M4 可 passed / constrained |
 | DHR_35 | 用 Codex、Claude Code 和 Linux SSH 跑真实执行闭环 | 标准 | 未开始 | DHR_33、DHR_34（Receipt 身份链字段由 DHR_34 冻结，DHR_35 验收依赖它） | <开工时回填 workspace/…> | | 阶段闸阻塞；第一个端到端 demo；须补真实 SSH smoke（B-22 ① 延后，汇合点 = P6 阶段闸） |
 
