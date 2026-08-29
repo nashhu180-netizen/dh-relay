@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "relay/executor-profile.v1",
+  "type": "object",
+  "required": ["profiles"],
+  "additionalProperties": false,
+  "properties": {
+    "profiles": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/profile" }
+    }
+  },
+  "$defs": {
+    "capabilities": {
+      "type": "object",
+      "required": ["interactive", "resume", "readonly", "headless", "structured_result", "user_input_passthrough"],
+      "additionalProperties": false,
+      "properties": {
+        "interactive": { "$ref": "#/$defs/capability" },
+        "resume": { "$ref": "#/$defs/capability" },
+        "readonly": { "$ref": "#/$defs/capability" },
+        "headless": { "$ref": "#/$defs/capability" },
+        "structured_result": { "$ref": "#/$defs/capability" },
+        "user_input_passthrough": { "$ref": "#/$defs/capability" }
+      }
+    },
+    "capability": {
+      "type": "string",
+      "enum": ["supported", "unsupported", "unproven"]
+    },
+    "configFingerprintRule": {
+      "type": "object",
+      "required": ["kind", "path_template", "fields"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "file-exists" },
+        "path_template": {
+          "type": "string",
+          "pattern": "^\\$\\{[A-Z_][A-Z0-9_]*\\}(?:/[A-Za-z0-9._ -]+)+$"
+        },
+        "fields": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "profile": {
+      "type": "object",
+      "required": ["executor_profile_id", "backend", "product", "command_alias", "account_alias", "capabilities", "supported_platforms", "headless_supported"],
+      "additionalProperties": false,
+      "properties": {
+        "executor_profile_id": { "type": "string", "pattern": "^(herdr|process|pi-agent)\\.[a-z0-9-]+\\.[a-z0-9-]+$" },
+        "backend": { "type": "string", "enum": ["herdr", "process", "pi-agent"] },
+        "product": { "type": "string", "enum": ["codex-cli", "claude-code", "unverified"] },
+        "command_alias": { "type": "string", "minLength": 1 },
+        "account_alias": { "type": "string", "minLength": 1 },
+        "capabilities": { "$ref": "#/$defs/capabilities" },
+        "expected_identity": { "type": "string", "pattern": "\\*\\*\\*" },
+        "config_fingerprint_rule": { "$ref": "#/$defs/configFingerprintRule" },
+        "quota_detector_id": { "type": "string", "minLength": 1 },
+        "fallback_profile_ids": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "supported_platforms": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["win32", "linux"] },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "headless_supported": { "type": "boolean" }
+      }
+    }
+  }
+}

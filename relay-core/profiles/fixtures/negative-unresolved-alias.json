@@ -1,0 +1,12 @@
+{
+  "profiles": [{
+    "executor_profile_id": "herdr.codex.one",
+    "backend": "herdr",
+    "product": "codex-cli",
+    "command_alias": "dhr32-no-such-alias",
+    "account_alias": "acct-test",
+    "capabilities": { "interactive": "unproven", "resume": "unproven", "readonly": "unproven", "headless": "unproven", "structured_result": "unproven", "user_input_passthrough": "unproven" },
+    "supported_platforms": ["win32"],
+    "headless_supported": false
+  }]
+}

@@ -1,0 +1,61 @@
+{
+  "profiles": [
+    {
+      "executor_profile_id": "herdr.codex.main",
+      "backend": "herdr",
+      "product": "codex-cli",
+      "command_alias": "codex",
+      "account_alias": "acct-codex-main",
+      "capabilities": { "interactive": "supported", "resume": "supported", "readonly": "supported", "headless": "supported", "structured_result": "supported", "user_input_passthrough": "supported" },
+      "config_fingerprint_rule": { "kind": "file-exists", "path_template": "${USERPROFILE}/.codex/config.toml", "fields": ["model", "profiles"] },
+      "fallback_profile_ids": ["herdr.codex.ninth"],
+      "supported_platforms": ["win32"],
+      "headless_supported": true
+    },
+    {
+      "executor_profile_id": "herdr.codex.ninth",
+      "backend": "herdr",
+      "product": "codex-cli",
+      "command_alias": "codex-ninth",
+      "account_alias": "acct-codex-ninth",
+      "capabilities": { "interactive": "supported", "resume": "supported", "readonly": "supported", "headless": "supported", "structured_result": "supported", "user_input_passthrough": "supported" },
+      "fallback_profile_ids": ["herdr.codex.main"],
+      "supported_platforms": ["win32"],
+      "headless_supported": true
+    },
+    {
+      "executor_profile_id": "herdr.claude.main",
+      "backend": "herdr",
+      "product": "claude-code",
+      "command_alias": "claude",
+      "account_alias": "acct-claude-main",
+      "capabilities": { "interactive": "supported", "resume": "supported", "readonly": "unsupported", "headless": "supported", "structured_result": "supported", "user_input_passthrough": "supported" },
+      "expected_identity": "hy***@gmail.com",
+      "config_fingerprint_rule": { "kind": "file-exists", "path_template": "${USERPROFILE}/.claude/settings.json", "fields": ["model", "permissions"] },
+      "supported_platforms": ["win32"],
+      "headless_supported": true
+    },
+    {
+      "executor_profile_id": "herdr.claude.grok",
+      "backend": "herdr",
+      "product": "claude-code",
+      "command_alias": "claude-grok",
+      "account_alias": "acct-grok-gw",
+      "capabilities": { "interactive": "supported", "resume": "supported", "readonly": "unsupported", "headless": "supported", "structured_result": "supported", "user_input_passthrough": "supported" },
+      "config_fingerprint_rule": { "kind": "file-exists", "path_template": "${USERPROFILE}/.claude-grok/settings.json", "fields": ["model", "permissions"] },
+      "supported_platforms": ["win32"],
+      "headless_supported": true
+    },
+    {
+      "executor_profile_id": "herdr.claude.account5",
+      "backend": "herdr",
+      "product": "unverified",
+      "command_alias": "claude5",
+      "account_alias": "acct-claude5",
+      "capabilities": { "interactive": "unproven", "resume": "unproven", "readonly": "unproven", "headless": "unproven", "structured_result": "unproven", "user_input_passthrough": "unproven" },
+      "config_fingerprint_rule": { "kind": "file-exists", "path_template": "${USERPROFILE}/.claude-account5/settings.json", "fields": ["model", "permissions"] },
+      "supported_platforms": ["win32"],
+      "headless_supported": false
+    }
+  ]
+}

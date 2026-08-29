@@ -60,7 +60,7 @@ evidence 模板（每份都用）：
   3. **凭据值模式拒收**（五条正则，与步骤 7 的 rg 命令保持同一组）：任何字符串值匹配 `sk-[A-Za-z0-9_-]{16,}`、`eyJ[A-Za-z0-9_-]{10,}`、`Bearer\s+\S+`、`[A-Fa-f0-9]{40,}`（hex 长串）、`[A-Za-z0-9+/_-]{40,}={0,2}`（base64/base64url 长串）之一 → `ok:false`，error code `E_CREDENTIAL_VALUE`。（最后一条对 sha256 等有噪声：注册表内本就不该出现 40+ 位连续串，命中即拒是预期行为。）
   4. `fallback_profile_ids` 引用必须能在本注册表内解析，否则 `E_DANGLING_FALLBACK`。
   5. **`E_UNRESOLVED_CONFIG`**：`config_fingerprint_rule.path_template` 展开环境变量后路径必须存在（`fs.existsSync`），否则报此错。
-  6. **`E_UNRESOLVED_ALIAS`**：`command_alias` 必须可解析（Windows 上执行 `where.exe <alias>` 退出码 0），否则报此错；实现为可选检查（`{ resolveAlias: false }` 可跳过，测试里对 golden 开启）。
+  6. **`E_UNRESOLVED_ALIAS`**（BLOCKED-1 裁决①修订，2026-08-29 主控）：`command_alias` 必须可解析，判定为**两级**——先 `where.exe <alias>` 退出码 0；不中则退到受控只读解析 `pwsh -NoLogo -Command "Get-Command <alias> -ErrorAction Stop | Out-Null"` 退出码 0（覆盖 PowerShell Function/alias 形态，与 herdr pane run 经 shell 拉起的真实执行语义一致）；两级都不中才报此错。实现为可选检查（`{ resolveAlias: false }` 可跳过，测试里对 golden 开启）。evidence 里对每个入口登记解析形态（executable / cmd-shim / ps1-shim / function）。
 - CLI 入口：`node profiles/validate-profiles.mjs <文件路径>`，exit 0/1。
 
 ## 步骤 4 · fixture（Create `relay-core/profiles/fixtures/`）

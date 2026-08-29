@@ -19,23 +19,34 @@
 
 | # | 命题（brief 完成条件） | 事实证明方式 | 最终裁决者 | 稳定 ID | 覆盖态 | 证据 | 结论 |
 |---|---|---|---|---|---|---|---|
-| 1 | B4·P6-M2：注册表条目解析到真实 cli/config_dir；每个启用 Profile 有可重复身份探测或明确标不可证 | 机器证：golden-registry 条目 ↔ evidence 审计命令输出逐条对得上 | 机器+复核 | E-3201 | 待 | | |
-| 2 | §7.1：注册表只含 §2.3 允许字段；凭据零出现（扫描+白名单双证） | 机器证：schema `additionalProperties:false` + negative fixture + rg 扫描输出 | 机器+复核 | E-3202 | 待 | | |
-| 3 | 宪章#6：审计工件零凭据、白名单脱敏 | 机器证：progress 里的扫描记录 + 复核抽查 | 机器+复核 | E-3203 | 待 | | |
-| 4 | B15⑤：capabilities 逐项对应真实 CLI 开关，不支持者标不支持 | 机器证：evidence 能力位表每格挂命令依据或「不可证」 | 机器+复核 | E-3204 | 待 | | |
-| 5 | 有效单测：E_CREDENTIAL_FIELD 变异点改坏必红 | 机器证：progress 里红→还原→绿三段输出 | 机器 | E-3205 | 待 | | |
+| 1 | B4·P6-M2：注册表条目解析到真实 cli/config_dir；每个启用 Profile 有可重复身份探测或明确标不可证 | 机器证：golden-registry 条目 ↔ evidence 审计命令输出逐条对得上 | 机器+复核 | E-3201 | 已覆盖 | golden 与仓外注册表在真实环境（零注入）`validate-profiles.mjs` PASS（progress 返工记录 + 主控独立复算）；不可证项经测试断言绑定 evidence「不可证」字样；claude 主号补可复跑探测命令 | 通过（附带 F-3：ninth 未登录的下游阻断风险留档待用户） |
+| 2 | §7.1：注册表只含 §2.3 允许字段；凭据零出现（扫描+白名单双证） | 机器证：schema `additionalProperties:false` + negative fixture + rg 扫描输出 | 机器+复核 | E-3202 | 已覆盖 | schema 顶层+entry 闭集；七组 negative fixture 各中期望码；五条正则四处一致（代码轮复核核对）；仓内扫描命中全归类、仓外零命中+sha256 | 通过 |
+| 3 | 宪章#6：审计工件零凭据、白名单脱敏 | 机器证：progress 里的扫描记录 + 复核抽查 | 机器+复核 | E-3203 | 已覆盖 | progress 双跑扫描记录；代码轮复核「脱敏合规」专项核对（shim 正文未入仓、路径 `%USERPROFILE%` 形态、返工后仓内硬编码路径已移除）；主控对提交 diff 独立扫描 | 通过 |
+| 4 | B15⑤：capabilities 逐项对应真实 CLI 开关，不支持者标不支持 | 机器证：evidence 能力位表每格挂命令依据或「不可证」 | 机器+复核 | E-3204 | 已覆盖 | 交叉断言返工后为行级定位+否定词护栏+反向断言（正反两向都焊死）；12/12 绿；代码轮 P1-2 的三例 FALSE-PASS 已不可复现 | 通过 |
+| 5 | 有效单测：登记变异点改坏必红 | 机器证：progress 里红→还原→绿三段输出 | 机器 | E-3205 | 已覆盖 | 变异点经复核裁决从 `E_CREDENTIAL_FIELD`（有 schema 冗余保护，证据力不足）改为 `CREDENTIAL_VALUE` 正则数组：短路后目标反例被错误接受（红）→ 还原 sha256 两算一致 → 12/12 绿（progress 返工记录） | 通过 |
 
-## 代码轮 1（opus·fresh）
+## 代码轮 1（fresh 只读侦测型）
 
-（待回填：实例身份 / 范围 / 发现 / 收敛）
+- 实例身份：claude fresh 实例，Herdr `pane run` 拉起（pane w1:p9，agent `rev-dhr32-code`，2026-08-29），未参与实施、未读需求轮输出。**模型登记（如实）**：拉起参数 `--model opus`，pane 状态栏显示 Opus 5，但实例自报「实际模型 claude-fable-5」（其 SessionStart hook 所告）；矛盾证据并存，待用户裁定是否影响「复核=opus」的形态追认。
+- 只读核验：回收后 `git status` 仅新增 review-code1-opus.md / review-req-opus.md 两文件，零越权。
+- 结论：13 条（P1×3 / P2×4 / P3×6），原文 [review-code1-opus.md](review-code1-opus.md)。P1：①golden/仓外注册表真实环境被自家校验器拒（测试注入假环境变量糊绿）；②能力位交叉断言可被反向文本满足（实测三例 FALSE-PASS）；③schema 用户名防线是死代码。另留档 7 项「已核对通过」（边界零越界、五正则四处一致、脱敏合规等）。
+- 主会话裁决：P1 全采纳、P2 全采纳、P3 中 P3-1/P3-6 转代码修，其余转 findings 登记。修法冻结于 [rework-1.md](rework-1.md)，派原施工 worker 执行（返工第 1 轮）。
 
-## 需求方向复核（opus·fresh）
+## 需求方向复核（fresh 只读侦测型）
 
-（待回填）
+- 实例身份：claude fresh 实例，Herdr `pane run` 拉起（pane w1:pA，agent `rev-dhr32-req`，2026-08-29），与代码轮互相独立、未读对方输出。模型登记同上（`--model opus` 拉起、实例自报 fable-5，如实并存）。
+- 结论：14 条（P1×3 / P2×8 / P3×3），原文 [review-req-opus.md](review-req-opus.md)。P1：①同代码轮①（独立命中）；②claude 主号（唯一入册 expected_identity 者）缺可复跑探测命令；③注册表表达不了「当前可派」，`codex-ninth` 未登录威胁 DHR_35 的 B4/P6-M1（跨卡阻断风险未上 findings）。方向判断：诚实性达标；「不可证项不影响后续使用」不成立；「派活不靠猜」兑现一半。另点出需求传导丢失：`work_dir_root` 从 design/02 B4 抄进 DevPlan 时被摘掉。
+- 主会话裁决：P1 全采纳；P2-1（work_dir_root）取其方案 (a)——归 DHR_33 承接、主控回写 DevPlan；字段闭集类建议（P2-2/P2-5/P2-7/P2-8、P1-3b）一律不扩字段、转 findings 交 B-事件；其余采纳并入 rework-1.md。
 
 ## 教训复核
 
-（待回填）
+- 实例身份：复用需求轮实例（rev-dhr32-req，pane w1:pA）——教训复核不要求 fresh，其对本卡上下文的掌握有利于查漏；只读形态不变。
+- 结论：6 条候选零否决（L-2/L-6 小改采纳，L-1/L-3/L-4/L-5 按其成稿改写后采纳），另补 4 条漏项（漏-A 需求项逐级复制静默丢失【优先】、漏-B 机读清单缺「当前可用性」维度、漏-C 布尔吞「未证」、漏-D 变异点选在冗余保护分支）。原文 [review-lessons-opus.md](review-lessons-opus.md)。
+- 主会话裁决：全部采纳，按其成稿回流 `knowledge/教训库-候选.md`；**一处驳回**——其「L-3② 修法尚未落实」的指控经主控复算不成立（现 HEAD `validate-profiles.mjs:57` 已含 `-CommandType Application,Function,Alias,ExternalScript`，功能级实测 `Get-ChildItem` 被 `E_UNRESOLVED_ALIAS` 拒收；复核者读到的是返工前版本），不另立 findings。
+
+## 收敛与验收靶子回填（2026-08-29 主控）
+
+- 复核收敛：代码轮 13 条 + 需求轮 14 条 → rework-1（`fadd742`）全部闭环；主控独立复算返工硬门槛（真实环境 golden/仓外 validate PASS、12/12、注入移除、schema 收紧）通过。教训复核零否决。P0/P1 清零（open findings 均为下游移交项 F-3~F-10，非本卡缺陷）。
 
 ## 人类签名区（待用户回归，AI 不得代勾）
 
