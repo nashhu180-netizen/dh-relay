@@ -3,12 +3,12 @@
 <!-- dh:plan-type: 开发 -->
 <!-- dh:planning-event:v1 id=DHR-B-06 stage=B-adjust artifact=dev_plan/P6-Herdr多账号执行底座-开发方案.md review=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#review-b06 understanding=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#understanding-b06 -->
 <!-- dh:status
-汇报: P6 已按 design/06 补入 CLI/SSH 与无 DSH 运行边界：Herdr 成为长时间施工首选宿主，Linux SSH 路径正式纳入验收；等 P5 阶段闸
-现状: DHR_32~35 均未开始；本机多账号真实配置尚未审计
-进行到: P6 ▸ 阶段闸阻塞（P5 未通过）
-下一步: P5 通过并经用户放行后，先确认 Codex 审计本机入口的读取范围与脱敏要求，再做 B-调整 → fresh 审核 → 用户确认
-看什么: design/05、design/06、design/03（Herdr 研究结论）、P5 证据、Herdr preflight evidence/03
-阻塞: P5 Gate 未通过；本机多账号真实配置尚未审计
+汇报: P5 阶段闸已过、用户 2026-08-29 对话放行 P6；`DHR-B-22` B-调整落档（Linux/SSH 项按用户指示延后、DHR_32 审计范围由主控代决策冻结）；DHR_32 开工，codex（gpt-5.6-terra·high）经 Herdr 交互终端施工、claude opus 复核
+现状: DHR_32 进行中；DHR_33~35 未开始（依赖链顺序推进）
+进行到: P6 ▸ DHR_32 施工
+下一步: DHR_32 收口（复核后停在待人验/待用户追认审计范围）→ DHR_33
+看什么: design/05、design/06、design/03（Herdr 研究结论）、knowledge/herdr-派活操作.md、backlog DHR-BL-13、P5 证据
+阻塞: 无（用户外出，人验与 verify 签字待其回归批量处理）
 -->
 
 ## 0. B 方案审核与理解确认
@@ -40,6 +40,17 @@
 - **用户回答 / 解释**：待补。
 - **调整与复审**：待补。
 - **用户确认**：待补。**DHR_32~35 为预留编号，落盘不等于 B 确认，也不构成开工授权；DHR_32 的本机审计另需用户单独确认读取范围与脱敏要求。**
+
+- **B-22 开工期 B-调整（2026-08-29，`DHR-B-22`，主控代决策·待用户回归追认）**：
+  - **授权依据**：用户 2026-08-29 对话明文——「继续P6，你做主控，让 codex 的 terra high 执行，复核opus 来。拉取方式走 herdr，要用wait监控。决策你来进行，我要出门了。linux 部分的任务可以跳过。人验我来进行。」主控据此代行本事件的裁决；**人验项、verify 签字、以及本事件的正式用户确认全部留待用户回归**，在此之前各卡最远只到「待人验」，不打 verify、不勾人类签名区。
+  - **调整①·Linux/SSH 项延后**：DHR_33 的 Linux SSH 真实路径验收（H4/H9 · P6-M6）与 DHR_35 的 Linux SSH smoke 按用户指示**延后**，本阶段按计划既有预案走「冻结 Headless fixture + 备注登记『待真实 smoke』」，不得以 fixture 冒充真实 SSH 证据；**汇合点 = P6 阶段闸裁决**：解锁 P7 时 P6-M6 只能记「延后/受限」，由用户裁决受限接受或指定补录卡（B-11 延后语义：只推迟收敛裁决，不推迟事实登记）。
+  - **调整②·DHR_32 审计读取范围与脱敏白名单（主控代决策冻结）**：
+    - 允许读取：`Get-Command`/`where.exe` 解析的 CLI 入口与 shim 链、`--version`/`--help` 输出、配置目录**文件名清单与非敏感结构**（如 `~/.codex/config.toml` 的节名与模型/参数字段、`~/.claude/settings.json` 的非密钥字段）、账号主体标识（邮箱/组织名，入册前掩码为别名）、模型清单与能力位、quota 报错**样文**（剔除任何 token/请求头）。
+    - 禁止：读取、复制或引用 `auth.json`/token/cookie/API key 的**值**（只允许登记「该文件存在、含哪些字段名」）；环境变量只登记**变量名**不登记值；任何证据入仓前先跑凭据模式扫描（`sk-`、`eyJ`、`Bearer`、40+ 位十六进制/base64 连续串）并把扫描命令与结果记入 progress。
+    - 白名单可存字段 = 本计划 §2.3 注册表字段闭集，不得超集。
+  - **调整③·派发形态冻结**：施工 = codex `gpt-5.6-terra` + reasoning high，经 Herdr 交互终端（`agent start --kind codex`，规程 = knowledge/herdr-派活操作.md，`agent wait` 后台监控）；复核 = claude opus 经 Herdr（`pane run` 绕 shim 坑），复核形态为侦测型只读（提示词硬约束 + 主控回收后 diff 核对，非机器只读，如实登记）。
+  - **审核记录**：本事件 fresh 只读审核由 claude opus 承担（与 DHR_32 brief/task_plan 预审同批派出），结论与裁决回填于此：见 workspace/DHR_32/review.md「B-22 预审」节。
+  - **用户确认**：待用户回归追认（追认点：①Linux 延后、②审计范围与白名单、③本事件代决策本身）。
 
 ## 1. 概述
 
@@ -97,7 +108,7 @@
 
 | 任务 ID | 一句话 | 档位（轻/标准） | 状态 | 依赖 | 工作区 | 验收时间 / verify SHA | 备注 |
 |---|---|---|---|---|---|---|---|
-| DHR_32 | 审计本机 Codex/Claude 多账号并冻结 Executor Profile 注册表 | 标准 | 未开始 | P5 阶段闸（P5-M 通过 + 用户放行） | <开工时回填 workspace/…> | | 阶段闸阻塞：blocked-by-phase-gate P5；审计读取范围需用户单独确认 |
+| DHR_32 | 审计本机 Codex/Claude 多账号并冻结 Executor Profile 注册表 | 标准 | 进行中 | P5 阶段闸（已过，2026-08-29） | [workspace/DHR_32/](../workspace/DHR_32/) | | 任务类型=normal（代码轮1+需求+教训+有效单测）；审计范围按 `DHR-B-22` 调整②冻结（主控代决策，待用户追认）；Linux 入口列记「延后」 |
 | DHR_33 | 实现 Herdr Adapter、CLI/SSH 能力探测与状态对账 | 标准 | 未开始 | DHR_32 | <开工时回填 workspace/…> | | 阶段闸阻塞；Linux 不可达时先冻结 Headless fixture |
 | DHR_34 | 接通身份、quota 与预登记 fallback | 标准 | 未开始 | DHR_33 | <开工时回填 workspace/…> | | 阶段闸阻塞；P6-M4 可 passed / constrained |
 | DHR_35 | 用 Codex、Claude Code 和 Linux SSH 跑真实执行闭环 | 标准 | 未开始 | DHR_33、DHR_34（Receipt 身份链字段由 DHR_34 冻结，DHR_35 验收依赖它） | <开工时回填 workspace/…> | | 阶段闸阻塞；第一个端到端 demo；须补真实 SSH smoke |
