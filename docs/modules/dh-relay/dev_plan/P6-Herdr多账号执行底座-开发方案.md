@@ -3,12 +3,12 @@
 <!-- dh:plan-type: 开发 -->
 <!-- dh:planning-event:v1 id=DHR-B-06 stage=B-adjust artifact=dev_plan/P6-Herdr多账号执行底座-开发方案.md review=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#review-b06 understanding=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#understanding-b06 -->
 <!-- dh:status
-汇报: P5 阶段闸已过、用户 2026-08-29 对话放行 P6；`DHR-B-22` B-调整落档（Linux/SSH 项按用户指示延后、DHR_32 审计范围由主控代决策冻结）；DHR_32 开工，codex（gpt-5.6-terra·high）经 Herdr 交互终端施工、claude opus 复核
-现状: DHR_32 进行中；DHR_33~35 未开始（依赖链顺序推进）
-进行到: P6 ▸ DHR_32 施工
-下一步: DHR_32 收口（复核后停在待人验/待用户追认审计范围）→ DHR_33
-看什么: design/05、design/06、design/03（Herdr 研究结论）、knowledge/herdr-派活操作.md、backlog DHR-BL-13、P5 证据
-阻塞: 无（用户外出，人验与 verify 签字待其回归批量处理）
+汇报: DHR_32 复核收敛并按委托 squash 合入 master（`2667f4a`），卡转待人验；复核=代码轮13条+需求轮14条+教训复核（返工1闭环，E-3201~05 全通过）；教训回流候选-36~45
+现状: DHR_32 待人验（worktree 保留待 E10）；DHR_33~35 未开始
+进行到: P6 ▸ DHR_32 待人验
+下一步: 用户回归批量处理——①B-22 追认 ②DHR_32 E10 确认与 verify ③F-3（codex-ninth 未登录，威胁 DHR_35 的 B4/P6-M1）裁决 ④复核实例模型矛盾证据裁定（review.md 登记）；随后 DHR_33 开工
+看什么: workspace/DHR_32/review.md（验收靶子+签名区）、findings.md F-3~F-10、DevPlan §0.2 B-22
+阻塞: 待人验/待追认项挂起（用户外出），无技术阻塞
 -->
 
 ## 0. B 方案审核与理解确认
@@ -109,7 +109,7 @@
 
 | 任务 ID | 一句话 | 档位（轻/标准） | 状态 | 依赖 | 工作区 | 验收时间 / verify SHA | 备注 |
 |---|---|---|---|---|---|---|---|
-| DHR_32 | 审计本机 Codex/Claude 多账号并冻结 Executor Profile 注册表 | 标准 | 进行中 | P5 阶段闸（已过，2026-08-29） | [workspace/DHR_32/](../workspace/DHR_32/) | | 任务类型=normal（代码轮1+需求+教训+有效单测）；审计范围按 `DHR-B-22` 调整②冻结（主控代决策，待用户追认）；Linux 入口列记「延后」 |
+| DHR_32 | 审计本机 Codex/Claude 多账号并冻结 Executor Profile 注册表 | 标准 | 待人验 | P5 阶段闸（已过，2026-08-29） | [workspace/DHR_32/](../workspace/DHR_32/) | squash `2667f4a`（2026-08-29 委托代合入；verify 待用户） | 任务类型=normal；复核收敛（代码13+需求14+教训，返工1闭环，E-3201~05 通过）；待用户：B-22 追认 + E10 确认 + F-3（ninth 未登录）裁决；worktree 保留待 E10 |
 | DHR_33 | 实现 Herdr Adapter、CLI/SSH 能力探测与状态对账 | 标准 | 未开始 | DHR_32 | <开工时回填 workspace/…> | | 阶段闸阻塞；Linux 不可达时先冻结 Headless fixture |
 | DHR_34 | 接通身份、quota 与预登记 fallback | 标准 | 未开始 | DHR_33 | <开工时回填 workspace/…> | | 阶段闸阻塞；P6-M4 可 passed / constrained |
 | DHR_35 | 用 Codex、Claude Code 和 Linux SSH 跑真实执行闭环 | 标准 | 未开始 | DHR_33、DHR_34（Receipt 身份链字段由 DHR_34 冻结，DHR_35 验收依赖它） | <开工时回填 workspace/…> | | 阶段闸阻塞；第一个端到端 demo；须补真实 SSH smoke（B-22 ① 延后，汇合点 = P6 阶段闸） |

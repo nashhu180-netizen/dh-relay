@@ -47,7 +47,9 @@ herdr agent read <名> --source recent-unwrapped --lines 120
 3. **worker 纪律**：拉起的交互终端 worker 读任务树里的 `CLAUDE.md`→`AGENTS.md` 编排协议段自我约束；派活 prompt 只给指针（task_plan / brief 路径）+ 硬边界摘要，不重抄业务全文。
 4. 老对照：codex 无头形态（companion/exec）在沙箱下**写不了主仓 `.git/worktrees/` 元数据**（DHR_31 F-004，提交要主控代打）且全量测试有 EPERM 假红——herdr 交互终端形态没有这层沙箱，worker 可自己 commit。
 5. **codex kind 直接 `agent start` 可用**（shim 坑只在 claude）；复核只读形态传 `-- --sandbox read-only`。
-6. **codex 模型要用完整 ID**：`terra` 的真名是 **`gpt-5.6-terra`**——裸写 `--model terra` 会 400「not supported when using Codex with a ChatGPT account」（2026-08-28 两种形态实测，曾被误判成账号不支持）。TUI 内 `/model` 选择器可见本账号全表（gpt-5.6-sol / **gpt-5.6-terra** / gpt-5.6-luna / gpt-5.5 / gpt-5.4 / gpt-5.4-mini / gpt-5.3-codex-spark）+ 推理档（Low/Medium/High/Extra high/More）；起进程时传 `-c model_reasoning_effort=high` 或进 TUI 用 `/model` 选。用户点名的复核档 = **gpt-5.6-terra + High**。
+6. **claude 实例的实际运行模型要取证、别只信启动参数**（2026-08-29 DHR_32 实测）：`pane run "claude --model opus"` 拉起、状态栏显示 Opus 5，但实例自报（SessionStart hook）是 fable-5——三个来源可互相矛盾且无一权威。派发形态冻结了模型时，派前后各取一次证据（启动命令 + 让实例自报）记进 review 抬头，矛盾就并存登记标「形态待证」。
+7. **PowerShell Function 形态入口（如 `claude-grok`）`where.exe` 查不到、也不能被直接 spawn**，只能经 shell（`pane run`）拉起；探测要用 `pwsh Get-Command -CommandType Application,Function,Alias,ExternalScript`（限定 CommandType 防止把 cmdlet 名也判成可用）。（2026-08-29 DHR_32 BLOCKED-1 实测）
+8. **codex 模型要用完整 ID**：`terra` 的真名是 **`gpt-5.6-terra`**——裸写 `--model terra` 会 400「not supported when using Codex with a ChatGPT account」（2026-08-28 两种形态实测，曾被误判成账号不支持）。TUI 内 `/model` 选择器可见本账号全表（gpt-5.6-sol / **gpt-5.6-terra** / gpt-5.6-luna / gpt-5.5 / gpt-5.4 / gpt-5.4-mini / gpt-5.3-codex-spark）+ 推理档（Low/Medium/High/Extra high/More）；起进程时传 `-c model_reasoning_effort=high` 或进 TUI 用 `/model` 选。用户点名的复核档 = **gpt-5.6-terra + High**。
 
 ## 与 dh-relay 方案的关系
 
