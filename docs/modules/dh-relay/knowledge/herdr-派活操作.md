@@ -52,7 +52,8 @@ herdr agent read <名> --source recent-unwrapped --lines 120
 5. **codex kind 直接 `agent start` 可用**（shim 坑只在 claude）；复核只读形态传 `-- --sandbox read-only`。
 6. **claude 实例的实际运行模型要取证、别只信启动参数**（2026-08-29 DHR_32 实测）：`pane run "claude --model opus"` 拉起、状态栏显示 Opus 5，但实例自报（SessionStart hook）是 fable-5——三个来源可互相矛盾且无一权威。派发形态冻结了模型时，派前后各取一次证据（启动命令 + 让实例自报）记进 review 抬头，矛盾就并存登记标「形态待证」。
 7. **PowerShell Function 形态入口（如 `claude-grok`）`where.exe` 查不到、也不能被直接 spawn**，只能经 shell（`pane run`）拉起；探测要用 `pwsh Get-Command -CommandType Application,Function,Alias,ExternalScript`（限定 CommandType 防止把 cmdlet 名也判成可用）。（2026-08-29 DHR_32 BLOCKED-1 实测）
-8. **codex 模型要用完整 ID**：`terra` 的真名是 **`gpt-5.6-terra`**——裸写 `--model terra` 会 400「not supported when using Codex with a ChatGPT account」（2026-08-28 两种形态实测，曾被误判成账号不支持）。TUI 内 `/model` 选择器可见本账号全表（gpt-5.6-sol / **gpt-5.6-terra** / gpt-5.6-luna / gpt-5.5 / gpt-5.4 / gpt-5.4-mini / gpt-5.3-codex-spark）+ 推理档（Low/Medium/High/Extra high/More）；起进程时传 `-c model_reasoning_effort=high` 或进 TUI 用 `/model` 选。用户点名的复核档 = **gpt-5.6-terra + High**。
+8. **claude 实例输入通道可能整体冻结**（2026-08-29 DHR_33 实测一次）：交互输入框里残留一行未提交文本（人工在 UI 敲的），主控经 `agent send-keys` 送 esc / ctrl+c / ctrl+u / backspace×30 全部 `ok:true` 但屏面与 revision 纹丝不动。**别纠缠**：该实例若任务已完成就弃用（留给用户查看后手动关），要续派活直接开新 pane 拉 fresh 实例。教训：`send-keys` 返回 ok 只代表键已写入 pty，不代表 TUI 消费了它。
+9. **codex 模型要用完整 ID**：`terra` 的真名是 **`gpt-5.6-terra`**——裸写 `--model terra` 会 400「not supported when using Codex with a ChatGPT account」（2026-08-28 两种形态实测，曾被误判成账号不支持）。TUI 内 `/model` 选择器可见本账号全表（gpt-5.6-sol / **gpt-5.6-terra** / gpt-5.6-luna / gpt-5.5 / gpt-5.4 / gpt-5.4-mini / gpt-5.3-codex-spark）+ 推理档（Low/Medium/High/Extra high/More）；起进程时传 `-c model_reasoning_effort=high` 或进 TUI 用 `/model` 选。用户点名的复核档 = **gpt-5.6-terra + High**。
 
 ## 与 dh-relay 方案的关系
 

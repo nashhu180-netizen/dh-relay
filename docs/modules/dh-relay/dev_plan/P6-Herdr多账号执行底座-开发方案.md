@@ -3,12 +3,13 @@
 <!-- dh:plan-type: 开发 -->
 <!-- dh:planning-event:v1 id=DHR-B-06 stage=B-adjust artifact=dev_plan/P6-Herdr多账号执行底座-开发方案.md review=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#review-b06 understanding=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#understanding-b06 -->
 <!-- dh:status
-汇报: DHR_32 待人验（squash `2667f4a`）。DHR_33（heavy）：预审19条→施工 `596a49b`（wt/DHR_33 工作树内，未合 master）→复核轮1（代码19+需求16，全采纳）→ **返工1 进行中**（worker=herdr agent `impl-dhr33`，codex terra high，pane w1:pC；修法冻结于 workspace/DHR_33/rework-1.md——含 done 主路径崩、判定器注入口、blocked 沿触发、ORPHANED 恢复、事件洪泛治理、11 组断言补齐、smoke 重做；主控实证全量 npm test 挂死已升 A-0 硬门槛）
-现状: DHR_32 待人验；DHR_33 返工1施工中；DHR_34~35 未开始
-进行到: P6 ▸ DHR_33 复核返工轮 1
-下一步: ①收返工（新 session 先 `herdr agent get impl-dhr33`，再 `herdr agent wait impl-dhr33` 后台盯；prompt 卡输入框以**输入框清空**为真提交判据）→主控独立验证（全量 npm test 能自行终止 + 新测全绿 + contracts/fixtures/profiles/store/rpc/adapters 六目录零 diff）→②派换人代码轮2（fresh claude 经 pane run，选有效单测变异点，worker 自报判红）→③教训+一致性复核→收敛 squash 合入→待人验。待用户：B-22 追认、DHR_32 E10+verify、DHR_32 F-3（ninth 未登录）、复核实例模型矛盾（各 review.md 均登记：--model opus 拉起但自报 fable-5）
-看什么: workspace/DHR_33/rework-1.md（返工清单）+ review.md（裁决与双证）+ review-code1/req-opus.md；workspace/DHR_32/review.md 签名区
-阻塞: 无技术阻塞；人验/追认项待用户批量处理
+汇报: DHR_33（heavy）**已收口合入 master 转待人验**（squash `66dd16a`，2026-08-29）。全链：预审19→施工 `596a49b`→轮1（代码19+需求16 全采纳）→返工1 `5ecd4b0`→代码轮2（20条+变异8有效4无效，E-3306 达成）→返工2 `4d68163`→一致性+教训复核（闭环✅14/⚠️3/❌3；候选-46~55 已回流教训库）→返工3 `ea88c1d`→主控终验：全量 npm test 5 次自行终止（挂死消灭），herdr 新测（15+7）零失败，残余红=既有 cli 双 CLI 并发抖动（F-1 豁免留档）；E-3306 终基线 `ea88c1d` 抽样 SM1/SM2/SM3 3/3 红→还原→绿；master 合并后 212/212 exit 0。验收表：E-3302/3305/3306 达成、E-3304 受限达成、E-3303 待人验、E-3307/3308（Oracle 差异）待人验受理。DHR_32 仍待人验（`2667f4a`）。
+现状: DHR_32、DHR_33 均待人验；DHR_34~35 未开始
+进行到: P6 ▸ DHR_33 待人验
+下一步: 用户批量人验（见待用户清单）→ DHR_34 开工（账号与额度治理，B 确认后）
+待用户: ①B-22 追认（Linux 延后/审计白名单/代决策）；②DHR_32 E10+verify、F-3（ninth 未登录）；③DHR_33 签名区六项（E10 收口、E-3303 现场、E-3304 受限、E-3307/3308 受理、P6-M6 延后、候选-40 模型身份裁决——两卡五实例复发，建议定权威源或改换人定义）
+看什么: workspace/DHR_33/review.md（验收表+签名区）→ review-consistency-opus.md §六/§八；workspace/DHR_32/review.md 签名区
+阻塞: 无技术阻塞；人验项待用户批量处理。findings 下游移交：F-3/F-5→DHR_34/35、F-6/F-7/F-11→DHR_35、F-9/F-10→后续契约卡
 -->
 
 ## 0. B 方案审核与理解确认
