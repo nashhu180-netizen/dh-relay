@@ -3,10 +3,10 @@
 <!-- dh:plan-type: 开发 -->
 <!-- dh:planning-event:v1 id=DHR-B-18 stage=B-adjust artifact=dev_plan/P5-Relay-v2持久内核与DSH桥接-开发方案.md review=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#review-b18 understanding=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#understanding-b18 -->
 <!-- dh:status
-汇报: 后台接力内核的命令行控制面已经能独立干活：开一条命令就能启动、跟踪、停止、恢复任务，窗口关了活不丢；五张卡完成四张余一张（DHR_31 端到端闭环），无阻塞
-现状: **DHR_28、DHR_29、DHR_51、DHR_52、DHR_30 已完成**；relay v2 契约 `capability_hash a990fdda` 冻结零漂移；**DHR_31 进行中**（2026-08-28 用户对话确认开工：wt/DHR_31 + 施工全派 codex + 委托按默认；承接 RISK-DHR30-DSH-RENDER 真实 DSH 渲染截图义务，DSH 附加客户端项按 DHR_50 passed-with-constraints 执行）。
-进行到: P5 ▸ DHR_31 施工中（basic-agent-task 垂直闭环 + H6 四例可达性 + DSH 附加客户端渲染截图）。
-下一步: DHR_31 收口后过 G01-P5 阶段闸（P5-M 全绿 ∧ P5-H 明确 ∧ 用户同意进 P6）。
+汇报: 后台接力内核第一条端到端任务全程跑通并通过验收：不开任何窗口也能启动、断开、重连、收结果，DSH 面板作为附加客户端看到同一条任务；本阶段六张卡全部完成，等阶段闸放行进下一阶段
+现状: **DHR_28、DHR_29、DHR_51、DHR_52、DHR_30、DHR_31 已完成**；relay v2 契约 `capability_hash a990fdda` 冻结零漂移；DHR_31 全验收通过（2026-08-29 chat-confirm，Risk-Count=0，销 RISK-DHR30-DSH-RENDER；尾巴 F-003/015/016 入验收池、F-013/014/020/021/022 记 backlog DHR-BL-14/15）。
+进行到: P5 全部任务卡完成，待 G01-P5 阶段闸。
+下一步: 过 G01-P5 阶段闸（P5-M 全绿 ∧ P5-H 明确 ∧ 用户同意进 P6）。
 看什么: **`relay-core/README.md`（硬约束 6 条 + 「改了什么跑什么」基线对照表）与 [as-built/relay-core.md](../as-built/relay-core.md)（含「这套东西是怎么长成现在这样的」一节，动它之前先读）**；P4 主报告（evidence/10 §4 v1 协议缺口清单）、design/05、design/06
 阻塞: 无。DHR_28 已收口，DHR_29 的依赖（契约冻结）已满足；`DHR-B-15` 已由用户 2026-08-21 对话确认落盘
 -->
@@ -122,7 +122,7 @@
 | DHR_51 | 实现 Detached 宿主、PID/lease、`run_id` 规范化与仓级锁内发号、恢复与宿主三态读数 | 标准 · **高危** | 已完成 | DHR_29 | [workspace/DHR_51/](../workspace/DHR_51/) | | `DHR-B-15` 新建。高危 = 组件接线 + 持久状态。**第一个「关窗不停工」可观察的节点**；交付的三态读数**不叫 `relay status`、不注册 `bin`**（命令名归 DHR_30）。**verify `95e2e6f`**（2026-08-22，用户 E11 对话内 AskUserQuestion 点选放行、chat-confirm 代签）。交付：runtime 九模块（runid/pidalive/repolock/lease/gitignore/startrun/host/host-main/status）+ store 两处最小触碰（F-011 终态入口封堵 / writeGuard fencing）+ 测试 50/50（五道闸全绿、capability_hash=`970b5460…` 零漂移）；两轮换人复核（轮1 changes-requested 全数闭合含 R1-01~03 三 P1 + 轮2 approved）+ E4/E5/E14 三路落账；移交 DHR_52：F-107 指纹要素评估触发点、as-built §3.6 |
 | DHR_52 | 实现 RPC 服务端与握手 fail-closed（含 `capability_hash` 比对） | 标准 · **高危** | 已完成 | DHR_51 | [workspace/DHR_52/](../workspace/DHR_52/brief.md) | 2026-08-23 / `b96b5b7` | `DHR-B-15` 新建。高危 = 组件接线。用户 2026-08-22 对话确认开工，2026-08-23 认可本地收口授权包；F225/F226 均已收敛，主干 `dh dh-relay` 0 failure 与 90/90 回归通过。 |
 | DHR_30 | 实现 Relay CLI 参考客户端与可选 DSH/Pi Bridge 接缝 | 标准 | 已完成 | DHR_52 | [workspace/DHR_30/](../workspace/DHR_30/) | 2026-08-28 / **verify `93df648`** | **带风险放行 `release_mode=risk-accepted`**（Risk-Count=1：`RISK-DHR30-DSH-RENDER` 真实 DSH 渲染未证→移交 DHR_31，用户 2026-08-28 对话 AskUserQuestion 确认整包）。交付：runtime service（唯一控制面 + operation ledger 幂等发号 + 凭据引导 + 双根发现 + 孤儿只读）+ CLI 七命令（text/json 同源、断开不取消、终端冒烟转录落仓 `workspace/DHR_30/evidence/`）+ DSH Bridge 库接缝（断线续传不重不漏、gap 重快照、退出路径全可观察、零 Store 直写）+ 契约批次（error receipt required、`E_ORPHAN_STORE_READ_ONLY`，capability_hash=`a990fdda` 三基线重生）。**过程**：两轮换人 + 需求/教训/一致性五路全收敛；findings F-001~F-038（P0 全程 0，open 归零，4 条入验收池）；全量 158/158 · audit 0 违规 · validator 48/48；design/06 §14 字段级冻结 + design/07/08 四条语义回写；教训候选-17~29 | 
-| DHR_31 | 以 DSH 关闭状态跑通 basic-agent-task 垂直闭环 | 标准 | 进行中 | DHR_30 | [workspace/DHR_31/](../workspace/DHR_31/brief.md) | | 阶段闸阻塞；第一个端到端 demo；DSH 附加客户端项按 DHR_50 结论（passed-with-constraints，非判否）**执行**（B-11）；另承接 DHR_30 移交的真实 DSH 渲染截图义务（RISK-DHR30-DSH-RENDER）。2026-08-28 用户对话确认开工：worktree `wt/DHR_31`、施工全派 codex headless worker、委托节点按默认 |
+| DHR_31 | 以 DSH 关闭状态跑通 basic-agent-task 垂直闭环 | 标准 | 已完成 | DHR_30 | [workspace/DHR_31/](../workspace/DHR_31/brief.md) | 2026-08-29 / **verify 待回填** | **全验收通过 `release_mode=full`**（Risk-Count=0，用户 2026-08-29 chat-confirm「认可，收口」，P5-H 四问 H1~H4 + DHR31-X1 截图认可全过；销 `RISK-DHR30-DSH-RENDER`）。交付：H6 可达性推导（传递闭包四例，落 `runtime/validate`）+ workflow driver / process executor 闭环 + CLI 进程级 e2e + 真实终端断连/重连实录（耗时可复算）+ Agent 节点窄路径（外部代持记账，pi/dsh 同形）+ DSH 附加客户端活数据与真实渲染截图（三方 SHA 7/7、`source=runtime-v2`）。**过程**：批 1~5 各自小审+复裁闭合、轮 2 fresh 增量复核 approved、一致性复核 6 行（扫出 F-022）、返工收敛 open P0/P1=0；全量 183/183；contracts 零改动指纹零漂移。**注记（F-002 裁决）**：卡面引用的 design/06 H5 已 superseded，条件 1 实质以 P5-M5 + HC-CTRL-H1/H2 为准，卡面原文按历史材料保留不回改。尾巴分流：F-003/F-015/F-016 入验收池，F-013/F-014/F-020/F-021/F-022 记 backlog（DHR-BL-14/15）。原开工注记：2026-08-28 用户对话确认开工：worktree `wt/DHR_31`、施工全派 codex headless worker、委托节点按默认 |
 
 > 状态列只填五枚举；阶段闸阻塞写在「备注」列。P4-CM 未通过时 DHR_28~31 与 `DHR-B-15` 新建的 DHR_51 / DHR_52 均不得进入 D 开工。
 

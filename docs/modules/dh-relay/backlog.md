@@ -236,3 +236,21 @@
 - **优先级**：中 · 挂 P6 开工
 - **提出人 / 日期**：用户 + 主控实测，2026-08-28（DHR_31 批 2 派活切换现场）
 - **进展**：未立项；开发过程侧已即刻采用（见 knowledge 手册）。
+
+### DHR-BL-14 Run 终态聚合与结果语义收敛一族（aggregate 不看 required · outcome 映射不对称）
+
+- **需求 / 议题**：三条同族语义不一致，建议一批收敛：① `store/state.mjs` 的 `aggregate()` 不看节点 `required`——`required:false` 节点失败会把整条 Run 拉成 `failed`（DHR_31 findings **F-013**，P2）；② 必经节点全绿、`run_finished` 已落账，但仍有 pending 可选节点时 `aggregate()` 返回 `pending`，「Run 已完成」与 `run_status=pending` 同真（**F-014**，P3）；③ pi-agent「Adapter 消失」记 `outcome:failed` 而 dsh-agent「宿主消失」记 `outcome:orphaned`——同类事件（executor 消失、从未拿到结论）两条路径 outcome 不对称，按 `relay.result/v2` 分界两处都该是 `orphaned`（**F-022**，P3，一致性复核扫出）。
+- **来源**：DHR_31 收口尾巴分流（用户 2026-08-29 对话确认，findings F-023）。
+- **影响面**：`store/state.mjs` 属 DHR_29/30 投影范围，动它波及 read-model 与 CLI 渲染既有回归；F-013/F-014 的当前真实行为已被 `test/agent-node.test.mjs` 批4③ 按现状钉住（收敛时那些断言会红，正是希望它红的时刻）；F-022 若归并 `orphaned` 需同步或在 `reason-codes.md` 明确两码各自 outcome。
+- **优先级**：中 · 下次动 state 投影 / read-model 语义时一并处理
+- **提出人 / 日期**：DHR_31 施工方 + 一致性复核，2026-08-29
+- **进展**：未立项。
+
+### DHR-BL-15 DSH 面板 v2 形状适配遗留（fixture 标签措辞 · 详情页用时投影）
+
+- **需求 / 议题**：① 面板头部 `fixture <hash>` 是 P4 期客户端硬编码标签，活数据下真实来源是 `runtime-v2`（快照 `source_kind` 与 CLI `source` 均可证）——读截图的人需要知道「写着 fixture，看的是活数据」（DHR_31 findings **F-020**，P3）；② 详情页 `用时 undefined`——`elapsed_seconds` 在列表投影落了、详情投影漏了，一行可修，改后需重取详情截图（**F-021**，P3）。另注意 `elapsed_seconds` 当前实现恒为 0（`store/state.mjs` 从不计算它），修投影不等于有真耗时读数。
+- **来源**：DHR_31 收口尾巴分流（用户 2026-08-29 对话确认，findings F-023）。
+- **改动点（预估）**：随「面板改用 v2 形状」的后续卡一并做：标签措辞改 `source: runtime-v2 · content <hash>` 类；`live-store.mjs` `projectDetail` 补 `elapsed_seconds`；重取详情截图。
+- **优先级**：低 · 挂后续面板卡
+- **提出人 / 日期**：DHR_31 施工方，2026-08-29
+- **进展**：未立项。
