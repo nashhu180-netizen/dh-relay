@@ -3,12 +3,12 @@
 <!-- dh:plan-type: 开发 -->
 <!-- dh:planning-event:v1 id=DHR-B-06 stage=B-adjust artifact=dev_plan/P6-Herdr多账号执行底座-开发方案.md review=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#review-b06 understanding=../design/evidence/09-P4至P9阶段计划-交叉审核记录.md#understanding-b06 -->
 <!-- dh:status
-汇报: DHR_32 复核收敛并按委托 squash 合入 master（`2667f4a`），卡转待人验；复核=代码轮13条+需求轮14条+教训复核（返工1闭环，E-3201~05 全通过）；教训回流候选-36~45
-现状: DHR_32 待人验（worktree 保留待 E10）；DHR_33 进行中（heavy，委托开工）；DHR_34~35 未开始
-进行到: P6 ▸ DHR_33 施工筹备（预审→派工）
-下一步: 用户回归批量处理——①B-22 追认 ②DHR_32 E10 确认与 verify ③F-3（codex-ninth 未登录，威胁 DHR_35 的 B4/P6-M1）裁决 ④复核实例模型矛盾证据裁定（review.md 登记）；随后 DHR_33 开工
-看什么: workspace/DHR_32/review.md（验收靶子+签名区）、findings.md F-3~F-10、DevPlan §0.2 B-22
-阻塞: 待人验/待追认项挂起（用户外出），无技术阻塞
+汇报: DHR_32 待人验（squash `2667f4a`）。DHR_33（heavy）：预审19条→施工 `596a49b`（wt/DHR_33 工作树内，未合 master）→复核轮1（代码19+需求16，全采纳）→ **返工1 进行中**（worker=herdr agent `impl-dhr33`，codex terra high，pane w1:pC；修法冻结于 workspace/DHR_33/rework-1.md——含 done 主路径崩、判定器注入口、blocked 沿触发、ORPHANED 恢复、事件洪泛治理、11 组断言补齐、smoke 重做；主控实证全量 npm test 挂死已升 A-0 硬门槛）
+现状: DHR_32 待人验；DHR_33 返工1施工中；DHR_34~35 未开始
+进行到: P6 ▸ DHR_33 复核返工轮 1
+下一步: ①收返工（新 session 先 `herdr agent get impl-dhr33`，再 `herdr agent wait impl-dhr33` 后台盯；prompt 卡输入框以**输入框清空**为真提交判据）→主控独立验证（全量 npm test 能自行终止 + 新测全绿 + contracts/fixtures/profiles/store/rpc/adapters 六目录零 diff）→②派换人代码轮2（fresh claude 经 pane run，选有效单测变异点，worker 自报判红）→③教训+一致性复核→收敛 squash 合入→待人验。待用户：B-22 追认、DHR_32 E10+verify、DHR_32 F-3（ninth 未登录）、复核实例模型矛盾（各 review.md 均登记：--model opus 拉起但自报 fable-5）
+看什么: workspace/DHR_33/rework-1.md（返工清单）+ review.md（裁决与双证）+ review-code1/req-opus.md；workspace/DHR_32/review.md 签名区
+阻塞: 无技术阻塞；人验/追认项待用户批量处理
 -->
 
 ## 0. B 方案审核与理解确认
