@@ -167,6 +167,33 @@ DHR_52 的 RPC seam 与 DHR_51 的 host 之间原本没有装配人（F-001）�
 
 **`fixtures/clients/` 5 份纯 JSON**（pi-run-list / pi-status / pi-detail / pi-event-stream / generic-control-receipt）：任何语言可解析的消费样例，逐份过冻结契约；配套「Pi 式中立消费」测试不 import 任何 relay 运行时代码。**是 `fixtures/golden|negative` 的兄弟目录，不入 manifest、不进基线**——manifest 只扫 golden/ + negative/，这是设计而非遗漏。
 
+### 3.11 `workflows/basic-agent-task/` —— DHR_31 的第一个 Workflow 定义（行使场景，不是实现落点）
+
+**Workflow 定义就是一份合法的已冻结 `relay.run/v2` 文档**——本卡没有引入任何新协议、没动 `contracts/` 一个字。`run.template.json` 三节点成链（`prepare` → `process-task` → `verify`），全部 `required:true`、全部只有 `kind:"process"` 的 profile；于是它顺带也是 H6 可达性推导的**阴性对照**（必经闭包里没有 dsh-only 节点 ⇒ 放行）。
+
+`steps/*.mjs` 零依赖（只用 Node 标准库），因为它们会被复制进任意业务仓：stdin 收 JSON 上下文（含 `depends_on` **传递闭包**的上游结构化结果与原样转交的 `labels`），stdout 出 JSON 结构化结果，退出码即成败。`verify` 拿 `prepare` 的原始输入**独立复算** `process-task` 的结论并逐条断言——「exit 0 就算通过」的写法能让整条闭环在结果全错时依然全绿，那就没有闭环可言。`make-run.mjs` 按 Workflow 实际所在位置补 `ref` 前缀生成可直接 start 的 run 文档（`--delay-ms` 供断连实录把一条 Run 拉长）。
+
+`executor_profiles[].ref` 是**业务仓相对路径**，解析口径见下面 3.12。
+
+### 3.12 `runtime/` 增量 —— DHR_31 的 Workflow 驱动与 Process Executor
+
+> **这一节同时是 design/07 §6 那句「不 import workflow / Process / executor，不推进业务节点」的现役边界更正**（findings F-008）。那句话是 **DHR_30** 的边界——那一卡交付的是生命周期保持器，节点推进无人负责。DHR_31 把推进接了进来，但**接法不动唯一写者**：service 只**起** driver，driver 自己不持 Store 句柄。design/ 是冻结历史材料、不回改，现役边界以本节为准。
+
+| 文件 | 现役职责 |
+|---|---|
+| `workflow-driver.mjs` | 按 `depends_on` 找 ready 节点 → `store.registerReceipt()` 开 attempt（它自己发 `attempt_started`）→ 起 Process Executor → `store.appendResult()` 记终态 → 必经节点全 succeeded 时 `appendEvent({kind:'run_finished'})`。**一切读写都经 `actor.submitControl(store => …)` 排进宿主 actor 的串行队列**，唯一写者的答案没变——还是那一届持 lease 的宿主。`stop` 杀在跑的子进程（记 `E_EXECUTOR_KILLED`），`resume` 从事件账重建进度并对失败节点开 **fresh attempt**（H12）。一届 driver 内每个节点最多驱动一次：失败不原地自旋。 |
+| `process-executor.mjs` | `resolveStepRef` 词法守卫 + **`resolveStepEntry` 真实落点守卫**（对仓根与目标各做一次 `realpath` 再判仓内）——只做词法判断挡不住符号链接：`steps/link.mjs` 词法上老老实实待在仓内，`realpath` 之后却落在仓外（F-009，P0）。逃逸**照旧开 Attempt 并立刻记 `E_BAD_VALUE` 终态**，绝不先跑一把再说。`classifyStepOutcome` 是纯函数，把退出形态翻成已冻结 reason code。 |
+
+**「可驱动」的判据是 ref 在本仓解析到真实文件**；解析不到时节点保持 `pending`、**不开 Attempt**——Runtime 不为一个自己启动不了的入口凭空造一次尝试（F-007，批 2 小审裁定保持不收紧）。它同时是 DHR_30 既有 Run（`bin/probe`、golden 的 `bin/fix.sh`）事件账逐字不变的保护栏。
+
+**Agent 节点（`pi-agent` / `dsh-agent`）不被 Runtime 托管**：driver 只认 `kind==='process'`，所以 `capability-baseline.json` 的 `executor_kinds:["process"]` 至今是真话。Agent 的 Attempt 由外部代持、Runtime 只记账（DHR_31 批 4 窄路径）；终态一律经 `appendResult`，孤儿场景用已冻结的 `E_EXECUTOR_ADAPTER_LOST`（pi 的 Adapter 消失）/ `E_EXECUTOR_HOST_LOST`（DSH 宿主消失）/ `E_EXECUTOR_ORPHANED`（恢复后探活失败），三者首用均不新增码。
+
+### 3.10 增量 —— `adapters/dsh-bridge/snapshot-main.mjs`（DHR_31 批 5 sidecar）
+
+一次性把某个仓的 Read Model 吐成 JSON 后退出的**进程入口**。存在的唯一理由是安装拓扑：树外 DSH Host 插件有一条自己的硬契约——不许裸说明符、不许 `require`、也不许**计算出来的动态 `import()`**（那条契约是一次 `ERR_MODULE_NOT_FOUND` 启动失败逼出来的），于是它没法在自己进程里 import 本仓的 Bridge。宿主按绝对路径 `spawn` 这个入口、读 stdout，`spawn` 不经过模块解析，两边契约都不必让步（findings F-019，用户 2026-08-29 裁决）。
+
+三条边界都很硬：**只做取数转发**（原样吐 `relay.client-read-model/v1`，不投影、不改名、不补字段——投影归客户端侧，协议层对客户端中立不破）；**归 `adapters/` 不进 `runtime/`**（它是客户端侧取数工具，不是 Runtime 的一部分）；**只读**（只调 `listRuns`/`inspect`，不碰 `start`/`control`）。
+
 ## 4. 技术选型的裁决出处
 
 | 决策 | 结论 | 出处 |

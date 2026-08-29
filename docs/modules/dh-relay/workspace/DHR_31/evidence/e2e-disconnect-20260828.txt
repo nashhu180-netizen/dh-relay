@@ -1,0 +1,110 @@
+# DHR_31 批3 3.2 真实终端断连/重连实录（E-049）
+# 日期: 2026-08-28T09:35~09:38Z · 树: wt/DHR_31 @ b31293d · 主控编排: herdr（终端A=w1:p4 / 终端B=w1:p5，两个独立 PowerShell 真实终端，非测试进程）
+# 环境: 每条命令独立 CLI 进程（node relay-core/cli/main.mjs，转录记为 relay）· service 由 CLI 自行发现/拉起、detached · 业务仓=全新 git 仓（.gitignore 前置：.dh-relay/、run-slow.json）
+# 仓: C:/Users/nash/AppData/Local/Temp/claude/D--MyFiles-ai-workflow-dh-relay/49f93a6e-7f02-48cf-b6af-b6b8156be300/scratchpad/e2e-disconnect · run-slow.json = make-run.mjs --prefix "" --delay-ms 180000（同终端此前先跑 35s 形态 R001 验证延时旋钮，未及断连即完成，时间读数见 progress E-050）
+
+## 1. 终端 A：start（warm start —— service 已因 R001 在跑，同一 runtime 实例接单）
+$ relay start --run run-slow.json --json
+{
+  "protocol": "relay.launch-receipt/v2",
+  "receipt_id": "b9d8f6ae-48d4-4660-9d44-b98d4b8d128a",
+  "request_id": "cli-c5f33f46-6fa4-4952-a26c-17636aa936dd",
+  "client_id": "cli-647c598d-420b-400f-96a5-fa6da858f29a",
+  "method": "start",
+  "state": "committed",
+  "reason": null,
+  "run_id": "R002-relay-basic-agent-task-1-20260828",
+  "node_id": null,
+  "attempt_id": null,
+  "kind": "start",
+  "issued_at": "2026-08-28T09:35:14.286Z",
+  "issued_by_runtime": "runtime-7d62ce24-f605-419f-9b93-dc349737717e",
+  "request_digest": "4bae7cace2f249622fa861f58e5fec0c609403a124a691727ebc81fb378373d3"
+}
+[exit=0]
+
+## 2. 终端 A：断连前状态（prepare 已完成，process-task 在 180s 延时里睡着）
+$ relay status R002-relay-basic-agent-task-1-20260828
+run_id: R002-relay-basic-agent-task-1-20260828
+source: runtime-v2
+read_only: false
+host: alive (epoch:1)
+run_status: running
+group: running
+progress: done=1 total=3
+updated_at: 2026-08-28T09:35:14.606Z
+state_signature: 9fae87cb672c7882360072352ca034fe307fcecbf1e079f129780f44d29d78e8
+events: 8
+[exit=0]
+
+## 3. 杀掉终端 A（2026-08-28T09:36:05.648Z，herdr pane close w1:p4 —— shell 连同终端进程整个消亡；此刻 process-task 延时还剩约 129s）
+
+## 4. 终端 B（09:36:07Z 全新终端）：service 未死、run 未断 —— host 仍 alive 且 epoch 未换代（lease 从未失手），进度与断连前一致
+$ relay status R002-relay-basic-agent-task-1-20260828
+run_id: R002-relay-basic-agent-task-1-20260828
+source: runtime-v2
+read_only: false
+host: alive (epoch:1)
+run_status: running
+group: running
+progress: done=1 total=3
+updated_at: 2026-08-28T09:35:14.606Z
+state_signature: 9fae87cb672c7882360072352ca034fe307fcecbf1e079f129780f44d29d78e8
+events: 8
+[exit=0]
+
+## 5. 终端 B：延时走完后的终态（run 在无任何客户端连接期间自行推进到 succeeded）
+$ relay status R002-relay-basic-agent-task-1-20260828
+run_id: R002-relay-basic-agent-task-1-20260828
+source: runtime-v2
+read_only: false
+host: alive (epoch:1)
+run_status: succeeded
+group: done
+progress: done=3 total=3
+updated_at: 2026-08-28T09:38:15.360Z
+state_signature: 327a231137fe34c8a80f6b157f7f607b7412b0d7b34e035c7bb268bfad8a0b0f
+events: 13
+[exit=0]
+
+## 6. 终端 B：事件账连续（seq 1~12 无缺口，三节点按依赖序，run_finished 收尾，全程 epoch:1）
+$ relay events R002-relay-basic-agent-task-1-20260828
+run_id: R002-relay-basic-agent-task-1-20260828
+host: alive (epoch:1)
+run_status: succeeded
+snapshot_seq: 12
+next_seq: 13
+[1] lease_acquired epoch:1
+[2] operation_committed operation:b9d8f6ae-48d4-4660-9d44-b98d4b8d128a:4bae7cace2f249622fa861f58e5fec0c609403a124a691727ebc81fb378373d3:committed
+[3] node_started
+[4] attempt_started receipt:rcpt-6513a51d-c374-4745-ba2d-ea16577512a5
+[5] attempt_succeeded receipt:rcpt-6513a51d-c374-4745-ba2d-ea16577512a5
+[6] node_started
+[7] attempt_started receipt:rcpt-438e72d1-14a6-4d68-8fc1-dbb4ae563fca
+[8] attempt_succeeded receipt:rcpt-438e72d1-14a6-4d68-8fc1-dbb4ae563fca
+[9] node_started
+[10] attempt_started receipt:rcpt-fb62005c-1334-4fa2-8e7f-d85f9a4e85c4
+[11] attempt_succeeded receipt:rcpt-fb62005c-1334-4fa2-8e7f-d85f9a4e85c4
+[12] run_finished
+[exit=0]
+
+## 7. 终端 B：inspect 节点终态 + list 双 run 对照（R001=35s 形态、R002=180s 断连形态，均 succeeded）
+$ relay inspect R002-relay-basic-agent-task-1-20260828
+run_id: R002-relay-basic-agent-task-1-20260828
+run_status: succeeded
+group: done
+progress: done=3 total=3
+updated_at: 2026-08-28T09:38:15.360Z
+state_signature: 327a231137fe34c8a80f6b157f7f607b7412b0d7b34e035c7bb268bfad8a0b0f
+node_states:
+  - prepare: succeeded
+  - process-task: succeeded
+  - verify: succeeded
+[exit=0]
+
+$ relay list
+R001-relay-basic-agent-task-1-20260828  runtime-v2  status=succeeded  group=done  updated=2026-08-28T09:33:53.368Z
+R002-relay-basic-agent-task-1-20260828  runtime-v2  status=succeeded  group=done  updated=2026-08-28T09:38:15.360Z
+[exit=0]
+
+# 自检: 命令头=7 · exit码=7 · exit=0计数=7 · 转录行数=110（每条命令都有 exit 码，全绿）

@@ -1,0 +1,117 @@
+# DHR_31 批 5 树外改动 diff（基线 = DHR_26 镜像 artifacts/.../dsh-host）
+# 命令: diff -u --strip-trailing-cr <DHR_26 镜像> <树外落地副本>
+# 注: 镜像 CRLF / 落地副本 LF 是 check-drift 自列为 NOTE 的既有差异；本轮未改任何文件行尾。
+
+===== index.mjs =====
+--- /d/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_31/docs/modules/dh-relay/workspace/DHR_26/artifacts/relay-control-pilot/src/dsh-host/index.mjs	2026-08-28 12:50:48.332457200 +0800
++++ /d/MyFiles/ai-workflow/dh-relay-p4-pilot/relay-control-pilot/src/dsh-host/index.mjs	2026-08-29 00:33:12.426489800 +0800
+@@ -1,6 +1,8 @@
+ import { RelayPilotRepository } from './fixture-store.mjs'
++import { LiveRelayPilotRepository } from './live-store.mjs'
+ 
+ export { RelayPilotFixtureError, RelayPilotRepository } from './fixture-store.mjs'
++export { LiveRelayPilotRepository, LIVE_SOURCE_KIND } from './live-store.mjs'
+ 
+ // This module imports nothing outside its own directory — deliberately.
+ //
+@@ -33,22 +35,53 @@
+ }
+ 
+ /**
+- * Build the read-only query surface published as `ctx.relayPilot`.
++ * 选数据源：给了 `repoRoot`（或 `RELAY_PILOT_REPO_ROOT`）就走活数据，否则走 fixture。
+  *
+- * Exported separately so the boundary can be tested without a Cordis context.
+- * Every method returns detached plain JSON; the repository owns the frozen
+- * snapshot and hands out clones.
++ * fixture 那条路**一个字没改**——DHR_26/DHR_49 的四轮转录、`fixture_hash` 基线、以及
++ * `test/` 下的既有用例全靠它，换掉就等于把那些证据一并作废。活数据是**新增的一条路**，
++ * 不是替换。
++ *
++ * 活模式下仓库的连接是异步的，而 `apply()` 与五个方法都必须同步：所以这里只**起**它，
++ * 不等它——`LiveRelayPilotRepository` 起手就持有一份合法的空快照 + `live-connecting`
++ * 诊断，面板在连上之前拿到的也是合规模型，不会看到 undefined。
+  */
+-export function createRelayPilotApi(config = {}) {
++function createRepository(config) {
++  const repoRoot = nonEmpty(config.repoRoot) ?? nonEmpty(process.env.RELAY_PILOT_REPO_ROOT)
++  if (repoRoot !== undefined) {
++    const live = new LiveRelayPilotRepository({
++      repoRoot,
++      // DSH 里走 spawn sidecar：插件不许 import relay-core（本包安装拓扑契约，见
++      // live-store.mjs 的说明），所以按绝对路径起 adapters/dsh-bridge/snapshot-main.mjs。
++      relayCoreRoot: nonEmpty(config.relayCoreRoot) ?? nonEmpty(process.env.RELAY_PILOT_RELAY_CORE),
++      // 注入式 connect 只给测试/探针用——profile 传不了函数。
++      connect: typeof config.connect === 'function' ? config.connect : undefined,
++      credentialRoot: nonEmpty(config.credentialRoot) ?? nonEmpty(process.env.RELAY_PILOT_CREDENTIAL_ROOT),
++    })
++    void live.start()
++    return live
++  }
++
+   const listFixture = nonEmpty(config.listFixture) ?? nonEmpty(process.env.RELAY_PILOT_LIST_FIXTURE)
+   if (listFixture === undefined) {
+-    throw new Error('relay-pilot-config: listFixture or RELAY_PILOT_LIST_FIXTURE is required')
++    throw new Error('relay-pilot-config: listFixture or RELAY_PILOT_LIST_FIXTURE is required'
++      + ' (or set repoRoot / RELAY_PILOT_REPO_ROOT for live mode)')
+   }
+-  const repository = new RelayPilotRepository({
++  return new RelayPilotRepository({
+     fixtureRoot: nonEmpty(config.fixtureRoot) ?? nonEmpty(process.env.RELAY_PILOT_FIXTURE_ROOT),
+     listFixture,
+     detailFixtures: fixtureListConfig(config.detailFixtures, process.env.RELAY_PILOT_DETAIL_FIXTURES),
+   })
++}
++
++/**
++ * Build the read-only query surface published as `ctx.relayPilot`.
++ *
++ * Exported separately so the boundary can be tested without a Cordis context.
++ * Every method returns detached plain JSON; the repository owns the frozen
++ * snapshot and hands out clones.
++ */
++export function createRelayPilotApi(config = {}) {
++  const repository = createRepository(config)
+ 
+   return {
+     fixtureHash: () => repository.fixtureHash(),
+
+===== package.json =====
+--- /d/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_31/docs/modules/dh-relay/workspace/DHR_26/artifacts/relay-control-pilot/src/dsh-host/package.json	2026-08-28 12:50:48.333465000 +0800
++++ /d/MyFiles/ai-workflow/dh-relay-p4-pilot/relay-control-pilot/src/dsh-host/package.json	2026-08-29 00:12:21.567471800 +0800
+@@ -10,6 +10,7 @@
+     "./probe": "./probe.mjs",
+     "./absence-probe": "./absence-probe.mjs",
+     "./fixture-store": "./fixture-store.mjs",
++    "./live-store": "./live-store.mjs",
+     "./package.json": "./package.json"
+   },
+   "files": [
+@@ -17,6 +18,7 @@
+     "probe.mjs",
+     "absence-probe.mjs",
+     "fixture-store.mjs",
++    "live-store.mjs",
+     "cordis.patch.yml",
+     "probe.patch.yml",
+     "absence.patch.yml",
+
+===== cordis.patch.yml =====
+--- /d/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_31/docs/modules/dh-relay/workspace/DHR_26/artifacts/relay-control-pilot/src/dsh-host/cordis.patch.yml	2026-08-28 12:50:48.321499800 +0800
++++ /d/MyFiles/ai-workflow/dh-relay-p4-pilot/relay-control-pilot/src/dsh-host/cordis.patch.yml	2026-08-29 00:36:42.846939000 +0800
+@@ -7,6 +7,12 @@
+     - id: relay-pilot-host
+       name: '@personal/dsh-relay-host'
+       config:
++        # 活数据（DHR_31 批 5）：两者都给就走活数据，都不给就退回下面的 fixture。
++        # 在这里显式声明、而不是让插件偷偷读环境变量，是为了守住本包那条原则——
++        # 「Host 读什么，全部在这个文件里点名」。未设时求值为 undefined ⇒ fixture 模式，
++        # DHR_26/DHR_49 的既有转录与 fixture_hash 基线因此不受影响。
++        repoRoot: !!js process.env.RELAY_PILOT_REPO_ROOT
++        relayCoreRoot: !!js process.env.RELAY_PILOT_RELAY_CORE
+         fixtureRoot: !!js process.env.RELAY_PILOT_FIXTURE_ROOT
+         listFixture: runs-active.json
+         detailFixtures:
+
+===== live-store.mjs（新增，基线无此文件）=====
+(全文镜像见 dsh-host-live-20260829/live-store.mjs)

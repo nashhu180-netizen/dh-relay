@@ -1,0 +1,96 @@
+# DHR_31 批 5·5.2/5.3 —— DSH 内活数据转录
+# 时间: 2026-08-29   机器: win32
+#
+# 本文件为批 5 小审 P2 整改后**重新生成**的版本（原版三处取证缺陷见文末「更正说明」）。
+# 这一版每一段都由脚本现场采集后写入，**没有一行是手抄的**——原版那处错哈希正是手抄旧表所致。
+#
+# 要证明的三件事：
+#   1 repack 后装进 profile 的确实是这一版（F-005：版本号不变时 add 会静默留旧版，退出码 0 不可信，只认 SHA256）；
+#   2 插件在真实 DSH boot 里加载成功且处于活数据模式（source_kind=relay-v2）；
+#   3 面板显示的那条 Run 与 CLI relay status 是同一状态（design/06 H3）。
+
+## 1 安装事件（已于 2026-08-29 00:39 执行；F-005 要求 remove 再 add）
+$ dsh plugin --profile web remove '@personal/dsh-relay-host'   →  Done in 516ms using pnpm v11.1.2   [exit=0]
+$ dsh plugin --profile web add <pilot>\dist\personal-dsh-relay-host-0.0.0-pilot.2.tgz   →  Done in 680ms using pnpm v11.1.2   [exit=0]
+# tgz 打包时间: 2026-08-29 00:39:24
+
+## 2 三方 SHA256：源码 / tgz 内 / 已安装（现场复算，非手抄）
+$ tar -xzf <tgz> -C <tmp>; Get-FileHash 源码 / tgz内 / 已安装 三处逐一对比
+FILE                 3-WAY    SHA256
+index.mjs            SAME     733EA5B5C748CA5FEA8FF42FD4683E7EFB4102877F7126D7B05934BC943C8E13
+live-store.mjs       SAME     60FDF64126127F25BFADE7D9949DDFE75C0FA62FAF56109340F138164ED390BD
+fixture-store.mjs    SAME     DC57CE8DE9ABC742FBA6EDC5A7BD6893F376C4C9F8D666768A185F8DBDE6674A
+probe.mjs            SAME     B2A09A415E5A7CB5927FF9CA040CFE0B3376E5A3454F4FB40FD430041F6D3B07
+absence-probe.mjs    SAME     A1BBF80F58E88FD6C6ABC5A1B2671F4EE3F5CC5B4220E77ADD4CFFFEE010FAD2
+package.json         SAME     FF8838C57F9C55616908EB2227E1872563B20136C0DE9AB4AA6C50FFCA6A56B7
+cordis.patch.yml     SAME     69756BB0F1D4CC120CAFBBCCEEF951680ECB81CAAA5FF6853A86DA2636FB0F90
+three-way mismatches=0
+# 注1：版本号全程未变（0.0.0-pilot.2），而 cordis.patch.yml 的哈希在两轮 remove/add 之间
+#      从 1162357F... 变为 69756BB0... —— remove-再-add 确实生效，且哈希核对不可省。
+# 注2：live-store.mjs 真值是上表的 60FDF641...；原版误记 8E28EAFA...（加同步预热之前那版的
+#      哈希，手抄旧表所致）。「三方一致」这个结论本身未受影响。
+
+## 3 真实 DSH boot 内的 headless probe（活数据模式）
+$ $env:RELAY_PILOT_REPO_ROOT=<worktree>; $env:RELAY_PILOT_RELAY_CORE=<worktree>\relay-core
+$ dsh --profile web --patch <installed>\probe.patch.yml
+[relay-pilot-probe] {"event":"relay-pilot-host-ready","service":"ctx.relayPilot","plain_json":true,"fixture_hash":"d47b892d3e8ddc8a999e2c54de9af0e3cb9cc6248356fa3bbebc165d3d50a683","list_schema":"relay.pilot-run-list/v1","list_run_ids":["R001-relay-basic-agent-task-1-20260829"],"list_sha256":"6235680920bd93a74b7cb1d357854f484cc13b44ef11ad9885b450458c19cbb7","diagnostics":[],"detail_present_run_id":"R001-relay-basic-agent-task-1-20260829","detail_present_schema":"relay.pilot-read-model/v1","detail_present_sha256":"74df12cb3e35a1ca235fca4af2b54a5af77071a24a00eab99bd7fb75c63d16e8","detail_missing_run_id":null,"detail_missing_returns_null":null,"snapshot":{"schema_version":"relay.pilot-snapshot/v1","fixture_hash":"d47b892d3e8ddc8a999e2c54de9af0e3cb9cc6248356fa3bbebc165d3d50a683","source_kind":"relay-v2","diagnostics":[],"list":{"schema_version":"relay.pilot-run-list/v1","source_kind":"relay-v2","runs":[{"run_id":"R001-relay-basic-agent-task-1-20260829","run_status":"succeeded","group":"done","updated_at":"2026-08-28T16:15:06.747Z","progress":{"done":3,"total":3},"elapsed_seconds":0}],"updated_at":"2026-08-28T17:10:59.402Z"},"details":{"R001-relay-basic-agent-task-1-20260829":{"schema_version":"relay.pilot-read-model/v1","run_id":"R001-relay-basic-agent-task-1-20260829","source_kind":"relay-v2","run_status":"succeeded","updated_at":"2026-08-28T16:15:06.747Z","nodes":[{"node_id":"prepare","node_status":"succeeded","attempt":1},{"node_id":"process-task","node_status":"succeeded","attempt":1},{"node_id":"verify","node_status":"succeeded","attempt":1}],"attentions":[]}}}}
+[exit=0]
+
+## 3b 同段内一次失败尝试（保留事实；与本命题无关的用法错误）
+$ dsh --profile web --port 3099 --patch <installed>\probe.patch.yml
+  error: unknown option '--patch'
+[exit=1]
+# 原因：--patch 与 --port 不能同时给。换回不带 --port 的写法即成功（见第 3 段）。
+# 原版把这个 [exit=1] 直接跟在一条 [exit=0] 之后、成功输出又落在别处，读起来像
+# 「同一条命令既成功又失败」——这是本次整改的第三处。
+
+## 4 CLI 同态对照（同一 Run、同一 service）
+$ node relay-core/cli/main.mjs status R001-relay-basic-agent-task-1-20260829 --json
+{
+  "protocol": "relay.client-read-model/v1",
+  "view": "status",
+  "source": "runtime-v2",
+  "read_only": false,
+  "status": {
+    "run_id": "R001-relay-basic-agent-task-1-20260829",
+    "source": "runtime-v2",
+    "read_only": false,
+    "host": "alive",
+    "host_detail": "epoch:1",
+    "ledger": {
+      "run_status": "succeeded",
+      "group": "done",
+      "progress": {
+        "done": 3,
+        "total": 3
+      },
+      "updated_at": "2026-08-28T16:15:06.747Z",
+      "state_signature": "7adb24fc17edc9db4c3459b4924ded87edbce6304c87cf290384307e72c93a0e"
+    },
+    "events": 13
+  },
+  "detail": null
+}
+[exit=0]
+# 与详情截图的「更新于 2026-08-28T16:15:06.747Z」逐字节相同；source=runtime-v2 证实活数据。
+
+## 5 dsh-client（面板）本轮未改 —— 可复核依据
+$ Get-FileHash <src/dsh-client/*>  vs  <profile>/node_modules/@personal/dsh-relay-panel/*
+# 面板副本装于 DHR_49 期（早于本卡）。源码与那份安装副本逐字节相同 ⇒ 本卡没动过面板。
+lib/client.js                  SAME     6A809374D7D04194BB091065B5F6EA72814D6B305E10255E7D6AFE966A0ADD0E
+lib/index.mjs                  SAME     4F08FCC13872689533DBB981D0E9E1D0294E041F886C71619B74AD92DE940782
+lib/typert.host.js             SAME     ECC19E99A54DC3BA628B77454C6B412A1131FC116927118D877249123AD0E95B
+lib/typert.remote-client.js    SAME     2C730D57A7311D2331D40DC404BEE3D89427A9F94E2FED90DB68F7396E8705CD
+package.json                   SAME     8D4888F22C21A39EB255220EA8CE5A37DF91B6552B8C3DF196D83A20769CFFA0
+cordis.patch.yml               SAME     C986167B43D7EFEF14C7BE7CD4EAE74084C010BE21E259D200BF7A78200A7145
+dsh-client source-vs-installed mismatches=0
+
+## 6 web 服务
+$ Invoke-WebRequest http://127.0.0.1:3080 → HTTP 200, 12286 bytes
+
+## 更正说明（批 5 小审 P2 三处，全是取证留痕问题，不涉代码）
+# P2-1 树外改动文件数：原 E-087 记「恰 3 个」，实为 4 个 dsh-host 文件——index.mjs /
+#      live-store.mjs / package.json / cordis.patch.yml。E-087 写于 cordis.patch.yml 改动之前
+#      且此后未更新。dsh-client 未改的依据见第 5 段。
+# P2-2 live-store.mjs 哈希：原记 8E28EAFA...（手抄旧表），真值 60FDF641...，见第 2 段三方复算。
+# P2-3 probe 段落：原版命令与退出码错位，现按「命令-输出-退出码」一一对应重排，失败单列 3b。

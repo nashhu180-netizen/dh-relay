@@ -1,0 +1,23 @@
+# Persistent profile layer installed by `dsh plugin --profile <name> add <path>`.
+#
+# Every fixture the Host reads is named here. The plugin never scans a directory
+# and never picks a list for you, so changing what it reads means editing this
+# file — not dropping a file into the fixture root.
+- insert:
+    - id: relay-pilot-host
+      name: '@personal/dsh-relay-host'
+      config:
+        # 活数据（DHR_31 批 5）：两者都给就走活数据，都不给就退回下面的 fixture。
+        # 在这里显式声明、而不是让插件偷偷读环境变量，是为了守住本包那条原则——
+        # 「Host 读什么，全部在这个文件里点名」。未设时求值为 undefined ⇒ fixture 模式，
+        # DHR_26/DHR_49 的既有转录与 fixture_hash 基线因此不受影响。
+        repoRoot: !!js process.env.RELAY_PILOT_REPO_ROOT
+        relayCoreRoot: !!js process.env.RELAY_PILOT_RELAY_CORE
+        fixtureRoot: !!js process.env.RELAY_PILOT_FIXTURE_ROOT
+        listFixture: runs-active.json
+        detailFixtures:
+          - run-basic.json
+          - run-blocked.json
+          - run-chinese.json
+          - run-empty.json
+          - run-status-matrix.json

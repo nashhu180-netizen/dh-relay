@@ -6,8 +6,13 @@
 //   ② 连接当前服务——contracts 是连接唯一首请求，身份、代次、本机 capability 全等才解闸；
 //   ③ 重复操作只生效一次——(client_id, request_id, method) + JCS 摘要落在项目级 operation ledger。
 //
-// 边界（design/07 §6）：不 import workflow / Process / executor，不推进业务节点，
-// 不开公网服务，不写业务仓 .gitignore。
+// 边界（design/07 §6）：不开公网服务，不写业务仓 .gitignore。
+//
+// DHR_31 起的一处**有意收窄**：§6 原文里的「不 import workflow / Process / executor，
+// 不推进业务节点」是 DHR_30 的边界——那一卡交付的是生命周期保持器，节点推进无人负责。
+// 本卡把推进接了进来，但接法不动唯一写者：service 只**起** driver
+// （`runtime/workflow-driver.mjs`），driver 的一切读写仍排进宿主 actor 自己的串行队列，
+// service 依旧不持 Store 写句柄。
 
 import { randomUUID } from 'node:crypto';
 import { readFile, readdir } from 'node:fs/promises';
@@ -16,6 +21,7 @@ import { join, resolve } from 'node:path';
 import { localCapabilityHash } from '../rpc/capabilities.mjs';
 import { createRpcServer } from '../rpc/server.mjs';
 import { openStore } from '../store/store.mjs';
+import { loadAjv, validateOne } from '../tools/validate.mjs';
 import { discoverRepo, orderRunSummaries, scanRuns } from './discovery.mjs';
 import { endpointForRepo, repoHash, writeDescriptor } from './endpoint.mjs';
 import { readOrCreateLocalUserCapability } from './credentials.mjs';
@@ -25,9 +31,23 @@ import { ledgerPath, operationKey, readLedger, recoveryFor, requestDigest, write
 import { formatRunId, isValidRunId, localDateStamp, normalizeThemeSlug } from './runid.mjs';
 import { defaultIndexPath } from './startrun.mjs';
 import { readHostStatus } from './status.mjs';
+import { assessRunReachability } from './reachability.mjs';
+import { startWorkflowDriver } from './workflow-driver.mjs';
 import { createStore } from '../store/store.mjs';
 
 const READ_MODEL = 'relay.client-read-model/v1';
+
+let validatorCache;
+export function validateRuntimeDocument({ contract_id: contractId, document } = {}) {
+  validatorCache ??= loadAjv();
+  const schema = validateOne(validatorCache.ajv, validatorCache.byId, contractId, document);
+  if (!schema.ok) return { valid: false, reason: schema.reason };
+  if (contractId === 'relay.run/v2') {
+    const reachability = assessRunReachability(document);
+    if (!reachability.valid) return { valid: false, reason: reachability.reason };
+  }
+  return { valid: true, reason: null };
+}
 
 /**
  * 可预期失败的稳定 reason（design/07 §5.2）。业务 handler **不得**以断开连接表达它们——
@@ -123,6 +143,8 @@ export async function startRuntimeService({
   let descriptor = null;
   let capability = null;
   const actors = new Map();
+  /** run_id -> 当前这届 workflow driver（DHR_31）。它不持写句柄，只经 actor 队列推进。 */
+  const drivers = new Map();
   /** run_id -> Set<subscription>；订阅是连接本地状态，只活在内存里。 */
   const subscriptions = new Map();
   let ledger = { version: 1, operations: {}, next_seq: 0 };
@@ -232,6 +254,29 @@ export async function startRuntimeService({
     if (wasLive) subscription.drain();
   }
 
+  /**
+   * 起一届 workflow driver（DHR_31）。**故意不 await**：start / resume 的 RPC 应答不该
+   * 等业务节点跑完，否则一条 30 秒的 Run 会把 service 的串行队列堵 30 秒。
+   * 同一 Run 已有在跑的 driver 时不再起第二届——那会让两个推进器抢同一批 ready 节点。
+   */
+  function driveRun(runId, actor, { retryFailed = false } = {}) {
+    if (drivers.has(runId)) return drivers.get(runId);
+    const driver = startWorkflowDriver({ repoRoot, runId, actor, retryFailed, clock });
+    drivers.set(runId, driver);
+    driver.done.then(() => {
+      if (drivers.get(runId) === driver) drivers.delete(runId);
+    }, () => {});
+    return driver;
+  }
+
+  /** 停掉某个 Run 的 driver 并等它收口（被中断的步骤会先落 E_EXECUTOR_KILLED 终态）。 */
+  async function stopDriver(runId) {
+    const driver = drivers.get(runId);
+    if (!driver) return;
+    drivers.delete(runId);
+    await driver.stop().catch(() => {});
+  }
+
   /** 某一届 actor 结束：摘掉挂在它身上的 barrier，订阅本身留着等下一届重挂。 */
   function detach(runId, actor) {
     for (const subscription of subscriptions.get(runId) ?? []) {
@@ -291,6 +336,9 @@ export async function startRuntimeService({
   }
 
   async function runStart(operation, params, handshake, digest) {
+    const reachability = assessRunReachability(params.run);
+    if (!reachability.valid) throw serviceError(reachability.reason, reachability.at);
+
     const recovery = recoveryFor(operation.phase);
     if (recovery.replayReceipt) {
       const receipt = await receiptOf(operation);
@@ -329,7 +377,10 @@ export async function startRuntimeService({
     const receipt = operation.receipt ?? receiptFor({
       method: 'start', kind: 'start', runId, handshake, digest, state: 'committed',
     });
-    return commitReceipt(operation, actor, receipt);
+    const committed = await commitReceipt(operation, actor, receipt);
+    // Receipt 落定之后才开始推进：先有「这次 start 确实发生了」的账，再有节点事实。
+    driveRun(runId, actor);
+    return committed;
   }
 
   async function runControl(operation, params, handshake, digest) {
@@ -360,6 +411,9 @@ export async function startRuntimeService({
       });
       // 先在自己的 lease 内提交 Receipt，再终止：反过来就成了「回执写不进去的停机」。
       const committed = await commitReceipt(operation, actor, receipt);
+      // driver 先停：被中断的步骤要在 actor 还活着（lease 还在自己手里）时把
+      // E_EXECUTOR_KILLED 终态写进去，否则那个 attempt 会永远悬在 running。
+      await stopDriver(runId);
       actor.stop();
       await actor.done;
       return committed;
@@ -370,7 +424,10 @@ export async function startRuntimeService({
     const receipt = operation.receipt ?? receiptFor({
       method: 'control', kind: 'resume', runId, handshake, digest, state: 'committed',
     });
-    return commitReceipt(operation, actor, receipt);
+    const committed = await commitReceipt(operation, actor, receipt);
+    // resume = 从事件账重建进度继续推进，并对失败节点开 fresh attempt（H12）。
+    driveRun(runId, actor, { retryFailed: true });
+    return committed;
   }
 
   /** start / control 的公共外壳：幂等判定 → 执行 → 失败落 failed Receipt。 */
@@ -547,7 +604,7 @@ export async function startRuntimeService({
     subscribe,
     start: (params, sinkOrHandshake, maybeFrame) => mutate('start', params, sinkOrHandshake, maybeFrame),
     control: (params, sinkOrHandshake, maybeFrame) => mutate('control', params, sinkOrHandshake, maybeFrame),
-    validate: () => ({ valid: true, reason: null }),
+    validate: validateRuntimeDocument,
   };
 
   // ── ① bind：赢下确定性端点才算这一届 service ─────────────────────────────────
@@ -595,6 +652,8 @@ export async function startRuntimeService({
     close: async () => {
       for (const set of subscriptions.values()) for (const subscription of set) subscription.closed = true;
       subscriptions.clear();
+      // driver 先于 actor 收口：它的终态写还要经 actor 队列落盘，也顺带杀掉在跑的步骤子进程。
+      await Promise.allSettled([...drivers.keys()].map(runId => stopDriver(runId)));
       for (const actor of actors.values()) actor.stop();
       await Promise.allSettled([...actors.values()].map(actor => actor.done));
       actors.clear();

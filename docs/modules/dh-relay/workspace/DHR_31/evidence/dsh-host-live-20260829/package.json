@@ -1,0 +1,41 @@
+{
+  "name": "@personal/dsh-relay-host",
+  "version": "0.0.0-pilot.2",
+  "description": "Read-only Relay P4 Pilot Host service for DeepSeek Harness",
+  "private": true,
+  "type": "module",
+  "main": "./index.mjs",
+  "exports": {
+    ".": "./index.mjs",
+    "./probe": "./probe.mjs",
+    "./absence-probe": "./absence-probe.mjs",
+    "./fixture-store": "./fixture-store.mjs",
+    "./live-store": "./live-store.mjs",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.mjs",
+    "probe.mjs",
+    "absence-probe.mjs",
+    "fixture-store.mjs",
+    "live-store.mjs",
+    "cordis.patch.yml",
+    "probe.patch.yml",
+    "absence.patch.yml",
+    "disable.patch.yml",
+    "enable.patch.yml",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "UNLICENSED"
+}

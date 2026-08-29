@@ -1,0 +1,25 @@
+{
+  "protocol": "relay.client-read-model/v1",
+  "view": "status",
+  "source": "runtime-v2",
+  "read_only": false,
+  "status": {
+    "run_id": "R001-relay-basic-agent-task-1-20260829",
+    "source": "runtime-v2",
+    "read_only": false,
+    "host": "alive",
+    "host_detail": "epoch:1",
+    "ledger": {
+      "run_status": "succeeded",
+      "group": "done",
+      "progress": {
+        "done": 3,
+        "total": 3
+      },
+      "updated_at": "2026-08-28T16:15:06.747Z",
+      "state_signature": "7adb24fc17edc9db4c3459b4924ded87edbce6304c87cf290384307e72c93a0e"
+    },
+    "events": 13
+  },
+  "detail": null
+}

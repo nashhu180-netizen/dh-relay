@@ -1,0 +1,63 @@
+# DHR_31 批 5·5.1 活数据验收探针转录
+# 环境: 本仓真实 detached service + 真实 basic-agent-task Run R001-relay-basic-agent-task-1-20260829
+# 命令: node live-probe.mjs   （脚本同目录 live-probe.mjs，注入 connectDshBridge）
+# 时间: 2026-08-29   结论: ALL PASS, exit 0
+
+# 五方法 · 活数据
+fixtureHash(): f7b8f630ed630ae67a129cd6fff34cf1fc42da0b6948fac13ba174172e48472b
+diagnostics(): []
+listRuns().schema_version: relay.pilot-run-list/v1
+listRuns().source_kind:    relay-v2
+listRuns().runs.length:    1
+
+# 列表项（逐字）
+{"run_id":"R001-relay-basic-agent-task-1-20260829","run_status":"succeeded","group":"done","updated_at":"2026-08-28T16:15:06.747Z","progress":{"done":3,"total":3},"elapsed_seconds":0}
+
+# getRun(R001-relay-basic-agent-task-1-20260829)
+{
+ "schema_version": "relay.pilot-read-model/v1",
+ "run_id": "R001-relay-basic-agent-task-1-20260829",
+ "source_kind": "relay-v2",
+ "run_status": "succeeded",
+ "updated_at": "2026-08-28T16:15:06.747Z",
+ "nodes": [
+  {
+   "node_id": "prepare",
+   "node_status": "succeeded",
+   "attempt": 1
+  },
+  {
+   "node_id": "process-task",
+   "node_status": "succeeded",
+   "attempt": 1
+  },
+  {
+   "node_id": "verify",
+   "node_status": "succeeded",
+   "attempt": 1
+  }
+ ],
+ "attentions": []
+}
+
+# getRun(不存在的 id) —— 契约要求返回 null
+null
+
+# snapshot() 顶层键
+["schema_version","fixture_hash","source_kind","diagnostics","list","details"]
+
+# H3 同一状态对拍（左：Host 投影  右：Bridge Read Model）
+PASS  run_id
+PASS  run_status
+PASS  updated_at
+PASS  nodes 条数
+PASS  每个节点 node_id/状态逐一相符
+PASS  attentions 为空数组（P5 无 Attention）
+PASS  未编造 title
+PASS  未编造 role
+PASS  未编造 depends_on
+PASS  未编造 workflow_name
+
+ALL PASS
+
+[exit=0]

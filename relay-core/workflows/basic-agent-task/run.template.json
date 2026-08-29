@@ -1,0 +1,54 @@
+{
+  "protocol": "relay.run/v2",
+  "run_id": "R001-basic-agent-task-20260828",
+  "workflow_name": "relay/basic-agent-task@1",
+  "summary": "basic-agent-task 最小 Process 闭环：准备输入 → 处理任务 → 机器校验",
+  "trigger": "system",
+  "attempt": null,
+  "created_at": "2026-08-28T00:00:00Z",
+  "nodes": [
+    {
+      "node_id": "prepare",
+      "title": "准备输入",
+      "role": "执行",
+      "required": true,
+      "depends_on": [],
+      "executor_profiles": [
+        {
+          "kind": "process",
+          "ref": "workflows/basic-agent-task/steps/prepare.mjs"
+        }
+      ]
+    },
+    {
+      "node_id": "process-task",
+      "title": "处理任务",
+      "role": "执行",
+      "required": true,
+      "depends_on": [
+        "prepare"
+      ],
+      "executor_profiles": [
+        {
+          "kind": "process",
+          "ref": "workflows/basic-agent-task/steps/process-task.mjs"
+        }
+      ]
+    },
+    {
+      "node_id": "verify",
+      "title": "机器校验",
+      "role": "复核",
+      "required": true,
+      "depends_on": [
+        "process-task"
+      ],
+      "executor_profiles": [
+        {
+          "kind": "process",
+          "ref": "workflows/basic-agent-task/steps/verify.mjs"
+        }
+      ]
+    }
+  ]
+}

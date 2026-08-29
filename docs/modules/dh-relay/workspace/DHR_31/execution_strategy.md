@@ -3,7 +3,7 @@
 
 ## 操作模型
 
-派子 agent：施工全部派 codex headless worker（zcode 额度已尽，用户 2026-08-28 对话确认）；主会话留计划层——写施工步骤、收敛复核、跑收口。DSH 插件改造 + 真实渲染截图也派 codex；若截图取证 codex 做不到，缺口登记 findings 回落用户，不静默跳过。
+派子 agent：批 1 派 codex headless worker（zcode 额度已尽，用户 2026-08-28 对话确认；实际执行中 codex 沙箱不能写 Git 元数据，提交由主会话代打，见 F-004）；**批 2 起施工改派 Opus subagent（用户 2026-08-28 追加指示「codex 当前工作完成后，后续你让 opus 施工」）**。主会话留计划层——写施工步骤、收敛复核、跑收口。DSH 插件改造 + 真实渲染截图批 5 也按 Opus 派；若截图取证 worker 做不到，缺口登记 findings 回落用户，不静默跳过。
 
 ## 子 agent 授权（若派单）
 

@@ -1,0 +1,16 @@
+# DHR_31 批 5·5.1 改动后的 check-drift（预期为 DRIFT，不是回归）
+# 命令: docs/modules/dh-relay/workspace/DHR_26/check-drift.ps1
+# 时间: 2026-08-29
+# 预期: DHR_26 的镜像是那张卡的基线记录，本卡不回写它；本卡的改动镜像落在
+#       workspace/DHR_31/evidence/dsh-host-live-20260829/ 与 dsh-host-diff-20260829.txt。
+#       故此处报出的 3 个文件差异 = 本轮 5.1 的全部树外改动面，正是要留的痕。
+# EXITCODE=1
+
+DRIFT between repo mirror and materialized copy:
+  differs (content):  dsh-host\index.mjs
+  only in materialized copy: dsh-host\live-store.mjs
+  differs (content):  dsh-host\package.json
+（另有 22 个文件只差行尾，不计入 drift）
+
+Re-run: .\materialize.ps1 -Force
+

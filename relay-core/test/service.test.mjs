@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { mkdir, mkdtemp, readFile, rm, unlink, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm, unlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, sep } from 'node:path';
 import test from 'node:test';
@@ -15,7 +15,7 @@ import { localCapabilityHash } from '../rpc/capabilities.mjs';
 import { canonicalRepoRoot, endpointForRepo, repoHash } from '../runtime/endpoint.mjs';
 import { createHostSessionActor } from '../runtime/host.mjs';
 import { ensureRuntimeService } from '../runtime/launcher.mjs';
-import { startRuntimeService } from '../runtime/service.mjs';
+import { startRuntimeService, validateRuntimeDocument } from '../runtime/service.mjs';
 import { createStore } from '../store/store.mjs';
 
 const runDocument = (runId = 'R001-probe-20260823') => ({
@@ -23,6 +23,18 @@ const runDocument = (runId = 'R001-probe-20260823') => ({
   trigger: 'system', created_at: '2026-08-23T00:00:00Z',
   nodes: [{ node_id: 'node-a', title: 'node', role: 'work', required: false, executor_profiles: [{ kind: 'process', ref: 'bin/probe' }] }],
 });
+
+const h6DepthOneNodes = () => [
+  { node_id: 'gate', title: '闸', role: '复核', required: false,
+    executor_profiles: [{ kind: 'dsh-agent', ref: 'bridge/dsh' }] },
+  { node_id: 'final', title: '终', role: '执行', required: true,
+    depends_on: ['gate'],
+    executor_profiles: [{ kind: 'process', ref: 'bin/x' }] },
+];
+
+async function runFixture(relativePath) {
+  return JSON.parse(await readFile(new URL(`../fixtures/${relativePath}`, import.meta.url), 'utf8'));
+}
 
 const until = async (check, timeout = 2_000) => {
   const end = Date.now() + timeout;
@@ -65,6 +77,117 @@ test('Runtime service：先 contracts 身份确认，随后 listRuns 返回唯�
   client.send({ jsonrpc: '2.0', id: 5, method: 'control', handshake: { ...handshake, request_id: 'request-5' }, params: { run_id: runId, action: 'stop' } });
   await until(() => received.length === 5, 8_000);
   assert.deepEqual(received[4].result.receipt.kind, 'stop');
+});
+
+test('Runtime validate 直连接口：H6 四例与坏图返回冻结 valid/reason 形状', async () => {
+  const golden = await runFixture('golden/run.v2.json');
+  const direct = await runFixture('negative/h6-dsh-only-required-role.json');
+  const cases = [
+    {
+      name: '深度 1',
+      document: { ...golden, nodes: h6DepthOneNodes() },
+      expected: { valid: false, reason: 'E_DSH_ONLY_REQUIRED_ROLE' },
+    },
+    {
+      name: '深度 >=2',
+      document: { ...golden, nodes: [
+        { node_id: 'gate', title: '闸', role: '复核', required: false,
+          executor_profiles: [{ kind: 'dsh-agent', ref: 'bridge/dsh' }] },
+        { node_id: 'mid', title: '中', role: '执行', required: false, depends_on: ['gate'],
+          executor_profiles: [{ kind: 'process', ref: 'bin/mid' }] },
+        { node_id: 'final', title: '终', role: '执行', required: true, depends_on: ['mid'],
+          executor_profiles: [{ kind: 'process', ref: 'bin/final' }] },
+      ] },
+      expected: { valid: false, reason: 'E_DSH_ONLY_REQUIRED_ROLE' },
+    },
+    {
+      name: '阴性对照',
+      document: { ...golden, nodes: [
+        { node_id: 'optional-dsh', title: '选', role: '旁路', required: false,
+          executor_profiles: [{ kind: 'dsh-agent', ref: 'bridge/dsh' }] },
+        { node_id: 'required-process', title: '必', role: '执行', required: true,
+          executor_profiles: [{ kind: 'process', ref: 'bin/required' }] },
+      ] },
+      expected: { valid: true, reason: null },
+    },
+    {
+      name: '直接形态',
+      document: direct,
+      expected: { valid: false, reason: 'E_DSH_ONLY_REQUIRED_ROLE' },
+    },
+    {
+      name: '缺失依赖目标',
+      document: { ...golden, nodes: [
+        { node_id: 'final', title: '终', role: '执行', required: true, depends_on: ['missing'],
+          executor_profiles: [{ kind: 'process', ref: 'bin/final' }] },
+      ] },
+      expected: { valid: false, reason: 'E_BAD_VALUE' },
+    },
+    {
+      name: '依赖成环',
+      document: { ...golden, nodes: [
+        { node_id: 'a', title: '甲', role: '执行', required: true, depends_on: ['b'],
+          executor_profiles: [{ kind: 'process', ref: 'bin/a' }] },
+        { node_id: 'b', title: '乙', role: '执行', required: false, depends_on: ['a'],
+          executor_profiles: [{ kind: 'process', ref: 'bin/b' }] },
+      ] },
+      expected: { valid: false, reason: 'E_BAD_VALUE' },
+    },
+    {
+      name: '自环',
+      document: { ...golden, nodes: [
+        { node_id: 'self', title: '自', role: '执行', required: true, depends_on: ['self'],
+          executor_profiles: [{ kind: 'process', ref: 'bin/self' }] },
+      ] },
+      expected: { valid: false, reason: 'E_BAD_VALUE' },
+    },
+  ];
+
+  for (const item of cases) {
+    const outcome = validateRuntimeDocument({ contract_id: 'relay.run/v2', document: item.document });
+    assert.deepEqual(outcome, item.expected, item.name);
+    assert.deepEqual(Object.keys(outcome).sort(), ['reason', 'valid'], `${item.name} 不得泄漏 at`);
+  }
+});
+
+test('F-003 证据钉：RPC 冻结信封拒绝含斜杠的 relay.run/v2 contract_id', async (t) => {
+  const repoRoot = await makeRepo('dhr31-f003-');
+  const endpoint = endpointForRepo(repoRoot, { runtimeRoot: join(repoRoot, 'private-runtime') });
+  const capability = 'dhr31-test-capability';
+  const service = await startRuntimeService({
+    repoRoot, endpoint, localUserCapability: capability, indexPath: join(repoRoot, 'runs.json'),
+  });
+  t.after(async () => { await service.close(); await rm(repoRoot, { recursive: true, force: true }); });
+
+  const golden = await runFixture('golden/run.v2.json');
+  const outcome = await callOnce(t, endpoint, service.descriptor, capability, 'validate', {
+    contract_id: 'relay.run/v2', document: { ...golden, nodes: h6DepthOneNodes() },
+  }, { requestId: 'req-f003-pin', clientId: 'f003-pin' });
+  assert.equal(outcome.error.data.reason, 'E_BAD_VALUE');
+  assert.match(outcome.error.data.detail, /contract_id must match pattern/);
+});
+
+test('Runtime service start：H6 深度 1 在落 Run 目录前拒绝，golden 仍成功', async (t) => {
+  const repoRoot = await makeRepo('dhr31-start-');
+  const endpoint = endpointForRepo(repoRoot, { runtimeRoot: join(repoRoot, 'private-runtime') });
+  const capability = 'dhr31-test-capability';
+  const service = await startRuntimeService({
+    repoRoot, endpoint, localUserCapability: capability, indexPath: join(repoRoot, 'runs.json'),
+  });
+  t.after(async () => { await service.close(); await rm(repoRoot, { recursive: true, force: true }); });
+
+  const golden = await runFixture('golden/run.v2.json');
+  const rejected = await callOnce(t, endpoint, service.descriptor, capability, 'start', {
+    run: { ...golden, nodes: h6DepthOneNodes() },
+  }, { requestId: 'req-start-h6', clientId: 'start-h6' });
+  assert.equal(rejected.error.data.reason, 'E_DSH_ONLY_REQUIRED_ROLE');
+  const entriesAfterReject = await readdir(join(repoRoot, '.dh-relay'), { withFileTypes: true });
+  assert.deepEqual(entriesAfterReject.filter(entry => entry.isDirectory()).map(entry => entry.name), [],
+    'H6 拒绝必须发生在 createStore 前，不留下 Run 目录');
+
+  const started = await callOnce(t, endpoint, service.descriptor, capability, 'start', { run: golden },
+    { requestId: 'req-start-golden', clientId: 'start-golden' });
+  assert.equal(started.result.receipt.state, 'committed');
 });
 
 test('endpoint：canonical repo root 折叠同一仓的不同写法，且 endpoint 名只含 hash', async (t) => {
