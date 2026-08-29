@@ -248,7 +248,7 @@
 ---
 
 - 确认记录：chat-confirm——2026-08-29 用户在对话明文「认可，收口」，确认对象=上一轮已展示的 releasePacket（P5-H 四问业务化五段展示区 + DSH 截图取证链 + 完成条件 6 条挂证据 + 0 风险表；环境留在 127.0.0.1:3080 供核）；同拍 AskUserQuestion 两题裁决尾巴分流（9 条整批按建议去处）与 F-002（卡面不回改、留注记），记 findings F-023
-- verify 提交 SHA：<AI 代打后回填；`git log --grep="^verify"` 可查>
+- verify 提交 SHA：`3aede91`（master；squash 合入 `52f6427`）
 - 签名：hyf（chat-confirm 代签）　　时间：2026-08-29
 
 → 解锁状态：**已验收**（随后各任务回 DevPlan 任务表销户）
