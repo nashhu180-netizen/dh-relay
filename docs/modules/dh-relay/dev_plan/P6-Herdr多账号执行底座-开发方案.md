@@ -111,8 +111,8 @@
 | 任务 ID | 一句话 | 档位（轻/标准） | 状态 | 依赖 | 工作区 | 验收时间 / verify SHA | 备注 |
 |---|---|---|---|---|---|---|---|
 | DHR_32 | 审计本机 Codex/Claude 多账号并冻结 Executor Profile 注册表 | 标准 | 待人验 | P5 阶段闸（已过，2026-08-29） | [workspace/DHR_32/](../workspace/DHR_32/) | squash `2667f4a`（2026-08-29 委托代合入；verify 待用户） | 任务类型=normal；复核收敛（代码13+需求14+教训，返工1闭环，E-3201~05 通过）；待用户：B-22 追认 + E10 确认 + F-3（ninth 未登录）裁决；worktree 保留待 E10 |
-| DHR_33 | 实现 Herdr Adapter、CLI/SSH 能力探测与状态对账 | 标准 | 进行中 | DHR_32（待人验，产物已合入） | [workspace/DHR_33/](../workspace/DHR_33/) | | 任务类型=heavy（两轮换人+五路+有效单测）；Linux 项延后（B-22①）；开工=委托代决策（2026-08-29），架构裁决见 brief |
-| DHR_34 | 接通身份、quota 与预登记 fallback | 标准 | 未开始 | DHR_33 | <开工时回填 workspace/…> | | 阶段闸阻塞；P6-M4 可 passed / constrained |
+| DHR_33 | 实现 Herdr Adapter、CLI/SSH 能力探测与状态对账 | 标准 | 待人验 | DHR_32（待人验，产物已合入） | [workspace/DHR_33/](../workspace/DHR_33/) | squash `66dd16a`（2026-08-29；verify 待用户） | 任务类型=heavy；复核与返工已收敛；Linux 项延后（B-22①）；人验项见 workspace/DHR_33/review.md |
+| DHR_34 | 接通身份、quota 与预登记 fallback | 标准 | 进行中 | DHR_33（产物已合入，待人验不阻塞施工准备） | [workspace/DHR_34/](../workspace/DHR_34/) | | 任务类型=heavy；2026-08-29 用户授权开 worktree；复核固定 Opus；P6-M4 可 passed / constrained |
 | DHR_35 | 用 Codex、Claude Code 和 Linux SSH 跑真实执行闭环 | 标准 | 未开始 | DHR_33、DHR_34（Receipt 身份链字段由 DHR_34 冻结，DHR_35 验收依赖它） | <开工时回填 workspace/…> | | 阶段闸阻塞；第一个端到端 demo；须补真实 SSH smoke（B-22 ① 延后，汇合点 = P6 阶段闸） |
 
 > 状态列只填五枚举，阶段闸阻塞写「备注」列。P5 未通过时 DHR_32~35 均不得开工。
