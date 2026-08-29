@@ -7,8 +7,13 @@
 ## B-22 预审（B-调整 fresh 审核，opus）
 
 - 审对象：DevPlan P6 §0.2 `DHR-B-22` 三条调整 + 本工作区 brief.md / task_plan.md。
-- 结论：（待回填）
-- 主会话裁决：（待回填）
+- 复核实例身份：claude opus fresh 实例，Herdr `pane run` 拉起（pane w1:p7，agent `rev-b22`，2026-08-29），与调整③冻结形态一致；回收后 `git status` 核对仅新增 `review-b22-opus.md` 一文件，零越权。
+- 结论：共 23 条（P1×8 / P2×11 / P3×4），原文见 [review-b22-opus.md](review-b22-opus.md)。核心：npm test 显式清单不会拾取新测、§4.3 与调整①冲突、禁改边界指错 `tools/` 位置、凭据正则漏 `sk-ant-`/base64、扫描范围漏注册表本体、shim 全文引用是泄露口、验收①与字段闭集互斥（P1-8）。
+- 主会话裁决（2026-08-29，主控独立复算 P1 关键事实后裁决）：
+  - **P1×8 全采纳**：P1-1 取方案 (a)（allowed-paths 增列 `package.json` 仅 `scripts.test` 追加一个 token）；P1-8 取方案 (a)（解析做成校验器行为 `E_UNRESOLVED_CONFIG`/`E_UNRESOLVED_ALIAS`，不扩字段闭集，已回写 DevPlan §2.3）；其余按建议落实。
+  - **P2×11 全采纳**：P2-7 落位定为 `relay-core/profiles/`（与 contracts 平级），DevPlan 三处已改。
+  - **P3-1① 驳回**：复核者自称「非 Herdr 拉起」有误——`herdr agent get rev-b22` 证实其运行于 Herdr pane w1:p7，形态与调整③一致，无需补登记差异；P3-1②（复核形态迁移路径）采纳记 findings。P3-2/3/4 采纳。
+  - 全部采纳项已回写 DevPlan / brief.md / task_plan.md（同批提交）。
 
 ## 完成条件逐条挂证据（验收靶子）
 

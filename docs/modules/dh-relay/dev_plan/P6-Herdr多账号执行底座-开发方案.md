@@ -49,13 +49,13 @@
     - 禁止：读取、复制或引用 `auth.json`/token/cookie/API key 的**值**（只允许登记「该文件存在、含哪些字段名」）；环境变量只登记**变量名**不登记值；任何证据入仓前先跑凭据模式扫描（`sk-`、`eyJ`、`Bearer`、40+ 位十六进制/base64 连续串）并把扫描命令与结果记入 progress。
     - 白名单可存字段 = 本计划 §2.3 注册表字段闭集，不得超集。
   - **调整③·派发形态冻结**：施工 = codex `gpt-5.6-terra` + reasoning high，经 Herdr 交互终端（`agent start --kind codex`，规程 = knowledge/herdr-派活操作.md，`agent wait` 后台监控）；复核 = claude opus 经 Herdr（`pane run` 绕 shim 坑），复核形态为侦测型只读（提示词硬约束 + 主控回收后 diff 核对，非机器只读，如实登记）。
-  - **审核记录**：本事件 fresh 只读审核由 claude opus 承担（与 DHR_32 brief/task_plan 预审同批派出），结论与裁决回填于此：见 workspace/DHR_32/review.md「B-22 预审」节。
+  - **审核记录**：本事件 fresh 只读审核由 claude opus 承担（与 DHR_32 brief/task_plan 预审同批派出）。**实际形态登记**：opus fresh 实例经 Herdr `pane run` 拉起（pane w1:p7，agent `rev-b22`），与调整③冻结形态一致；主控回收后 `git status` 核对确认零越权改动。审核原文 = [workspace/DHR_32/review-b22-opus.md](../workspace/DHR_32/review-b22-opus.md)（P1×8 / P2×11 / P3×4 共 23 条），主会话裁决 = workspace/DHR_32/review.md「B-22 预审」节（P1/P2 全采纳，P3-1① 驳回，已回写本计划与 brief/task_plan）。
   - **用户确认**：待用户回归追认（追认点：①Linux 延后、②审计范围与白名单、③本事件代决策本身）。
 
 ## 1. 概述
 
 - **交付什么 / 不含什么**：
-  - 交付：①Executor Profile Registry；②本机五类入口（`codex / codex-ninth / claude / claude-grok / claude5`，仅为用户已知别名，真实映射由审计取得）的可证配置映射；③Herdr Runtime Adapter 与状态对账；④Relay CLI 中的 Herdr 状态、host_ref 与附着入口；⑤身份指纹、能力位、quota 样本与 fallback 关系；⑥Windows 上至少一条 Codex 与一条 Claude Code 真实节点；⑦Linux Headless/SSH 上至少一条 Herdr 持久会话 smoke；⑧DSH 关闭下完整完成一次 Herdr 节点观察与 Result 回收；⑨DSH / Pi 可用时作增强客户端显示同一状态（不阻断核心）。
+  - 交付：①Executor Profile Registry；②本机五类入口（`codex / codex-ninth / claude / claude-grok / claude5`，仅为用户已知别名，真实映射由审计取得）的可证配置映射；③Herdr Runtime Adapter 与状态对账；④Relay CLI 中的 Herdr 状态、host_ref 与附着入口；⑤身份指纹、能力位、quota 样本与 fallback 关系；⑥Windows 上至少一条 Codex 与一条 Claude Code 真实节点；⑦Linux Headless/SSH 上至少一条 Herdr 持久会话 smoke（`DHR-B-22` 调整① 延后，汇合点 = P6 阶段闸裁决）；⑧DSH 关闭下完整完成一次 Herdr 节点观察与 Result 回收；⑨DSH / Pi 可用时作增强客户端显示同一状态（不阻断核心）。
   - 不含：DevHarness 完整单卡、多卡调度、自由账号切换、计划内任意 CLI 参数、凭据管理器、自动登录、跨机器 Relay 调度、Linux 完整 DevHarness 收口、让 Pi 模型 API Agent 冒充 Codex/Claude Code 产品 Agent。
 - **最早可用结果**：Relay CLI → Relay Runtime → Herdr → Codex CLI / Claude Code；基线控制路径 = Relay CLI + Herdr CLI，DSH 页面 / Pi TUI / pane 聚焦按钮属增强。
 - **承接设计**（拆计划输入 = `design/README.md` 白名单）：
@@ -63,7 +63,7 @@
   - [design/05](../design/05-DeepSeek-Harness插件化与专属工作台-可行性评估.md) · §7 两种 Profile（7.1 Executor Profile 示例）、§8 Agent 执行策略（8.2 实际 Codex 和 Claude Code 产品）。
   - [design/02](../design/02-完整流水-产品设计与验收.md) · **B4**（用户级注册表执行侧生效、真实拉起 codex-ninth、receipt 记 profile/account_alias/config_fingerprint、零凭据）、**B5**（quota 高置信识别与预登记 fallback）、**B15 ⑤**（可信只读承载 = 注册表能力位而非 prompt）——作为契约 Oracle。
   - 研究来源（非拆计划输入）：[design/03 Herdr 底座研究](../design/03-完整流水-Herdr底座-产品设计与验收.md) 与 [evidence/03 preflight 实测](../design/evidence/03-Herdr底座-preflight实测与审核记录.md) 的结论继续复用：Herdr 状态属宿主观测、不代表 Relay 节点成功；信任弹窗 / 漏事件 / 进程退出 / 版本漂移需对账补偿；psmux 只作 legacy 回退。
-- **前置条件**：P5 核心 Gate 通过；Runtime、RPC、Store、参考 CLI、basic-agent-task 稳定；用户明确放行 P6；本机审计任务已按安全边界确认；凭据值不入任何工件；Linux 笔记本能 SSH 登录——若当时不可达，DHR_33 先冻结 Headless fixture，DHR_35 收口前必须补真实 SSH smoke。
+- **前置条件**：P5 核心 Gate 通过；Runtime、RPC、Store、参考 CLI、basic-agent-task 稳定；用户明确放行 P6；本机审计任务已按安全边界确认；凭据值不入任何工件；Linux 笔记本能 SSH 登录——若当时不可达，DHR_33 先冻结 Headless fixture，DHR_35 收口前必须补真实 SSH smoke（`DHR-B-22` 调整① 延后：该「必须」的执行时点推迟至 P6 阶段闸裁决，标准不松动）。
 - **实施策略一句话**：先审计后冻结（Profile 名称与能力由本机事实决定，计划只引用稳定 ID），Herdr Adapter 以事件快路 + snapshot 慢路双通道对账，全部在「DSH 关闭」路径上验收，DSH/Pi 只作附加客户端对证。
 - **任务前缀 / 模块 slug**：`DHR_` / `dh-relay`。
 - **批次**：批次 1=`DHR_32`（审计 + 注册表）；批次 2=`DHR_33`（Adapter + CLI/SSH）；批次 3=`DHR_34 ∥ DHR_35`（身份/quota 与真实闭环可并行收口，第一个端到端 demo 在 DHR_35）。
@@ -74,7 +74,7 @@
 
 | 单元 | 职责 | 入口 / 主要文件 | 关联任务 |
 |---|---|---|---|
-| profile-registry | Executor Profile Registry schema 与脱敏注册表；`herdr.codex.<alias>` / `herdr.claude.<alias>` 占位结构 | Runtime `profiles/`、用户级注册表文件（路径由 DHR_32 冻结） | DHR_32 / DHR_34 |
+| profile-registry | Executor Profile Registry schema 与脱敏注册表；`herdr.codex.<alias>` / `herdr.claude.<alias>` 占位结构 | `relay-core/profiles/`（与 contracts 平级；Runtime 侧接线在 DHR_33/34）、用户级注册表文件（路径由 DHR_32 冻结） | DHR_32 / DHR_34 |
 | audit-evidence | 本机五类入口审计工件（脱敏）：命令、配置来源、身份信号、产品/模型、平台、能力、quota 样本、fallback、Herdr 启动方式 | `workspace/DHR_32/evidence/` | DHR_32 |
 | herdr-adapter | `launch / observe / capture / focus / attach / send / stop / reconcile`；Herdr 状态 → Relay 状态映射；HostObservation | Runtime `executors/herdr/` | DHR_33 |
 | cli-herdr | `relay status / inspect / events --follow` 接通 host_ref 与最后观测；新增 `relay focus <run_id> <node_id>` | `cli/` | DHR_33 |
@@ -85,7 +85,7 @@
 
 | 路径 | 禁改 / 扩展 / 新建 | 说明 |
 |---|---|---|
-| Runtime `executors/`、`profiles/`、`cli/` | 扩展 | 在 P5 Runtime 上增加 Herdr Executor 与 Profile |
+| Runtime `executors/`、`cli/`；`relay-core/profiles/`（新建，与 contracts 平级） | 扩展 / 新建 | 在 P5 Runtime 上增加 Herdr Executor；Profile schema/校验器落 `relay-core/profiles/`，Runtime 接线在 DHR_33/34 |
 | 用户级注册表 | 新建（仓外） | 只存路径 / 别名 / 能力位 / 指纹规则；**不得存 Token / API Key / Cookie / 完整敏感环境 / 可复用认证材料** |
 | 本机 Codex / Claude Code 配置目录与凭据 | 只读、审计脱敏 | 路径与环境输出经白名单脱敏；审计范围须用户单独确认 |
 | Herdr 上游 | 禁改 | 只经 CLI / 事件 / snapshot 对接；版本与能力 hash 记 HostObservation |
@@ -95,6 +95,7 @@
 ### 2.3 阶段专属约束
 
 - **注册表可存字段**：`executor_profile_id / backend / product / command_alias / account_alias / capabilities / expected_identity / config_fingerprint_rule / quota_detector_id / fallback_profile_ids / supported_platforms / headless_supported`。
+- **「解析到真实 cli/config_dir」的承载方式（`DHR-B-22` 预审 P1-8 裁决，方案 a）**：不扩字段闭集，解析做成**校验器行为**——`config_fingerprint_rule` 形态定义为 `{"kind":"file-exists","path_template":"${USERPROFILE}/.codex/config.toml","fields":[...]}`（路径模板只允许环境变量占位，不落真实用户名）；校验器规则「模板展开后路径必须存在，否则 `E_UNRESOLVED_CONFIG`」+「`command_alias` 经 `Get-Command` 可解析，否则 `E_UNRESOLVED_ALIAS`（可标 skip-on-CI）」，各配 negative fixture 与测试断言。「可重复身份探测」由 evidence 登记探测命令 + 掩码输出承载，注册表侧只存 `expected_identity` 掩码值。
 - **角色两分**：`control_client_profile`（dsh / pi / relay-cli）与 `executor_profile`（herdr.codex.* / herdr.claude.* / pi-agent.* / process.*）严格分开；控制客户端切换不能改变已冻结的 Executor Profile。
 - **Herdr 状态映射**：`working → running`；`blocked → 持久 Attention`；`done → awaiting_result`（不能直接 succeeded）；`idle → 结合阶段与 result 对账`；`unknown → snapshot + process reconcile`。
 - **Linux Headless 拓扑**：SSH Client → relay CLI → herdr / herdr agent attach；Linux Host → Relay Runtime → Unix Domain Socket → Herdr Server → Codex / Claude Code / Pi。必须验证：SSH 断开后 Herdr Server 与 pane 继续存在；重新 SSH 后可接回；Runtime 不把 SSH 离线解释成 Agent / Run 退出；DSH 关闭时 CLI 仍显示 host_ref 与最后观测。
@@ -111,7 +112,7 @@
 | DHR_32 | 审计本机 Codex/Claude 多账号并冻结 Executor Profile 注册表 | 标准 | 进行中 | P5 阶段闸（已过，2026-08-29） | [workspace/DHR_32/](../workspace/DHR_32/) | | 任务类型=normal（代码轮1+需求+教训+有效单测）；审计范围按 `DHR-B-22` 调整②冻结（主控代决策，待用户追认）；Linux 入口列记「延后」 |
 | DHR_33 | 实现 Herdr Adapter、CLI/SSH 能力探测与状态对账 | 标准 | 未开始 | DHR_32 | <开工时回填 workspace/…> | | 阶段闸阻塞；Linux 不可达时先冻结 Headless fixture |
 | DHR_34 | 接通身份、quota 与预登记 fallback | 标准 | 未开始 | DHR_33 | <开工时回填 workspace/…> | | 阶段闸阻塞；P6-M4 可 passed / constrained |
-| DHR_35 | 用 Codex、Claude Code 和 Linux SSH 跑真实执行闭环 | 标准 | 未开始 | DHR_33、DHR_34（Receipt 身份链字段由 DHR_34 冻结，DHR_35 验收依赖它） | <开工时回填 workspace/…> | | 阶段闸阻塞；第一个端到端 demo；须补真实 SSH smoke |
+| DHR_35 | 用 Codex、Claude Code 和 Linux SSH 跑真实执行闭环 | 标准 | 未开始 | DHR_33、DHR_34（Receipt 身份链字段由 DHR_34 冻结，DHR_35 验收依赖它） | <开工时回填 workspace/…> | | 阶段闸阻塞；第一个端到端 demo；须补真实 SSH smoke（B-22 ① 延后，汇合点 = P6 阶段闸） |
 
 > 状态列只填五枚举，阶段闸阻塞写「备注」列。P5 未通过时 DHR_32~35 均不得开工。
 
@@ -126,7 +127,7 @@
   - **机器证**：[design/05 §7.1 Executor Profile 示例](../design/05-DeepSeek-Harness插件化与专属工作台-可行性评估.md#71-executor-profile-示例)：注册表只含 §2.3 允许字段；Token / API Key / Cookie / 认证材料零出现（扫描 + 白名单脱敏双证）。
   - **机器证**：审计工件零凭据；路径与环境输出经白名单脱敏（承接 AGENTS 宪章#6）。
   - **机器证**：[design/02 B15 ⑤](../design/02-完整流水-产品设计与验收.md#61-ai-自动验收栏)：每个 Profile 的 `readonly` 等能力位对应到真实 CLI 实现（如 codex `--sandbox read-only`），不支持者明确标不支持。
-- **变更范围**：Runtime `profiles/` schema、用户级注册表候选、`workspace/DHR_32/evidence/`；不动业务代码。
+- **变更范围**：`relay-core/profiles/` schema（与 contracts 平级，Runtime 接线在后续卡）、用户级注册表候选、`workspace/DHR_32/evidence/`；不动业务代码。
 - **档位**：标准（触及本机凭据环境的读取，属权限安全红线相邻区）。
 - **实施提示**：审计前用户单独确认读取范围与脱敏白名单；只引用稳定 ID，名称由证据定；不可证的写「不可证」而非猜。
 
@@ -141,7 +142,7 @@
   - **机器证**：事件快路与 snapshot 慢路均可工作；HostObservation 记录版本、能力 hash、pane 句柄；`relay focus` 不保存任意拼接命令。
 - **变更范围**：Runtime `executors/herdr/`、`cli/`（focus + host_ref）、Headless fixture；本卡 `workspace/DHR_33/`。
 - **档位**：标准（外部宿主组件接线 + SSH 真实路径）。
-- **实施提示**：复用 evidence/03 的 preflight 判据（handle 1:1、visible/interactive、有界退出）；Linux 不可达时冻结 fixture 并在备注登记「待真实 smoke」，不得以 fixture 冒充真实 SSH 证据。
+- **实施提示**：复用 evidence/03 的 preflight 判据（handle 1:1、visible/interactive、有界退出）；Linux 不可达时冻结 fixture 并在备注登记「待真实 smoke」，不得以 fixture 冒充真实 SSH 证据（`DHR-B-22` 调整① 延后，汇合点 = P6 阶段闸裁决）。
 
 #### DHR_34
 
@@ -161,7 +162,7 @@
 - **非目标**：不进 DevHarness 全收口；不做多卡；DSH 可用时只作附加客户端对证，不另跑第二份流程。
 - **验收口径**：
   - **机器证**：[design/02 B4](../design/02-完整流水-产品设计与验收.md#61-ai-自动验收栏) · P6-M1：至少一个 Codex 与一个 Claude Profile 完成真实节点，Receipt 身份链可证、零凭据。
-  - **机器证**：[design/06 H9](../design/06-多控制面与Headless-SSH运行-设计补充.md#11-验收命题) · P6-M6：Linux SSH 断开 / 重连不丢 Herdr 会话与 Relay Run 真相（真实 SSH，不接受 fixture 替代）。
+  - **机器证**：[design/06 H9](../design/06-多控制面与Headless-SSH运行-设计补充.md#11-验收命题) · P6-M6：Linux SSH 断开 / 重连不丢 Herdr 会话与 Relay Run 真相（真实 SSH，不接受 fixture 替代；`DHR-B-22` 调整① 延后，汇合点 = P6 阶段闸裁决）。
   - **机器证**：[design/06 H1 / H5](../design/06-多控制面与Headless-SSH运行-设计补充.md#11-验收命题) · P6-M3/M5：working / blocked / done / unknown 均有真实或受控证据；DSH 关闭时 CLI 显示状态、Attention 与正确 host_ref。
   - **机器证**（P6-X）：[design/06 H3](../design/06-多控制面与Headless-SSH运行-设计补充.md#11-验收命题)：DSH / Pi 可用时连接同一 Run，无第二份状态判断；不可用登记不适用。
   - **人判**：[design/05 §8.2](../design/05-DeepSeek-Harness插件化与专属工作台-可行性评估.md#82-实际-codex-和-claude-code-产品) · P6-H：向用户展示 Windows 两条闭环实录 + Linux SSH 实录 + pane 交互延迟；用户判断 Herdr + Codex/Claude Code 是否适合作施工主力、多账号选择与 fallback 是否清楚、Windows pane 交互延迟是否可接受、Linux SSH detach/重连/附着是否适合日常、DSH→Herdr 跳转（若可用）是否自然。
@@ -184,7 +185,7 @@
 | P6-M3 | working、blocked、done、unknown 均有真实或受控证据 | DHR_33 / DHR_35 |
 | P6-M4 | quota 正反样本和 fallback 有明确通过或受限结论 | DHR_34 |
 | P6-M5 | DSH 关闭时，CLI 能显示状态、Attention 和正确 Herdr host_ref | DHR_33 / DHR_35 |
-| P6-M6 | Linux SSH 断开/重连不丢 Herdr 会话和 Relay Run 真相 | DHR_33 / DHR_35 |
+| P6-M6 | Linux SSH 断开/重连不丢 Herdr 会话和 Relay Run 真相 | DHR_33 / DHR_35（B-22 ① 延后） |
 | P6-M7 | 客户端变化不改变 Executor Profile、Attempt 和 Result 身份链 | DHR_34 |
 
 ### 4.2 增强验收 P6-X 与人类闸 P6-H
@@ -194,7 +195,7 @@
 
 ### 4.3 解锁 P7 的规则
 
-P6-M1、M2、M3、M5、M6、M7 必须通过；P6-M4 可以是通过或用户明确接受的受限；P6-H 有结论 ∧ 用户对话同意进入 P7。
+P6-M1、M2、M3、M5、M6、M7 必须通过；P6-M4 可以是通过或用户明确接受的受限；**P6-M6 例外**：因 `DHR-B-22` 调整①（用户 2026-08-29 指示延后 Linux），允许记「延后/受限」并由用户在阶段闸裁决受理或指定补录卡；受理前 P7 不解锁。P6-H 有结论 ∧ 用户对话同意进入 P7。
 
 ## 5. 与旧 P3 的关系
 
@@ -211,7 +212,7 @@ P6-M1、M2、M3、M5、M6、M7 必须通过；P6-M4 可以是通过或用户明�
 ## 7. 计划完工
 
 - [ ] DHR_32~35 全部销户。
-- [ ] P6-M1~M7 全部有等价 pass 证据（M4 允许用户接受的受限）；P6-X 三态已登记。
+- [ ] P6-M1~M7 全部有等价 pass 证据（M4 允许用户接受的受限；M6 因 B-22 ① 延后，允许记延后/受限并由用户裁决）；P6-X 三态已登记。
 - [ ] 端到端证据：Windows Codex + Claude Code 闭环实录、Linux 真实 SSH smoke 可复查；全部工件零凭据扫描通过。
 - [ ] P6-H 已向用户展示并由用户判断；P7 是否解锁由用户明确表态。
 - [ ] `dev_plan/README.md` 活跃计划表状态已更新。
