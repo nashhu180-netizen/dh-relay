@@ -33,6 +33,8 @@ const REGISTERED_OPEN = new Set([
 const CONDITIONALLY_NARROWED = new Set([
   'relay.rpc.v1.schema.json::$defs.request.properties.params',
   'relay.rpc.v1.schema.json::$defs.notification.properties.params',
+  'relay.rpc.v2.schema.json::$defs.request.properties.params',
+  'relay.rpc.v2.schema.json::$defs.notification.properties.params',
 ]);
 
 // ── 私有类型白名单：允许作为不透明枚举字面量出现的厂商 token ──

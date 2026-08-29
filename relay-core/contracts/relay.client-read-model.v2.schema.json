@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dh-relay.local/contracts/relay.client-read-model/v2",
+  "title": "relay.client-read-model/v2 — Attention-aware Runtime read model",
+  "type": "object",
+  "properties": {
+    "protocol": { "const": "relay.client-read-model/v2" },
+    "view": { "type": "string", "enum": ["run_list", "status", "detail", "event_stream_snapshot"] },
+    "items": { "type": "array", "items": { "$ref": "#/$defs/run_summary" } },
+    "source": { "type": "string", "enum": ["runtime-v2", "legacy-v1"] },
+    "read_only": { "type": "boolean" },
+    "status": { "oneOf": [{ "$ref": "https://dh-relay.local/contracts/relay.client-read-model/v1#/$defs/run_status_view" }, { "type": "null" }] },
+    "detail": { "oneOf": [{ "$ref": "https://dh-relay.local/contracts/relay.run-state/v1" }, { "type": "null" }] },
+    "run_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/run_id" },
+    "snapshot": { "$ref": "https://dh-relay.local/contracts/relay.client-read-model/v1#/$defs/run_status_view" },
+    "snapshot_seq": { "type": "integer", "minimum": 0 },
+    "next_seq": { "type": "integer", "minimum": 0 },
+    "open_attentions": { "type": "array", "items": { "$ref": "https://dh-relay.local/contracts/relay.fallback-pause/v1#/$defs/attention" } }
+  },
+  "required": ["protocol", "view", "open_attentions"],
+  "additionalProperties": false,
+  "allOf": [
+    { "if": { "properties": { "view": { "const": "run_list" } }, "required": ["view"] }, "then": { "required": ["items"] } },
+    { "if": { "properties": { "view": { "const": "status" } }, "required": ["view"] }, "then": { "required": ["source", "read_only", "status", "detail"], "properties": { "detail": { "const": null } } } },
+    { "if": { "properties": { "view": { "const": "detail" } }, "required": ["view"] }, "then": { "required": ["source", "read_only", "status", "detail"], "properties": { "status": { "const": null } } } },
+    { "if": { "properties": { "view": { "const": "event_stream_snapshot" } }, "required": ["view"] }, "then": { "required": ["run_id", "snapshot", "snapshot_seq", "next_seq"] } }
+  ],
+  "$defs": {
+    "run_summary": {
+      "type": "object",
+      "properties": {
+        "run_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/run_id" },
+        "source": { "type": "string", "enum": ["runtime-v2", "legacy-v1"] },
+        "read_only": { "type": "boolean" },
+        "run_status": { "type": ["string", "null"] },
+        "group": { "type": ["string", "null"] },
+        "updated_at": { "type": ["string", "null"] },
+        "open_attentions": { "type": "array", "items": { "$ref": "https://dh-relay.local/contracts/relay.fallback-pause/v1#/$defs/attention" } }
+      },
+      "required": ["run_id", "source", "read_only", "run_status", "group", "updated_at", "open_attentions"],
+      "additionalProperties": false
+    }
+  }
+}

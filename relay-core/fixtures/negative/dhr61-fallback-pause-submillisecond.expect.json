@@ -1,0 +1,5 @@
+{
+  "schema": "relay.fallback-pause/v1",
+  "reason": "E_BAD_VALUE",
+  "at": "/raised_at"
+}

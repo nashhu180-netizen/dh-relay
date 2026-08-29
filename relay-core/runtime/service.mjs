@@ -18,9 +18,10 @@ import { randomUUID } from 'node:crypto';
 import { readFile, readdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 
-import { localCapabilityHash } from '../rpc/capabilities.mjs';
+import { localCapabilityHash, localCapabilityHashV2 } from '../rpc/capabilities.mjs';
+import { createBootstrapServer } from '../rpc/bootstrap.mjs';
 import { createRpcServer } from '../rpc/server.mjs';
-import { openStore } from '../store/store.mjs';
+import { readOpenAttentions } from '../store/store.mjs';
 import { loadAjv, validateOne } from '../tools/validate.mjs';
 import { discoverRepo, orderRunSummaries, scanRuns } from './discovery.mjs';
 import { endpointForRepo, repoHash, writeDescriptor } from './endpoint.mjs';
@@ -34,8 +35,10 @@ import { readHostStatus } from './status.mjs';
 import { assessRunReachability } from './reachability.mjs';
 import { startWorkflowDriver } from './workflow-driver.mjs';
 import { createStore } from '../store/store.mjs';
+import { retryWithFrozenProfile } from './attempt-retry.mjs';
 
 const READ_MODEL = 'relay.client-read-model/v1';
+const READ_MODEL_V2 = 'relay.client-read-model/v2';
 
 let validatorCache;
 export function validateRuntimeDocument({ contract_id: contractId, document } = {}) {
@@ -129,18 +132,23 @@ async function readEventsFromDisk(runRoot) {
 export async function startRuntimeService({
   repoRoot,
   endpoint = endpointForRepo(repoRoot),
+  v2Endpoint = endpointForRepo(repoRoot, { channel: 'v2' }),
+  bootstrapEndpoint = endpointForRepo(repoRoot, { channel: 'bootstrap' }),
   localUserCapability = null,
   credentialRoot,
   runtimeVersion = '0.0.0',
   indexPath = defaultIndexPath(),
   legacyRoot,
   gitBin = 'git',
+  executorProfileRegistryPath,
+  profileEnvironment = process.env,
   clock = () => Date.now(),
 } = {}) {
   if (!repoRoot) throw new Error('E_BAD_VALUE:repo-root-required');
 
   /** 就绪前的一切请求都只能得到稳定拒绝，不得看到半成品状态。 */
   let descriptor = null;
+  let v2Descriptor = null;
   let capability = null;
   const actors = new Map();
   /** run_id -> 当前这届 workflow driver（DHR_31）。它不持写句柄，只经 actor 队列推进。 */
@@ -243,7 +251,19 @@ export async function startRuntimeService({
     subscription.barrier = null;
     const wasLive = subscription.live;
     subscription.live = false;
-    const barrier = await actor.store.subscribe((event, state) => subscription.push(event, state));
+    let barrier;
+    try {
+      barrier = await actor.store.subscribe(
+        (event, state) => subscription.push(event, state),
+        { rejectOpenAttention: subscription.readModelVersion === 'v1' },
+      );
+    } catch (error) {
+      if (String(error?.message ?? error).startsWith('E_ATTENTION_REQUIRES_READ_MODEL_V2')) {
+        subscription.closeForAttention();
+        return;
+      }
+      throw error;
+    }
     subscription.barrier = barrier;
     subscription.actor = actor;
     const missed = actor.store.events
@@ -261,7 +281,11 @@ export async function startRuntimeService({
    */
   function driveRun(runId, actor, { retryFailed = false } = {}) {
     if (drivers.has(runId)) return drivers.get(runId);
-    const driver = startWorkflowDriver({ repoRoot, runId, actor, retryFailed, clock });
+    const driver = startWorkflowDriver({
+      repoRoot, runId, actor, retryFailed, clock,
+      herdrRegistryPath: executorProfileRegistryPath,
+      profileEnvironment,
+    });
     drivers.set(runId, driver);
     driver.done.then(() => {
       if (drivers.get(runId) === driver) drivers.delete(runId);
@@ -298,6 +322,39 @@ export async function startRuntimeService({
     const status = await readHostStatus({ repoRoot, runId, clock });
     return readModelStatus({ ...status, host_detail: hostDetailText(status.host_detail) },
       { readOnly: isOrphan(runId) });
+  }
+
+  /** v1 没有 Attention 字段；必须显式拒绝，不能靠过滤 Run 伪造兼容。 */
+  async function assertV1AttentionCompatible(runId) {
+    if (isLegacy(runId)) return;
+    if (!known.roots.has(runId)) await refreshKnown();
+    if (!known.roots.has(runId)) return;
+    const actor = actors.get(runId);
+    let openAttentions;
+    try {
+      openAttentions = actor
+        ? await actor.store.openAttentions()
+        : await readOpenAttentions({ root: known.roots.get(runId) });
+    } catch (error) {
+      throw withReason(error);
+    }
+    if (openAttentions.length > 0) {
+      throw serviceError('E_ATTENTION_REQUIRES_READ_MODEL_V2', runId);
+    }
+  }
+
+  async function attentionsFor(runId) {
+    if (isLegacy(runId)) return [];
+    if (!known.roots.has(runId)) await refreshKnown();
+    if (!known.roots.has(runId)) return [];
+    const actor = actors.get(runId);
+    try {
+      return await (actor
+        ? actor.store.openAttentions()
+        : readOpenAttentions({ root: known.roots.get(runId) }));
+    } catch (error) {
+      throw withReason(error);
+    }
   }
 
   // ── operation ledger ────────────────────────────────────────────────────────
@@ -488,7 +545,7 @@ export async function startRuntimeService({
    * 读该 seq 对应的 snapshot，随后发送 snapshot，再按 seq 排空缓冲。
    * 网络发送全部在队列之外做——慢客户端不得堵住 Store 的写。
    */
-  async function subscribe(params, sink) {
+  async function subscribe(params, sink, readModelVersion = 'v1') {
     requireReady();
     const runId = params.run_id;
     const afterSeq = params.after_seq ?? null;
@@ -501,7 +558,7 @@ export async function startRuntimeService({
       }
       const root = known.roots.get(runId);
       const subscription = {
-        runId, barrier: null, actor: null, live: false, buffer: [],
+        runId, barrier: null, actor: null, live: false, buffer: [], readModelVersion,
         /** 最后一条**已送达**的 seq。actor 换代时的补发切分点就是它——见 attach()。 */
         lastSentSeq: -1,
         push(event, state) {
@@ -513,22 +570,48 @@ export async function startRuntimeService({
           // 换代补发与实时推送有可能覆盖同一条 seq；已送过的一律丢弃，
           // 「重复允许客户端丢弃」不等于服务端可以随便重发（design/08 §5）。
           if (event.seq <= subscription.lastSentSeq) return;
+          if (subscription.readModelVersion === 'v1'
+            && (event.kind === 'fallback_pause_created' || event.kind === 'fallback_pause_resolved')) {
+            subscription.closeForAttention(event.seq);
+            return;
+          }
           if (!sink.event(event)) return;
           subscription.lastSentSeq = event.seq;
           if (state) sink.runStateChanged({ state, caused_by_seq: event.seq });
         },
         /** 转入实时态并排空缓冲。快照（本次 RPC 响应）落线之后才允许调用。 */
         drain() {
+          if (subscription.closed) return;
           subscription.live = true;
           for (const [event, state] of subscription.buffer.splice(0)) subscription.emit(event, state);
+        },
+        closeForAttention(causedBySeq = null) {
+          if (subscription.closed) return;
+          subscription.closed = true;
+          subscriptions.get(runId)?.delete(subscription);
+          subscription.barrier?.unsubscribe();
+          const suffix = causedBySeq === null ? '' : `;caused_by_seq=${causedBySeq}`;
+          sink.close('E_ATTENTION_REQUIRES_READ_MODEL_V2', `run_id=${runId}${suffix}`);
         },
         closed: false,
       };
 
       const actor = actors.get(runId);
       if (actor) {
-        subscription.barrier = await actor.store.subscribe((event, state) => subscription.push(event, state));
+        try {
+          subscription.barrier = await actor.store.subscribe(
+            (event, state) => subscription.push(event, state),
+            { rejectOpenAttention: readModelVersion === 'v1' },
+          );
+        } catch (error) {
+          if (String(error?.message ?? error).startsWith('E_ATTENTION_REQUIRES_READ_MODEL_V2')) {
+            throw serviceError('E_ATTENTION_REQUIRES_READ_MODEL_V2', runId);
+          }
+          throw error;
+        }
         subscription.actor = actor;
+      } else if (readModelVersion === 'v1') {
+        await assertV1AttentionCompatible(runId);
       }
       // 没有活 actor 时没有任何写者：此刻盘上的条数就是精确的尾 seq。
       // actor 只可能由本队列创建，届时 attach() 会把订阅接上，中间不存在缝隙。
@@ -546,11 +629,15 @@ export async function startRuntimeService({
         }
         backfill = (await readEventsFromDisk(root)).filter(event => event.seq > afterSeq && event.seq < nextSeq);
       }
+      const incompatibleBackfill = readModelVersion === 'v1'
+        ? backfill.find(event => event.kind === 'fallback_pause_created' || event.kind === 'fallback_pause_resolved')
+        : null;
       // 快照（含 cursor 补发）覆盖到 nextSeq-1 为止：这就是「客户端已经拿到的最后一条」，
       // 也就是 actor 换代时补发的起点。
-      subscription.lastSentSeq = nextSeq - 1;
+      subscription.lastSentSeq = afterSeq === null ? nextSeq - 1 : afterSeq;
 
       const snapshot = await statusViewOf(runId);
+      const openAttentions = readModelVersion === 'v2' ? await attentionsFor(runId) : null;
       const unsubscribe = () => {
         subscription.closed = true;
         subscriptions.get(runId)?.delete(subscription);
@@ -558,14 +645,22 @@ export async function startRuntimeService({
       };
       return {
         result: {
-          protocol: READ_MODEL, view: 'event_stream_snapshot', run_id: runId,
+          protocol: readModelVersion === 'v2' ? READ_MODEL_V2 : READ_MODEL, view: 'event_stream_snapshot', run_id: runId,
           snapshot, snapshot_seq: Math.max(0, nextSeq - 1), next_seq: nextSeq,
+          ...(readModelVersion === 'v2' ? { open_attentions: openAttentions } : {}),
         },
         unsubscribe,
         // 快照（= 本次 RPC 响应）发出去之后才排空缓冲：客户端拿到的顺序永远是
         // 「先快照、再按 seq 的增量」，两者之间没有第三种可能。
         afterSend: () => {
-          for (const event of backfill) sink.event(event);
+          if (incompatibleBackfill) {
+            subscription.closeForAttention(incompatibleBackfill.seq);
+            return;
+          }
+          for (const event of backfill) {
+            subscription.emit(event, null);
+            if (subscription.closed) break;
+          }
           subscription.drain();
         },
       };
@@ -582,11 +677,13 @@ export async function startRuntimeService({
       await refreshKnown();
       const items = [...known.v2];
       if (params?.include_legacy === true) items.push(...known.legacy);
+      for (const item of items) await assertV1AttentionCompatible(item.run_id);
       // F-026：排序由源头给（分堆词表序 + 堆内 run_id 升序），客户端只按此序渲染不重排。
       return { protocol: READ_MODEL, view: 'run_list', items: orderRunSummaries(items) };
     },
     async inspectRun(params) {
       requireReady();
+      await assertV1AttentionCompatible(params.run_id);
       const status = await statusViewOf(params.run_id);
       if (params.view === 'status') {
         return { protocol: READ_MODEL, view: 'status', source: status.source, read_only: status.read_only, status, detail: null };
@@ -601,10 +698,64 @@ export async function startRuntimeService({
       const detail = JSON.parse(await readFile(join(root, 'state.json'), 'utf8'));
       return { protocol: READ_MODEL, view: 'detail', source: status.source, read_only: status.read_only, status: null, detail };
     },
-    subscribe,
+    subscribe: (params, sink) => subscribe(params, sink, 'v1'),
     start: (params, sinkOrHandshake, maybeFrame) => mutate('start', params, sinkOrHandshake, maybeFrame),
     control: (params, sinkOrHandshake, maybeFrame) => mutate('control', params, sinkOrHandshake, maybeFrame),
     validate: validateRuntimeDocument,
+  };
+
+  const v2Handlers = {
+    contracts: () => { requireReady(); return v2Descriptor; },
+    async listRuns(params) {
+      if (params.read_model_version === 'v1') {
+        return handlers.listRuns({ include_legacy: params.include_legacy });
+      }
+      requireReady();
+      await refreshKnown();
+      const items = [...known.v2];
+      if (params.include_legacy === true) items.push(...known.legacy);
+      const enriched = [];
+      for (const item of orderRunSummaries(items)) {
+        enriched.push({ ...item, open_attentions: await attentionsFor(item.run_id) });
+      }
+      return {
+        protocol: READ_MODEL_V2, view: 'run_list',
+        open_attentions: enriched.flatMap(item => item.open_attentions), items: enriched,
+      };
+    },
+    async inspectRun(params) {
+      if (params.read_model_version === 'v1') {
+        return handlers.inspectRun({ run_id: params.run_id, view: params.view });
+      }
+      requireReady();
+      const status = await statusViewOf(params.run_id);
+      const open_attentions = await attentionsFor(params.run_id);
+      if (params.view === 'status') {
+        return { protocol: READ_MODEL_V2, view: 'status', source: status.source, read_only: status.read_only, status, detail: null, open_attentions };
+      }
+      if (status.source === 'legacy-v1') {
+        return { protocol: READ_MODEL_V2, view: 'detail', source: status.source, read_only: true, status: null, detail: null, open_attentions };
+      }
+      const detail = JSON.parse(await readFile(join(known.roots.get(params.run_id), 'state.json'), 'utf8'));
+      return { protocol: READ_MODEL_V2, view: 'detail', source: status.source, read_only: status.read_only, status: null, detail, open_attentions };
+    },
+    subscribe: (params, sink) => subscribe(
+      { run_id: params.run_id, after_seq: params.after_seq }, sink, params.read_model_version,
+    ),
+    async 'retry-with-profile'(params) {
+      requireReady();
+      if (!known.roots.has(params.run_id)) await refreshKnown();
+      if (!known.roots.has(params.run_id)) throw serviceError('E_RUN_NOT_FOUND', params.run_id);
+      refuseOrphan(params.run_id);
+      const actor = await ensureActor(params.run_id);
+      try {
+        return await actor.submitControl(store => retryWithFrozenProfile({
+          store, params, registryPath: executorProfileRegistryPath, environment: profileEnvironment,
+        }));
+      } catch (error) {
+        throw withReason(error);
+      }
+    },
   };
 
   // ── ① bind：赢下确定性端点才算这一届 service ─────────────────────────────────
@@ -622,7 +773,24 @@ export async function startRuntimeService({
     },
   });
 
+  let v2Handle;
+  let bootstrapHandle;
+
   try {
+    v2Handle = await createRpcServer({
+      endpoint: v2Endpoint, formal: true, ownerAware: true, schemaId: 'relay.rpc/v2',
+      capability: localCapabilityHashV2(), handlers: v2Handlers,
+      authorize: (params) => {
+        requireReady();
+        if (params.descriptor_version !== descriptor.descriptor_version
+          || params.repo_id !== descriptor.repo_id
+          || params.generation !== descriptor.generation
+          || params.local_user_capability !== capability) {
+          throw serviceError('E_SERVICE_IDENTITY_MISMATCH');
+        }
+        return v2Descriptor;
+      },
+    });
     // ── ② credential：只有已 bind 的 service 才读/建它 ────────────────────────
     capability = localUserCapability ?? await readOrCreateLocalUserCapability(repoRoot, credentialRoot ? { credentialRoot } : {});
     // ── ③ 发现与对账：ledger、runs.json、legacy 投影 ─────────────────────────
@@ -637,8 +805,16 @@ export async function startRuntimeService({
       capability_hash: localCapabilityHash(),
       state: 'ready',
     };
+    v2Descriptor = {
+      protocol: 'relay.rpc-descriptor/v2', endpoint: v2Endpoint,
+      capability_hash: localCapabilityHashV2(), methods_schema: 'relay.rpc-methods/v2',
+      read_model_versions: ['v1', 'v2'],
+    };
+    bootstrapHandle = await createBootstrapServer({ endpoint: bootstrapEndpoint, descriptor: v2Descriptor });
     await writeDescriptor(repoRoot, descriptor);
   } catch (error) {
+    await bootstrapHandle?.close().catch(() => {});
+    await v2Handle?.close().catch(() => {});
     await handle.close().catch(() => {});
     throw withReason(error);
   }
@@ -647,6 +823,11 @@ export async function startRuntimeService({
     descriptor,
     localUserCapability: capability,
     handle,
+    v2Handle,
+    bootstrapHandle,
+    v2Descriptor,
+    v2Endpoint,
+    bootstrapEndpoint,
     ledgerPath: ledgerPath(repoRoot),
     get discovery() { return known; },
     close: async () => {
@@ -658,6 +839,8 @@ export async function startRuntimeService({
       await Promise.allSettled([...actors.values()].map(actor => actor.done));
       actors.clear();
       // descriptor 留在盘上：它是陈旧发现信息，不是所有权（design/07 §3）。
+      await bootstrapHandle.close();
+      await v2Handle.close();
       await handle.close();
     },
   };

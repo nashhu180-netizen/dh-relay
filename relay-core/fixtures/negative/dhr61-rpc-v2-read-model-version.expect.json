@@ -1,0 +1,5 @@
+{
+  "schema": "relay.rpc/v2",
+  "reason": "E_UNKNOWN_ENUM",
+  "at": "/params/read_model_version"
+}

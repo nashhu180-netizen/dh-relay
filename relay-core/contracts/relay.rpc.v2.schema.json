@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dh-relay.local/contracts/relay.rpc/v2",
+  "title": "relay.rpc/v2 — Attention-aware local RPC envelope",
+  "oneOf": [{ "$ref": "#/$defs/request" }, { "$ref": "#/$defs/response" }, { "$ref": "#/$defs/error_response" }, { "$ref": "#/$defs/notification" }],
+  "$defs": {
+    "method": { "type": "string", "enum": ["contracts", "listRuns", "inspectRun", "subscribe", "retry-with-profile"] },
+    "handshake": {
+      "type": "object",
+      "properties": {
+        "protocol_version": { "const": "relay.rpc/v2" },
+        "runtime_version": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "capability_hash": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/capability_hash" },
+        "client_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/identifier" },
+        "request_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/identifier" }
+      },
+      "required": ["protocol_version", "runtime_version", "capability_hash", "client_id", "request_id"],
+      "additionalProperties": false
+    },
+    "request": {
+      "type": "object",
+      "properties": { "jsonrpc": { "const": "2.0" }, "id": { "type": ["string", "integer"] }, "method": { "$ref": "#/$defs/method" }, "handshake": { "$ref": "#/$defs/handshake" }, "params": { "type": "object", "additionalProperties": true } },
+      "required": ["jsonrpc", "id", "method", "handshake", "params"],
+      "additionalProperties": false,
+      "allOf": [
+        { "if": { "properties": { "method": { "const": "contracts" } }, "required": ["method"] }, "then": { "properties": { "params": { "$ref": "https://dh-relay.local/contracts/relay.rpc-methods/v2#/$defs/contracts_params" } } } },
+        { "if": { "properties": { "method": { "const": "listRuns" } }, "required": ["method"] }, "then": { "properties": { "params": { "$ref": "https://dh-relay.local/contracts/relay.rpc-methods/v2#/$defs/listRuns_params" } } } },
+        { "if": { "properties": { "method": { "const": "inspectRun" } }, "required": ["method"] }, "then": { "properties": { "params": { "$ref": "https://dh-relay.local/contracts/relay.rpc-methods/v2#/$defs/inspectRun_params" } } } },
+        { "if": { "properties": { "method": { "const": "subscribe" } }, "required": ["method"] }, "then": { "properties": { "params": { "$ref": "https://dh-relay.local/contracts/relay.rpc-methods/v2#/$defs/subscribe_params" } } } },
+        { "if": { "properties": { "method": { "const": "retry-with-profile" } }, "required": ["method"] }, "then": { "properties": { "params": { "$ref": "https://dh-relay.local/contracts/relay.rpc-methods/v2#/$defs/retry_with_profile_params" } } } }
+      ]
+    },
+    "response": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": { "const": "2.0" }, "id": { "type": ["string", "integer"] },
+        "result": { "oneOf": [{ "$ref": "https://dh-relay.local/contracts/relay.client-read-model/v1" }, { "$ref": "https://dh-relay.local/contracts/relay.client-read-model/v2" }, { "$ref": "https://dh-relay.local/contracts/relay.rpc-descriptor/v2" }, { "$ref": "https://dh-relay.local/contracts/relay.rpc-methods/v2#/$defs/retry_result" }] }
+      },
+      "required": ["jsonrpc", "id", "result"],
+      "additionalProperties": false
+    },
+    "error_response": { "$ref": "https://dh-relay.local/contracts/relay.rpc/v1#/$defs/error_response" },
+    "notification": {
+      "type": "object",
+      "properties": { "jsonrpc": { "const": "2.0" }, "method": { "type": "string", "enum": ["event", "runStateChanged", "subscriptionTerminal"] }, "params": { "type": "object", "additionalProperties": true } },
+      "required": ["jsonrpc", "method", "params"],
+      "additionalProperties": false,
+      "allOf": [
+        { "if": { "properties": { "method": { "const": "event" } }, "required": ["method"] }, "then": { "properties": { "params": { "$ref": "https://dh-relay.local/contracts/relay.event/v2" } } } },
+        { "if": { "properties": { "method": { "const": "runStateChanged" } }, "required": ["method"] }, "then": { "properties": { "params": { "$ref": "https://dh-relay.local/contracts/relay.rpc-methods/v1#/$defs/run_state_changed_notification" } } } },
+        { "if": { "properties": { "method": { "const": "subscriptionTerminal" } }, "required": ["method"] }, "then": { "properties": { "params": { "$ref": "https://dh-relay.local/contracts/relay.subscription-terminal/v1" } } } }
+      ]
+    }
+  }
+}

@@ -13,7 +13,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { E_CAPABILITY_MISMATCH, localCapability, localCapabilityHash, verifyPeerCapability } from '../rpc/capabilities.mjs';
+import { E_CAPABILITY_MISMATCH, localCapability, localCapabilityHash, localCapabilityHashV2, verifyPeerCapability } from '../rpc/capabilities.mjs';
 import { createRpcServer, E_UNKNOWN_METHOD } from '../rpc/server.mjs';
 import {
   E_TRANSPORT_FRAME_INVALID,
@@ -45,7 +45,9 @@ test('基线平等：localCapability() 复算指纹与权威快照 capability_ha
   // 快照自身自洽：manifest 就是基线里的那份。
   assert.deepEqual(local.capability_manifest, baseline.capability_manifest);
   // 且快照记录的 hash 确实是快照 manifest 的指纹（不经帮助器，独立复核 canonical 口径）。
-  assert.equal(localCapabilityHash(), baseline.capability_hash);
+  assert.equal(localCapabilityHashV2(), baseline.capability_hash);
+  assert.equal(localCapabilityHash(), '994d5f038cd1bcbbb9463eed5ca04b2ffc324f07b374571899b8df3a6c5c971e',
+    'v1 handshake hash must remain byte-for-byte compatible with the pre-DHR_61 endpoint');
 });
 
 test('基线平等：本地指纹是 64 位小写十六进制 sha256（形态合法）', () => {
@@ -719,6 +721,37 @@ test('server：subscribe 注入 seam——sink.event/runStateChanged 推送完�
   // 先轮询等齐再断言——修复前该断言靠 subscribe 解析时的误调蒙混过关。
   await until(() => unsubscribed.length === 1);
   assert.deepEqual(unsubscribed, ['unsub'], 'unsubscribe 恰被调用一次');
+});
+
+test('DHR_61：v1 subscription sink 先发标准 Attention error 再关闭并移除连接', async () => {
+  let sink;
+  let closed = false;
+  const unsubscribed = [];
+  const { endpoint, handle } = await withRpcServer({
+    subscribe: (params, value) => {
+      sink = value;
+      return { result: { ok: true }, unsubscribe: () => unsubscribed.push('unsub') };
+    },
+  });
+  const received = [];
+  let client;
+  try {
+    client = await createTransportClient(endpoint, { onFrame: frame => received.push(frame) });
+    client.socket.once('close', () => { closed = true; });
+    client.send(makeRequest('subscribe'));
+    await until(() => received.length === 1);
+    assert.equal(sink.close('E_ATTENTION_REQUIRES_READ_MODEL_V2', 'run_id=RUN-1;caused_by_seq=4'), true);
+    await until(() => received.length === 2 && closed);
+    assert.equal(received[1].id, null);
+    assert.equal(received[1].error.data.reason, 'E_ATTENTION_REQUIRES_READ_MODEL_V2');
+    assert.equal(received[1].error.data.receipt, null);
+    await until(() => unsubscribed.length === 1);
+    assert.equal(sink.event(FULL_EVENT), false, '已失去资格的连接不得再收到 pause event');
+  } finally {
+    client?.destroy();
+    await handle.close();
+  }
+  assert.deepEqual(unsubscribed, ['unsub']);
 });
 
 test('server：sink 对三种无效载荷 fail-closed——返回 false、不发任何帧', async () => {

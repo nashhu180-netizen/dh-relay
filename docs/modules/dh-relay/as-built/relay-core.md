@@ -58,7 +58,7 @@ relay-core/
 
 **`_shared/relay.common.v1.schema.json`（`relay.common/v1`）**：共享定义模块，实际约束面的大半在这里——`locator` / `timestamp` / `sha256` / `run_id` / `node_id` / `attempt_id` / `executor_kind` / `executor_profile` / `reason_code` / `trigger` / `observation_status`。**它已冻结、承重，且计入能力指纹**（见 §6 的「指纹三步走」）。
 
-**`v0-shapes/` 4 份**（`relay.resolved-plan/v1`、`relay.host-observation/v1`、`relay.attention/v1`、`relay.approval/v1`）：**不是冻结契约**，每份带 `"x-freeze-status": "v0-shape-only"`，P6/P7 首次承重时才正式冻结。**不计入 `capability_hash`**——计入会让指纹随未定形状漂移。
+**`v0-shapes/` 目录 4 份**：`relay.resolved-plan/v1`、`relay.host-observation/v1`、`relay.approval/v1` 仍是未冻结 v0；`relay.attention/v1` 已由 DHR_61 提前冻结为 fallback pause Attention，并与 `relay.fallback-pause/v1#/$defs/attention` 同形。该兼容 shape 文件本身不重复计入 `capability_hash`，承重定义已随 `relay.fallback-pause/v1` 进入 v2 manifest。
 
 ### 3.2 `contracts/` 的五份规范文档
 
@@ -193,6 +193,14 @@ DHR_52 的 RPC seam 与 DHR_51 的 host 之间原本没有装配人（F-001）�
 一次性把某个仓的 Read Model 吐成 JSON 后退出的**进程入口**。存在的唯一理由是安装拓扑：树外 DSH Host 插件有一条自己的硬契约——不许裸说明符、不许 `require`、也不许**计算出来的动态 `import()`**（那条契约是一次 `ERR_MODULE_NOT_FOUND` 启动失败逼出来的），于是它没法在自己进程里 import 本仓的 Bridge。宿主按绝对路径 `spawn` 这个入口、读 stdout，`spawn` 不经过模块解析，两边契约都不必让步（findings F-019，用户 2026-08-29 裁决）。
 
 三条边界都很硬：**只做取数转发**（原样吐 `relay.client-read-model/v1`，不投影、不改名、不补字段——投影归客户端侧，协议层对客户端中立不破）；**归 `adapters/` 不进 `runtime/`**（它是客户端侧取数工具，不是 Runtime 的一部分）；**只读**（只调 `listRuns`/`inspect`，不碰 `start`/`control`）。
+
+### 3.12 DHR_61 增量 —— Attempt 身份、持久 Attention 与 RPC v2
+
+- **contracts / capability**：新增 `relay.attempt-receipt/v1`、pause/resolution、`relay.client-read-model/v2`、bootstrap/descriptor、RPC methods/envelope v2 与 subscription terminal。旧 `relay.rpc/v1` schema、端点、参数和成功 payload 不加字段；其握手 hash 固定为 DHR_61 前的 `994d5f…c971e`，新增合同只进入 bootstrap/v2 的 `fb55f2…d073`。双轨计算口径见 `contracts/CANONICALIZATION.md`。
+- **profiles / Receipt 签发**：Registry 只允许显式标为 `nonsecret` 的 TOML/JSON Pointer 进入 projection；`profiles/identity.mjs` 只哈希该闭集。Herdr Attempt 在 launch 前冻结 source identity 与最多六项有序 fallback snapshots，Receipt、事件和 fixture 不保存原配置或凭据值。
+- **Store / recovery**：`appendFallbackPause` 与 `appendFallbackPauseResolution` 通过 blob-before-prepared 的 `relay.store-mutation/v1` journal 同批提交工件、事件与状态；恢复逐目标核对 before/staging hash，journal/blob/派生 ID/路径/账本任一不一致即 `E_STORE_MUTATION_RECOVERY_FAILED`。pause 重放同时导出旧 Attempt fence、`waiting_human` 和 open Attention；旧 Attempt 的 checkpoint/result 返回 `E_ATTEMPT_FENCED`。只读 RPC 使用不重写 `state.json` 的 Attention 投影，未完成 prepared mutation 一律拒读。
+- **RPC / retry**：`endpointForRepo(...,{channel})` 派生互不复用的 v1、bootstrap、v2 本地端点。bootstrap 只接受 `{protocol:"relay.rpc-bootstrap/v1"}` 并返回有 schema 的 v2 descriptor；客户端仍须从受保护的 v1 ready descriptor 取得本机 credential，再用 bootstrap 发现 v2 endpoint，bootstrap 不复制 secret。v2 的 list/inspect/subscribe 显式选择 `read_model_version`，v2 投影携带 `open_attentions`。任一 Run 的 mutation 账本不可恢复时，list 操作整体返回稳定 `E_STORE_MUTATION_RECOVERY_FAILED`，不静默过滤坏 Run；v1 若命中 open Attention 返回 `E_ATTENTION_REQUIRES_READ_MODEL_V2`，订阅建立后才出现 pause 时，publisher 在发送新事件前先发标准 error 并关闭连接。`retry-with-profile` 只在 actor 写队列内复核 pause 范围、冻结 profile 与当前非敏感 projection 全等，再原子关闭 Attention 并开 fresh Attempt；同一 `(pause_id,retry_request_id)` 返回原结果。
+- **边界仍在**：DHR_61 不做 quota 分类、自动 fallback 选择或 DHR_34 D3 编排；它只提供可被这些后续路径调用的协议与持久化原语。
 
 ## 4. 技术选型的裁决出处
 

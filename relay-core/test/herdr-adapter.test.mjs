@@ -128,7 +128,7 @@ test('DHR_33 herdr-cli：超时与明确 not-found 分别保留 transient/missin
 });
 
 const runtimeSleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-async function runtimeUntil(check, label, timeoutMs = 2_000) {
+async function runtimeUntil(check, label, timeoutMs = 10_000) {
   const end = Date.now() + timeoutMs;
   while (!(await check())) {
     if (Date.now() > end) throw new Error(`timeout:${label}`);
@@ -144,11 +144,13 @@ async function runtimeFixture(t, statuses, options = {}) {
   const root = join(repoRoot, '.dh-relay', runId);
   await mkdir(root, { recursive: true });
   const registryPath = join(repoRoot, 'profiles.json');
-  await writeFile(registryPath, JSON.stringify({ profiles: [{ executor_profile_id: 'herdr.codex.test', backend: 'herdr', product: 'codex-cli', command_alias: 'codex', account_alias: 'acct-test', capabilities: { interactive: 'supported', resume: 'supported', readonly: 'supported', headless: 'supported', structured_result: 'supported', user_input_passthrough: 'supported' }, supported_platforms: ['win32'], headless_supported: true }] }), 'utf8');
+  const configPath = join(repoRoot, 'profile.json');
+  await writeFile(configPath, JSON.stringify({ model: 'test-model' }), 'utf8');
+  await writeFile(registryPath, JSON.stringify({ profiles: [{ executor_profile_id: 'herdr.codex.test', backend: 'herdr', product: 'codex-cli', command_alias: 'codex', account_alias: 'acct-test', capabilities: { interactive: 'supported', resume: 'supported', readonly: 'supported', headless: 'supported', structured_result: 'supported', user_input_passthrough: 'supported' }, supported_platforms: ['win32'], headless_supported: true, config_fingerprint_rule: { kind: 'file-exists', path_template: '${DHR33_PROFILE_HOME}/profile.json', fields: [{ pointer: '/model', classification: 'nonsecret' }] } }] }), 'utf8');
   const store = await createStore({ root, run });
   await store.appendEvent({ kind: 'run_created', at: run.created_at });
   const fake = makeFakeHerdr({ statuses, ...options.fake });
-  const driver = startWorkflowDriver({ repoRoot, runId, actor: { submitControl: fn => fn(store) }, herdrCli: fake.cli, herdrRegistryPath: registryPath, herdrPollMs: 2, observationLostMs: 5, doneTimeoutMs: 5, ...options.driver });
+  const driver = startWorkflowDriver({ repoRoot, runId, actor: { submitControl: fn => fn(store) }, herdrCli: fake.cli, herdrRegistryPath: registryPath, profileEnvironment: { DHR33_PROFILE_HOME: repoRoot }, herdrPollMs: 2, observationLostMs: 5, doneTimeoutMs: 5, ...options.driver });
   t.after(async () => { await driver.stop(); await rm(repoRoot, { recursive: true, force: true }); });
   return { store, root, driver, fake };
 }

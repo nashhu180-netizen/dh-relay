@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dh-relay.local/contracts/relay.fallback-pause/v1",
+  "title": "relay.fallback-pause/v1 — atomic manual-attention pause",
+  "type": "object",
+  "properties": {
+    "protocol": { "const": "relay.fallback-pause/v1" },
+    "pause_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/sha256" },
+    "run_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/run_id" },
+    "node_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/node_id" },
+    "attempt_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/attempt_id" },
+    "receipt_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/identifier" },
+    "reason_code": { "const": "E_FALLBACK_UNAVAILABLE" },
+    "raised_at": { "$ref": "#/$defs/millisecondTimestamp" },
+    "fence": { "$ref": "#/$defs/fence" },
+    "attention": { "$ref": "#/$defs/attention" },
+    "manual_retry_profiles": { "type": "array", "maxItems": 6, "items": { "$ref": "https://dh-relay.local/contracts/relay.attempt-receipt/v1#/$defs/identity" } }
+  },
+  "required": ["protocol", "pause_id", "run_id", "node_id", "attempt_id", "receipt_id", "reason_code", "raised_at", "fence", "attention", "manual_retry_profiles"],
+  "additionalProperties": false,
+  "$defs": {
+    "millisecondTimestamp": {
+      "allOf": [
+        { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/timestamp" },
+        { "pattern": "\\.[0-9]{3}(?:[Zz]|[+-](?:[01][0-9]|2[0-3]):[0-5][0-9])$" }
+      ]
+    },
+    "fence": {
+      "type": "object",
+      "properties": {
+        "protocol": { "const": "relay.attempt-fence/v1" },
+        "fence_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/sha256" },
+        "attempt_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/attempt_id" },
+        "receipt_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/identifier" },
+        "reason_code": { "const": "E_FALLBACK_UNAVAILABLE" },
+        "fenced_at": { "$ref": "#/$defs/millisecondTimestamp" }
+      },
+      "required": ["protocol", "fence_id", "attempt_id", "receipt_id", "reason_code", "fenced_at"],
+      "additionalProperties": false
+    },
+    "attention": {
+      "type": "object",
+      "properties": {
+        "protocol": { "const": "relay.attention/v1" },
+        "attention_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/sha256" },
+        "run_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/run_id" },
+        "node_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/node_id" },
+        "attempt_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/attempt_id" },
+        "receipt_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/identifier" },
+        "reason_code": { "const": "E_FALLBACK_UNAVAILABLE" },
+        "state": { "const": "open" },
+        "raised_at": { "$ref": "#/$defs/millisecondTimestamp" }
+      },
+      "required": ["protocol", "attention_id", "run_id", "node_id", "attempt_id", "receipt_id", "reason_code", "state", "raised_at"],
+      "additionalProperties": false
+    }
+  }
+}

@@ -6,7 +6,7 @@
     "command_alias": "codex",
     "account_alias": "acct-test",
     "capabilities": { "interactive": "unproven", "resume": "unproven", "readonly": "unproven", "headless": "unproven", "structured_result": "unproven", "user_input_passthrough": "unproven" },
-    "config_fingerprint_rule": { "kind": "file-exists", "path_template": "C:/Users/nash/.codex/config.toml", "fields": [] },
+    "config_fingerprint_rule": { "kind": "file-exists", "path_template": "C:/Users/nash/.codex/config.toml", "fields": [{"pointer":"/model","classification":"nonsecret"}] },
     "supported_platforms": ["win32"],
     "headless_supported": false
   }]

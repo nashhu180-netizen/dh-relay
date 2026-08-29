@@ -97,7 +97,10 @@ function validateLegacyRequest(frame) {
  *                                        只清连接本地订阅状态，不写 Store、不发 cancel。
  * @returns {Promise<object>} transport 服务端句柄（`{ server, endpoint, close }`）。
  */
-export function createRpcServer({ runId, store, capability, endpoint, handlers = {}, formal = false, authorize = null, ownerAware = false }) {
+export function createRpcServer({
+  runId, store, capability, endpoint, handlers = {}, formal = false, authorize = null,
+  ownerAware = false, schemaId = 'relay.rpc/v1',
+}) {
   const { ajv, byId } = loadAjv();
   const localHash = typeof capability === 'string'
     ? capability
@@ -175,7 +178,7 @@ export function createRpcServer({ runId, store, capability, endpoint, handlers =
 
   function encodeValidatedFrame(frame) {
     const snapshot = jsonSnapshot(frame);
-    if (formal && !validateOne(ajv, byId, 'relay.rpc/v1', snapshot).ok) throw new Error('invalid frame');
+    if (formal && !validateOne(ajv, byId, schemaId, snapshot).ok) throw new Error('invalid frame');
     return snapshot;
   }
 
@@ -214,6 +217,15 @@ export function createRpcServer({ runId, store, capability, endpoint, handlers =
       runStateChanged(params) {
         return emitNotification(conn, 'runStateChanged', params);
       },
+      subscriptionTerminal(params) {
+        return emitNotification(conn, 'subscriptionTerminal', params);
+      },
+      close(reason, detail) {
+        if (!connections.has(conn) || conn.socket.destroyed || conn.socket.writableEnded) return false;
+        sendError(conn, null, C_INVALID_REQUEST, reason, detail);
+        conn.close();
+        return true;
+      },
     };
   }
 
@@ -222,7 +234,7 @@ export function createRpcServer({ runId, store, capability, endpoint, handlers =
     try {
       const frame = jsonSnapshot({ jsonrpc: '2.0', method, params });
       if (formal) {
-        if (!validateOne(ajv, byId, 'relay.rpc/v1', frame).ok) return false;
+        if (!validateOne(ajv, byId, schemaId, frame).ok) return false;
       } else if (method === 'event') {
         if (!validateOne(ajv, byId, 'relay.event/v2', frame.params).ok) return false;
       } else if (method === 'runStateChanged') {
@@ -241,7 +253,7 @@ export function createRpcServer({ runId, store, capability, endpoint, handlers =
 
   function handleFrame(conn, frame) {
     // ① 冻结信封校验：不合 schema → 用校验器产出的既有 reason 回错误。
-    const v = formal ? validateOne(ajv, byId, 'relay.rpc/v1', frame) : validateLegacyRequest(frame);
+    const v = formal ? validateOne(ajv, byId, schemaId, frame) : validateLegacyRequest(frame);
     if (!v.ok) {
       sendError(conn, frameId(frame), C_INVALID_REQUEST, v.reason, v.detail);
       return;

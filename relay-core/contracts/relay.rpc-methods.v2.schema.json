@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dh-relay.local/contracts/relay.rpc-methods/v2",
+  "title": "relay.rpc-methods/v2 — Attention-aware RPC methods",
+  "type": "object",
+  "properties": {},
+  "required": [],
+  "additionalProperties": false,
+  "$defs": {
+    "read_model_version": { "type": "string", "enum": ["v1", "v2"] },
+    "listRuns_params": {
+      "type": "object",
+      "properties": { "include_legacy": { "type": "boolean", "default": false }, "read_model_version": { "$ref": "#/$defs/read_model_version" } },
+      "required": ["read_model_version"],
+      "additionalProperties": false
+    },
+    "inspectRun_params": {
+      "type": "object",
+      "properties": {
+        "run_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/run_id" },
+        "view": { "type": "string", "enum": ["status", "detail"] },
+        "read_model_version": { "$ref": "#/$defs/read_model_version" }
+      },
+      "required": ["run_id", "view", "read_model_version"],
+      "additionalProperties": false
+    },
+    "subscribe_params": {
+      "type": "object",
+      "properties": {
+        "run_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/run_id" },
+        "after_seq": { "type": ["integer", "null"], "minimum": 0, "default": null },
+        "read_model_version": { "$ref": "#/$defs/read_model_version" }
+      },
+      "required": ["run_id", "read_model_version"],
+      "additionalProperties": false
+    },
+    "retry_with_profile_params": {
+      "type": "object",
+      "properties": {
+        "run_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/run_id" },
+        "node_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/node_id" },
+        "pause_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/sha256" },
+        "executor_profile_id": { "allOf": [{ "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/identifier" }], "maxLength": 96 },
+        "retry_request_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/sha256" }
+      },
+      "required": ["run_id", "node_id", "pause_id", "executor_profile_id", "retry_request_id"],
+      "additionalProperties": false
+    },
+    "contracts_params": {
+      "type": "object",
+      "properties": {
+        "descriptor_version": { "const": 1 },
+        "repo_id": { "allOf": [{ "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/identifier" }, { "pattern": "^sha256:[0-9a-f]{64}$" }] },
+        "generation": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "local_user_capability": { "type": "string", "minLength": 1, "maxLength": 512 }
+      },
+      "required": ["descriptor_version", "repo_id", "generation", "local_user_capability"],
+      "additionalProperties": false
+    },
+    "retry_result": {
+      "type": "object",
+      "properties": {
+        "ok": { "const": true },
+        "idempotent": { "type": "boolean" },
+        "resolution": { "$ref": "https://dh-relay.local/contracts/relay.fallback-pause-resolution/v1" },
+        "attempt_receipt": { "$ref": "https://dh-relay.local/contracts/relay.attempt-receipt/v1" }
+      },
+      "required": ["ok", "idempotent", "resolution", "attempt_receipt"],
+      "additionalProperties": false
+    }
+  }
+}

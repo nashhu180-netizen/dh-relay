@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dh-relay.local/contracts/relay.attempt-receipt/v1",
+  "title": "relay.attempt-receipt/v1 — frozen Attempt identity",
+  "type": "object",
+  "properties": {
+    "protocol": { "const": "relay.attempt-receipt/v1" },
+    "receipt_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/identifier" },
+    "run_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/run_id" },
+    "node_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/node_id" },
+    "attempt_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/attempt_id" },
+    "issued_at": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/timestamp" },
+    "executor_identity": { "$ref": "#/$defs/identity" },
+    "fallback_profile_snapshots": {
+      "type": "array",
+      "maxItems": 6,
+      "items": { "$ref": "#/$defs/identity" }
+    }
+  },
+  "required": ["protocol", "receipt_id", "run_id", "node_id", "attempt_id", "issued_at", "executor_identity", "fallback_profile_snapshots"],
+  "additionalProperties": false,
+  "$defs": {
+    "identity": {
+      "type": "object",
+      "properties": {
+        "executor_profile_id": { "allOf": [{ "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/identifier" }], "maxLength": 96 },
+        "account_alias": { "type": "string", "pattern": "^[A-Za-z0-9._-]{1,48}$" },
+        "config_fingerprint": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/sha256" },
+        "executor_capability_hash": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/sha256" }
+      },
+      "required": ["executor_profile_id", "account_alias", "config_fingerprint", "executor_capability_hash"],
+      "additionalProperties": false
+    }
+  }
+}

@@ -39,6 +39,19 @@
 | `E_CHECKPOINT_CONFLICT` | 同一 `checkpoint_id` 但 `payload_digest` 不同 |
 | `E_TERMINAL_STATE_CONFLICT` | 试图改写已定终态。已定终态不可变——迟到结果只能进隔离区 |
 | `E_IDENTITY_MISMATCH` | 结果或检查点的 `receipt_id` / `attempt_id` 与当前 Attempt 的回执身份链不符 → **结果**按 B11 隔离（`late_result_quarantined` 事件 + 隔离区工件，可追溯、可人工裁决、不改写已定终态）；**检查点**拒识即返、不留痕不隔离（v2 与 v1 的有意差异：拒绝是"未发生的写入"，落盘路径只有 result 一条，见 `compat-matrix.md` §4b `checkpoint_rejected` 行与 as-built relay-core §3.5） |
+| `E_FALLBACK_UNAVAILABLE` | 已判定没有可用的预登记 fallback。它只出现在 `fallback_pause_created` 的持久 pause 事实中，表示等待人工选择，不是 Attempt/RUN 的失败终态。 |
+| `E_ATTEMPT_FENCED` | 该 `(attempt_id, receipt_id)` 已被持久 pause fence；checkpoint 和 result 一律拒绝，不隔离、不允许旧 Attempt 复活。 |
+| `E_ATTENTION_REQUIRES_READ_MODEL_V2` | v1 Read Model 无法承载持久 open Attention；列表、目标读取与订阅必须明确拒绝，绝不静默滤掉该 Run。 |
+| `E_FALLBACK_PAUSE_CONFLICT` | 同一 `pause_id` 重投的 canonical pause detail 不完全相同。相同 detail 才是幂等，任一嵌套字段或时间戳不同都不是。 |
+| `E_FALLBACK_PAUSE_RESOLUTION_INVALID` | `retry-with-profile` 的 pause 范围、冻结 profile、当前非敏感 projection 或关闭状态不满足原子 resolution 前置条件。 |
+| `E_STORE_MUTATION_RECOVERY_FAILED` | pause/retry 的 prepared mutation 缺少 journal/blob、摘要不符、目标无法补全，或 durable pause 找不到同一 canonical event；Store 必须拒绝打开该 Run。 |
+| `E_FALLBACK_PAUSE_INVALID` | pause 的派生 ID、时间戳、Receipt 身份或人工候选集不满足冻结合同；拒绝写入且不得形成 fence/Attention。 |
+| `E_NONSECRET_PROJECTION_MISSING` | retry 时当前 profile 或其 fallback 已没有受信任的非敏感投影规则；v2 返回稳定错误帧，不得签发无法证明身份的 Attempt。 |
+| `E_NONSECRET_PROJECTION_INVALID` | 已登记 projection 的结构或值类型不合法，无法形成可信 canonical 投影。 |
+| `E_NONSECRET_PROJECTION_UNSAFE` | projection 命中未标为 nonsecret 或被安全规则拒绝的字段。 |
+| `E_NONSECRET_PROJECTION_UNSUPPORTED` | 当前 provider 不支持已登记的 projection 文件/Pointer 形态。 |
+| `E_CREDENTIAL_FIELD` | projection 的字段名呈凭据形态；拒绝冻结与传输。 |
+| `E_CREDENTIAL_VALUE` | projection 的字段值呈凭据形态；拒绝冻结与传输。 |
 | `E_LEASE_HELD` | 第二个宿主试图取得同一 Run 的写权，而 lease 未过期。唯一写者由 lease 保证（P5-M3，DHR_29 承接） |
 
 > **边界声明（DHR_29 收敛批补 + DHR_51 增补）**：本表是**协议层 reason code 的全集权威**。Store / Runtime 实现另有若干**进程内异常前缀**——`E_SCHEMA_INVALID:*`（写前契约校验拒绝）、`E_EVENT_LOG_CORRUPT:*` / `E_STORE_CORRUPT:*`（openStore 完整性校验）、`E_RUN_NOT_FOUND`、`E_BAD_VALUE:*`（入参守卫）、`E_GITCHECK_FAILED:*`（git check-ignore 前置检查失败）、`E_REPO_LOCK_TIMEOUT`（仓级/索引锁取得超时）、`E_LEASE_ACQUIRE_TIMEOUT`（lease 取得超时，有界防自旋）、`E_LEASE_HELD:<detail>`（如 `:lease-lost`，fencing 失效子码）——它们**不是协议码、不上线**，只出现在库抛出的异常消息里；机器侧由 `relay.common/v1` 的 `reason_code` pattern 兜住「混进协议载荷」的情形。新增协议码必须先进本表；内部前缀不得越界当协议码用。
@@ -77,8 +90,8 @@
 
 ## 汇总
 
-共 **31** 个码（去重实测：`grep -oE '^\| \`E_[A-Z0-9_]+\`' reason-codes.md | sort -u | wc -l` → 31），覆盖 fail-closed 三条、start 前置、契约结构、幂等冲突、Executor 生命周期与 DHR_30 Runtime 服务。
+共 **44** 个码（去重实测：`grep -oE '^\| \`E_[A-Z0-9_]+\`' reason-codes.md | sort -u | wc -l` → 44），覆盖 fail-closed 三条、start 前置、契约结构、幂等冲突、Executor 生命周期与 Runtime 服务。
 
 > ⚠️ 计数只数**表格行首**的码。此前登记的命令是 `grep -oE '\bE_[A-Z][A-Z0-9_]+\b' …`，它把「边界声明」段里列举的**进程内异常前缀**（`E_STORE_CORRUPT` / `E_EVENT_LOG_CORRUPT` / `E_LEASE_ACQUIRE_TIMEOUT` …）也数了进去，实跑得 37 而非文中写的 30——那条命令从来对不上它自己的结论。协议码全集以表格为准。
 
-**新增码的规矩**：加码必须同时 ①写进本表 ②在 `fixtures/negative/` 加一份能触发它的反例 + `.expect.json` ③说明它与既有码的边界（尤其别和 `E_EXECUTOR_HOST_LOST` / `observation_lost` 的分界线混淆）。
+**新增码的规矩**：加码必须同时 ①写进本表 ②补可复跑反例：schema 结构码进入 `fixtures/negative/` + `.expect.json`，运行期语义码进入对应 socket/Store/Profile 定向测试（不得伪造一个 schema fixture 代替运行链）③说明它与既有码的边界（尤其别和 `E_EXECUTOR_HOST_LOST` / `observation_lost` 的分界线混淆）。

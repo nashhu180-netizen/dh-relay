@@ -35,10 +35,11 @@ export function repoHash(repoRoot) {
   return createHash('sha256').update(canonicalRepoRoot(repoRoot), 'utf8').digest('hex');
 }
 
-export function endpointForRepo(repoRoot, { runtimeRoot = join(homedir(), '.dh-relay', 'runtime') } = {}) {
+export function endpointForRepo(repoRoot, { runtimeRoot = join(homedir(), '.dh-relay', 'runtime'), channel = 'v1' } = {}) {
   const hash = repoHash(repoRoot);
-  if (process.platform === 'win32') return { kind: 'pipe', address: `\\\\.\\pipe\\dh-relay-${hash}` };
-  return { kind: 'unix', address: join(runtimeRoot || tmpdir(), `${hash}.sock`) };
+  const suffix = channel === 'v1' ? '' : `-${channel}`;
+  if (process.platform === 'win32') return { kind: 'pipe', address: `\\\\.\\pipe\\dh-relay-${hash}${suffix}` };
+  return { kind: 'unix', address: join(runtimeRoot || tmpdir(), `${hash}${suffix}.sock`) };
 }
 
 /**

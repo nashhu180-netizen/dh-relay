@@ -20,7 +20,7 @@ import { runRootOf } from './host.mjs';
 import { classifyStepOutcome, resolveStepEntry, startProcessStep } from './process-executor.mjs';
 import { makeHerdrCli } from './executors/herdr/herdr-cli.mjs';
 import { captureHerdrResult, launchHerdrAgent, observationDetail, observeHerdrAgent, reconcileHerdrAgent, stopHerdrAgent } from './executors/herdr/herdr-executor.mjs';
-import { loadExecutorProfiles, resolveProfile } from './executors/herdr/profile-registry.mjs';
+import { freezeProfileIdentity, loadExecutorProfiles, resolveProfile } from './executors/herdr/profile-registry.mjs';
 
 /**
  * 起一届 driver。**不阻塞调用方**：`start`/`resume` 的 RPC 应答不该等业务节点跑完。
@@ -30,7 +30,7 @@ import { loadExecutorProfiles, resolveProfile } from './executors/herdr/profile-
  */
 export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = false, clock = () => Date.now(),
   herdrCli = makeHerdrCli(), herdrRegistryPath, herdrPollMs = 1_000, observationLostMs = 60_000,
-  doneTimeoutMs = 60_000, herdrJudge = null, herdrReadyTimeoutMs = 10_000 } = {}) {
+  doneTimeoutMs = 60_000, herdrJudge = null, herdrReadyTimeoutMs = 10_000, profileEnvironment = process.env } = {}) {
   const runRoot = runRootOf({ repoRoot, runId });
   const nowIso = () => new Date(clock()).toISOString();
 
@@ -89,14 +89,34 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
     }));
   }
 
-  async function openAttempt({ node, firstAttempt }) {
+  async function openAttempt({ node, firstAttempt, registry = null, executorProfile = null }) {
     const attemptId = randomUUID();
     const receiptId = `rcpt-${attemptId}`;
+    const issuedAt = nowIso();
+    let attemptReceipt = null;
+    if (executorProfile && !executorProfile.config_fingerprint_rule) {
+      throw new Error(`E_NONSECRET_PROJECTION_MISSING:source-${executorProfile.executor_profile_id}`);
+    }
+    if (executorProfile) {
+      const executor_identity = await freezeProfileIdentity(executorProfile, { environment: profileEnvironment });
+      const fallback_profile_snapshots = [];
+      for (const profileId of executorProfile.fallback_profile_ids ?? []) {
+        const fallback = resolveProfile(registry, profileId);
+        if (!fallback?.config_fingerprint_rule) throw new Error(`E_NONSECRET_PROJECTION_MISSING:fallback-${profileId}`);
+        fallback_profile_snapshots.push(await freezeProfileIdentity(fallback, { environment: profileEnvironment }));
+      }
+      attemptReceipt = {
+        protocol: 'relay.attempt-receipt/v1', receipt_id: receiptId, run_id: runId, node_id: node.node_id,
+        attempt_id: attemptId, issued_at: issuedAt, executor_identity, fallback_profile_snapshots,
+      };
+    }
     await actor.submitControl(async (store) => {
       // node_started 在终态之后会被终态守卫拒（LIFECYCLE_KINDS），所以它只属于第一次尝试；
       // 重试的可见性由 registerReceipt 发的 attempt_started 承担。
       if (firstAttempt) await store.appendEvent({ kind: 'node_started', at: nowIso(), node_id: node.node_id });
-      const ack = await store.registerReceipt({ receipt_id: receiptId, attempt_id: attemptId, node_id: node.node_id, at: nowIso() });
+      const ack = attemptReceipt
+        ? await store.registerAttemptReceipt(attemptReceipt)
+        : await store.registerReceipt({ receipt_id: receiptId, attempt_id: attemptId, node_id: node.node_id, at: issuedAt });
       if (ack?.ok === false) throw new Error(`${ack.reason ?? 'E_REQUEST_CONFLICT'}:receipt-${receiptId}`);
     });
     return { attemptId, receiptId };
@@ -108,10 +128,16 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
   });
 
   async function driveHerdrNode({ node, profile, firstAttempt, recovery = null }) {
-    const loaded = await loadExecutorProfiles({ registryPath: herdrRegistryPath });
+    const loaded = await loadExecutorProfiles({ registryPath: herdrRegistryPath, environment: profileEnvironment });
     if (!loaded.ok) return; // 本机 registry 不可用时不凭空开 Attempt。
     const registryProfile = resolveProfile(loaded.registry, profile.ref);
     if (!registryProfile) return; // F-007：profile ref 无条目，保持 pending、零事件。
+    if (!recovery) {
+      if (!registryProfile.config_fingerprint_rule) return; // 不能冻结可信身份时仅拒绝该节点，不扩大到整届 driver。
+      for (const profileId of registryProfile.fallback_profile_ids ?? []) {
+        if (!resolveProfile(loaded.registry, profileId)?.config_fingerprint_rule) return;
+      }
+    }
 
     let attemptId;
     let receiptId;
@@ -122,7 +148,7 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
     if (recovery) {
       ({ attemptId, receiptId, handle } = recovery);
     } else {
-      ({ attemptId, receiptId } = await openAttempt({ node, firstAttempt }));
+      ({ attemptId, receiptId } = await openAttempt({ node, firstAttempt, registry: loaded.registry, executorProfile: registryProfile }));
       launch = await launchHerdrAgent({
         cli: herdrCli, registryProfile, runId, nodeId: node.node_id, attemptId, workDirRoot: repoRoot,
         readyTimeoutMs: herdrReadyTimeoutMs,

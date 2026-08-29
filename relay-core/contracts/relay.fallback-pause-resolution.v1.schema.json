@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dh-relay.local/contracts/relay.fallback-pause-resolution/v1",
+  "title": "relay.fallback-pause-resolution/v1 — explicit manual retry resolution",
+  "type": "object",
+  "properties": {
+    "protocol": { "const": "relay.fallback-pause-resolution/v1" },
+    "pause_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/sha256" },
+    "attention_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/sha256" },
+    "executor_profile_id": { "allOf": [{ "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/identifier" }], "maxLength": 96 },
+    "retry_request_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/sha256" },
+    "resolved_at": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/timestamp" },
+    "attempt_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/attempt_id" },
+    "receipt_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/identifier" }
+  },
+  "required": ["protocol", "pause_id", "attention_id", "executor_profile_id", "retry_request_id", "resolved_at", "attempt_id", "receipt_id"],
+  "additionalProperties": false
+}

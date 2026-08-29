@@ -205,23 +205,91 @@ test('DHR_33 窄路径：driver 托管 herdr-agent，开 Attempt、记心跳并�
   }], runId);
   const root = runRootOf(repoRoot, runId);
   await mkdir(root, { recursive: true });
+  const configHome = join(repoRoot, 'profile-config-dhr33');
+  await mkdir(configHome, { recursive: true });
+  await writeFile(join(configHome, 'profile.json'), JSON.stringify({ model: 'test-model' }), 'utf8');
   const registryPath = join(repoRoot, 'executor-profiles.json');
   await writeFile(registryPath, JSON.stringify({ profiles: [{
     executor_profile_id: 'herdr.codex.test', backend: 'herdr', product: 'codex-cli', command_alias: 'codex', account_alias: 'acct-test',
     capabilities: { interactive: 'supported', resume: 'supported', readonly: 'supported', headless: 'supported', structured_result: 'supported', user_input_passthrough: 'supported' },
     supported_platforms: ['win32'], headless_supported: true,
+    config_fingerprint_rule: { kind: 'file-exists', path_template: '${DHR33_AGENT_CONFIG}/profile.json', fields: [{ pointer: '/model', classification: 'nonsecret' }] },
   }] }), 'utf8');
   const store = await createStore({ root, run });
   await store.appendEvent({ kind: 'run_created', at: '2026-08-29T00:00:00Z' });
   const fake = makeFakeHerdr({ statuses: ['idle', 'working', 'working'] });
   const driver = startWorkflowDriver({ repoRoot, runId, actor: { submitControl: fn => fn(store) },
-    herdrCli: fake.cli, herdrRegistryPath: registryPath, herdrPollMs: 5 });
+    herdrCli: fake.cli, herdrRegistryPath: registryPath, profileEnvironment: { DHR33_AGENT_CONFIG: configHome }, herdrPollMs: 5 });
   await untilAsync(async () => store.events.some(event => event.kind === 'checkpoint_recorded'), 1_000, 'herdr heartbeat');
   await driver.stop();
   const events = store.events;
   assert.ok(events.some(event => event.kind === 'attempt_started' && event.node_id === 'agent-herdr'));
   assert.ok(events.some(event => event.kind === 'checkpoint_recorded' && event.node_id === 'agent-herdr'));
   assert.equal(events.find(event => event.kind === 'attempt_failed' && event.node_id === 'agent-herdr')?.reason, 'E_EXECUTOR_KILLED');
+});
+
+test('DHR_61 D1: Herdr Attempt freezes source and ordered fallback identities before launch', async (t) => {
+  const repoRoot = await makeRepo('dhr61-herdr-receipt-');
+  t.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const runId = 'R001-dhr61-herdr-receipt-20260829';
+  const run = runDoc([{ node_id: 'agent-herdr', title: 'agent-herdr', role: '执行', required: false, depends_on: [],
+    executor_profiles: [{ kind: 'herdr-agent', ref: 'herdr.codex.test' }],
+  }], runId);
+  const root = runRootOf(repoRoot, runId);
+  await mkdir(root, { recursive: true });
+  const configHome = join(repoRoot, 'profile-config');
+  await mkdir(configHome, { recursive: true });
+  await writeFile(join(configHome, 'profile.json'), JSON.stringify({ model: 'test-model', ignored_token: 'not-projected' }), 'utf8');
+  const rule = { kind: 'file-exists', path_template: '${DHR61_AGENT_CONFIG}/profile.json', fields: [{ pointer: '/model', classification: 'nonsecret' }] };
+  const registryPath = join(repoRoot, 'executor-profiles.json');
+  const capabilities = { interactive: 'supported', resume: 'supported', readonly: 'supported', headless: 'supported', structured_result: 'supported', user_input_passthrough: 'supported' };
+  await writeFile(registryPath, JSON.stringify({ profiles: [
+    { executor_profile_id: 'herdr.codex.test', backend: 'herdr', product: 'codex-cli', command_alias: 'codex', account_alias: 'acct-test', capabilities, supported_platforms: ['win32'], headless_supported: true, config_fingerprint_rule: rule, fallback_profile_ids: ['herdr.codex.fallback'] },
+    { executor_profile_id: 'herdr.codex.fallback', backend: 'herdr', product: 'codex-cli', command_alias: 'codex', account_alias: 'acct-fallback', capabilities, supported_platforms: ['win32'], headless_supported: true, config_fingerprint_rule: rule },
+  ] }), 'utf8');
+  const store = await createStore({ root, run });
+  await store.appendEvent({ kind: 'run_created', at: '2026-08-29T00:00:00Z' });
+  const fake = makeFakeHerdr({ statuses: ['working', 'working'] });
+  const driver = startWorkflowDriver({ repoRoot, runId, actor: { submitControl: fn => fn(store) }, herdrCli: fake.cli,
+    herdrRegistryPath: registryPath, profileEnvironment: { DHR61_AGENT_CONFIG: configHome }, herdrPollMs: 5 });
+  await untilAsync(async () => store.events.some(event => event.kind === 'checkpoint_recorded'), 1_000, 'DHR61 receipt heartbeat');
+  await driver.stop();
+  const receiptId = store.events.find(event => event.kind === 'attempt_started')?.detail.replace(/^receipt:/, '');
+  const receipt = JSON.parse(await readFile(join(root, 'receipts', `${receiptId}.json`), 'utf8'));
+  assert.equal(receipt.protocol, 'relay.attempt-receipt/v1');
+  assert.equal(receipt.executor_identity.executor_profile_id, 'herdr.codex.test');
+  assert.deepEqual(receipt.fallback_profile_snapshots.map(item => item.executor_profile_id), ['herdr.codex.fallback']);
+  assert.equal(JSON.stringify(receipt).includes('test-model'), false, 'receipt must only keep hashes, never projected values');
+});
+
+test('DHR_61 D1: a Herdr profile without a projection rule leaves only that node pending', async (t) => {
+  const repoRoot = await makeRepo('dhr61-herdr-projection-missing-');
+  t.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const runId = 'R001-dhr61-projection-missing-20260830';
+  const run = runDoc([
+    { node_id: 'agent-herdr', title: 'agent-herdr', role: '执行', required: false, depends_on: [],
+      executor_profiles: [{ kind: 'herdr-agent', ref: 'herdr.codex.legacy' }] },
+    processNode('healthy-process', 'healthy.mjs'),
+  ], runId);
+  const root = runRootOf(repoRoot, runId);
+  await mkdir(root, { recursive: true });
+  await writeFile(join(repoRoot, 'healthy.mjs'), 'process.stdout.write(JSON.stringify({ ok: true }));\n', 'utf8');
+  const registryPath = join(repoRoot, 'executor-profiles.json');
+  await writeFile(registryPath, JSON.stringify({ profiles: [{
+    executor_profile_id: 'herdr.codex.legacy', backend: 'herdr', product: 'codex-cli', command_alias: 'codex', account_alias: 'acct-legacy',
+    capabilities: { interactive: 'supported', resume: 'supported', readonly: 'supported', headless: 'supported', structured_result: 'supported', user_input_passthrough: 'supported' },
+    supported_platforms: ['win32'], headless_supported: true,
+  }] }), 'utf8');
+  const store = await createStore({ root, run });
+  await store.appendEvent({ kind: 'run_created', at: run.created_at });
+  const fake = makeFakeHerdr();
+  const driver = startWorkflowDriver({ repoRoot, runId, actor: { submitControl: fn => fn(store) }, herdrCli: fake.cli, herdrRegistryPath: registryPath });
+
+  assert.deepEqual(await driver.done, { ok: true });
+  assert.equal(fake.paneSplits, 0);
+  const state = await store.readState();
+  assert.equal(state.node_states.find(node => node.node_id === 'agent-herdr').status, 'pending');
+  assert.equal(state.node_states.find(node => node.node_id === 'healthy-process').status, 'succeeded');
 });
 
 test('DHR_33 分叉顺序：同一节点同时声明 process 与 herdr-agent 时必须先走 process', async (t) => {

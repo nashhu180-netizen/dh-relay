@@ -19,6 +19,8 @@
 |---|---|---|
 | `relay.rpc.v1.schema.json` → `$defs.notification.properties.params` | 曾为 `additionalProperties: true` 且**零说明** | **已收窄**。推送只有两种载荷（`event` → `relay.event/v2`、`runStateChanged` → `relay.run-state/v1`），而这两份 schema 本卡已冻结——留开口是纯粹少做一步。现改为 `allOf` + `if/then` 按 method 分别 `$ref` 到对应协议。小审原话："最站不住"，判断成立。 |
 | `relay.rpc.v1.schema.json` → `$defs.request.properties.params` | 曾为 `additionalProperties: true` | **DHR_30 已收窄**。全部七个已枚举 RPC method 由 `relay.rpc-methods/v1` 的一一对应闭合参数对象约束；`allOf` 分支与 method 枚举必须同批维护。 |
+| `relay.rpc.v2.schema.json` → `$defs.request.properties.params` | 节点级为 `additionalProperties: true` | **DHR_61 已条件收窄**。五个 v2 method 都由 `relay.rpc-methods/v2` 的闭合参数对象逐一约束。 |
+| `relay.rpc.v2.schema.json` → `$defs.notification.properties.params` | 节点级为 `additionalProperties: true` | **DHR_61 已条件收窄**。三种通知都由对应冻结 schema 逐一约束。 |
 
 > **关于该位置的审计口径**：`tools/audit-contracts.mjs` 是**节点级**遍历，看不到同级 `allOf` 的条件收窄，因此它仍会把 `notification.properties.params` 报成"节点上开着"。脚本里用单独的 `CONDITIONALLY_NARROWED` 名单把它与"有意开放点"区分开，报告为「被 allOf/if-then 条件收窄（实际闭合）」。**它不是开放点**——`method` 枚举只有两个值，两条 `if/then` 必有其一命中，而两个 `$ref` 目标自身都是 `additionalProperties: false`。
 >
@@ -62,6 +64,8 @@
 **为什么现在写下来**：P5-M3 要「强杀 Runtime 后从 Store 重建相同状态签名」。若状态只能从事件回放重建，而 `waiting_human` 没有事件能产生它，那这个状态要么重建不出来、要么得靠 Store 里的非事件数据——DHR_29 设计恢复路径时必须先回答这个。P7 冻结 attention 时一并收口。
 
 > ✅ **DHR_29 已裁决（K-1 结账，2026-08-22）**：走裁决①——批次 1 已为 `relay.event/v2` 增补 `human_input_requested` 事件 kind 并以 `if/then` 强制其携带 `node_id`（见该 schema 的 `$comment`「DHR_29 K-1」）；Store 回放把该事件投影为 `waiting_human`，状态可从事件账重建。P7 Attention 对象仍未冻结、本条不预冻结它；正文上段的现状描述就此成为历史记录。
+>
+> ✅ **DHR_61 再裁决（2026-08-30）**：fallback pause 已让 `relay.attention/v1` 首次持久承重；其冻结字段改为 pause 身份链、`reason_code=E_FALLBACK_UNAVAILABLE` 与 `state=open`，并由 `relay.fallback-pause/v1#/$defs/attention` 和 v2 Read Model 承载。原 v0 的 category/reason/message 形态不再现役。
 
 ### K-2 · v1 的 `stale` 判定依赖 `attempt_id` 的整数序，v2 的 `attempt_id` 是不透明串（F-E14-10）
 
@@ -82,6 +86,8 @@ v1 用 `attempt_id -lt` 比大小区分「陈旧结果」与「被拒结果」�
 `relay.attention/v1`（v0 形状）的 `required` 含 `reason`（须是 `E_*` 码），`category` 含 `observation_lost` / `needs_input`；而 `reason-codes.md` 明写「观测中断……**不产生任何 reason code**」，且全表 23 个码里**没有**能给 `needs_input` 用的。两句直接对撞。
 
 **P7 冻结 attention 时必须二选一**：要么 `reason` 改成可选（观测类 attention 不带码），要么补一个「需要人输入」类的码。现在写一行，比让 P7 重新发现便宜。
+
+> ✅ **DHR_61 已裁决（2026-08-30）**：本次只冻结 fallback pause Attention，不再使用 v0 的 `category/reason/message`；其 `reason_code` 固定为 `E_FALLBACK_UNAVAILABLE`。其他 Attention 类别若后续需要承重，必须升新版本或另立兼容决策，不得重新解释 v1。
 
 ## O-1 的已知代价（不掩盖）
 

@@ -1,0 +1,15 @@
+{
+  "protocol": "relay.attempt-receipt/v1",
+  "receipt_id": "receipt-1",
+  "run_id": "RUN-1",
+  "node_id": "node-1",
+  "attempt_id": "attempt-1",
+  "issued_at": "2026-08-29T00:00:00.000Z",
+  "executor_identity": {
+    "executor_profile_id": "herdr.codex.main",
+    "account_alias": "acct-codex-main",
+    "config_fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "executor_capability_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "fallback_profile_snapshots": []
+}

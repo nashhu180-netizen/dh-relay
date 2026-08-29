@@ -246,7 +246,7 @@ function selftest(asJson) {
   const idOf = name => 'relay.' + basename(name).replace(/\.json$/, '').replace(/^([a-z-]+)\.(v\d)(\..*)?$/, '$1/$2');
   for (const f of readdirSync(join(FX, 'golden')).sort()) {
     const payload = JSON.parse(readFileSync(join(FX, 'golden', f), 'utf8'));
-    const id = payload.protocol || (payload.jsonrpc ? 'relay.rpc/v1' : idOf(f));
+    const id = payload.protocol || (payload.jsonrpc ? (payload.handshake?.protocol_version ?? 'relay.rpc/v1') : idOf(f));
     const r = validateOne(ajv, byId, id, payload);
     const ok = r.ok === true;
     results.golden.push({ file: f, schema: id, ok, reason: r.reason, detail: ok ? undefined : r.detail });

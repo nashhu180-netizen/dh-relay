@@ -2,12 +2,16 @@
   "$comment": "本文件是 fixture 基线对证清单（批次检查点 3 小审 P1-1，承接 P4 §2.1 的 manifest 对证做法）。 digest = lowercase_hex(sha256(utf8(JCS(载荷))))，口径见 contracts/CANONICALIZATION.md。 改任何 fixture 后必须跑 `node tools/fixture-manifest.mjs --write` 重新生成，并在 commit 里能看见 digest 变了—— 这正是它的用途：让 fixture 的语义改动不可能悄悄发生。",
   "canonicalization": "RFC 8785 (JCS) + sha256, lowercase hex — contracts/CANONICALIZATION.md",
   "counts": {
-    "golden": 17,
-    "negative_payload": 31,
-    "negative_expect": 31,
-    "total": 79
+    "golden": 24,
+    "negative_payload": 33,
+    "negative_expect": 33,
+    "total": 90
   },
   "files": [
+    {
+      "path": "golden/attempt-receipt.v1.json",
+      "digest": "d84681a5824d08ad08242560abc40aaafe2e08e5e2ee937cfd3a9cac02d6cb90"
+    },
     {
       "path": "golden/checkpoint.v2.json",
       "digest": "a36ba79c0798d9ecc0f2b49eccb9d267504d1565926c1d5248ef2769e84b50e4"
@@ -29,6 +33,10 @@
       "digest": "6178e7a1289362f4c3dfa4699e6ae1070e9f0f5e4ab372666a103fe07856e9be"
     },
     {
+      "path": "golden/client-read-model.v2.run-list.json",
+      "digest": "8d2344d0481bd3d3fb66f4b6d489484eaa8d0d6aa14d6b76008d06f16692cdb9"
+    },
+    {
       "path": "golden/event.v2.client-disconnect.json",
       "digest": "e8a187a76135eb7545dc9d811b15e7526b069371fc21db7769a4904fa24f9b82"
     },
@@ -41,6 +49,10 @@
       "digest": "29afc38ce1138ccda7ae2cf38b62eabbf32d3f4b6260dc2a6c24df3c0a6ce206"
     },
     {
+      "path": "golden/fallback-pause.v1.json",
+      "digest": "9c1288b1d4c4f18d3ae96da6213dabaabbdacdbbdde766a1b6efaf4887f0df99"
+    },
+    {
       "path": "golden/launch-receipt.v2.json",
       "digest": "dcc35f3c1cb77c34584a287df2e0a41452817c5f02fee2c03a08f34c81509004"
     },
@@ -51,6 +63,14 @@
     {
       "path": "golden/result.v2.json",
       "digest": "fedada813fbc3d043e9b398531c3e7e9b4684e0e29f35b8d1afc6f9310cee504"
+    },
+    {
+      "path": "golden/rpc-bootstrap.v1.json",
+      "digest": "db7f2efd3732811e4dcb25eb343554055b754e6be2dfd7fd89c5c5166dd5e683"
+    },
+    {
+      "path": "golden/rpc-descriptor.v2.json",
+      "digest": "03f70a3d53d248bb61764e94169a751b9fb9f0ea75a4ed3c9931a0cf61e8230d"
     },
     {
       "path": "golden/rpc.v1.error.json",
@@ -69,12 +89,20 @@
       "digest": "78ec8df118b58c5984a7b970c16b73d6fa08a615e5e8e11cda55b8eb999101eb"
     },
     {
+      "path": "golden/rpc.v2.request.json",
+      "digest": "c5b56152af378cb8df1d82c6694cd562770a27f3636c209413082e90d438c7b3"
+    },
+    {
       "path": "golden/run-state.v1.json",
       "digest": "1efafdc8da5eb13609fd48c003864c1001a9ef946d2a666070b97aee117427cf"
     },
     {
       "path": "golden/run.v2.json",
       "digest": "d4944de467b799c2a39552d5a04195e85e44681b13348604263c8710d4024d45"
+    },
+    {
+      "path": "golden/subscription-terminal.v1.json",
+      "digest": "0defedac246e093f0a0272c412652155351dd1bc46ed647f14394750b64fef6d"
     },
     {
       "path": "negative/bad-timestamp.expect.json",
@@ -171,6 +199,22 @@
     {
       "path": "negative/dhr30-run-summary-unknown-field.json",
       "digest": "a1e2d5973bbe60a4434f4c2c30c2aea2c0c47a7328a520c8c31711e046998d08"
+    },
+    {
+      "path": "negative/dhr61-fallback-pause-submillisecond.expect.json",
+      "digest": "cbb182814f0bcdc631fb3659e5bdbabaddfe0349cce8a56f44b6f14716ae7dd6"
+    },
+    {
+      "path": "negative/dhr61-fallback-pause-submillisecond.json",
+      "digest": "021936221c6fa7efa5d7018493818a0c76c89c717f5f02810209393b17c876b6"
+    },
+    {
+      "path": "negative/dhr61-rpc-v2-read-model-version.expect.json",
+      "digest": "dd3fce1445d0dae8d77f6ca40b56f9891eb6245741a7f18ecd1bbd9c6a9b902c"
+    },
+    {
+      "path": "negative/dhr61-rpc-v2-read-model-version.json",
+      "digest": "bba7f96c75feeb0be7df70aa9b5d5ae61b73ad9af1db687d60571e8ade303802"
     },
     {
       "path": "negative/g1-human-trigger-without-by.expect.json",

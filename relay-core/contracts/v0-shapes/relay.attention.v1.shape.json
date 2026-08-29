@@ -1,39 +1,23 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://dh-relay.local/contracts/v0-shapes/relay.attention/v1",
-  "title": "relay.attention/v1 — v0 形状（未冻结）",
-  "x-freeze-status": "v0-shape-only",
-  "x-frozen-at": "未冻结",
-  "x-first-load-bearing": "P7（首次承重时冻结；DevPlan §2.3。CLI 的 attention 命令同批补齐，但 RPC 与命令装配方式在 P5 已预留）",
-  "description": "持久化的『需要人看一眼』。承接 design/06 H5：没有客户端在线时自动节点继续，需要人类输入时安全暂停并留下持久 Attention——持久是关键，不能只活在某个窗口里。ADR-002 第④问的 herdr observation_lost 超时即经此出。",
+  "title": "relay.attention/v1 — DHR_61 冻结形状",
+  "x-freeze-status": "frozen",
+  "x-frozen-at": "DHR_61",
+  "x-first-load-bearing": "P6 DHR_61（fallback pause 的持久 Attention 与 relay.client-read-model/v2）",
+  "description": "持久化的 fallback pause Attention；权威字段与 relay.fallback-pause/v1#/$defs/attention 相同。",
   "type": "object",
   "properties": {
     "protocol": { "const": "relay.attention/v1" },
-    "attention_id": {
-      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/identifier"
-    },
+    "attention_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/sha256" },
     "run_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/run_id" },
-    "node_id": {
-      "oneOf": [
-        { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/node_id" },
-        { "type": "null" }
-      ]
-    },
-    "raised_at": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/timestamp" },
-    "category": {
-      "type": "string",
-      "enum": ["needs_input", "observation_lost", "executor_unavailable", "conflict", "policy_block"],
-      "description": "业务域无关的分类。禁引入 DevHarness / DSH 等领域私有类别。"
-    },
-    "reason": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/reason_code" },
-    "message": { "type": "string", "minLength": 1, "maxLength": 2048 },
-    "resolved_at": {
-      "oneOf": [
-        { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/timestamp" },
-        { "type": "null" }
-      ]
-    }
+    "node_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/node_id" },
+    "attempt_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/attempt_id" },
+    "receipt_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/identifier" },
+    "reason_code": { "const": "E_FALLBACK_UNAVAILABLE" },
+    "state": { "const": "open" },
+    "raised_at": { "$ref": "https://dh-relay.local/contracts/relay.fallback-pause/v1#/$defs/millisecondTimestamp" }
   },
-  "required": ["protocol", "attention_id", "run_id", "raised_at", "category", "reason", "message"],
+  "required": ["protocol", "attention_id", "run_id", "node_id", "attempt_id", "receipt_id", "reason_code", "state", "raised_at"],
   "additionalProperties": false
 }

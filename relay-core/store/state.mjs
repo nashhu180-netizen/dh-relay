@@ -7,7 +7,7 @@ const GROUP = { failed: 'failed', running: 'running', waiting_human: 'needs_you'
 // 起始状态与其后的事件——这正是「快照 + 增量回放 ≡ 从零全量回放」逐字节成立的全部前提。
 const STATUS_TRANSITIONS = {
   running: new Set(['node_started', 'attempt_started', 'checkpoint_recorded']),
-  waiting_human: new Set(['human_input_requested']),
+  waiting_human: new Set(['human_input_requested', 'fallback_pause_created']),
   succeeded: new Set(['attempt_succeeded']),
   failed: new Set(['attempt_failed']),
   orphaned: new Set(['attempt_orphaned']),

@@ -1,7 +1,11 @@
 {
-  "$comment": "参考基线：只托管 process 的最小 P5 参考实现的 capability_manifest 与其 capability_hash。 口径见 contracts/CANONICALIZATION.md §三（E4 需求复核 P1-1 / E2 代码复核 P3-3 逼出）。 **它同时是 12 份契约的 digest 基线**：改任一 schema 的任意一个字（含 description，本卡有意不剥离）都会让这里的 digest 与 capability_hash 变化，`npm test` 立刻红——这正是「改一个错别字也是能力变更、也会断握手」那条规定的机器表达。 改契约后跑 `node tools/capability-baseline.mjs --write` 重新生成，并在 commit 里能看见 capability_hash 变了。",
+  "$comment": "参考基线：只托管 process 的最小 P5 参考实现的 capability_manifest 与其 capability_hash。 口径见 contracts/CANONICALIZATION.md §三（E4 需求复核 P1-1 / E2 代码复核 P3-3 逼出）。 **它同时是 19 份契约的 digest 基线**：改任一 schema 的任意一个字（含 description，本卡有意不剥离）都会让这里的 digest 与 capability_hash 变化，`npm test` 立刻红——这正是「改一个错别字也是能力变更、也会断握手」那条规定的机器表达。 改契约后跑 `node tools/capability-baseline.mjs --write` 重新生成，并在 commit 里能看见 capability_hash 变了。",
   "capability_manifest": {
     "protocols": [
+      {
+        "id": "relay.attempt-receipt/v1",
+        "digest": "18d2157a8ac9f3180c64e04f7320e071e10cf659ec09d9ac4d548c862a9fdefc"
+      },
       {
         "id": "relay.checkpoint/v2",
         "digest": "e4faf96aaee20e1884d41f3460ad0c7f58a86dd30e42c1dc8df48c42e9983e1b"
@@ -11,12 +15,24 @@
         "digest": "2081c842f783a3df770095deed21d9750472fbe38c72c9293fbe86c8f7213c83"
       },
       {
+        "id": "relay.client-read-model/v2",
+        "digest": "4d7d7e9f7f96490531f7a0b8c2a4daf477fae61eac8c9b74f61b865593c18d2d"
+      },
+      {
         "id": "relay.common/v1",
         "digest": "9339f22e66aefb5e593b4d965f90ff64c24e337c59c9288780fee8364454246a"
       },
       {
         "id": "relay.event/v2",
-        "digest": "76f26cf04dd2e6ee442914bc10f09777e006b432084aeb327e57706590dcb49c"
+        "digest": "391b9eeec24df241e5051ce7a59627dfd5e3264a193ecab651038eb12ac0fd54"
+      },
+      {
+        "id": "relay.fallback-pause-resolution/v1",
+        "digest": "aca5e82256627a8781b694f5c0768d7541a5f68f261016819def1e8dee4d8cb0"
+      },
+      {
+        "id": "relay.fallback-pause/v1",
+        "digest": "2b98771301f8d98cf082c0c0e9bfb83b0b6435408adb81f02a16b52474561e10"
       },
       {
         "id": "relay.launch-receipt/v2",
@@ -27,12 +43,28 @@
         "digest": "4723afaf24d6d86e111c7108be6d1fa84465696321f799b4ee2a4f91791ad39b"
       },
       {
+        "id": "relay.rpc-bootstrap/v1",
+        "digest": "26d3009cbcc5d9f2f8a0a0405970c87dd2b8ecae68ab1f7fe2d45ae635122529"
+      },
+      {
+        "id": "relay.rpc-descriptor/v2",
+        "digest": "5f2fd98c3a9b32911779c81f77fcfbcfef0a5a4a0d4a4b75938c938e995f8c2c"
+      },
+      {
         "id": "relay.rpc-methods/v1",
         "digest": "030aad7540a6c9487a3e105237968263f008a90b06e29c76e0944229c915dead"
       },
       {
+        "id": "relay.rpc-methods/v2",
+        "digest": "2679a6cb6a510aaa1b778bb02421ffc804e1a897f9b22a66cbf16f2a1d58466b"
+      },
+      {
         "id": "relay.rpc/v1",
         "digest": "45b4d043aab5ad344cf8638f9de40ea2858f5af00cf0cf45e4b2a7c3029817a3"
+      },
+      {
+        "id": "relay.rpc/v2",
+        "digest": "5147aa9acff60e4cc95efb81fef2d8a4971a2fca0e0afa2fd25e01fc40966111"
       },
       {
         "id": "relay.run-state/v1",
@@ -41,6 +73,10 @@
       {
         "id": "relay.run/v2",
         "digest": "0ff1e432db4df3e517d9eb89fe6ffd8b5f556b2b8114ac45b71bafdb0641e4e8"
+      },
+      {
+        "id": "relay.subscription-terminal/v1",
+        "digest": "8ff0d64b09435adb69798d18528f7ae7500d0f332cd79403817b99b8a474c744"
       }
     ],
     "methods": [
@@ -61,5 +97,5 @@
       "process"
     ]
   },
-  "capability_hash": "994d5f038cd1bcbbb9463eed5ca04b2ffc324f07b374571899b8df3a6c5c971e"
+  "capability_hash": "fb55f2f85d1db38ca12ed1a729c042e7cb8d80092643eb37532805f644c1d073"
 }

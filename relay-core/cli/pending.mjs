@@ -150,7 +150,10 @@ async function withPendingLock(repoRoot, task) {
         await chmodTight(lockPath, 0o600);
         break;
       } catch (error) {
-        if (error?.code !== 'EEXIST') throw error;
+        const windowsCreateRace = process.platform === 'win32'
+          && (error?.code === 'EPERM' || error?.code === 'EACCES');
+        if (error?.code !== 'EEXIST' && !windowsCreateRace) throw error;
+        if (windowsCreateRace && attempt >= LOCK_RETRY_MAX - 1) throw error;
         if (attempt >= LOCK_RETRY_MAX - 1) {
           // 稳定拒绝前读一次锁面（尽力而为），把持有者信息与恢复指引带给用户。
           let holder = null;

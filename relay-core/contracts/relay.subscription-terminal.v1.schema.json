@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dh-relay.local/contracts/relay.subscription-terminal/v1",
+  "title": "relay.subscription-terminal/v1 — explicit v2 stream termination",
+  "type": "object",
+  "properties": {
+    "protocol": { "const": "relay.subscription-terminal/v1" },
+    "code": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/reason_code" },
+    "run_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/run_id" },
+    "caused_by_seq": { "type": "integer", "minimum": 0 }
+  },
+  "required": ["protocol", "code", "run_id", "caused_by_seq"],
+  "additionalProperties": false
+}

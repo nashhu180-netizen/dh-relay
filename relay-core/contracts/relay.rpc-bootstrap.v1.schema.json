@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dh-relay.local/contracts/relay.rpc-bootstrap/v1",
+  "title": "relay.rpc-bootstrap/v1 — fixed endpoint negotiation",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": { "protocol": { "const": "relay.rpc-bootstrap/v1" } },
+      "required": ["protocol"],
+      "additionalProperties": false
+    },
+    { "$ref": "https://dh-relay.local/contracts/relay.rpc-descriptor/v2" }
+  ]
+}

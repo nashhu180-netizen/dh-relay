@@ -79,7 +79,7 @@ v1 的 `schema_version` 是**单一全局版本串** `relay/v1`，一份契约�
 | result `summary` / `handoff_ref` | `relay.result/v2` `structured` + `log_locator` | 改型 | v1 的 `handoff_ref` 是自由字符串，v2 归 locator 约束 |
 | result `changed_paths` / `tests_run` / `git_snapshot`（`commit`+`changed_paths`+`diff_stat`） | `structured`（通用载荷） | **改型** | ⚠️ v1 把 git 快照写进了**契约必填**。v2 认为这是**领域特定**的（假设了"任务=改代码"），与"协议业务域无关"冲突，故降为 `structured` 内的自由载荷。**取舍如实登记**：v2 因此不再对 git 证据做结构校验，该校验责任移交 Workflow 层 |
 | checkpoint `status` / `progress_note` / `tried` | `phase` / `structured` | 改型 | |
-| checkpoint `question` + `options`（`status=decision_required` 时必填） | `relay.attention/v1`（v0 形状，P7 冻结） | 改型 | v1 把"要人决策"塞在 checkpoint 里；v2 单立 Attention 协议，因为 design/06 **H5** 要求它**持久**、不依赖任何客户端在线 |
+| checkpoint `question` + `options`（`status=decision_required` 时必填） | `relay.attention/v1`（DHR_61 冻结为 fallback pause Attention） | 改型 | v1 把"要人决策"塞在 checkpoint 里；v2 单立持久 Attention。v1 当前只承载 `E_FALLBACK_UNAVAILABLE` 的人工 profile 选择，其他类别不得复用同一版本扩义 |
 | event `event_id` / `kind` / `occurred_at` | `seq` / `kind` / `at` | 改型 | v2 用单调 `seq` 保证回放确定性；v1 的 `event_id` 是字符串、不保证序 |
 | event `kind` 12 值 | v2 16 值（批次 1 K-1 补 `human_input_requested` 后） | 改型 | ⚠️ 原写法只说"新增 6、弃用 3"，`12−3+6=15` 数字凑巧对上，**掩盖了实际 churn**（批次检查点 2 小审 D-8，findings F-017）。逐值对照见 §4b |
 | event `observation` kind 携带 `terminal_state` | `host_observation_changed` 携带 `observation_status` | 改名 | G6 的事件侧落地 |

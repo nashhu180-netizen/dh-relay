@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { loadAjv } from '../tools/validate.mjs';
+import { jcs } from '../tools/canonical.mjs';
 
 const CREDENTIAL_KEY = /token|api[_-]?key|cookie|secret|password|authorization|bearer/i;
 const CREDENTIAL_VALUE = [
@@ -63,9 +64,38 @@ function resolvesAlias(alias) {
   return fallback.status === 0;
 }
 
+function fallbackPauseBytes(profile, byId) {
+  const identifier = 'R'.repeat(128);
+  const hash = 'a'.repeat(64);
+  const timestamp = '9999-12-31T23:59:59.999+23:59';
+  const identities = (profile.fallback_profile_ids ?? []).map((profileId) => {
+    const fallback = byId.get(profileId);
+    return {
+      executor_profile_id: fallback.executor_profile_id,
+      account_alias: fallback.account_alias,
+      config_fingerprint: hash,
+      executor_capability_hash: hash,
+    };
+  });
+  return Buffer.byteLength(jcs({
+    protocol: 'relay.fallback-pause/v1', pause_id: hash, run_id: identifier, node_id: identifier,
+    attempt_id: identifier, receipt_id: identifier, reason_code: 'E_FALLBACK_UNAVAILABLE', raised_at: timestamp,
+    fence: {
+      protocol: 'relay.attempt-fence/v1', fence_id: hash, attempt_id: identifier, receipt_id: identifier,
+      reason_code: 'E_FALLBACK_UNAVAILABLE', fenced_at: timestamp,
+    },
+    attention: {
+      protocol: 'relay.attention/v1', attention_id: hash, run_id: identifier, node_id: identifier,
+      attempt_id: identifier, receipt_id: identifier, reason_code: 'E_FALLBACK_UNAVAILABLE',
+      state: 'open', raised_at: timestamp,
+    },
+    manual_retry_profiles: identities,
+  }), 'utf8');
+}
+
 export function validateProfiles(json, { resolveAlias = true, environment = process.env } = {}) {
   const credential = findCredential(json);
-  if (credential) return { ok: false, errors: [credential] };
+  if (credential?.code === 'E_CREDENTIAL_FIELD') return { ok: false, errors: [credential] };
 
   const { ajv } = loadAjv();
   const schema = JSON.parse(readFileSync(new URL('./executor-profile.schema.json', import.meta.url), 'utf8'));
@@ -75,13 +105,22 @@ export function validateProfiles(json, { resolveAlias = true, environment = proc
     return { ok: false, errors: (validate.errors ?? []).map(item => error('E_SCHEMA', `${item.instancePath || '/'} ${item.message}`)) };
   }
 
-  const ids = new Set(json.profiles.map(profile => profile.executor_profile_id));
+  const profilesById = new Map(json.profiles.map(profile => [profile.executor_profile_id, profile]));
+  const ids = new Set(profilesById.keys());
+  for (const profile of json.profiles) {
+    for (const fallback of profile.fallback_profile_ids ?? []) {
+      if (!ids.has(fallback)) return { ok: false, errors: [error('E_DANGLING_FALLBACK', fallback)] };
+    }
+    if (fallbackPauseBytes(profile, profilesById) > 4096) {
+      return { ok: false, errors: [error('E_SCHEMA', `${profile.executor_profile_id}.fallback_pause_detail>4096`)] };
+    }
+  }
+
+  if (credential) return { ok: false, errors: [credential] };
+
   for (const profile of json.profiles) {
     if (profile.headless_supported !== (profile.capabilities.headless === 'supported')) {
       return { ok: false, errors: [error('E_SCHEMA', `${profile.executor_profile_id}.headless_supported`)] };
-    }
-    for (const fallback of profile.fallback_profile_ids ?? []) {
-      if (!ids.has(fallback)) return { ok: false, errors: [error('E_DANGLING_FALLBACK', fallback)] };
     }
     if (profile.config_fingerprint_rule) {
       const path = expandPath(profile.config_fingerprint_rule.path_template, environment);

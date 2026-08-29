@@ -13,7 +13,7 @@
 //   ② **真正被冻结的东西没有基线**：`fixtures/manifest.json` 钉的是 55 份 fixture，
 //      `contracts/` 一份都没钉。改任一 schema 的任意一个字——包括 CANONICALIZATION 明写
 //      「改一个错别字都是能力变更、都会断握手」的那种改动——四道闸全绿、manifest 全绿，
-//      没有任何机制指出「能力指纹变了」。F-047 的立论原话对 12 份 schema 逐字同样成立，
+//      没有任何机制指出「能力指纹变了」。F-047 的立论原话对 19 份 schema 逐字同样成立，
 //      而 schema 才是本卡真正冻结的工件。
 //
 // 口径全部来自 contracts/CANONICALIZATION.md §三，本文件不另立规则：
@@ -52,7 +52,7 @@ const BASELINE = fileURLToPath(new URL('../capability-baseline.json', import.met
 const REFERENCE_EXECUTOR_KINDS = ['herdr-agent', 'process'];
 
 function frozenSchemas() {
-  // **顶层 9 份已冻结协议 + 1 份共享定义模块**。DHR_30 增补 formal read model 与 method contract，
+  // **顶层 18 份已冻结协议 + 1 份共享定义模块**。DHR_61 增补 Attempt Receipt、pause、resolution 与 RPC v2 contracts，
   // 它们与原有协议一样参与 capability_hash。
   //
   // ⚠️ 首版只枚举 contracts/ 顶层的 7 份，把 `_shared/relay.common.v1.schema.json` 漏在外面。
@@ -73,8 +73,8 @@ function frozenSchemas() {
     if (e.isFile() && e.name.endsWith('.schema.json')) files.push(e.name);
   }
   files.sort();
-  if (files.length !== 9) {
-    throw new Error(`contracts/ 顶层应有 9 份已冻结协议，实为 ${files.length} 份：${files.join(', ')}`
+  if (files.length !== 18) {
+    throw new Error(`contracts/ 顶层应有 18 份已冻结协议，实为 ${files.length} 份：${files.join(', ')}`
       + ' —— 协议集变了就是能力变了，先确认这是有意的，再跑 --write');
   }
   // 共享定义模块单独列：它不在顶层、不参与「7 份」计数，但**必须计入指纹**
@@ -112,7 +112,7 @@ function build() {
     $comment:
       '参考基线：只托管 process 的最小 P5 参考实现的 capability_manifest 与其 capability_hash。'
       + ' 口径见 contracts/CANONICALIZATION.md §三（E4 需求复核 P1-1 / E2 代码复核 P3-3 逼出）。'
-      + ' **它同时是 12 份契约的 digest 基线**：改任一 schema 的任意一个字（含 description，本卡有意不剥离）'
+      + ' **它同时是 19 份契约的 digest 基线**：改任一 schema 的任意一个字（含 description，本卡有意不剥离）'
       + '都会让这里的 digest 与 capability_hash 变化，`npm test` 立刻红——'
       + '这正是「改一个错别字也是能力变更、也会断握手」那条规定的机器表达。'
       + ' 改契约后跑 `node tools/capability-baseline.mjs --write` 重新生成，'
@@ -134,7 +134,7 @@ if (argv.includes('--print')) {
 if (argv.includes('--write')) {
   const b = build();
   writeFileSync(BASELINE, JSON.stringify(b, null, 2) + '\n');
-  console.log(`已写 capability-baseline.json：${b.capability_manifest.protocols.length} 份（9 顶层协议 + 1 共享定义模块）`
+  console.log(`已写 capability-baseline.json：${b.capability_manifest.protocols.length} 份（18 顶层协议 + 1 共享定义模块）`
     + ` / ${b.capability_manifest.methods.length} methods / ${b.capability_manifest.notifications.length} notifications`
     + ` / executor_kinds=[${b.capability_manifest.executor_kinds.join(',')}]`);
   console.log(`capability_hash = ${b.capability_hash}`);
@@ -167,7 +167,7 @@ for (const k of ['methods', 'notifications', 'executor_kinds']) {
 }
 
 if (errors.length === 0) {
-  console.log(`capability 基线对证通过：${want.capability_manifest.protocols.length} 份（9 顶层协议 + 1 共享定义模块）digest 相符，capability_hash = ${got.capability_hash.slice(0, 16)}…`);
+  console.log(`capability 基线对证通过：${want.capability_manifest.protocols.length} 份（18 顶层协议 + 1 共享定义模块）digest 相符，capability_hash = ${got.capability_hash.slice(0, 16)}…`);
   process.exit(0);
 }
 console.error('capability 基线对证失败：');

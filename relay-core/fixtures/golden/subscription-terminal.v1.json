@@ -1,0 +1,6 @@
+{
+  "protocol": "relay.subscription-terminal/v1",
+  "code": "E_ATTENTION_REQUIRES_READ_MODEL_V2",
+  "run_id": "R001-example-20260830",
+  "caused_by_seq": 4
+}

@@ -1,0 +1,7 @@
+{
+  "protocol": "relay.rpc-descriptor/v2",
+  "endpoint": { "kind": "pipe", "address": "\\\\.\\pipe\\dh-relay-example-v2" },
+  "capability_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "methods_schema": "relay.rpc-methods/v2",
+  "read_model_versions": ["v1", "v2"]
+}

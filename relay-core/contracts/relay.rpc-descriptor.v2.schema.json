@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dh-relay.local/contracts/relay.rpc-descriptor/v2",
+  "title": "relay.rpc-descriptor/v2 — bootstrap result",
+  "type": "object",
+  "properties": {
+    "protocol": { "const": "relay.rpc-descriptor/v2" },
+    "endpoint": {
+      "type": "object",
+      "properties": {
+        "kind": { "type": "string", "enum": ["pipe", "unix"] },
+        "address": { "type": "string", "minLength": 1 }
+      },
+      "required": ["kind", "address"],
+      "additionalProperties": false
+    },
+    "capability_hash": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/sha256" },
+    "methods_schema": { "const": "relay.rpc-methods/v2" },
+    "read_model_versions": {
+      "type": "array",
+      "prefixItems": [{ "const": "v1" }, { "const": "v2" }],
+      "minItems": 2,
+      "maxItems": 2
+    }
+  },
+  "required": ["protocol", "endpoint", "capability_hash", "methods_schema", "read_model_versions"],
+  "additionalProperties": false
+}

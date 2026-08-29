@@ -5,19 +5,21 @@
 
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { access, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { promisify } from 'node:util';
 
-import { localCapabilityHash } from '../rpc/capabilities.mjs';
+import { localCapabilityHash, localCapabilityHashV2 } from '../rpc/capabilities.mjs';
 import { createTransportClient } from '../rpc/transport.mjs';
 import { endpointForRepo } from '../runtime/endpoint.mjs';
 import { operationKey, requestDigest, writeLedger } from '../runtime/ledger.mjs';
 import { localDateStamp } from '../runtime/runid.mjs';
 import { startRuntimeService } from '../runtime/service.mjs';
 import { createStore } from '../store/store.mjs';
+import { createExecutorIdentity } from '../profiles/identity.mjs';
 import { loadAjv, validateOne } from '../tools/validate.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -93,6 +95,42 @@ const authorize = (session, descriptor) => session.call('contracts', {
   descriptor_version: descriptor.descriptor_version, repo_id: descriptor.repo_id,
   generation: descriptor.generation, local_user_capability: 'local-capability',
 });
+
+async function bootstrapV2(t, endpoint) {
+  let response = null;
+  const client = await createTransportClient(endpoint, { onFrame: frame => { response = frame; } });
+  t.after(() => client.destroy());
+  client.send({ protocol: 'relay.rpc-bootstrap/v1' });
+  return until(() => response);
+}
+
+async function connectV2(t, endpoint, { clientId = 'cli-v2' } = {}) {
+  const responses = new Map();
+  const notifications = [];
+  const client = await createTransportClient(endpoint, {
+    onFrame: (frame) => {
+      const verdict = validateOne(contracts.ajv, contracts.byId, 'relay.rpc/v2', frame);
+      assert.ok(verdict.ok, `v2 服务端帧不合合同：${verdict.reason}@${verdict.at} ${JSON.stringify(frame)}`);
+      if ('id' in frame) responses.set(frame.id, frame);
+      else notifications.push(frame);
+    },
+  });
+  t.after(() => client.destroy());
+  let nextId = 0;
+  const call = async (method, params, { requestId } = {}) => {
+    const id = (nextId += 1);
+    client.send({
+      jsonrpc: '2.0', id, method,
+      handshake: {
+        protocol_version: 'relay.rpc/v2', runtime_version: '0.0.0', capability_hash: localCapabilityHashV2(),
+        client_id: clientId, request_id: requestId ?? `v2-req-${id}`,
+      },
+      params,
+    });
+    return until(() => responses.get(id));
+  };
+  return { client, call, notifications };
+}
 
 test('service：bind 失败的候选一个字节都不碰私有 credential', async (t) => {
   const repoRoot = await makeRepo('dhr30-cred-');
@@ -558,4 +596,145 @@ test('service：ledger 每个 phase 崩溃后重试都收敛到同一 run_id 与
     assert.deepEqual(again.result.receipt, receipt, `${phase}: 二次重试仍须同一 Receipt`);
     await service.close();
   }
+});
+
+test('DHR_61：bootstrap 协商独立 v2，Attention 可见且 retry-with-profile 原子开 fresh Attempt', async (t) => {
+  const repoRoot = await makeRepo('dhr61-rpc-v2-');
+  t.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const run = runDocument('attention');
+  const runRoot = join(repoRoot, '.dh-relay', run.run_id);
+  const profileHome = join(repoRoot, 'profile');
+  const registryPath = join(repoRoot, 'profiles.json');
+  await mkdir(profileHome, { recursive: true });
+  await writeFile(join(profileHome, 'config.toml'), 'model = "test-model"\n', 'utf8');
+  const profile = {
+    executor_profile_id: 'herdr.codex.main', backend: 'herdr', product: 'codex-cli', command_alias: 'codex', account_alias: 'acct-codex-main',
+    capabilities: { interactive: 'supported', resume: 'supported', readonly: 'supported', headless: 'supported', structured_result: 'supported', user_input_passthrough: 'supported' },
+    supported_platforms: ['win32'], headless_supported: true,
+    config_fingerprint_rule: { kind: 'file-exists', path_template: '${DHR61_RPC_HOME}/config.toml', fields: [{ pointer: '/model', classification: 'nonsecret' }] },
+  };
+  await writeFile(registryPath, JSON.stringify({ profiles: [profile] }), 'utf8');
+  const profileEnvironment = { DHR61_RPC_HOME: profileHome };
+  const identity = createExecutorIdentity(profile, { '/model': 'test-model' });
+  const receipt = {
+    protocol: 'relay.attempt-receipt/v1', receipt_id: 'receipt-v2-1', run_id: run.run_id,
+    node_id: 'node-a', attempt_id: 'attempt-v2-1', issued_at: '2026-08-30T00:00:00.000Z',
+    executor_identity: identity, fallback_profile_snapshots: [identity],
+  };
+  const digest = (...parts) => createHash('sha256').update(parts.join('\n'), 'utf8').digest('hex');
+  const reason = 'E_FALLBACK_UNAVAILABLE';
+  const pause = {
+    protocol: 'relay.fallback-pause/v1',
+    pause_id: digest('fallback-pause/v1', run.run_id, 'node-a', 'attempt-v2-1', 'receipt-v2-1', reason),
+    run_id: run.run_id, node_id: 'node-a', attempt_id: 'attempt-v2-1', receipt_id: 'receipt-v2-1',
+    reason_code: reason, raised_at: '2026-08-30T00:00:01.000Z',
+    fence: {
+      protocol: 'relay.attempt-fence/v1',
+      fence_id: digest('attempt-fence/v1', run.run_id, 'node-a', 'attempt-v2-1', 'receipt-v2-1', reason),
+      attempt_id: 'attempt-v2-1', receipt_id: 'receipt-v2-1', reason_code: reason, fenced_at: '2026-08-30T00:00:01.000Z',
+    },
+    attention: {
+      protocol: 'relay.attention/v1',
+      attention_id: digest('attention/v1', run.run_id, 'node-a', 'attempt-v2-1', 'receipt-v2-1', reason),
+      run_id: run.run_id, node_id: 'node-a', attempt_id: 'attempt-v2-1', receipt_id: 'receipt-v2-1',
+      reason_code: reason, state: 'open', raised_at: '2026-08-30T00:00:01.000Z',
+    },
+    manual_retry_profiles: [identity],
+  };
+  const store = await createStore({ root: runRoot, run });
+  await store.registerAttemptReceipt(receipt);
+  await store.appendFallbackPause(pause);
+  await writeLedger(repoRoot, { version: 1, next_seq: 1, operations: { claim: { run_id: run.run_id } } });
+
+  const { endpoint, service } = await startService(t, 'dhr61-rpc-v2-', {
+    repoRoot, executorProfileRegistryPath: registryPath, profileEnvironment,
+  });
+  const negotiated = await bootstrapV2(t, service.bootstrapEndpoint);
+  assert.deepEqual(negotiated, service.v2Descriptor);
+  assert.equal(negotiated.endpoint.address, service.v2Endpoint.address);
+
+  const legacy = await connect(t, endpoint);
+  await authorize(legacy, service.descriptor);
+  assert.equal((await legacy.call('listRuns', { include_legacy: false })).error.data.reason,
+    'E_ATTENTION_REQUIRES_READ_MODEL_V2');
+
+  const v2 = await connectV2(t, negotiated.endpoint);
+  const authorized = await v2.call('contracts', {
+    descriptor_version: 1, repo_id: service.descriptor.repo_id, generation: service.descriptor.generation,
+    local_user_capability: 'local-capability',
+  });
+  assert.deepEqual(authorized.result, negotiated);
+  const listed = await v2.call('listRuns', { include_legacy: false, read_model_version: 'v2' });
+  assert.deepEqual(listed.result.open_attentions, [pause.attention]);
+  assert.deepEqual(listed.result.items[0].open_attentions, [pause.attention]);
+  const inspected = await v2.call('inspectRun', { run_id: run.run_id, view: 'status', read_model_version: 'v2' });
+  assert.deepEqual(inspected.result.open_attentions, [pause.attention]);
+
+  const retryParams = {
+    run_id: run.run_id, node_id: 'node-a', pause_id: pause.pause_id,
+    executor_profile_id: identity.executor_profile_id, retry_request_id: 'b'.repeat(64),
+  };
+  const retried = await v2.call('retry-with-profile', retryParams, { requestId: 'retry-call-1' });
+  assert.equal(retried.result.ok, true);
+  assert.notEqual(retried.result.attempt_receipt.attempt_id, receipt.attempt_id);
+  const replayed = await v2.call('retry-with-profile', retryParams, { requestId: 'retry-call-2' });
+  assert.deepEqual(replayed.result, { ...retried.result, idempotent: true });
+  const conflict = await v2.call('retry-with-profile', {
+    ...retryParams, retry_request_id: 'c'.repeat(64),
+  }, { requestId: 'retry-call-conflict' });
+  assert.equal(conflict.error.data.reason, 'E_FALLBACK_PAUSE_CONFLICT',
+    'a closed-pause conflict must be a schema-valid RPC error, not a dropped connection');
+  assert.deepEqual((await v2.call('inspectRun', { run_id: run.run_id, view: 'status', read_model_version: 'v2' })).result.open_attentions, []);
+  assert.equal((await legacy.call('listRuns', { include_legacy: false })).result.items.length, 1,
+    'Attention 关闭后冻结 v1 成功 payload 恢复可读');
+
+  const legacyBackfill = await connect(t, endpoint, { clientId: 'cli-v1-backfill' });
+  await authorize(legacyBackfill, service.descriptor);
+  const snapshot = await legacyBackfill.call('subscribe', { run_id: run.run_id, after_seq: 0 });
+  assert.equal(snapshot.result.view, 'event_stream_snapshot');
+  const closed = await until(() => legacyBackfill.responses.get(null));
+  assert.equal(closed.error.data.reason, 'E_ATTENTION_REQUIRES_READ_MODEL_V2');
+  assert.equal(legacyBackfill.notifications.some(frame => frame.method === 'event'
+    && ['fallback_pause_created', 'fallback_pause_resolved'].includes(frame.params.kind)), false,
+  'v1 cursor backfill must close before exposing a v2-only event kind');
+});
+
+test('DHR_61：坏 Run 让列表稳定 fail-closed，但连接仍可读取健康 Run', async (t) => {
+  const repoRoot = await makeRepo('dhr61-rpc-recovery-error-');
+  t.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const healthy = runDocument('healthy');
+  const damaged = { ...runDocument('damaged'), run_id: 'R002-damaged-20260827' };
+  const healthyStore = await createStore({ root: join(repoRoot, '.dh-relay', healthy.run_id), run: healthy });
+  await healthyStore.appendEvent({ kind: 'run_created', at: healthy.created_at });
+  const damagedRoot = join(repoRoot, '.dh-relay', damaged.run_id);
+  const damagedStore = await createStore({ root: damagedRoot, run: damaged });
+  await damagedStore.appendEvent({ kind: 'run_created', at: damaged.created_at });
+  await writeLedger(repoRoot, {
+    version: 1, next_seq: 2,
+    operations: { healthy: { run_id: healthy.run_id }, damaged: { run_id: damaged.run_id } },
+  });
+  const { endpoint, service } = await startService(t, 'dhr61-rpc-recovery-error-', { repoRoot });
+  const transactionId = '11111111-1111-4111-8111-111111111111';
+  await writeFile(join(damagedRoot, 'mutations', `${transactionId}.prepared.json`),
+    JSON.stringify({ protocol: 'relay.store-mutation/v1', transaction_id: transactionId, state: 'prepared', targets: [] }), 'utf8');
+
+  const legacy = await connect(t, endpoint);
+  await authorize(legacy, service.descriptor);
+  const legacyList = await legacy.call('listRuns', { include_legacy: false });
+  assert.ok(legacyList.error, `expected a stable list error, got ${JSON.stringify(legacyList)}`);
+  assert.equal(legacyList.error.data.reason, 'E_STORE_MUTATION_RECOVERY_FAILED');
+  assert.equal((await legacy.call('inspectRun', { run_id: healthy.run_id, view: 'status' })).result.status.run_id,
+    healthy.run_id, 'a stable list error must not drop the connection or poison healthy per-Run reads');
+
+  const negotiated = await bootstrapV2(t, service.bootstrapEndpoint);
+  const v2 = await connectV2(t, negotiated.endpoint);
+  await v2.call('contracts', {
+    descriptor_version: 1, repo_id: service.descriptor.repo_id, generation: service.descriptor.generation,
+    local_user_capability: 'local-capability',
+  });
+  assert.equal((await v2.call('listRuns', { include_legacy: false, read_model_version: 'v2' })).error.data.reason,
+    'E_STORE_MUTATION_RECOVERY_FAILED');
+  assert.equal((await v2.call('inspectRun', {
+    run_id: healthy.run_id, view: 'status', read_model_version: 'v2',
+  })).result.status.run_id, healthy.run_id);
 });

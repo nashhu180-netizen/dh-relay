@@ -1,0 +1,16 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "listRuns",
+  "handshake": {
+    "protocol_version": "relay.rpc/v2",
+    "runtime_version": "0.0.0",
+    "capability_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "client_id": "fixture-client",
+    "request_id": "fixture-request"
+  },
+  "params": {
+    "include_legacy": false,
+    "read_model_version": "v3"
+  }
+}

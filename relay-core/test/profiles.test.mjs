@@ -93,3 +93,43 @@ test('DHR_32 headless_supported agrees with the headless capability', () => {
   assert.equal(result.ok, false, 'inconsistent headless state was accepted');
   assert.equal(result.errors[0]?.code, 'E_SCHEMA', JSON.stringify(result.errors));
 });
+
+test('DHR_61 D2: registry rejects fallback sets whose maximum legal pause detail exceeds 4096 bytes', () => {
+  const template = read('golden-registry.json').profiles[0];
+  const profileId = index => `herdr.${'p'.repeat(80)}.${String(index).padStart(2, '0')}`;
+  const fallbacks = Array.from({ length: 6 }, (unused, index) => ({
+    ...template,
+    executor_profile_id: profileId(index),
+    account_alias: `a${String(index).padStart(2, '0')}${'x'.repeat(45)}`,
+    command_alias: `fallback-${index}`,
+    fallback_profile_ids: undefined,
+    config_fingerprint_rule: undefined,
+  }));
+  for (const fallback of fallbacks) {
+    delete fallback.fallback_profile_ids;
+    delete fallback.config_fingerprint_rule;
+  }
+  const source = {
+    ...template,
+    executor_profile_id: 'herdr.source.capacity',
+    command_alias: 'source',
+    fallback_profile_ids: fallbacks.map(profile => profile.executor_profile_id),
+    config_fingerprint_rule: undefined,
+  };
+  delete source.config_fingerprint_rule;
+  const result = validateProfiles({ profiles: [source, ...fallbacks] }, { resolveAlias: false });
+  assert.equal(result.ok, false);
+  assert.equal(result.errors[0]?.code, 'E_SCHEMA');
+  assert.match(result.errors[0]?.detail ?? '', /fallback_pause_detail>4096/);
+});
+
+test('DHR_61 D2: registry freezes profile and account identity bounds before Attempt signing', () => {
+  const template = read('golden-registry.json').profiles[0];
+  const invalidAlias = validateProfiles({ profiles: [{ ...template, account_alias: '账号' }] }, { resolveAlias: false });
+  assert.equal(invalidAlias.ok, false);
+  assert.equal(invalidAlias.errors[0]?.code, 'E_SCHEMA');
+  const invalidId = validateProfiles({ profiles: [{ ...template,
+    executor_profile_id: `herdr.${'x'.repeat(90)}.main`, fallback_profile_ids: [],
+  }] }, { resolveAlias: false });
+  assert.equal(invalidId.ok, false);
+});

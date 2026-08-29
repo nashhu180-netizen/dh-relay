@@ -59,6 +59,14 @@ v1 已经做过同一件事——`tools/contracts/relay-schema.ps1` 的 `Convert
 
 ## 三、`capability_hash` 的能力清单（本卡定死）
 
+### DHR_61 后的 v1/v2 双轨
+
+- `relay.rpc/v1` 为兼容既有客户端，固定广播历史指纹 `994d5f038cd1bcbbb9463eed5ca04b2ffc324f07b374571899b8df3a6c5c971e`。它是兼容常量，**不再**由当前 `contracts/` 重新计算；校验入口为 `rpc/capabilities.mjs` 的 `localCapabilityHash()`。
+- bootstrap 与 `relay.rpc/v2` 使用当前契约集合按下述算法计算的指纹；权威清单与逐项 digest 在 `capability-baseline.json`，校验入口为 `localCapabilityHashV2()`。
+- 因此，下述算法与清单规则描述的是 v2 当前能力指纹；v1 客户端不得拿当前 manifest 重算值替代上述兼容常量。新增契约或修改承重 schema 只推动 v2 指纹，除非另行发布新的 v1 兼容决策。
+
+下面的 JSON 是最小参考实现的历史形状示例，不是当前 v2 清单的穷举；当前条目数量和值一律以生成的 `capability-baseline.json` 为准。
+
 `capability_hash = lowercase_hex(sha256(utf8(JCS(capability_manifest))))`，其中 `capability_manifest` 形状如下，**只含这三个键，多一个少一个都算不同能力集**：
 
 ```json
@@ -79,8 +87,8 @@ v1 已经做过同一件事——`tools/contracts/relay-schema.ps1` 的 `Convert
 ```
 
 - **`protocols` 是 `{id, digest}` 对，不是裸名字数组**（批次检查点 2 小审 D-26 缺口 A，findings F-033）。**为什么**：`"relay.run/v2"` 只是个名字，两个 Runtime 各自对着**不同修订版**的同名协议编译，指纹会**完全相同**。这不是假设——**本批之内 `relay.run/v2` 就实质变过两次**（F-012 的 `$ref` 全量重写、D-11 的 `required` 由可选改必填）。设想按 D-11 之前的 schema 构建的客户端对上之后构建的 Runtime：两边都报 `relay.run/v2` ⇒ 指纹相同 ⇒ **握手通过** ⇒ 然后 Runtime 拒掉客户端发来的每一个节点（缺 `required`）。而 `reason-codes.md` 给 `E_CAPABILITY_MISMATCH` 的理由原话正是「**能力集不同 = 双方对"能做什么"的理解不同**」——上面这个就是理解不同，裸名字认不出来。`digest` = 该 schema 文件全文的 `sha256(JCS(...))`。
-  - v0 形状**不计入**——它们尚未冻结，计入会让能力指纹随未定形状漂移。
-- **`_shared/relay.common.v1.schema.json`（`relay.common/v1`）必须计入**（E2 代码复核轮 2 · P2-1）。与「v0 不计入」是同一条理由的两面：v0 未冻结所以排除，**共享模块已冻结且承重**所以必须纳入。实际约束面的大半在它里面——`locator` / `timestamp` / `sha256` / `run_id` / `node_id` / `attempt_id` / `executor_kind` / `executor_profile` / `reason_code` / `trigger` / `observation_status`。 **漏掉它就是 F-033 缺口 A 下沉一层**：E2 实测把 `locator.pattern` 改成 `^.*$`（G5 全域绝对路径禁令**彻底失效**）之后，`capability_hash` **逐字未变** ⇒ 两个带着完全不同 locator 约束的 Runtime 能握手成功，然后互相拒对方的每一份载荷。故 `protocols` 是 **7 份顶层协议 + 1 份共享定义模块 = 8 条**。
+  - v0 形状**不计入**——未冻结 shape 会让能力指纹随未定形状漂移；已经冻结的兼容 mirror（当前仅 `v0-shapes/relay.attention.v1.shape.json`）也不重复计入，其承重定义已由对应顶层契约纳入 manifest。
+- **`_shared/relay.common.v1.schema.json`（`relay.common/v1`）必须计入**（E2 代码复核轮 2 · P2-1）。与「v0 不计入」是同一条理由的两面：未冻结 shape 排除，**共享模块已冻结且承重**所以必须纳入。实际约束面的大半在它里面——`locator` / `timestamp` / `sha256` / `run_id` / `node_id` / `attempt_id` / `executor_kind` / `executor_profile` / `reason_code` / `trigger` / `observation_status`。 **漏掉它就是 F-033 缺口 A 下沉一层**：E2 实测把 `locator.pattern` 改成 `^.*$`（G5 全域绝对路径禁令**彻底失效**）之后，`capability_hash` **逐字未变** ⇒ 两个带着完全不同 locator 约束的 Runtime 能握手成功，然后互相拒对方的每一份载荷。历史最小样例因此是 **7 份顶层协议 + 1 份共享定义模块 = 8 条**；当前 v2 数量以生成基线为准。
 - `methods`：`relay.rpc/v1` 的 `$defs.method` 枚举中本 Runtime 实际实现的子集。
 - `notifications`：`$defs.notification.method` 枚举中本 Runtime 实际推送的子集。
 - **`executor_kinds`：本 Runtime 实际能托管的 `executor_kind` 子集**（小审 D-26 缺口 B）。**为什么必须有**：只实现 `process` 的 Runtime 与另外还实现了 `dsh-agent`/`pi-agent`/`herdr-agent` 的 Runtime，前三个键**完全相同 ⇒ 指纹相同**；客户端于是能把一个声明了 `dsh-agent` 的 Run 交给一个根本托管不了它的 Runtime，失败发生在运行期而不是握手期。**这条在 P5 特别活**：`pi-agent` 是 DevPlan §4.2 明列的 **P5-X 条件项、非必达**——也就是说**两个都合规的 P5 构建**（一个带 Pi Adapter、一个不带）在没有本键时指纹一模一样。ADR-002 整篇讲的都是 executor 宿主归属，能力指纹里不能没有 executor 维度。
@@ -90,7 +98,7 @@ v1 已经做过同一件事——`tools/contracts/relay-schema.ps1` 的 `Convert
 
 > ⚠️ **本句原写「由批 3 的校验器算出并作为回归基线固定下来」，而批 3 没做**（E4 需求复核 P1-1 + E2 代码复核 P3-3 抓出）——这是本卡「写进冻结契约文档的交付承诺静默没做」的**第四次**（F-047 的 manifest 是第一次）。当时的状态是：有口径散文、有 JCS 实现，唯独没有那个**让两边能对上的参考值**——而 §一 自己写的失效后果正是「握手永远 `E_CAPABILITY_MISMATCH`」，DHR_29 与 DHR_30 各自实现握手时谁都无法验证自己算对了。现已补齐。
 >
-> **它同时是 12 份契约的 digest 基线**：`fixtures/manifest.json` 钉的是 55 份 fixture，`contracts/` 一份都没钉，而 schema 才是本卡真正冻结的工件。红测已验：只在某份 schema 的顶层 `description` 末尾加一个空格 → `exit 1`。下面那条「改一个错别字也是能力变更、也会断握手」的规定，现在是机器可证的，不再只是一句话。
+> **它同时是当前 19 份契约的 digest 基线**：`fixtures/manifest.json` 钉 fixture，`capability-baseline.json` 钉 schema；具体数量由生成器校验，不再手抄。红测已验：只在某份 schema 的顶层 `description` 末尾加一个空格 → `exit 1`。下面那条「改一个错别字也是能力变更、也会断握手」的规定，现在是机器可证的，不再只是一句话。
 >
 > 参考基线取「只托管 `process` 的最小 P5 参考实现」。带 Pi Adapter 或 DSH Native 的 Runtime 算出的是**另一个**指纹——那正是 `executor_kinds` 这个维度存在的全部理由（D-26 缺口 B）。
 

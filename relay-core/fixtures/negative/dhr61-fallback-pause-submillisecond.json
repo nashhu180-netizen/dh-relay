@@ -1,0 +1,30 @@
+{
+  "protocol": "relay.fallback-pause/v1",
+  "pause_id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "run_id": "RUN-1",
+  "node_id": "node-1",
+  "attempt_id": "attempt-1",
+  "receipt_id": "receipt-1",
+  "reason_code": "E_FALLBACK_UNAVAILABLE",
+  "raised_at": "2026-08-29T00:00:01.0000Z",
+  "fence": {
+    "protocol": "relay.attempt-fence/v1",
+    "fence_id": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "attempt_id": "attempt-1",
+    "receipt_id": "receipt-1",
+    "reason_code": "E_FALLBACK_UNAVAILABLE",
+    "fenced_at": "2026-08-29T00:00:01.000Z"
+  },
+  "attention": {
+    "protocol": "relay.attention/v1",
+    "attention_id": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "run_id": "RUN-1",
+    "node_id": "node-1",
+    "attempt_id": "attempt-1",
+    "receipt_id": "receipt-1",
+    "reason_code": "E_FALLBACK_UNAVAILABLE",
+    "state": "open",
+    "raised_at": "2026-08-29T00:00:01.000Z"
+  },
+  "manual_retry_profiles": []
+}
