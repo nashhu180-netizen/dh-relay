@@ -65,6 +65,8 @@
 | `E_EXECUTOR_ADAPTER_LOST` | pi-agent 的冻结 Adapter 进程消失。**不假设 Pi 侧会话可续**——按 H12 开 fresh Attempt，不把旧会话后续输出续写进旧 Attempt | 第②问 |
 | `E_EXECUTOR_HOST_LOST` | 承载 Executor 的宿主消失（DSH Native Agent 场景）。**必须与"DSH 作为控制客户端断开"严格区分**——后者绝不产生任何 Executor 码，也不动 Run（design/06 **H4**） | 第③问 |
 | `E_EXECUTOR_ORPHANED` | Runtime 恢复后按 ref 探活/重连失败，确认该 Attempt 已无宿主 → 判 `orphaned` + 开 fresh Attempt | 第①②③问共用 |
+| `E_EXECUTOR_RESULT_MISSING` | Herdr `done`/`idle` 观测后在有界接收期内没有 Receipt-bound submission；只追加人工处理 Attention，不产生 Result、失败终态或 fallback | DHR-A-26 D3 |
+| `E_EXECUTOR_REPORTED_FAILURE` | 当前 Receipt 的 Receipt-bound submission 明确报告 `outcome=failed`；这是 Agent 的最小结论，不代表 quota，也不触发自动 fallback | DHR-A-26 D1/D3 |
 
 > **v1 已有先例**：v1 `result` 的 `interruption_reason` 枚举含 `host_lost`（另有 `stopped_by_user` / `unknown`）——v2 的 `E_EXECUTOR_HOST_LOST` 是它的**语义收窄版**：v1 的 `host_lost` 混合了"会话没了"和"执行方没了"，v2 按 **G6** 拆开，只有确认 Executor 消失才用本码；观测中断走 `relay.host-observation/v1` 的 `observation_lost`，**不产生任何 reason code、不判 Attempt 死**（ADR-002 第④问）。
 
@@ -90,7 +92,7 @@
 
 ## 汇总
 
-共 **44** 个码（去重实测：`grep -oE '^\| \`E_[A-Z0-9_]+\`' reason-codes.md | sort -u | wc -l` → 44），覆盖 fail-closed 三条、start 前置、契约结构、幂等冲突、Executor 生命周期与 Runtime 服务。
+共 **46** 个码（去重实测：`grep -oE '^\| \`E_[A-Z0-9_]+\`' reason-codes.md | sort -u | wc -l` → 46），覆盖 fail-closed 三条、start 前置、契约结构、幂等冲突、Executor 生命周期与 Runtime 服务。
 
 > ⚠️ 计数只数**表格行首**的码。此前登记的命令是 `grep -oE '\bE_[A-Z][A-Z0-9_]+\b' …`，它把「边界声明」段里列举的**进程内异常前缀**（`E_STORE_CORRUPT` / `E_EVENT_LOG_CORRUPT` / `E_LEASE_ACQUIRE_TIMEOUT` …）也数了进去，实跑得 37 而非文中写的 30——那条命令从来对不上它自己的结论。协议码全集以表格为准。
 

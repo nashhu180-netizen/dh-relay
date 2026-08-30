@@ -1,10 +1,10 @@
 {
-  "$comment": "参考基线：只托管 process 的最小 P5 参考实现的 capability_manifest 与其 capability_hash。 口径见 contracts/CANONICALIZATION.md §三（E4 需求复核 P1-1 / E2 代码复核 P3-3 逼出）。 **它同时是 19 份契约的 digest 基线**：改任一 schema 的任意一个字（含 description，本卡有意不剥离）都会让这里的 digest 与 capability_hash 变化，`npm test` 立刻红——这正是「改一个错别字也是能力变更、也会断握手」那条规定的机器表达。 改契约后跑 `node tools/capability-baseline.mjs --write` 重新生成，并在 commit 里能看见 capability_hash 变了。",
+  "$comment": "参考基线：只托管 process 的最小 P5 参考实现的 capability_manifest 与其 capability_hash。 口径见 contracts/CANONICALIZATION.md §三（E4 需求复核 P1-1 / E2 代码复核 P3-3 逼出）。 **它同时是 20 份契约的 digest 基线**：改任一 schema 的任意一个字（含 description，本卡有意不剥离）都会让这里的 digest 与 capability_hash 变化，`npm test` 立刻红——这正是「改一个错别字也是能力变更、也会断握手」那条规定的机器表达。 改契约后跑 `node tools/capability-baseline.mjs --write` 重新生成，并在 commit 里能看见 capability_hash 变了。",
   "capability_manifest": {
     "protocols": [
       {
         "id": "relay.attempt-receipt/v1",
-        "digest": "18d2157a8ac9f3180c64e04f7320e071e10cf659ec09d9ac4d548c862a9fdefc"
+        "digest": "e6867fe5f0a6ac381c3402ba408eb33ec19c641ead1a72ec1d3cc7ccc0109458"
       },
       {
         "id": "relay.checkpoint/v2",
@@ -25,6 +25,10 @@
       {
         "id": "relay.event/v2",
         "digest": "391b9eeec24df241e5051ce7a59627dfd5e3264a193ecab651038eb12ac0fd54"
+      },
+      {
+        "id": "relay.executor-result-submission/v1",
+        "digest": "601da1c4e64afdc47ad8bdc46d0c656bb6859be79c2e7526fc1436839215131f"
       },
       {
         "id": "relay.fallback-pause-resolution/v1",
@@ -56,7 +60,7 @@
       },
       {
         "id": "relay.rpc-methods/v2",
-        "digest": "2679a6cb6a510aaa1b778bb02421ffc804e1a897f9b22a66cbf16f2a1d58466b"
+        "digest": "3fb4ec8f72700ab8f8cda3403cb1edb0af5aa0e2b64ca8902370eca44e69a7ff"
       },
       {
         "id": "relay.rpc/v1",
@@ -64,7 +68,7 @@
       },
       {
         "id": "relay.rpc/v2",
-        "digest": "5147aa9acff60e4cc95efb81fef2d8a4971a2fca0e0afa2fd25e01fc40966111"
+        "digest": "96de3aa3a4d4bf763aa4b639ae4feb05d5273e5d65d8467d5eef861242fa54e9"
       },
       {
         "id": "relay.run-state/v1",
@@ -97,5 +101,5 @@
       "process"
     ]
   },
-  "capability_hash": "fb55f2f85d1db38ca12ed1a729c042e7cb8d80092643eb37532805f644c1d073"
+  "capability_hash": "ee33b670d6f7204a62cc573417a475ffb828e55a8de72e0987ec60cb76b56830"
 }

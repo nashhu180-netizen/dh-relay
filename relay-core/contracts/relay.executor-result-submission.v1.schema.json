@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dh-relay.local/contracts/relay.executor-result-submission/v1",
+  "title": "relay.executor-result-submission/v1 — Receipt 绑定的最小结果提交",
+  "description": "产品 Agent 只能提交当前 Attempt Receipt 绑定的最小结论；完整 relay.result/v2 由 Relay 服务端生成。",
+  "type": "object",
+  "properties": {
+    "protocol": { "const": "relay.executor-result-submission/v1" },
+    "receipt_id": {
+      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/identifier",
+      "description": "当前 Attempt Receipt 的关联标识。"
+    },
+    "outcome": { "type": "string", "enum": ["succeeded", "failed"] },
+    "reason": {
+      "oneOf": [
+        { "type": "null" },
+        { "const": "E_EXECUTOR_REPORTED_FAILURE" }
+      ]
+    }
+  },
+  "required": ["protocol", "receipt_id", "outcome", "reason"],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": { "outcome": { "const": "succeeded" } },
+        "required": ["outcome"]
+      },
+      "then": { "properties": { "reason": { "const": null } } }
+    },
+    {
+      "if": {
+        "properties": { "outcome": { "const": "failed" } },
+        "required": ["outcome"]
+      },
+      "then": { "properties": { "reason": { "const": "E_EXECUTOR_REPORTED_FAILURE" } } }
+    }
+  ]
+}

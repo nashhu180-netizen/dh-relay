@@ -383,3 +383,10 @@ DHR_52 的 RPC seam 与 DHR_51 的 host 之间原本没有装配人（F-001）�
 | DHR_30（CLI / Read Model，已完成） | 本文 §3.8~§3.10 → design/06 §14（Read Model 字段冻结）→ design/07、design/08（service 与 RPC/ReadModel 合同）→ `workspace/DHR_30/{findings,review}.md` |
 | DHR_31（端到端闭环） | 本文 §3.8（service 是唯一写者装配人，workflow/executor 不在其内）→ §9 第 1 条（H6 可达性推导归你）→ design/06 §14.4（排序合同，客户端不推导）→ DSH 附加客户端项含**真实 DSH 渲染截图**（DHR_30 收口移交，见其 review.md 条件 5） |
 | 要改 `contracts/` 任何一个字的人 | 本文 §5「三份基线互不覆盖」→ §6 全节 → `CANONICALIZATION.md` §三 |
+
+## 11. DHR_64 增量 —— Receipt-bound Result bridge
+
+- **唯一提交路径**：`relay.executor-result-submission/v1` 是闭集 submission；v2 `submit-executor-result` 只把 matching Receipt 交给恢复后的 driver gate，driver 经 actor 调 `Store.submitExecutorResult()`。Store 从完整、当前、`herdr-agent` Attempt Receipt 派生 Result、terminal event、state 与 payload digest，并以同一个 mutation journal durable commit 后才 Ack。
+- **拒绝与恢复**：旧/未知/非当前 Receipt 为 `E_IDENTITY_MISMATCH`，canonical fallback fence 为 `E_ATTEMPT_FENCED`，lease 丢失、伪 Receipt、坏 Result/事件账均 fail-closed；terminal duplicate 仅同 digest 已提交账本幂等。service 在任何 actor/lease 前校验所有恢复 candidate，坏 Receipt 阻止前序 Run 改账。
+- **Herdr 与 CLI 边界**：done、idle、judge、capture、pane、host status、exit code 不生成 Result；缺 submission 写 `E_EXECUTOR_RESULT_MISSING` Attention。v2 CLI 不降级，socket close/error 会清 timer、拒绝全部在途 waiter 为 `E_TRANSPORT_CLOSED`。
+- **证据**：`dhr64-result-bridge.test.mjs` 分三组 6/6、1/1、3/3；`dhr64-store-reject-matrix.test.mjs` 2/2；`dhr64-driver-observation.test.mjs` 3/3。默认全量历史运行未得终态且含 DHR33/DHR34 旧语义差异，不能作为绿色或本卡范围扩张理由。

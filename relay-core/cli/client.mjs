@@ -18,8 +18,9 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 
-import { localCapabilityHash } from '../rpc/capabilities.mjs';
+import { localCapabilityHash, localCapabilityHashV2 } from '../rpc/capabilities.mjs';
 import { createTransportClient, probeEndpoint } from '../rpc/transport.mjs';
+import { loadAjv, validateOne } from '../tools/validate.mjs';
 import { readLocalUserCapability } from '../runtime/credentials.mjs';
 import { endpointForRepo, repoHash } from '../runtime/endpoint.mjs';
 import { ensureRuntimeService } from '../runtime/launcher.mjs';
@@ -125,6 +126,27 @@ export function buildRequestEnvelope({ method, params, requestId, clientId }) {
     handshake: {
       protocol_version: 'relay.rpc/v1', runtime_version: '0.0.0',
       capability_hash: localCapabilityHash(), client_id: clientId,
+      request_id: requestId,
+    },
+    params,
+  };
+}
+
+export function rejectPendingTransportWaiters(waiters, detail) {
+  for (const [id, waiter] of waiters) {
+    waiters.delete(id);
+    clearTimeout(waiter.timer);
+    waiter.reject(clientError('E_TRANSPORT_CLOSED', detail));
+  }
+}
+
+/** v2 envelope used by the Receipt-bound submission bridge. */
+export function buildV2RequestEnvelope({ method, params, requestId, clientId }) {
+  return {
+    jsonrpc: '2.0', method,
+    handshake: {
+      protocol_version: 'relay.rpc/v2', runtime_version: '0.0.0',
+      capability_hash: localCapabilityHashV2(), client_id: clientId,
       request_id: requestId,
     },
     params,
@@ -247,6 +269,131 @@ export async function connectCli({ repoRoot, credentialRoot, timeoutMs = 15_000 
     /** events --follow 的通知路由：event / runStateChanged 两种通知帧。 */
     setNotificationHandler(handler) { notificationHandler = handler; },
 
+    close() {
+      client.destroy();
+      resolveClosed();
+    },
+  };
+}
+
+async function readV2Descriptor(endpoint) {
+  let response = null;
+  const client = await createTransportClient(endpoint, { onFrame: frame => { response = frame; } });
+  try {
+    client.send({ protocol: 'relay.rpc-bootstrap/v1' });
+    const deadline = Date.now() + 5_000;
+    while (!response) {
+      if (Date.now() >= deadline) throw clientError('E_SERVICE_NOT_READY', 'v2-bootstrap-timeout');
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+    const { ajv, byId } = loadAjv();
+    const verdict = validateOne(ajv, byId, 'relay.rpc-descriptor/v2', response);
+    if (!verdict.ok) throw clientError('E_SERVICE_IDENTITY_MISMATCH', `v2-descriptor:${verdict.reason}`);
+    return response;
+  } finally {
+    client.destroy();
+  }
+}
+
+/**
+ * Connect to the v2 endpoint used by Receipt-bound result submission.  Service
+ * discovery and local-user authorization still go through the existing v1
+ * launcher path; v2 is an explicit negotiated protocol, never a silent fallback.
+ */
+export async function connectCliV2({ repoRoot, credentialRoot, timeoutMs = 15_000 } = {}) {
+  const root = resolveCredentialRoot(credentialRoot);
+  const v1Endpoint = endpointForRepo(repoRoot);
+  const capabilityNow = await readLocalUserCapability(repoRoot, root ? { credentialRoot: root } : {})
+    .then(value => value !== null)
+    .catch(() => false);
+  if (!capabilityNow && (await probeEndpoint(v1Endpoint)) === 'alive') {
+    throw clientError('E_LOCAL_USER_UNAUTHORIZED', '本机私有凭据缺失（只有已 bind 的 service 允许创建它）');
+  }
+  const launcherOptions = { repoRoot, endpoint: v1Endpoint, timeoutMs, ...(root ? { credentialRoot: root } : {}) };
+  const { descriptor: v1Descriptor } = await ensureRuntimeService(launcherOptions);
+  const capability = await requireLocalUserCapability(repoRoot, root ? { credentialRoot: root } : {});
+  const clientId = await readOrCreateClientId(repoRoot, root ? { credentialRoot: root } : {});
+  const endpoint = endpointForRepo(repoRoot, { channel: 'v2' });
+  const bootstrapEndpoint = endpointForRepo(repoRoot, { channel: 'bootstrap' });
+  const descriptor = await readV2Descriptor(bootstrapEndpoint);
+  if (descriptor.endpoint.kind !== endpoint.kind || descriptor.endpoint.address !== endpoint.address
+    || descriptor.capability_hash !== localCapabilityHashV2()) {
+    throw clientError('E_SERVICE_IDENTITY_MISMATCH', 'v2-descriptor-does-not-match-derived-endpoint');
+  }
+
+  let resolveClosed = () => {};
+  const closed = new Promise(done => { resolveClosed = done; });
+  let notificationHandler = null;
+  const waiters = new Map();
+  let idCounter = 0;
+  const rejectPending = () => rejectPendingTransportWaiters(waiters, 'v2-socket-closed');
+  const client = await createTransportClient(endpoint, {
+    onFrame: frame => {
+      if (frame && typeof frame === 'object' && 'id' in frame) {
+        const waiter = waiters.get(frame.id);
+        if (waiter) {
+          waiters.delete(frame.id);
+          clearTimeout(waiter.timer);
+          waiter.resolve(frame);
+        }
+        return;
+      }
+      notificationHandler?.(frame);
+    },
+    onClose: () => { resolveClosed(); rejectPending(); },
+    onSocketError: () => { resolveClosed(); rejectPending(); },
+  });
+
+  const request = (method, params, requestId, overrideClientId) => new Promise((resolve, reject) => {
+    const id = idCounter += 1;
+    const timer = setTimeout(() => {
+      waiters.delete(id);
+      reject(clientError('E_REQUEST_TIMEOUT', `${method}:no-response`));
+    }, 120_000);
+    waiters.set(id, { resolve, reject, timer });
+    client.send({
+      ...buildV2RequestEnvelope({
+        method, params,
+        requestId: requestId ?? `cli-v2-${process.pid}-${id}-${randomUUID()}`,
+        clientId: overrideClientId ?? clientId,
+      }),
+      id,
+    });
+  });
+
+  const identityFrame = await request('contracts', {
+    descriptor_version: v1Descriptor.descriptor_version,
+    repo_id: v1Descriptor.repo_id,
+    generation: v1Descriptor.generation,
+    local_user_capability: capability,
+  });
+  if (!identityFrame.result || JSON.stringify(identityFrame.result) !== JSON.stringify(descriptor)) {
+    client.destroy();
+    throw clientError('E_SERVICE_IDENTITY_MISMATCH', 'v2-contracts-回证与bootstrap descriptor不符');
+  }
+
+  return {
+    endpoint, descriptor, clientId, closed,
+    async call(method, params, { requestId, clientId: replayClientId } = {}) {
+      const frame = await request(method, params, requestId, replayClientId);
+      if (frame.error) {
+        const data = frame.error.data;
+        if (!data || typeof data !== 'object' || Array.isArray(data) || !('receipt' in data)) {
+          const reason = data && typeof data.reason === 'string' ? data.reason : 'unknown';
+          throw clientError('E_PROTOCOL_VIOLATION', `${reason}:协议违约：error data 缺 receipt`);
+        }
+        return {
+          ok: false,
+          error: {
+            reason: typeof data.reason === 'string' ? data.reason : 'E_SERVICE_NOT_READY',
+            receipt: data.receipt,
+            detail: typeof data.detail === 'string' ? data.detail : null,
+          },
+        };
+      }
+      return { ok: true, result: frame.result };
+    },
+    setNotificationHandler(handler) { notificationHandler = handler; },
     close() {
       client.destroy();
       resolveClosed();

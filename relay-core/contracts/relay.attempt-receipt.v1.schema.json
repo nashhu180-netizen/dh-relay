@@ -10,6 +10,10 @@
     "node_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/node_id" },
     "attempt_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/attempt_id" },
     "issued_at": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/timestamp" },
+    "result_submission_mode": {
+      "const": "receipt-bound/v1",
+      "description": "只有带此不可变标记的 Attempt Receipt 才能接收 receipt-bound Result submission。"
+    },
     "executor_identity": { "$ref": "#/$defs/identity" },
     "fallback_profile_snapshots": {
       "type": "array",

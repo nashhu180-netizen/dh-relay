@@ -200,12 +200,12 @@ test('G2 聚合条款①~⑥逐档红绿矩阵（allOf 自身的回归护栏）'
   assert.deepEqual(bad, [], `聚合条款红绿矩阵不符：\n  ${bad.join('\n  ')}`);
 });
 
-test('capability 基线：19 份（18 顶层协议 + 1 共享定义模块）的 digest 与 capability_hash 与基线相符', () => {
+test('capability 基线：20 份（19 顶层协议 + 1 共享定义模块）的 digest 与 capability_hash 与基线相符', () => {
   // DHR_30 把 relay.rpc-methods/v1 与 relay.client-read-model/v1 一并纳入指纹，故从 8 份变 10 份。
   // E4 需求复核 P1-1 + E2 代码复核 P3-3。CANONICALIZATION.md §三末句与 §四表第 1 行**逐字**
   // 把「跑出可复算的固定 digest 作为回归基线」写成批 3 交付项，首版没做——
   // 这是本卡「写进冻结契约的交付承诺静默没做」的第四次（F-047 是第一次）。
-  // 它同时是 19 份契约的 digest 基线：fixture manifest 不钉 schema 内容，
+  // 它同时是 20 份契约的 digest 基线：fixture manifest 不钉 schema 内容，
   // 而 schema 才是本卡真正冻结的工件。红测已验：只在某份 schema 的 description 末尾加一个空格 → exit 1。
   const r = run('capability-baseline.mjs');
   assert.equal(r.code, 0, `capability 基线对证失败：\n${r.out}`);

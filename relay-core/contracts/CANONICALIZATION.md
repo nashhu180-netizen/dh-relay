@@ -98,7 +98,7 @@ v1 已经做过同一件事——`tools/contracts/relay-schema.ps1` 的 `Convert
 
 > ⚠️ **本句原写「由批 3 的校验器算出并作为回归基线固定下来」，而批 3 没做**（E4 需求复核 P1-1 + E2 代码复核 P3-3 抓出）——这是本卡「写进冻结契约文档的交付承诺静默没做」的**第四次**（F-047 的 manifest 是第一次）。当时的状态是：有口径散文、有 JCS 实现，唯独没有那个**让两边能对上的参考值**——而 §一 自己写的失效后果正是「握手永远 `E_CAPABILITY_MISMATCH`」，DHR_29 与 DHR_30 各自实现握手时谁都无法验证自己算对了。现已补齐。
 >
-> **它同时是当前 19 份契约的 digest 基线**：`fixtures/manifest.json` 钉 fixture，`capability-baseline.json` 钉 schema；具体数量由生成器校验，不再手抄。红测已验：只在某份 schema 的顶层 `description` 末尾加一个空格 → `exit 1`。下面那条「改一个错别字也是能力变更、也会断握手」的规定，现在是机器可证的，不再只是一句话。
+> **它同时是当前 20 份契约的 digest 基线**：`fixtures/manifest.json` 钉 fixture，`capability-baseline.json` 钉 schema；具体数量由生成器校验，不再手抄。红测已验：只在某份 schema 的顶层 `description` 末尾加一个空格 → `exit 1`。下面那条「改一个错别字也是能力变更、也会断握手」的规定，现在是机器可证的，不再只是一句话。
 >
 > 参考基线取「只托管 `process` 的最小 P5 参考实现」。带 Pi Adapter 或 DSH Native 的 Runtime 算出的是**另一个**指纹——那正是 `executor_kinds` 这个维度存在的全部理由（D-26 缺口 B）。
 

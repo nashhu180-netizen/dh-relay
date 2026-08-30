@@ -4,7 +4,7 @@
   "title": "relay.rpc/v2 — Attention-aware local RPC envelope",
   "oneOf": [{ "$ref": "#/$defs/request" }, { "$ref": "#/$defs/response" }, { "$ref": "#/$defs/error_response" }, { "$ref": "#/$defs/notification" }],
   "$defs": {
-    "method": { "type": "string", "enum": ["contracts", "listRuns", "inspectRun", "subscribe", "retry-with-profile"] },
+    "method": { "type": "string", "enum": ["contracts", "listRuns", "inspectRun", "subscribe", "retry-with-profile", "submit-executor-result"] },
     "handshake": {
       "type": "object",
       "properties": {
@@ -27,14 +27,15 @@
         { "if": { "properties": { "method": { "const": "listRuns" } }, "required": ["method"] }, "then": { "properties": { "params": { "$ref": "https://dh-relay.local/contracts/relay.rpc-methods/v2#/$defs/listRuns_params" } } } },
         { "if": { "properties": { "method": { "const": "inspectRun" } }, "required": ["method"] }, "then": { "properties": { "params": { "$ref": "https://dh-relay.local/contracts/relay.rpc-methods/v2#/$defs/inspectRun_params" } } } },
         { "if": { "properties": { "method": { "const": "subscribe" } }, "required": ["method"] }, "then": { "properties": { "params": { "$ref": "https://dh-relay.local/contracts/relay.rpc-methods/v2#/$defs/subscribe_params" } } } },
-        { "if": { "properties": { "method": { "const": "retry-with-profile" } }, "required": ["method"] }, "then": { "properties": { "params": { "$ref": "https://dh-relay.local/contracts/relay.rpc-methods/v2#/$defs/retry_with_profile_params" } } } }
+        { "if": { "properties": { "method": { "const": "retry-with-profile" } }, "required": ["method"] }, "then": { "properties": { "params": { "$ref": "https://dh-relay.local/contracts/relay.rpc-methods/v2#/$defs/retry_with_profile_params" } } } },
+        { "if": { "properties": { "method": { "const": "submit-executor-result" } }, "required": ["method"] }, "then": { "properties": { "params": { "$ref": "https://dh-relay.local/contracts/relay.rpc-methods/v2#/$defs/submit_executor_result_params" } } } }
       ]
     },
     "response": {
       "type": "object",
       "properties": {
         "jsonrpc": { "const": "2.0" }, "id": { "type": ["string", "integer"] },
-        "result": { "oneOf": [{ "$ref": "https://dh-relay.local/contracts/relay.client-read-model/v1" }, { "$ref": "https://dh-relay.local/contracts/relay.client-read-model/v2" }, { "$ref": "https://dh-relay.local/contracts/relay.rpc-descriptor/v2" }, { "$ref": "https://dh-relay.local/contracts/relay.rpc-methods/v2#/$defs/retry_result" }] }
+        "result": { "oneOf": [{ "$ref": "https://dh-relay.local/contracts/relay.client-read-model/v1" }, { "$ref": "https://dh-relay.local/contracts/relay.client-read-model/v2" }, { "$ref": "https://dh-relay.local/contracts/relay.rpc-descriptor/v2" }, { "$ref": "https://dh-relay.local/contracts/relay.rpc-methods/v2#/$defs/retry_result" }, { "$ref": "https://dh-relay.local/contracts/relay.rpc-methods/v2#/$defs/submit_executor_result_result" }] }
       },
       "required": ["jsonrpc", "id", "result"],
       "additionalProperties": false

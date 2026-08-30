@@ -88,6 +88,21 @@ export async function sendToHerdrAgent({ cli, handle, text = null, keys = null }
   return cli.agentSendKeys(handle.agent_name, Array.isArray(keys) ? keys : [String(keys)]);
 }
 
+/**
+ * Completion is deliberately a transport instruction, not a result payload.  The
+ * worker must submit the closed Receipt-bound object through the Relay v2 bridge;
+ * pane text, captured output, and host status never become a Result by inference.
+ */
+export function receiptSubmissionInstruction(receiptId) {
+  if (typeof receiptId !== 'string' || receiptId.length === 0) throw new Error('E_BAD_VALUE:receipt-id-required');
+  return [
+    '任务完成后，仅提交 Receipt-bound 结果：',
+    `relay submit-result --receipt-id ${receiptId} --outcome succeeded`,
+    `或：relay submit-result --receipt-id ${receiptId} --outcome failed --reason E_EXECUTOR_REPORTED_FAILURE`,
+    '不要通过 pane 输出、日志、退出码或其它通道代替该提交。',
+  ].join('\n');
+}
+
 export function attachHerdrAgent({ handle }) {
   return { agent_name: handle.agent_name, pane_id: handle.pane_id, instruction: `${ATTACH_PREFIX}${handle.agent_name}` };
 }

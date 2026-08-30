@@ -11,7 +11,7 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
-import { buildRequestEnvelope, clientError, connectCli } from './client.mjs';
+import { buildRequestEnvelope, clientError, connectCli, connectCliV2 } from './client.mjs';
 import { addPendingRecord, readPendingRecords, removePendingRecord } from './pending.mjs';
 import { requestDigest } from '../runtime/ledger.mjs';
 import {
@@ -19,18 +19,19 @@ import {
   renderRunList, renderRunStateChanged, renderStatusView, renderTransportFailure, RESULT_UNKNOWN_HINT,
 } from './render.mjs';
 
-const COMMANDS = new Set(['list', 'status', 'inspect', 'events', 'focus', 'start', 'stop', 'resume']);
+const COMMANDS = new Set(['list', 'status', 'inspect', 'events', 'focus', 'start', 'stop', 'resume', 'submit-result']);
 /** 每个命令的 positional 形状（F-025）：多余或缺失一律 usage 退出码 1，绝不静默忽略。 */
-const POSITIONAL_COUNTS = { list: 0, status: 1, inspect: 1, events: 1, focus: 2, start: 0, stop: 1, resume: 1 };
+const POSITIONAL_COUNTS = { list: 0, status: 1, inspect: 1, events: 1, focus: 2, start: 0, stop: 1, resume: 1, 'submit-result': 0 };
 /** 非 follow 的 events 等补发收齐的 fail-out 上限：只作超时报错，绝不作完成判据（F-021）。 */
 const EVENTS_BACKFILL_TIMEOUT_MS = 30_000;
-const VALUE_FLAGS = new Set(['root', 'run', 'after']);
+const VALUE_FLAGS = new Set(['root', 'run', 'after', 'receipt-id', 'outcome', 'reason']);
 const BOOL_FLAGS = new Set(['json', 'follow', 'include-legacy']);
 
 export function usage() {
   return 'usage: relay list [--include-legacy] | status <run_id> | inspect <run_id>'
     + ' | events <run_id> [--follow] [--after <seq>] | focus <run_id> <node_id> | start --run <run.json>'
-    + ' | stop <run_id> | resume <run_id>  [--root <repo>] [--json]';
+    + ' | stop <run_id> | resume <run_id> | submit-result --receipt-id <id> --outcome <succeeded|failed>'
+    + ' [--reason <code>] [--root <repo>] [--json]';
 }
 
 class UsageError extends Error {}
@@ -166,6 +167,33 @@ async function runMutating({ repoRoot, flags, positional, command, json, out, er
     const outcome = await conn.call(method, params, { requestId });
     await removePendingRecord(repoRoot, requestId);
     return report(outcome, { json, out, err, renderText: renderReceipt, pickResult: result => result.receipt });
+  } finally {
+    conn.close();
+  }
+}
+
+function renderSubmission(value) {
+  const result = value?.result;
+  if (!result) return JSON.stringify(value);
+  return `relay: Result ${result.outcome} receipt=${result.receipt_id}${value.idempotent ? ' (idempotent)' : ''}`;
+}
+
+async function runSubmitResult({ repoRoot, flags, json, out, err }) {
+  const receiptId = flags['receipt-id'];
+  const outcome = flags.outcome;
+  if (!receiptId) throw new UsageError('submit-result 需要 --receipt-id <id>');
+  if (!['succeeded', 'failed'].includes(outcome)) throw new UsageError('submit-result 的 --outcome 必须是 succeeded 或 failed');
+  const expectedReason = outcome === 'succeeded' ? null : 'E_EXECUTOR_REPORTED_FAILURE';
+  if (flags.reason !== undefined && flags.reason !== expectedReason) {
+    throw new UsageError(`submit-result 的 --reason 必须是 ${expectedReason ?? '（成功时不传）'}`);
+  }
+  const params = {
+    protocol: 'relay.executor-result-submission/v1', receipt_id: receiptId, outcome, reason: expectedReason,
+  };
+  const conn = await connectCliV2({ repoRoot });
+  try {
+    const result = await conn.call('submit-executor-result', params);
+    return report(result, { json, out, err, renderText: renderSubmission, pickResult: value => value });
   } finally {
     conn.close();
   }
@@ -369,6 +397,7 @@ async function run(argv) {
     else if (command === 'inspect') exitCode = await runInspect({ repoRoot, flags, positional, json, out, err, view: 'detail' });
     else if (command === 'events') exitCode = await runEvents({ repoRoot, flags, positional, json, out, err });
     else if (command === 'focus') exitCode = await runFocus({ repoRoot, flags, positional, json, out, err });
+    else if (command === 'submit-result') exitCode = await runSubmitResult({ repoRoot, flags, json, out, err });
     else exitCode = await runMutating({ repoRoot, flags, positional, command, json, out, err });
   } catch (error) {
     if (error instanceof UsageError) {

@@ -57,6 +57,42 @@
       "required": ["descriptor_version", "repo_id", "generation", "local_user_capability"],
       "additionalProperties": false
     },
+    "submit_executor_result_params": {
+      "type": "object",
+      "properties": {
+        "protocol": { "const": "relay.executor-result-submission/v1" },
+        "receipt_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/identifier" },
+        "outcome": { "type": "string", "enum": ["succeeded", "failed"] },
+        "reason": {
+          "oneOf": [
+            { "type": "null" },
+            { "const": "E_EXECUTOR_REPORTED_FAILURE" }
+          ]
+        }
+      },
+      "required": ["protocol", "receipt_id", "outcome", "reason"],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": { "properties": { "outcome": { "const": "succeeded" } }, "required": ["outcome"] },
+          "then": { "properties": { "reason": { "type": "null" } } }
+        },
+        {
+          "if": { "properties": { "outcome": { "const": "failed" } }, "required": ["outcome"] },
+          "then": { "properties": { "reason": { "const": "E_EXECUTOR_REPORTED_FAILURE" } } }
+        }
+      ]
+    },
+    "submit_executor_result_result": {
+      "type": "object",
+      "properties": {
+        "ok": { "const": true },
+        "idempotent": { "type": "boolean" },
+        "result": { "$ref": "https://dh-relay.local/contracts/relay.result/v2" }
+      },
+      "required": ["ok", "idempotent", "result"],
+      "additionalProperties": false
+    },
     "retry_result": {
       "type": "object",
       "properties": {

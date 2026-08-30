@@ -3,13 +3,15 @@ import { createHash, randomUUID } from 'node:crypto';
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
 import { loadAjv, validateOne } from '../tools/validate.mjs';
-import { jcs } from '../tools/canonical.mjs';
+import { digest, jcs } from '../tools/canonical.mjs';
 import { applyEvents, replayRun } from './state.mjs';
 
 const encode = (value) => JSON.stringify(value);
 
 const EVENT_SCHEMA_ID = 'relay.event/v2';
 const ATTEMPT_RECEIPT_SCHEMA_ID = 'relay.attempt-receipt/v1';
+const RESULT_SCHEMA_ID = 'relay.result/v2';
+const RESULT_SUBMISSION_SCHEMA_ID = 'relay.executor-result-submission/v1';
 const FALLBACK_PAUSE_SCHEMA_ID = 'relay.fallback-pause/v1';
 const FALLBACK_PAUSE_RESOLUTION_SCHEMA_ID = 'relay.fallback-pause-resolution/v1';
 const MUTATION_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -35,6 +37,69 @@ function assertAttemptReceipt(receipt) {
   const { ajv, byId } = eventValidator();
   const verdict = validateOne(ajv, byId, ATTEMPT_RECEIPT_SCHEMA_ID, receipt);
   if (!verdict.ok) throw new Error(`E_SCHEMA_INVALID:${verdict.reason}`);
+}
+
+function attemptReceiptContract(receipt) {
+  const { issued_seq: ignored, ...contract } = receipt;
+  return contract;
+}
+
+function assertResultSubmission(submission) {
+  const { ajv, byId } = eventValidator();
+  const verdict = validateOne(ajv, byId, RESULT_SUBMISSION_SCHEMA_ID, submission);
+  if (!verdict.ok) throw new Error(`E_SCHEMA_INVALID:${verdict.reason}`);
+}
+
+function assertResult(result) {
+  const { ajv, byId } = eventValidator();
+  const verdict = validateOne(ajv, byId, RESULT_SCHEMA_ID, result);
+  if (!verdict.ok) throw new Error(`E_SCHEMA_INVALID:${verdict.reason}`);
+}
+
+export function receiptBoundResultDigest(result) {
+  return digest({
+    protocol: result.protocol,
+    run_id: result.run_id,
+    node_id: result.node_id,
+    attempt_id: result.attempt_id,
+    receipt_id: result.receipt_id,
+    executor_kind: result.executor_kind,
+    outcome: result.outcome,
+    reason: result.reason ?? null,
+    structured: { source: 'receipt-bound-submission/v1' },
+  });
+}
+
+function assertResultLedger(run, events, receipts, results) {
+  for (const result of results.values()) {
+    if (result?.protocol !== RESULT_SCHEMA_ID) continue;
+    assertResult(result);
+    const receipt = receipts.get(result.receipt_id);
+    if (!receipt || receipt.run_id !== run.run_id || receipt.result_submission_mode !== 'receipt-bound/v1'
+      || result.run_id !== run.run_id || result.node_id !== receipt.node_id
+      || result.attempt_id !== receipt.attempt_id || result.executor_kind !== 'herdr-agent') {
+      throw new Error('E_STORE_MUTATION_RECOVERY_FAILED:result-identity-mismatch');
+    }
+    assertAttemptReceipt(attemptReceiptContract(receipt));
+    if (result.structured?.source !== 'receipt-bound-submission/v1'
+      || Object.keys(result.structured ?? {}).length !== 1
+      || result.log_locator !== null || result.quarantined !== false
+      || result.payload_digest !== receiptBoundResultDigest(result)) {
+      throw new Error('E_STORE_MUTATION_RECOVERY_FAILED:result-digest-mismatch');
+    }
+    const kind = result.outcome === 'succeeded' ? 'attempt_succeeded' : result.outcome === 'failed' ? 'attempt_failed' : null;
+    const event = events.find(item => item.run_id === run.run_id && item.kind === kind && item.node_id === result.node_id
+      && item.attempt_id === result.attempt_id && item.at === result.finished_at
+      && item.reason === (result.reason ?? null) && item.detail === `receipt:${result.receipt_id}`);
+    if (!event) throw new Error('E_STORE_MUTATION_RECOVERY_FAILED:result-ledger-incomplete');
+  }
+  for (const event of events.filter(item => ['attempt_succeeded', 'attempt_failed'].includes(item.kind))) {
+    const receiptId = typeof event.detail === 'string' && event.detail.startsWith('receipt:')
+      ? event.detail.slice('receipt:'.length) : null;
+    if (receiptId && !results.has(receiptId)) {
+      throw new Error('E_STORE_MUTATION_RECOVERY_FAILED:result-ledger-incomplete');
+    }
+  }
 }
 
 function assertFallbackPause(pause) {
@@ -300,6 +365,10 @@ function createHandle({ root, run, events, receipts, checkpoints, results, opera
 
   async function commitStoreMutation(targets) {
     try {
+      // Admission was guarded when this serialized job began. Recheck at the
+      // durable mutation boundary because the lease may be lost while the
+      // Result, event and state targets are being derived.
+      if (writeGuard) await writeGuard();
       await commitMutation(root, targets);
     } catch (error) {
       mutationRecoveryRequired = true;
@@ -316,6 +385,27 @@ function createHandle({ root, run, events, receipts, checkpoints, results, opera
       .filter((receipt) => receipt.node_id === nodeId)
       .sort((left, right) => left.issued_seq - right.issued_seq)
       .at(-1);
+  }
+
+  function executorKindForReceipt(receipt) {
+    const profileId = receipt?.executor_identity?.executor_profile_id;
+    const node = run.nodes.find(item => item.node_id === receipt?.node_id);
+    const profile = node?.executor_profiles?.find(item => item?.ref === profileId
+      || item?.executor_profile_id === profileId);
+    return profile?.kind ?? null;
+  }
+
+  function bridgePayloadDigest({ receipt, outcome, reason, executorKind }) {
+    return receiptBoundResultDigest({
+      protocol: RESULT_SCHEMA_ID,
+      run_id: receipt.run_id,
+      node_id: receipt.node_id,
+      attempt_id: receipt.attempt_id,
+      receipt_id: receipt.receipt_id,
+      executor_kind: executorKind,
+      outcome,
+      reason,
+    });
   }
 
   // 节点「当前 attempt」的终态。终态按 receipt（= attempt）记账：旧 attempt 的终态
@@ -592,6 +682,86 @@ function createHandle({ root, run, events, receipts, checkpoints, results, opera
         return { ok: true, idempotent: false };
       });
     },
+    /**
+     * DHR_64 receipt-bound Result ingress. The caller supplies only the closed
+     * submission object; every Result identity and its structured payload are
+     * derived from the durable current Attempt Receipt here.
+     */
+    submitExecutorResult(submission) {
+      return runWrite(async () => {
+        if (!submission || typeof submission !== 'object') throw new Error('E_BAD_VALUE:submission-required');
+        assertResultSubmission(submission);
+        const receipt = receipts.get(submission.receipt_id);
+        if (!receipt || receipt.result_submission_mode !== 'receipt-bound/v1') {
+          return { ok: false, reason: 'E_IDENTITY_MISMATCH' };
+        }
+        assertAttemptReceipt(attemptReceiptContract(receipt));
+        if (receipt.run_id !== run.run_id) return { ok: false, reason: 'E_IDENTITY_MISMATCH' };
+        if (fencedAttempts.has(`${receipt.attempt_id}\u0000${receipt.receipt_id}`)) {
+          return { ok: false, reason: 'E_ATTEMPT_FENCED' };
+        }
+        const current = currentReceipt(receipt.node_id);
+        if (current?.receipt_id !== receipt.receipt_id || current.attempt_id !== receipt.attempt_id) {
+          return { ok: false, reason: 'E_IDENTITY_MISMATCH' };
+        }
+        const executorKind = executorKindForReceipt(receipt);
+        if (executorKind !== 'herdr-agent') return { ok: false, reason: 'E_IDENTITY_MISMATCH' };
+        const structured = { source: 'receipt-bound-submission/v1' };
+        const payloadDigest = bridgePayloadDigest({
+          receipt, outcome: submission.outcome, reason: submission.reason, executorKind,
+        });
+        const prior = results.get(receipt.receipt_id);
+        if (prior) {
+          const committedBridge = prior.protocol === RESULT_SCHEMA_ID
+            && prior.structured?.source === 'receipt-bound-submission/v1';
+          return committedBridge && prior.payload_digest === payloadDigest
+            && prior.outcome === submission.outcome
+            && (prior.reason ?? null) === submission.reason
+            ? { ok: true, idempotent: true, result: prior }
+            : { ok: false, reason: 'E_TERMINAL_STATE_CONFLICT' };
+        }
+        if (terminalOf(receipt.node_id)) return { ok: false, reason: 'E_TERMINAL_STATE_CONFLICT' };
+
+        const finishedAt = new Date().toISOString();
+        const result = {
+          protocol: RESULT_SCHEMA_ID,
+          run_id: receipt.run_id,
+          node_id: receipt.node_id,
+          attempt_id: receipt.attempt_id,
+          receipt_id: receipt.receipt_id,
+          executor_kind: executorKind,
+          outcome: submission.outcome,
+          reason: submission.reason,
+          finished_at: finishedAt,
+          structured,
+          log_locator: null,
+          payload_digest: payloadDigest,
+          quarantined: false,
+        };
+        assertResult(result);
+        const kind = submission.outcome === 'succeeded' ? 'attempt_succeeded' : 'attempt_failed';
+        const event = {
+          protocol: 'relay.event/v2', run_id: run.run_id, seq: events.length,
+          at: finishedAt, kind, node_id: receipt.node_id, attempt_id: receipt.attempt_id,
+          executor_kind: null, executor_ref: null, observation_status: null,
+          reason: submission.reason, detail: `receipt:${receipt.receipt_id}`,
+        };
+        const { ajv, byId } = eventValidator();
+        const eventVerdict = validateOne(ajv, byId, EVENT_SCHEMA_ID, event);
+        if (!eventVerdict.ok) throw new Error(`E_SCHEMA_INVALID:${eventVerdict.reason}`);
+        const nextState = replayRun({ run, events: [...events, event] });
+        const priorEvents = (await readTextOrAbsent(eventsPath)) ?? '';
+        await commitStoreMutation([
+          { path: join(resultsPath, `${receipt.receipt_id}.json`), content: encode(result) },
+          { path: eventsPath, content: `${priorEvents}${encode(event)}\n` },
+          { path: statePath, content: encode(nextState) },
+        ]);
+        results.set(receipt.receipt_id, result);
+        events.push(event);
+        publishCommitted([event], nextState);
+        return { ok: true, idempotent: false, result };
+      });
+    },
     appendResult(result) {
       return runWrite(async () => {
         if (!result || typeof result !== 'object') throw new Error('E_BAD_VALUE:result-required');
@@ -828,6 +998,7 @@ export async function openStore({ root, writeGuard = null }) {
     if (receipt.protocol === 'relay.attempt-receipt/v1') assertAttemptReceipt((({ issued_seq, ...value }) => value)(receipt));
   }
   const results = await loadArtifacts(join(root, 'results'), (result) => requireId(result?.receipt_id, 'receipt-id'));
+  assertResultLedger(run, events, receipts, results);
   const checkpoints = await loadCheckpoints(join(root, 'checkpoints'));
   const operations = await loadArtifacts(join(root, 'operations'), (operation) => requireId(operation?.receipt_id, 'receipt-id'));
   const pauses = await loadArtifacts(join(root, 'pauses'), (pause) => {

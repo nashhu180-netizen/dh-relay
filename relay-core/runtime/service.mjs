@@ -21,7 +21,7 @@ import { join, resolve } from 'node:path';
 import { localCapabilityHash, localCapabilityHashV2 } from '../rpc/capabilities.mjs';
 import { createBootstrapServer } from '../rpc/bootstrap.mjs';
 import { createRpcServer } from '../rpc/server.mjs';
-import { readOpenAttentions } from '../store/store.mjs';
+import { readEventLog, readOpenAttentions, receiptBoundResultDigest } from '../store/store.mjs';
 import { loadAjv, validateOne } from '../tools/validate.mjs';
 import { discoverRepo, orderRunSummaries, scanRuns } from './discovery.mjs';
 import { endpointForRepo, repoHash, writeDescriptor } from './endpoint.mjs';
@@ -110,12 +110,19 @@ function hostDetailText(detail) {
 
 async function readEventsFromDisk(runRoot) {
   try {
-    const text = await readFile(join(runRoot, 'events.jsonl'), 'utf8');
-    return text.split('\n').filter(Boolean).map(line => JSON.parse(line));
+    const run = JSON.parse(await readFile(join(runRoot, 'run.json'), 'utf8'));
+    return await readEventLog({ root: runRoot, run });
   } catch (error) {
-    if (error?.code === 'ENOENT') return [];
+    if (error?.code === 'ENOENT' && error?.path?.endsWith('events.jsonl')) return [];
     throw serviceError('E_STORE_CORRUPT', 'events-unreadable');
   }
+}
+
+function assertAttemptReceiptContract(receipt) {
+  validatorCache ??= loadAjv();
+  const { issued_seq: ignored, ...contract } = receipt ?? {};
+  const verdict = validateOne(validatorCache.ajv, validatorCache.byId, 'relay.attempt-receipt/v1', contract);
+  if (!verdict.ok) throw serviceError('E_STORE_MUTATION_RECOVERY_FAILED', 'attempt-receipt-schema');
 }
 
 /**
@@ -288,9 +295,184 @@ export async function startRuntimeService({
     });
     drivers.set(runId, driver);
     driver.done.then(() => {
-      if (drivers.get(runId) === driver) drivers.delete(runId);
+      // A bounded Herdr wait may finish in waiting_human while its current
+      // Receipt remains a valid submission gate. Keep that driver reachable so
+      // a later v2 submission cannot bypass the gate or require a new Receipt.
+      if (drivers.get(runId) === driver && !driver.hasOpenSubmissionGates) drivers.delete(runId);
     }, () => {});
     return driver;
+  }
+
+  /**
+   * Find current Receipt-bound attempts without opening a Store.  Startup and
+   * lazy routing use only the persisted run/state/events/receipt facts; the
+   * actor remains the sole writer once a matching run is selected.
+   */
+  async function receiptBoundRun(runId, receiptId = null, { allowTerminal = false } = {}) {
+    const root = known.roots.get(runId);
+    if (!root) return null;
+    let run;
+    let state;
+    try {
+      run = JSON.parse(await readFile(join(root, 'run.json'), 'utf8'));
+      state = JSON.parse(await readFile(join(root, 'state.json'), 'utf8'));
+    } catch {
+      return null;
+    }
+    const events = await readEventsFromDisk(root);
+    for (const nodeState of state.node_states ?? []) {
+      const active = ['running', 'waiting_human'].includes(nodeState?.status);
+      const terminal = allowTerminal && ['succeeded', 'failed'].includes(nodeState?.status);
+      if ((!active && !terminal) || !nodeState.current_attempt_id) continue;
+      const node = run.nodes?.find(item => item.node_id === nodeState.node_id);
+      if (!(node?.executor_profiles ?? []).some(profile => profile?.kind === 'herdr-agent')) continue;
+      const attempt = [...events].reverse().find(event => event.kind === 'attempt_started'
+        && event.node_id === nodeState.node_id && event.attempt_id === nodeState.current_attempt_id);
+      const id = typeof attempt?.detail === 'string' && attempt.detail.startsWith('receipt:')
+        ? attempt.detail.slice('receipt:'.length) : null;
+      if (!id || (receiptId !== null && id !== receiptId)) continue;
+      let receipt;
+      try {
+        receipt = JSON.parse(await readFile(join(root, 'receipts', `${id}.json`), 'utf8'));
+      } catch {
+        throw serviceError('E_STORE_MUTATION_RECOVERY_FAILED', 'attempt-receipt-unreadable');
+      }
+      assertAttemptReceiptContract(receipt);
+      if (receipt.result_submission_mode !== 'receipt-bound/v1') continue;
+      let result = null;
+      let resultEvent = null;
+      if (terminal) {
+        try {
+          result = JSON.parse(await readFile(join(root, 'results', `${id}.json`), 'utf8'));
+        } catch {
+          throw serviceError('E_STORE_MUTATION_RECOVERY_FAILED', 'result-unreadable');
+        }
+        if (result?.protocol !== 'relay.result/v2' || result.receipt_id !== id) {
+          throw serviceError('E_STORE_MUTATION_RECOVERY_FAILED', 'result-identity-mismatch');
+        }
+        resultEvent = events.find(event => event.detail === `receipt:${id}`
+          && ['attempt_succeeded', 'attempt_failed'].includes(event.kind)
+          && event.node_id === nodeState.node_id && event.attempt_id === nodeState.current_attempt_id);
+      }
+      return { runId, receiptId: id, run, receipt, result, resultEvent };
+    }
+    return null;
+  }
+
+  /**
+   * Verify a terminal bridge result without taking a lease or opening an actor.
+   * This is the restart-only idempotence path: a committed duplicate must not
+   * append lease/observation events merely to rediscover the old Result.
+   */
+  function terminalSubmissionAck(gate, params) {
+    const result = gate?.result;
+    if (!result) return null;
+    validatorCache ??= loadAjv();
+    const verdict = validateOne(validatorCache.ajv, validatorCache.byId, 'relay.result/v2', result);
+    if (!verdict.ok) throw serviceError('E_STORE_MUTATION_RECOVERY_FAILED', 'result-schema');
+    const receipt = gate.receipt;
+    const node = gate.run.nodes?.find(item => item.node_id === receipt?.node_id);
+    const profileId = receipt?.executor_identity?.executor_profile_id;
+    const profile = node?.executor_profiles?.find(item => item?.ref === profileId
+      || item?.executor_profile_id === profileId);
+    const eventKind = result.outcome === 'succeeded' ? 'attempt_succeeded'
+      : result.outcome === 'failed' ? 'attempt_failed' : null;
+    if (receipt?.run_id !== gate.run.run_id || receipt.result_submission_mode !== 'receipt-bound/v1'
+      || profile?.kind !== 'herdr-agent' || result.run_id !== gate.run.run_id
+      || result.node_id !== receipt.node_id || result.attempt_id !== receipt.attempt_id
+      || result.receipt_id !== receipt.receipt_id || result.executor_kind !== 'herdr-agent'
+      || result.structured?.source !== 'receipt-bound-submission/v1'
+      || Object.keys(result.structured ?? {}).length !== 1
+      || result.log_locator !== null || result.quarantined !== false
+      || !gate.resultEvent || gate.resultEvent.run_id !== gate.run.run_id
+      || gate.resultEvent.kind !== eventKind || gate.resultEvent.node_id !== result.node_id
+      || gate.resultEvent.attempt_id !== result.attempt_id || gate.resultEvent.at !== result.finished_at
+      || gate.resultEvent.reason !== (result.reason ?? null)
+      || gate.resultEvent.detail !== `receipt:${result.receipt_id}`) {
+      throw serviceError('E_STORE_MUTATION_RECOVERY_FAILED', 'result-ledger-incomplete');
+    }
+    if (result.payload_digest !== receiptBoundResultDigest({
+      protocol: 'relay.result/v2', run_id: gate.run.run_id, node_id: receipt.node_id,
+      attempt_id: receipt.attempt_id, receipt_id: receipt.receipt_id, executor_kind: 'herdr-agent',
+      outcome: result.outcome, reason: result.reason,
+    })) throw serviceError('E_STORE_MUTATION_RECOVERY_FAILED', 'result-digest-mismatch');
+    if (result.outcome !== params.outcome || (result.reason ?? null) !== (params.reason ?? null)) {
+      return { ok: false, reason: 'E_TERMINAL_STATE_CONFLICT' };
+    }
+    return { ok: true, idempotent: true, result };
+  }
+
+  /** Restore every non-terminal receipt-bound gate before the ready descriptor. */
+  async function restoreReceiptBoundDrivers() {
+    const gates = [];
+    for (const runId of known.roots.keys()) {
+      if (isOrphan(runId)) continue;
+      const gate = await receiptBoundRun(runId);
+      if (gate) gates.push(gate);
+    }
+    // Validate every candidate before obtaining any lease. A corrupt later Run
+    // must not leave an earlier Run half-started during service bootstrap.
+    for (const gate of gates) {
+      const actor = await ensureActor(gate.runId);
+      const driver = driveRun(gate.runId, actor);
+      driver.registerSubmissionGate(gate.receiptId);
+    }
+  }
+
+  async function submitExecutorResult(params) {
+    requireReady();
+    return enqueue(async () => {
+      const tryDriver = async (runId, driver) => {
+        let response;
+        try {
+          response = await driver.submitExecutorResult(params);
+        } catch (error) {
+          throw withReason(error);
+        }
+        if (response?.ok === true) {
+          // If the gate had already timed out, the old driver is complete;
+          // start a fresh continuation only after the committed Ack.
+          if (driver.finished && drivers.get(runId) === driver) {
+            drivers.delete(runId);
+            const actor = actors.get(runId);
+            if (actor) driveRun(runId, actor);
+          }
+          return response;
+        }
+        if (response?.reason && response.reason !== 'E_IDENTITY_MISMATCH') {
+          throw serviceError(response.reason);
+        }
+        return null;
+      };
+
+      for (const [runId, driver] of drivers) {
+        const response = await tryDriver(runId, driver);
+        if (response) return response;
+      }
+
+      // A service restart can finish driver bootstrap before the caller's
+      // first submission arrives. Reconstruct the matching actor/driver from
+      // durable facts, never by writing the Store directly here.  The known
+      // map is intentionally not refreshed on this rejection-sensitive route:
+      // discovery repairs runs.json, which would turn an unknown submission
+      // into an account/index mutation.
+      for (const runId of known.roots.keys()) {
+        if (isOrphan(runId)) continue;
+        const gate = await receiptBoundRun(runId, params.receipt_id, { allowTerminal: true });
+        if (!gate) continue;
+        if (gate.result) {
+          const terminal = terminalSubmissionAck(gate, params);
+          if (terminal?.ok === false) throw serviceError(terminal.reason);
+          return terminal;
+        }
+        const actor = await ensureActor(runId);
+        const driver = driveRun(runId, actor);
+        driver.registerSubmissionGate(gate.receiptId);
+        const response = await tryDriver(runId, driver);
+        if (response) return response;
+      }
+      throw serviceError('E_IDENTITY_MISMATCH');
+    });
   }
 
   /** 停掉某个 Run 的 driver 并等它收口（被中断的步骤会先落 E_EXECUTOR_KILLED 终态）。 */
@@ -299,6 +481,13 @@ export async function startRuntimeService({
     if (!driver) return;
     drivers.delete(runId);
     await driver.stop().catch(() => {});
+  }
+
+  async function stopLiveWorkers() {
+    await Promise.allSettled([...drivers.keys()].map(runId => stopDriver(runId)));
+    for (const actor of actors.values()) actor.stop();
+    await Promise.allSettled([...actors.values()].map(actor => actor.done));
+    actors.clear();
   }
 
   /** 某一届 actor 结束：摘掉挂在它身上的 barrier，订阅本身留着等下一届重挂。 */
@@ -756,6 +945,7 @@ export async function startRuntimeService({
         throw withReason(error);
       }
     },
+    'submit-executor-result': submitExecutorResult,
   };
 
   // ── ① bind：赢下确定性端点才算这一届 service ─────────────────────────────────
@@ -795,6 +985,10 @@ export async function startRuntimeService({
     capability = localUserCapability ?? await readOrCreateLocalUserCapability(repoRoot, credentialRoot ? { credentialRoot } : {});
     // ── ③ 发现与对账：ledger、runs.json、legacy 投影 ─────────────────────────
     await bootstrapDiscovery();
+    // Restore actor/lease/driver gates before advertising readiness.  A current
+    // Receipt-bound attempt must be receivable after restart without creating a
+    // fresh Receipt, Agent, fallback, or a direct service-side Store write.
+    await restoreReceiptBoundDrivers();
     // ── ④ 全部就绪后才发布 ready descriptor ──────────────────────────────────
     descriptor = {
       descriptor_version: 1,
@@ -813,6 +1007,7 @@ export async function startRuntimeService({
     bootstrapHandle = await createBootstrapServer({ endpoint: bootstrapEndpoint, descriptor: v2Descriptor });
     await writeDescriptor(repoRoot, descriptor);
   } catch (error) {
+    await stopLiveWorkers();
     await bootstrapHandle?.close().catch(() => {});
     await v2Handle?.close().catch(() => {});
     await handle.close().catch(() => {});
@@ -834,10 +1029,7 @@ export async function startRuntimeService({
       for (const set of subscriptions.values()) for (const subscription of set) subscription.closed = true;
       subscriptions.clear();
       // driver 先于 actor 收口：它的终态写还要经 actor 队列落盘，也顺带杀掉在跑的步骤子进程。
-      await Promise.allSettled([...drivers.keys()].map(runId => stopDriver(runId)));
-      for (const actor of actors.values()) actor.stop();
-      await Promise.allSettled([...actors.values()].map(actor => actor.done));
-      actors.clear();
+      await stopLiveWorkers();
       // descriptor 留在盘上：它是陈旧发现信息，不是所有权（design/07 §3）。
       await bootstrapHandle.close();
       await v2Handle.close();
