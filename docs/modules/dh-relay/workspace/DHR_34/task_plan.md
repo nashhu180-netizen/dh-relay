@@ -11,7 +11,7 @@
 | C-004 | `relay-core/runtime/workflow-driver.mjs` | D3 quota/fallback 编排的唯一接线点；不得在此卡重做 Receipt/Store/RPC 合同。 |
 | C-005 | `relay-core/test/herdr-adapter.test.mjs`、`relay-core/test/agent-node.test.mjs` | 既有 Herdr Attempt、Result 和恢复语义的回归锚点。 |
 
-## 施工步骤（当前仅完成 S0 准备；施工前由 Opus 预审冻结实现细节）
+## 施工步骤（S1~S4 已完成；S5 证据账本已补，待独立 Review Batch）
 
 | # | 改动文件 | 怎么改 | 怎么验 |
 |---|---|---|---|
@@ -24,6 +24,6 @@
 ## 关键决策
 
 - Worktree：是；分支 `wt/DHR_34`；目录 `.dh-worktrees/DHR_34`。
-- 施工：尚未派发；先完成 Opus fresh 预审，预审不得改代码或注册表。
+- 施工：Codex 已在 DHR_61 合入并解除阻塞后按本表 TDD 施工；未读取或改变用户注册表、账号状态或凭据。
 - 复核：Opus；heavy 配方为代码轮 1、fresh 代码轮 2、需求、教训、一致性五路，施工者不得复核本卡。
 - TDD：适用；quota 分类和 fresh Attempt 身份链先红后绿。

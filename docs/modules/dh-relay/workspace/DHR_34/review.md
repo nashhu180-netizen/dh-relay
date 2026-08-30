@@ -19,21 +19,21 @@
 
 | 复核者 | 范围 | 发现 | 派出证据 | 证据 |
 |---|---|---|---|---|
-| 待派 | 开工前任务包与实施 diff | 待复核 | 待派 | 待填 |
+| Opus 5 形态（身份来源冲突，待证）· `dhr34_code1` | 全程增量、D3/恢复/Store 边界与定向/全量探针 | 初审 P0=0、P1=1；整改复验后 APPROVED，open P0/P1=0 | Herdr `w1:p1C` | E-011~E-013；`review-code1-opus.md` |
 
 ### 代码轮 2（Opus · fresh，实例须不同于轮 1）
 
 | 复核者 | 范围 | 结论 | 派出证据 | 证据 |
 |---|---|---|---|---|
-| 待派 | 全程与收口增量 | 待复核 | 待派 | 待填 |
+| Opus 5 形态（身份来源冲突，待证）· `dhr34_code2` | 全程与收口增量、有效 mutation | APPROVED；复验 open P0/P1=0 | Herdr `w1:p1D` | E-014~E-019；`review-code2-opus.md` |
 
 ### 需求、教训与一致性（均为 Opus 独立实例）
 
 | 路径 | 范围 | 结论 | 派出证据 | 证据 |
 |---|---|---|---|---|
-| 需求 | 完成条件与身份/quota边界 | 待复核 | 待派 | 待填 |
-| 教训 | 在册教训与候选 | 待复核 | 待派 | 待填 |
-| 一致性 | 同类 Attempt/Receipt 路径 | 待复核 | 待派 | 待填 |
+| 需求 | 完成条件与身份/quota边界 | APPROVED；复验 open P0/P1/P2=0 | Herdr `w1:p1E` | `review-req-opus.md` |
+| 教训 | 在册教训与候选 | APPROVED；fresh replacement 复验 open P0/P1=0 | Herdr `w1:p1H`（原 `w1:p1G` 交互异常后替换） | `review-lessons-opus.md` |
+| 一致性 | 同类 Attempt/Receipt 路径 | APPROVED；复验 open P0/P1/P2=0 | Herdr `w1:p1F` | `review-consistency-opus.md` |
 
 ## AI 提交区
 
@@ -41,16 +41,17 @@
 
 | 需求 / 人验项 | 场景与操作路径 | 证据 | 结论 |
 |---|---|---|---|
-| P6-M4：误判不切换 | 以受控假样本依次注入 quota、权限、网络和普通失败 | E-002 | 待人验 |
-| P6-M2/M7：身份链不串用 | 对同一节点的原 profile 与 fallback profile 对比 Receipt / Attempt / Result | E-002 | 待人验 |
+| P6-M4：误判不切换 | 以受控合成结构化信号与显式注入的 synthetic detector 验证 quota、权限、网络、交叉不一致与 unknown；无 fallback 走 canonical pause | E-006~E-020 | **待人验**：安全 seam 机器通过且 `constrained`；真实样本/detector/judge/生产接线未完成，归 DHR_35 |
+| P6-M2/M7：身份链不串用 | 对同一节点的 source 与 fallback Receipt / Attempt / Result 及恢复身份对证 | E-007~E-020 | **待人验**：机器与独立复核通过，等待用户签名 |
 
 ### 完成条件逐条挂证据
 
 | # | 完成条件 | 谁验 | 证据 | 达成? |
 |---|---|---|---|---|
-| 1 | 高置信 quota 才 fallback；非 quota 不切；无 fallback 暂停并 Attention | machine | 待收口 | 待验证 |
-| 2 | 身份链可证且客户端变化不串用 | machine | 待收口 | 待验证 |
-| 3 | fallback 为 fresh Attempt | machine | 待收口 | 待验证 |
+| 1 | 高置信 quota 才 fallback；非 quota 不切；无 fallback 暂停并 Attention | machine | E-006~E-016 | 定向夹具通过；生产链路未接通，`constrained` |
+| 2 | 身份链可证且客户端变化不串用 | machine | E-007~E-018；恢复用例故意令 event detail=source、Receipt=backup | machine 通过；Receipt 权威断言有判别力 |
+| 3 | fallback 为 fresh Attempt | machine | E-006~E-016 | 定向夹具通过；真实执行闭环归 DHR_35 |
+| 4 | heavy 有效单测 / mutation | code2 + lessons | E-015、E-019、E-020 | 自动 fallback 权限门改坏后 8/10、还原 10/10；最终树门与转红用例逐字复核仍在 |
 
 ## 人类签名区
 
@@ -58,4 +59,9 @@
 
 | 验什么 | 做什么 | 通过标准 | 结果 |
 |---|---|---|---|
-| P6-M4 的产品语义 | 查看脱敏正反样本与 Attention 展示 | 认可额度误判和无 fallback 时均不自动切号 | [ ] |
+| P6-M4 的受限结论 | 查看 constrained 边界 | 认可本卡只交付安全 seam，真实 detector/judge 留 DHR_35 | [x] 2026-08-30 用户对话「接受」 |
+| 二次 quota 的产品语义 | 查看一跳上限与 canonical pause | 认可不自动链第三身份，停等人工 | [x] 2026-08-30 用户对话「接受」 |
+| 无真实样本时的 detector 策略 | 查看未登记 detector 负例 | 认可本卡不内置未证产品规则 | [x] 2026-08-30 用户对话「接受」 |
+
+- [x] **E10 收口确认与 verify**（2026-08-30 用户对话「接受」）：认可本卡按 P6-M4 `constrained` 语义本地收口；真实 quota 样本、生产 detector/judge、retry 后执行闭环仍由 DHR_35 承接。
+- 复核身份按候选-40 的用户裁决 B 登记：fresh 实例 + 独立会话构成换人复核；模型身份冲突仅作诊断记录，不影响本卡既有复核有效性。

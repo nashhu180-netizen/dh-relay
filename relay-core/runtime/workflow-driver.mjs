@@ -21,6 +21,8 @@ import { classifyStepOutcome, resolveStepEntry, startProcessStep } from './proce
 import { makeHerdrCli } from './executors/herdr/herdr-cli.mjs';
 import { captureHerdrResult, launchHerdrAgent, observationDetail, observeHerdrAgent, reconcileHerdrAgent, stopHerdrAgent } from './executors/herdr/herdr-executor.mjs';
 import { freezeProfileIdentity, loadExecutorProfiles, resolveProfile } from './executors/herdr/profile-registry.mjs';
+import { buildFallbackPause, selectQualifiedFallback } from './executors/identity/fallback.mjs';
+import { classifyQuota } from './executors/quota/classifier.mjs';
 
 /**
  * 起一届 driver。**不阻塞调用方**：`start`/`resume` 的 RPC 应答不该等业务节点跑完。
@@ -30,7 +32,8 @@ import { freezeProfileIdentity, loadExecutorProfiles, resolveProfile } from './e
  */
 export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = false, clock = () => Date.now(),
   herdrCli = makeHerdrCli(), herdrRegistryPath, herdrPollMs = 1_000, observationLostMs = 60_000,
-  doneTimeoutMs = 60_000, herdrJudge = null, herdrReadyTimeoutMs = 10_000, profileEnvironment = process.env } = {}) {
+  doneTimeoutMs = 60_000, herdrJudge = null, herdrReadyTimeoutMs = 10_000, profileEnvironment = process.env,
+  quotaDetectors = {}, platform = process.platform } = {}) {
   const runRoot = runRootOf({ repoRoot, runId });
   const nowIso = () => new Date(clock()).toISOString();
 
@@ -89,7 +92,8 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
     }));
   }
 
-  async function openAttempt({ node, firstAttempt, registry = null, executorProfile = null }) {
+  async function openAttempt({ node, firstAttempt, registry = null, executorProfile = null, executorIdentity = null,
+    fallbackProfileSnapshots = null }) {
     const attemptId = randomUUID();
     const receiptId = `rcpt-${attemptId}`;
     const issuedAt = nowIso();
@@ -98,12 +102,21 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
       throw new Error(`E_NONSECRET_PROJECTION_MISSING:source-${executorProfile.executor_profile_id}`);
     }
     if (executorProfile) {
-      const executor_identity = await freezeProfileIdentity(executorProfile, { environment: profileEnvironment });
-      const fallback_profile_snapshots = [];
-      for (const profileId of executorProfile.fallback_profile_ids ?? []) {
-        const fallback = resolveProfile(registry, profileId);
-        if (!fallback?.config_fingerprint_rule) throw new Error(`E_NONSECRET_PROJECTION_MISSING:fallback-${profileId}`);
-        fallback_profile_snapshots.push(await freezeProfileIdentity(fallback, { environment: profileEnvironment }));
+      if (executorIdentity?.executor_profile_id && executorIdentity.executor_profile_id !== executorProfile.executor_profile_id) {
+        throw new Error(`E_EXECUTOR_IDENTITY_MISMATCH:${executorProfile.executor_profile_id}`);
+      }
+      const executor_identity = executorIdentity
+        ? { ...executorIdentity }
+        : await freezeProfileIdentity(executorProfile, { environment: profileEnvironment });
+      const fallback_profile_snapshots = fallbackProfileSnapshots
+        ? fallbackProfileSnapshots.map(item => ({ ...item }))
+        : [];
+      if (!fallbackProfileSnapshots) {
+        for (const profileId of executorProfile.fallback_profile_ids ?? []) {
+          const fallback = resolveProfile(registry, profileId);
+          if (!fallback?.config_fingerprint_rule) throw new Error(`E_NONSECRET_PROJECTION_MISSING:fallback-${profileId}`);
+          fallback_profile_snapshots.push(await freezeProfileIdentity(fallback, { environment: profileEnvironment }));
+        }
       }
       attemptReceipt = {
         protocol: 'relay.attempt-receipt/v1', receipt_id: receiptId, run_id: runId, node_id: node.node_id,
@@ -119,7 +132,7 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
         : await store.registerReceipt({ receipt_id: receiptId, attempt_id: attemptId, node_id: node.node_id, at: issuedAt });
       if (ack?.ok === false) throw new Error(`${ack.reason ?? 'E_REQUEST_CONFLICT'}:receipt-${receiptId}`);
     });
-    return { attemptId, receiptId };
+    return { attemptId, receiptId, attemptReceipt };
   }
 
   const herdrDetail = (handle, herdrStatus, seq) => observationDetail({
@@ -127,12 +140,15 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
     workDirRoot: handle.work_dir_root, profileId: handle.executor_profile_id,
   });
 
-  async function driveHerdrNode({ node, profile, firstAttempt, recovery = null }) {
-    const loaded = await loadExecutorProfiles({ registryPath: herdrRegistryPath, environment: profileEnvironment });
+  async function driveHerdrNode({ node, profile, firstAttempt, recovery = null, allowAutomaticFallback = true,
+    registrySnapshot = null, executorIdentity = null, fallbackProfileSnapshots = null }) {
+    const loaded = registrySnapshot
+      ? { ok: true, registry: registrySnapshot }
+      : await loadExecutorProfiles({ registryPath: herdrRegistryPath, environment: profileEnvironment });
     if (!loaded.ok) return; // 本机 registry 不可用时不凭空开 Attempt。
     const registryProfile = resolveProfile(loaded.registry, profile.ref);
     if (!registryProfile) return; // F-007：profile ref 无条目，保持 pending、零事件。
-    if (!recovery) {
+    if (!recovery && !fallbackProfileSnapshots) {
       if (!registryProfile.config_fingerprint_rule) return; // 不能冻结可信身份时仅拒绝该节点，不扩大到整届 driver。
       for (const profileId of registryProfile.fallback_profile_ids ?? []) {
         if (!resolveProfile(loaded.registry, profileId)?.config_fingerprint_rule) return;
@@ -141,14 +157,19 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
 
     let attemptId;
     let receiptId;
+    let attemptReceipt;
     let handle;
     let blind = false;
     let launch = null;
     let stopHandle = null;
     if (recovery) {
       ({ attemptId, receiptId, handle } = recovery);
+      attemptReceipt = JSON.parse(await readFile(join(runRoot, 'receipts', `${receiptId}.json`), 'utf8'));
     } else {
-      ({ attemptId, receiptId } = await openAttempt({ node, firstAttempt, registry: loaded.registry, executorProfile: registryProfile }));
+      ({ attemptId, receiptId, attemptReceipt } = await openAttempt({
+        node, firstAttempt, registry: loaded.registry, executorProfile: registryProfile, executorIdentity,
+        fallbackProfileSnapshots,
+      }));
       launch = await launchHerdrAgent({
         cli: herdrCli, registryProfile, runId, nodeId: node.node_id, attemptId, workDirRoot: repoRoot,
         readyTimeoutMs: herdrReadyTimeoutMs,
@@ -232,6 +253,42 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
             if (observation.herdr_status === 'done' || (observation.herdr_status === 'idle' && herdrJudge)) {
               const captured = await captureHerdrResult({ cli: herdrCli, handle, judge: herdrJudge });
               if (captured.ok && captured.verdict) {
+                const quota = captured.verdict.outcome === 'failed'
+                  ? classifyQuota({ detectorId: registryProfile.quota_detector_id,
+                    signal: captured.verdict.structured?.quota_signal, detectors: quotaDetectors })
+                  : { classification: 'not_quota' };
+                if (quota.classification === 'quota_confirmed') {
+                  if (allowAutomaticFallback) {
+                    const currentRegistry = await loadExecutorProfiles({ registryPath: herdrRegistryPath, environment: profileEnvironment });
+                    const fallback = await selectQualifiedFallback({
+                      attemptReceipt, registry: currentRegistry.ok ? currentRegistry.registry : null,
+                      environment: profileEnvironment, platform,
+                    });
+                    if (fallback.status === 'selected') {
+                      await recordResult({ nodeId: node.node_id, receiptId, attemptId, executorKind: 'herdr-agent', ...captured.verdict });
+                      return driveHerdrNode({
+                        node, profile: { kind: 'herdr-agent', ref: fallback.profile.executor_profile_id },
+                        firstAttempt: false, allowAutomaticFallback: false,
+                        registrySnapshot: currentRegistry.registry, executorIdentity: fallback.identity,
+                        fallbackProfileSnapshots: fallback.fallback_profile_snapshots,
+                      });
+                    }
+                  }
+                  const pause = buildFallbackPause({ runId, nodeId: node.node_id, attemptReceipt, raisedAt: nowIso() });
+                  let ack;
+                  try {
+                    ack = await actor.submitControl(store => store.appendFallbackPause(pause));
+                  } catch (error) {
+                    error.fallbackPauseWriteFailed = true;
+                    throw error;
+                  }
+                  if (ack?.ok === false) {
+                    const error = new Error(`${ack.reason ?? 'E_FALLBACK_PAUSE_CONFLICT'}:pause-${pause.pause_id}`);
+                    error.fallbackPauseWriteFailed = true;
+                    throw error;
+                  }
+                  return;
+                }
                 await recordResult({ nodeId: node.node_id, receiptId, attemptId, executorKind: 'herdr-agent', ...captured.verdict });
                 return;
               }
@@ -253,6 +310,7 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
         ...(stopHandle.result?.ok ? {} : { reason_detail: stopHandle.result?.detail ?? stopHandle.result?.reason ?? 'pane-kill-not-confirmed' }),
       } });
     } catch (error) {
+      if (error?.fallbackPauseWriteFailed) throw error;
       console.error(`herdr driver error: ${String(error?.message ?? error)}`);
       try {
         await actor.submitControl(store => store.appendEvent({ kind: 'human_input_requested', at: nowIso(), node_id: node.node_id, attempt_id: attemptId,
@@ -373,11 +431,15 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
       const fields = Object.fromEntries(String(observed.detail ?? '').split(';').map(part => part.split(/=(.*)/s)).filter(([key]) => key));
       const profile = (node.executor_profiles ?? []).find(item => item?.kind === 'herdr-agent');
       if (!profile || !fields.pane) continue;
-      await driveHerdrNode({ node, profile, firstAttempt: false, recovery: {
+      const attemptReceipt = JSON.parse(await readFile(join(runRoot, 'receipts', `${receiptId}.json`), 'utf8'));
+      const recoveredProfileRef = attemptReceipt.executor_identity?.executor_profile_id ?? fields.profile ?? profile.ref;
+      if (!recoveredProfileRef) continue;
+      await driveHerdrNode({ node, profile: { ...profile, ref: recoveredProfileRef }, firstAttempt: false,
+        allowAutomaticFallback: recoveredProfileRef === profile.ref, recovery: {
         receiptId, attemptId: nodeState.current_attempt_id,
         handle: {
           agent_name: observed.executor_ref, pane_id: fields.pane, terminal_id: fields.pane,
-          work_dir_root: fields.work_dir_root ?? repoRoot, executor_profile_id: fields.profile ?? profile.ref,
+          work_dir_root: fields.work_dir_root ?? repoRoot, executor_profile_id: recoveredProfileRef,
         },
       } });
     }

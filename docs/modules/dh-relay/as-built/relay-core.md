@@ -181,7 +181,7 @@ DHR_52 的 RPC seam 与 DHR_51 的 host 之间原本没有装配人（F-001）�
 
 | 文件 | 现役职责 |
 |---|---|
-| `workflow-driver.mjs` | 按 `depends_on` 找 ready 节点 → `store.registerReceipt()` 开 attempt（它自己发 `attempt_started`）→ 起 Process Executor → `store.appendResult()` 记终态 → 必经节点全 succeeded 时 `appendEvent({kind:'run_finished'})`。**一切读写都经 `actor.submitControl(store => …)` 排进宿主 actor 的串行队列**，唯一写者的答案没变——还是那一届持 lease 的宿主。`stop` 杀在跑的子进程（记 `E_EXECUTOR_KILLED`），`resume` 从事件账重建进度并对失败节点开 **fresh attempt**（H12）。一届 driver 内每个节点最多驱动一次：失败不原地自旋。 |
+| `workflow-driver.mjs` | 按 `depends_on` 找 ready 节点，驱动 Process 与 Herdr Attempt；**一切读写都经 `actor.submitControl(store => …)`**，唯一写者仍是持 lease 的宿主。Herdr judge 若产出已脱敏 `quota_signal`，driver 仅按调用方注入的已登记 detector 分类；高置信 quota 才按 Receipt 冻结顺序选择当前仍全等且可完整签发的首个 fallback，先落 source 终态再开 fresh Attempt。无合格项或第二次 quota 写 canonical pause；非 quota 正常落原 Result。生产 judge、真实 detector 与样本仍由 DHR_35 接线。 |
 | `process-executor.mjs` | `resolveStepRef` 词法守卫 + **`resolveStepEntry` 真实落点守卫**（对仓根与目标各做一次 `realpath` 再判仓内）——只做词法判断挡不住符号链接：`steps/link.mjs` 词法上老老实实待在仓内，`realpath` 之后却落在仓外（F-009，P0）。逃逸**照旧开 Attempt 并立刻记 `E_BAD_VALUE` 终态**，绝不先跑一把再说。`classifyStepOutcome` 是纯函数，把退出形态翻成已冻结 reason code。 |
 
 **「可驱动」的判据是 ref 在本仓解析到真实文件**；解析不到时节点保持 `pending`、**不开 Attempt**——Runtime 不为一个自己启动不了的入口凭空造一次尝试（F-007，批 2 小审裁定保持不收紧）。它同时是 DHR_30 既有 Run（`bin/probe`、golden 的 `bin/fix.sh`）事件账逐字不变的保护栏。
@@ -201,6 +201,7 @@ DHR_52 的 RPC seam 与 DHR_51 的 host 之间原本没有装配人（F-001）�
 - **Store / recovery**：`appendFallbackPause` 与 `appendFallbackPauseResolution` 通过 blob-before-prepared 的 `relay.store-mutation/v1` journal 同批提交工件、事件与状态；恢复逐目标核对 before/staging hash，journal/blob/派生 ID/路径/账本任一不一致即 `E_STORE_MUTATION_RECOVERY_FAILED`。pause 重放同时导出旧 Attempt fence、`waiting_human` 和 open Attention；旧 Attempt 的 checkpoint/result 返回 `E_ATTEMPT_FENCED`。只读 RPC 使用不重写 `state.json` 的 Attention 投影，未完成 prepared mutation 一律拒读。
 - **RPC / retry**：`endpointForRepo(...,{channel})` 派生互不复用的 v1、bootstrap、v2 本地端点。bootstrap 只接受 `{protocol:"relay.rpc-bootstrap/v1"}` 并返回有 schema 的 v2 descriptor；客户端仍须从受保护的 v1 ready descriptor 取得本机 credential，再用 bootstrap 发现 v2 endpoint，bootstrap 不复制 secret。v2 的 list/inspect/subscribe 显式选择 `read_model_version`，v2 投影携带 `open_attentions`。任一 Run 的 mutation 账本不可恢复时，list 操作整体返回稳定 `E_STORE_MUTATION_RECOVERY_FAILED`，不静默过滤坏 Run；v1 若命中 open Attention 返回 `E_ATTENTION_REQUIRES_READ_MODEL_V2`，订阅建立后才出现 pause 时，publisher 在发送新事件前先发标准 error 并关闭连接。`retry-with-profile` 只在 actor 写队列内复核 pause 范围、冻结 profile 与当前非敏感 projection 全等，再原子关闭 Attention 并开 fresh Attempt；同一 `(pause_id,retry_request_id)` 返回原结果。
 - **边界仍在**：DHR_61 不做 quota 分类、自动 fallback 选择或 DHR_34 D3 编排；它只提供可被这些后续路径调用的协议与持久化原语。
+- **DHR_34 D3 增量**：`runtime/executors/quota/classifier.mjs` 只接受结构化双证据与显式注入 detector，未登记即 unknown；`runtime/executors/identity/fallback.mjs` 按 Receipt 原序复核当前 registry、平台、非敏感身份四件套，并预冻结候选自己的 fallback snapshots。该 seam 的机器证来自受控注入，不能解读为真实账号自动换号已可达。
 
 ## 4. 技术选型的裁决出处
 

@@ -21,7 +21,7 @@
 
 ## 已知依赖与当前边界
 
-- DHR_33 已以 squash `66dd16a` 合入 `master`，但 DHR_61 才拥有 profile registry、Receipt、Store 与 RPC 的契约扩展责任；DHR_61 未完成并验收前，本卡保持 `blocked-by:DHR_61`，不得施工。
+- DHR_33 已以 squash `66dd16a` 合入 `master`；DHR_61 已由用户明文接受并以 squash `84eb2bf`、verify `45233b9` 合入 `master`，本卡前置阻塞已解除。DHR_34 只消费其冻结合同，不回改 D1/D2。
 - DHR_33 F-4/F-5 中属于契约扩展的部分移交 DHR_61；本卡只承接其既有合同上的 D3 编排与集成回归。范围外发现只登记 findings。
 - 不做自由账号切换、凭据管理、自动登录，或客户端离线时自动选择未授权账号。
 - 本机 AI 配置和用户级注册表只读；任何凭据值、完整敏感环境、cookie、token 或 API key 均不得读取、输出或写入工件。
@@ -33,6 +33,8 @@
 - `relay-core/runtime/workflow-driver.mjs`（仅 Attempt/Receipt 身份链与 fallback 编排接线）
 - `relay-core/test/identity-quota.test.mjs`（新建）
 - `relay-core/test/herdr-adapter.test.mjs`、`relay-core/test/agent-node.test.mjs`（仅 DHR_34 身份链 / fresh Attempt 回归）
+- `relay-core/package.json`（仅把新增定向测试登记进既有 `scripts.test` 全量入口；**失序补录**，见 F-007）
+- `docs/modules/dh-relay/as-built/relay-core.md`（仅同步 DHR_34 已落地的现役 D3 边界；**失序补录**，见 F-017）
 - `docs/modules/dh-relay/workspace/DHR_34/**`
 
 ## 禁改边界
