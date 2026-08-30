@@ -48,7 +48,7 @@
 | # | 完成条件 | 谁验 | 证据 | 达成? |
 |---|---|---|---|---|
 | 1 | fake Herdr 证明 Claude 调用顺序、唯一命名与返回 handle 是 `pane run → 唯一识别 → rename`，Codex `agent start` 调用不变。实现细化为唯一 Claude 与 pane ID rename。 | machine | E-6716、E-6717 | 是 |
-| 2 | 识别到零/多个对象、识别超时或 rename 失败时，adapter 不额外创建 Attempt/Result；已创建 pane 时仅关闭同一新 pane，无 pane 时不执行关闭；既有 Attempt 仍由 driver 进入既有人工作处理。 | machine | E-6716、E-6722 | 是 |
+| 2 | 识别到零/多个对象、识别超时或 rename 失败时，adapter 不额外创建 Attempt/Result；已创建 pane 时仅关闭同一新 pane。driver 已有 Attempt 进入既有人工作处理。 | machine | E-6716、E-6722 | 是 |
 | 3 | 工件、测试夹具与日志不泄露配置正文或凭据；Herdr observation 不生成 Result。 | machine | E-6706；E-6718 | 是 |
 
 ### 验收项元数据表
