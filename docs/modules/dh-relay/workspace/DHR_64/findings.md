@@ -23,4 +23,4 @@
 
 - **现象**：教训复核发现 `connectCliV2()` 在 socket close/error 时仅标记 closed，未结束 in-flight Receipt submission waiter；需求方向同时指出 DHR64 的拒绝矩阵等机器证尚不完整。
 - **处理**：close/error 统一清 timer、删除 waiter并以 `E_TRANSPORT_CLOSED` reject；E-6412 对该收尾取得 1/1 终态。
-- **状态**：断连 waiter 修复待 fresh 教训/一致性复验；拒绝矩阵 P1 仍开放，不得据此关闭需求方向或进入收口/verify。
+- **状态**：断连 waiter 已由 E-6412 取得 1/1 终态，拒绝矩阵与 observation 补证由 E-6413/E-6414 取得终态；E-6415（需求）、E-6416（一致性）和 E-6417（教训）均 fresh PASS。此 finding 已关闭，不再阻塞收口/verify。

@@ -28,6 +28,10 @@
 | 2026-08-30 | 一致性 reviewer（Herdr `dhr64_r2`） | 跨层对齐 contracts/CLI/service/driver/Store 的 Receipt、reason、identity/fence、terminal/recovery 与 close/error waiter；只采用 5/5 与 1/1 的明确终态证据。 | E-6416 | 一致性 PASS；仍待教训整改复验及全量回归终态。 |
 | 2026-08-30 | 教训整改复验 reviewer（Herdr `dhr64_r1b`） | 复验 close/error waiter 的统一 reject/cleanup、旧 Receipt/fence 与 done/idle/host loss 零 Result，并确认代码轮 2 mutation 的 store hash 未被后续整改改变。 | E-6417 | 教训 PASS；五路复核均已闭合，进入本地收口证据。 |
 | 2026-08-30 | 主控 | 分组跑完本卡全部 15 条稳定定向测试并取得明确终态；合同 audit、validator selftest、capability baseline、语法/diff check 全通过。历史默认全量仍未得终态，未纳入本卡绿证。 | E-6418、E-6419 | 本地 E8 完成条件已挂证；准备 exact-path 合并与 verify。 |
+| 2026-08-30 | 主控 | 执行 `dh mine dh-relay DHR_64`，由既有 fresh 教训复核对照候选区；断连 waiter 与常驻句柄分别重复候选-21、候选-51，无新候选。用户对话“确认”“继续 verify”授权本地收口包。 | E-6420 | 主干最终复验、verify 与状态回填；不 push/deploy，不启动 DHR_65/DHR_35。 |
+| 2026-08-30 | 主控 | E7 as-built 已更新覆盖 DHR_64 Receipt-bound Result bridge 现状快照。 | E-6421 | 继续 E9 交付汇报。 |
+| 2026-08-30 | 主控 | E9 七段交付汇报已生成并发出；明确默认全量测试未得终态不作绿色。 | E-6422 | 继续 E10 放行证据包。 |
+| 2026-08-30 | 主控 | E10 放行证据包（机器证据摘要）已发出：15/15 exit 0、audit 0 违规、validator 57/57、capability 20；无待人判结果。 | E-6423 | 用户已授权，继续 verify。 |
 
 ## 证据账本
 
@@ -53,3 +57,7 @@
 | E-6417 | lessons-reverify | `workspace/DHR_64/review-lessons-reverify-herdr.md` | PASS（P0=0，P1=0） | 原教训 P1 的整改复验；拒绝矩阵/observation 2/2、3/3 终态及 mutation hash 均复核。 |
 | E-6418 | DHR64-stable-regression | `dhr64-result-bridge.test.mjs` 分组：6/6、1/1、3/3；`dhr64-store-reject-matrix.test.mjs` 2/2；`dhr64-driver-observation.test.mjs` 3/3 | pass（15/15，均 exit 0） | Receipt/Result bridge、journal/recovery、service、CLI、拒绝矩阵与 Herdr observation 的完整本卡稳定回归。 |
 | E-6419 | contract+syntax | `npm run audit`；`node tools/validate.mjs --selftest`；`node tools/capability-baseline.mjs`；`node --check`（4 文件）；`git diff --check` | pass（audit 违规=0；57/57；20 contracts；语法/diff clean） | 当前候选的合同、能力基线、语法与差异检查。 |
+| E-6420 | miner+human-authorization | `dh mine dh-relay DHR_64`；用户对话“确认”“继续 verify” | pass（无新候选；本地收口授权有效） | miner 已执行；E10/E11 授权精确本地收口包，明确排除 push/deploy/环境与下一卡。 |
+| E-6421 | as-built | `as-built/relay-core.md` §11 | pass（现状快照已更新） | E7 已收敛本卡 Receipt-bound Result bridge 的现役实现边界。 |
+| E-6422 | delivery-report | 本对话七段交付汇报 | pass（已发出） | E9 已展示业务结果、边界与剩余任务。 |
+| E-6423 | release-packet | 本对话 E10 机器证据摘要 | pass（已发出） | H=0 本卡的 15/15、合同/能力检查及无全量绿结论已向用户展示。 |
