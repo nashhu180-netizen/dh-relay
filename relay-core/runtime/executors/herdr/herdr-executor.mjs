@@ -10,11 +10,36 @@ export const HERDR_STATUS_MAPPING = Object.freeze({
 });
 
 const agentKind = (profile) => profile.product === 'claude-code' ? 'claude' : 'codex';
+const isClaudeProfile = (profile) => profile.product === 'claude-code';
 const field = (value, ...names) => names.map(name => value?.[name]).find(item => item !== undefined && item !== null);
 const agentNameOf = (attemptId) => `herdr-${String(attemptId).replace(/[^a-z0-9_-]/gi, '').toLowerCase().slice(0, 26)}`;
 const entity = (value) => value?.agent ?? value?.pane ?? value;
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 export const ATTACH_PREFIX = 'herdr agent attach ';
+
+function paneCandidates(value, paneId) {
+  const agents = Array.isArray(value) ? value : value?.agents;
+  if (!Array.isArray(agents)) return [];
+  return agents.filter(agent => String(agent?.pane_id ?? '') === String(paneId));
+}
+
+async function renameClaudeAgent({ cli, paneId, agentName, readyTimeoutMs, readyPollMs }) {
+  const deadline = Date.now() + readyTimeoutMs;
+  while (true) {
+    const listed = cli.agentList();
+    if (!listed.ok) return listed;
+    const candidates = paneCandidates(listed.value, paneId);
+    if (candidates.length === 1 && candidates[0]?.agent === 'claude') {
+      const renamed = cli.agentRename({ target: paneId, name: agentName });
+      if (!renamed.ok) return renamed;
+      return { ok: true, terminalId: field(candidates[0], 'terminal_id', 'pane_id') ?? paneId };
+    }
+    if (Date.now() >= deadline) {
+      return { ok: false, reason: 'E_BAD_VALUE:HERDR_CLI', detail: `claude-agent-identification-not-unique:${candidates.length}` };
+    }
+    await sleep(readyPollMs);
+  }
+}
 
 export function observationDetail({ herdrStatus, agentName, paneId, seq, workDirRoot, profileId }) {
   return `herdr_status=${herdrStatus};agent=${agentName};pane=${paneId};seq=${seq ?? '-'};work_dir_root=${workDirRoot};profile=${profileId}`;
@@ -33,16 +58,27 @@ export async function launchHerdrAgent({ cli, registryProfile, runId, nodeId, at
   if (!paneId) return closeFailedPane({ ok: false, reason: 'E_BAD_VALUE:HERDR_CLI', detail: 'pane-id-missing' });
   // Herdr agent names are lowercase and at most 32 chars; attempt_id supplies the unique suffix.
   const agentName = agentNameOf(attemptId);
-  const start = cli.agentStart({ name: agentName, kind: agentKind(registryProfile), paneId, args });
+  const start = isClaudeProfile(registryProfile)
+    ? (() => {
+      if (typeof registryProfile.command_alias !== 'string' || registryProfile.command_alias.length === 0) {
+        return { ok: false, reason: 'E_BAD_VALUE:HERDR_CLI', detail: 'claude-command-alias-missing' };
+      }
+      return cli.paneRun({ paneId, command: registryProfile.command_alias, args });
+    })()
+    : cli.agentStart({ name: agentName, kind: agentKind(registryProfile), paneId, args });
   if (!start.ok) return closeFailedPane(start);
+  const renamed = isClaudeProfile(registryProfile)
+    ? await renameClaudeAgent({ cli, paneId, agentName, readyTimeoutMs, readyPollMs })
+    : { ok: true, terminalId: field(entity(start.value), 'terminal_id', 'pane_id') ?? paneId };
+  if (!renamed.ok) return closeFailedPane(renamed);
   const handle = {
     agent_name: agentName,
     pane_id: String(paneId),
-    terminal_id: String(field(entity(start.value), 'terminal_id', 'pane_id') ?? paneId),
+    terminal_id: String(renamed.terminalId),
     work_dir_root: workDirRoot,
     executor_profile_id: registryProfile.executor_profile_id,
     started_at: new Date().toISOString(),
-    launch_constraints: registryProfile.product === 'claude-code' ? ['claude-requires-pane-run'] : [],
+    launch_constraints: isClaudeProfile(registryProfile) ? ['claude-requires-pane-run'] : [],
   };
   const deadline = Date.now() + readyTimeoutMs;
   let observed = await observeHerdrAgent({ cli, handle });

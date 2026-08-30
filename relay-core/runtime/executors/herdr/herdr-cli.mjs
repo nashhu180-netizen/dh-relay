@@ -42,9 +42,12 @@ export function makeHerdrCli({ herdrBin = process.env.DH_RELAY_HERDR_BIN ?? 'her
   };
   return {
     paneSplit({ cwd, direction = 'right' }) { return invoke(['pane', 'split', '--current', '--no-focus', '--direction', direction, '--cwd', cwd]); },
+    paneRun({ paneId, command, args = [] }) { return invoke(['pane', 'run', String(paneId), String(command), ...args]); },
     agentStart({ name, kind, paneId, args = [] }) {
       return invoke(['agent', 'start', name, '--kind', kind, '--pane', String(paneId), '--', ...args]);
     },
+    agentList() { return invoke(['agent', 'list']); },
+    agentRename({ target, name }) { return invoke(['agent', 'rename', String(target), String(name)]); },
     agentGet(name) { return invoke(['agent', 'get', name]); },
     agentRead(name, { lines = 120, source = 'recent-unwrapped' } = {}) {
       return invoke(['agent', 'read', name, '--source', source, '--lines', String(lines)], { json: false });

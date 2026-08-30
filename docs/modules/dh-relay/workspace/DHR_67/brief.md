@@ -20,7 +20,7 @@
 | # | 条件 | 谁验 | 出处 |
 |---|---|---|---|
 | 1 | fake Herdr 证明 Claude 调用顺序、唯一命名与返回 handle 是 `pane run → 唯一识别 → rename`，Codex `agent start` 调用不变。 | machine | DHR_67；P6-RI-A4 |
-| 2 | 识别到零/多个对象、识别超时或 rename 失败时，仅关闭本卡创建的同一新 pane，不绑定 Attempt、不创建 Result。 | machine | DHR_67 |
+| 2 | 识别到零/多个对象、识别超时或 rename 失败时，adapter 不额外创建 Attempt/Result；已创建 pane 时仅关闭同一新 pane。driver 已有 Attempt 进入既有人工作处理。 | machine | DHR_67；B-30 |
 | 3 | 工件、测试夹具与日志不泄露配置正文或凭据；Herdr observation 不生成 Result。 | machine | DHR_67 |
 
 ## 边界

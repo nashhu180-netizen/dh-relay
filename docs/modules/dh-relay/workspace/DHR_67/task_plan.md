@@ -17,7 +17,7 @@
 |---|---|---|---|
 | 1 | Test · `relay-core/test/herdr-adapter.test.mjs`、`relay-core/test/helpers/fake-herdr.mjs` | 先为 Claude 写精确红测：新 pane 内 `paneRun`，由 `agentList` 按该 pane ID 找到唯一 agent，再 `agentRename`；断言 Codex 仍只有既有 `agentStart`。补可编程 fake：零、多个、超时、rename 失败均可表达且记录 pane ID。 | `node --test relay-core/test/herdr-adapter.test.mjs` 先红，失败必须是缺 Claude 支持而非测试错误。 |
 | 2 | Modify · `relay-core/runtime/executors/herdr/herdr-cli.mjs` | 以既有 `invoke` 包装精确 CLI：`pane run`、`agent list`、`agent rename`；不改变已有 `agentStart` 或 failure/JSON 解析语义。 | CLI wrapper fixture 断言 argv 与错误传播，原 Codex argv 不变。 |
-| 3 | Modify · `relay-core/runtime/executors/herdr/herdr-executor.mjs` | 仅 Claude profile 分支：已有 `paneSplit` 后在同一 pane `paneRun`，轮询/等待到有界 deadline 的 `agentList`，以 pane ID 过滤且只接受唯一对象，`agentRename` 成功后才构造 handle；零/多/超时/rename 失败调用既有同 pane `closeFailedPane`。 | 成功时调用序列/handle 正确；每个失败态 pane close 计数恰为 1、关闭 ID 等于新 pane、Attempt/Result 副作用为零。 |
+| 3 | Modify · `relay-core/runtime/executors/herdr/herdr-executor.mjs` | 仅 Claude profile 分支：已有 `paneSplit` 后在同一 pane `paneRun`，轮询/等待到有界 deadline 的 `agentList`，以 pane ID 过滤且只接受唯一对象，`agentRename` 成功后才构造 handle；零/多/超时/rename 失败调用既有同 pane `closeFailedPane`。 | 成功时调用序列/handle 正确；已创建 pane 的失败态 close 计数恰为 1、关闭 ID 等于新 pane；adapter 不额外创建 Attempt/Result，既有 Attempt 由 driver 进入人工处理。 |
 | 4 | Test · `herdr-adapter.test.mjs` | 施加由第二轮复核者指定的 production-code 语义 mutation（例如唯一性判断或失败关闭条件），确认精确断言失败后还原。 | mutant 为断言失败；还原后定向测试与 Codex 回归均有终态。 |
 | 5 | Modify · `relay-core/package.json`；Record · `workspace/DHR_67/**` | 仅在必要时将已有 adapter test 纳入现有默认测试入口；记录红绿、mutation、命令 argv、失败关闭、卫生与需求对齐证据。 | 定向测试、相关回归、audit、secret-shaped 扫描、`git diff --check` 与 `dh dh-relay` 均有终态。 |
 

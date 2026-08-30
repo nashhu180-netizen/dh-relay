@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -48,6 +48,68 @@ test('DHR_33 adapter：状态映射、句柄、附着与输入均不触碰 Store
   assert.match(launchFailed.detail, /pane-kill=ok/);
 });
 
+test('DHR_67 adapter：Claude 固定 pane run→唯一识别→rename，Codex 保持 agent start', async () => {
+  const claudeProfile = { ...profile, executor_profile_id: 'herdr.claude.main', product: 'claude-code', command_alias: 'claude' };
+  const claudeFake = makeFakeHerdr();
+  const claude = await launchHerdrAgent({ cli: claudeFake.cli, registryProfile: claudeProfile,
+    runId: 'R001', nodeId: 'node-a', attemptId: 'attempt-claude', workDirRoot: 'C:/work', args: ['--test'] });
+  assert.equal(claude.ok, true);
+  assert.equal(claude.handle.agent_name, 'herdr-attempt-claude');
+  assert.deepEqual(claudeFake.calls.slice(0, 4), [
+    ['paneSplit', 'C:/work'],
+    ['paneRun', 'pane-1', 'claude', ['--test']],
+    ['agentList'],
+    ['agentRename', 'pane-1', 'herdr-attempt-claude'],
+  ]);
+
+  const codexFake = makeFakeHerdr();
+  const codex = await launchHerdrAgent({ cli: codexFake.cli, registryProfile: profile,
+    runId: 'R001', nodeId: 'node-a', attemptId: 'attempt-codex', workDirRoot: 'C:/work', args: ['--x'] });
+  assert.equal(codex.ok, true);
+  assert.deepEqual(codexFake.calls.slice(0, 2), [
+    ['paneSplit', 'C:/work'],
+    ['agentStart', 'herdr-attempt-codex', 'codex', 'pane-1', ['--x']],
+  ]);
+  assert.equal(codexFake.calls.some(([kind]) => kind === 'paneRun' || kind === 'agentRename'), false);
+});
+
+test('DHR_67 adapter：Claude 零/多个、识别超时或 rename 失败仅关闭同一新 pane', async () => {
+  const claudeProfile = { ...profile, executor_profile_id: 'herdr.claude.main', product: 'claude-code', command_alias: 'claude' };
+  for (const { name, options, launchOptions } of [
+    { name: 'zero', options: { listedAgents: [] }, launchOptions: { readyTimeoutMs: 0 } },
+    { name: 'multiple', options: { listedAgents: [{ agent: 'claude', name: 'a', pane_id: 'pane-1' }, { agent: 'claude', name: 'b', pane_id: 'pane-1' }] }, launchOptions: { readyTimeoutMs: 0 } },
+    { name: 'mixed-type', options: { listedAgents: [{ agent: 'claude', name: 'a', pane_id: 'pane-1' }, { agent: 'codex', name: 'b', pane_id: 'pane-1' }] }, launchOptions: { readyTimeoutMs: 0 } },
+    { name: 'non-claude', options: { listedAgents: [{ agent: 'codex', name: 'other', pane_id: 'pane-1' }] }, launchOptions: { readyTimeoutMs: 0 } },
+    { name: 'timeout', options: { listedAgents: [] }, launchOptions: { readyTimeoutMs: 1, readyPollMs: 1 } },
+    { name: 'rename', options: { agentRenameResult: { ok: false, reason: 'E_BAD_VALUE:HERDR_CLI', detail: 'rename-failed' } }, launchOptions: { readyTimeoutMs: 0 } },
+  ]) {
+    const fake = makeFakeHerdr(options);
+    const launched = await launchHerdrAgent({ cli: fake.cli, registryProfile: claudeProfile,
+      runId: 'R001', nodeId: 'node-a', attemptId: `attempt-${name}`, workDirRoot: 'C:/work', ...launchOptions });
+    assert.equal(launched.ok, false, name);
+    assert.equal(fake.paneKills, 1, name);
+    assert.deepEqual(fake.calls.at(-1), ['paneKill', 'pane-1'], name);
+  }
+});
+
+test('DHR_67 adapter：Claude 只接受同 pane 的唯一 Claude，且有界等待后续识别', async () => {
+  const claudeProfile = { ...profile, executor_profile_id: 'herdr.claude.main', product: 'claude-code', command_alias: 'claude' };
+  const delayed = makeFakeHerdr({ listedAgentSnapshots: [
+    [{ agent: 'codex', name: 'other-pane', pane_id: 'pane-other' }],
+    [{ agent: 'claude', name: 'detected-agent', pane_id: 'pane-1', terminal_id: 'term-1' }],
+  ] });
+  const launched = await launchHerdrAgent({ cli: delayed.cli, registryProfile: claudeProfile,
+    runId: 'R001', nodeId: 'node-a', attemptId: 'attempt-delayed', workDirRoot: 'C:/work', readyTimeoutMs: 20, readyPollMs: 1 });
+  assert.equal(launched.ok, true);
+  assert.deepEqual(delayed.calls.slice(0, 5), [
+    ['paneSplit', 'C:/work'],
+    ['paneRun', 'pane-1', 'claude', []],
+    ['agentList'],
+    ['agentList'],
+    ['agentRename', 'pane-1', 'herdr-attempt-delayed'],
+  ]);
+});
+
 test('DHR_33 adapter：unknown 经 pane 复核区分 observation_lost 与 host_lost，均不造 reason code', async () => {
   const livePane = makeFakeHerdr({ statuses: ['unknown'], paneAlive: true });
   const missingPane = makeFakeHerdr({ statuses: ['unknown'], paneAlive: false, agentAlive: false, missing: true });
@@ -90,7 +152,8 @@ test('DHR_33 herdr-cli：文件状态可执行桩逐字接收六个动词参数�
   await writeFile(statePath, JSON.stringify({ responses: {
     'pane split': { pane: { pane_id: 'p1' } }, 'agent start': { agent: { terminal_id: 't1' } },
     'agent get': { agent: { agent_status: 'working', state_change_seq: 3 } }, 'agent read': {},
-    'agent send-keys': {}, 'agent prompt': {}, 'pane get': { pane: { pane_id: 'p1' } }, 'pane close': {}, '--version': {},
+    'agent send-keys': {}, 'agent prompt': {}, 'pane get': { pane: { pane_id: 'p1' } }, 'pane close': {},
+    'pane run': {}, 'agent list': { agents: [{ agent: 'claude', name: 'detected', pane_id: 'p1' }] }, 'agent rename': {}, '--version': {},
   } }), 'utf8');
   const bin = fileURLToPath(new URL('./helpers/fake-herdr-bin.mjs', import.meta.url));
   const cli = makeHerdrCli({ herdrBin: process.execPath, herdrArgs: [bin, statePath] });
@@ -103,6 +166,9 @@ test('DHR_33 herdr-cli：文件状态可执行桩逐字接收六个动词参数�
   assert.ok(cli.paneGet('p1').ok);
   assert.ok(cli.paneKill('p1').ok);
   assert.ok(cli.version().ok);
+  assert.ok(cli.paneRun({ paneId: 'p1', command: 'claude', args: ['--x'] }).ok);
+  assert.equal(cli.agentList().value.agents[0].pane_id, 'p1');
+  assert.ok(cli.agentRename({ target: 'p1', name: 'renamed' }).ok);
   const calls = JSON.parse(await readFile(statePath, 'utf8')).calls;
   assert.deepEqual(calls[0], ['pane', 'split', '--current', '--no-focus', '--direction', 'right', '--cwd', 'C:/work']);
   assert.deepEqual(calls[1], ['agent', 'start', 'a', '--kind', 'codex', '--pane', 'p1', '--', '--x']);
@@ -112,6 +178,10 @@ test('DHR_33 herdr-cli：文件状态可执行桩逐字接收六个动词参数�
   assert.deepEqual(calls[5], ['agent', 'prompt', 'a', 'hello']);
   assert.deepEqual(calls[6], ['pane', 'get', 'p1']);
   assert.deepEqual(calls[7], ['pane', 'close', 'p1']);
+  assert.deepEqual(calls[8], ['--version']);
+  assert.deepEqual(calls[9], ['pane', 'run', 'p1', 'claude', '--x']);
+  assert.deepEqual(calls[10], ['agent', 'list']);
+  assert.deepEqual(calls[11], ['agent', 'rename', 'p1', 'renamed']);
 });
 
 test('DHR_33 herdr-cli：超时与明确 not-found 分别保留 transient/missing 语义', async (t) => {
@@ -146,7 +216,8 @@ async function runtimeFixture(t, statuses, options = {}) {
   const registryPath = join(repoRoot, 'profiles.json');
   const configPath = join(repoRoot, 'profile.json');
   await writeFile(configPath, JSON.stringify({ model: 'test-model' }), 'utf8');
-  await writeFile(registryPath, JSON.stringify({ profiles: [{ executor_profile_id: 'herdr.codex.test', backend: 'herdr', product: 'codex-cli', command_alias: 'codex', account_alias: 'acct-test', capabilities: { interactive: 'supported', resume: 'supported', readonly: 'supported', headless: 'supported', structured_result: 'supported', user_input_passthrough: 'supported' }, supported_platforms: ['win32'], headless_supported: true, config_fingerprint_rule: { kind: 'file-exists', path_template: '${DHR33_PROFILE_HOME}/profile.json', fields: [{ pointer: '/model', classification: 'nonsecret' }] } }] }), 'utf8');
+  const registryProfile = options.registryProfile ?? { executor_profile_id: 'herdr.codex.test', backend: 'herdr', product: 'codex-cli', command_alias: 'codex', account_alias: 'acct-test', capabilities: { interactive: 'supported', resume: 'supported', readonly: 'supported', headless: 'supported', structured_result: 'supported', user_input_passthrough: 'supported' }, supported_platforms: ['win32'], headless_supported: true, config_fingerprint_rule: { kind: 'file-exists', path_template: '${DHR33_PROFILE_HOME}/profile.json', fields: [{ pointer: '/model', classification: 'nonsecret' }] } };
+  await writeFile(registryPath, JSON.stringify({ profiles: [registryProfile] }), 'utf8');
   const store = await createStore({ root, run });
   await store.appendEvent({ kind: 'run_created', at: run.created_at });
   const fake = makeFakeHerdr({ statuses, ...options.fake });
@@ -213,6 +284,19 @@ test('DHR_33 driver：stop 撞 launch 窗口仍杀 pane，失败写 killed Resul
   const failed = store.events.find(event => event.kind === 'attempt_failed');
   assert.equal(failed?.reason, 'E_EXECUTOR_KILLED');
   assert.equal(store.events.some(event => event.kind === 'human_input_requested'), false);
+});
+
+test('DHR_67 driver：Claude adapter 启动失败保留既有 Attempt，进入人工处理且不造 Result', async (t) => {
+  const registryProfile = { executor_profile_id: 'herdr.claude.test', backend: 'herdr', product: 'claude-code', command_alias: 'claude', account_alias: 'acct-test', capabilities: { interactive: 'supported', resume: 'supported', readonly: 'supported', headless: 'supported', structured_result: 'supported', user_input_passthrough: 'supported' }, supported_platforms: ['win32'], headless_supported: true, config_fingerprint_rule: { kind: 'file-exists', path_template: '${DHR33_PROFILE_HOME}/profile.json', fields: [{ pointer: '/model', classification: 'nonsecret' }] } };
+  const { store, root, driver, fake } = await runtimeFixture(t, ['idle'], { profileRef: 'herdr.claude.test', registryProfile,
+    fake: { agentRenameResult: { ok: false, reason: 'E_BAD_VALUE:HERDR_CLI', detail: 'rename-failed' } } });
+  await runtimeUntil(() => store.events.some(event => event.kind === 'human_input_requested'), 'claude launch attention');
+  await driver.done;
+  assert.equal((await settledState(root)).node_states[0].status, 'waiting_human');
+  assert.equal(store.events.some(event => event.kind === 'attempt_started'), true);
+  assert.equal(store.events.some(event => event.kind === 'attempt_succeeded' || event.kind === 'attempt_failed'), false);
+  assert.deepEqual(await readdir(join(root, 'results')), []);
+  assert.equal(fake.paneKills, 1);
 });
 
 test('DHR_33 driver：idle 超阈值单次 Attention 后停止轮询', async (t) => {
