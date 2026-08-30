@@ -60,8 +60,12 @@
 - 设计契约无变化：仅将 Claude 的宿主启动改为已支持的 CLI 原语；不改 Receipt、Result、Store、RPC 或 contracts。
 - 文档无需改：现有 `as-built/relay-core.md` 已描述 Herdr adapter 与 Result 观测边界；本卡只修 Windows Claude 启动接线。
 
-→ 当前状态：**待人验（E10 证据包已备妥；未 verify、未合并）**
+→ 当前状态：**已完成（E11 已获用户明文授权；verify 本提交）**
 
 ## 人类签名区
 
-本卡完成条件均为机器证。E10 证据包：E-6716 定向/CLI 5/5、E-6717 mutation 红后还原、E-6718 Result bridge 10/10、E-6722 driver 回归 6/6、E-6723 miner/gate；gate 仅缺未授权的 `verify(...)`。不勾选任何人类结果，也不执行 verify、合并、推送或部署。
+本卡完成条件均为机器证。E10 证据包：E-6716 定向/CLI 5/5、E-6717 mutation 红后还原、E-6718 Result bridge 10/10、E-6722 driver 回归 6/6、E-6723 miner/gate；E11 用户已明文“授权”执行本地收口。无须勾选人判结果。
+
+- 确认记录：2026-08-31，用户明文“授权”；对象为 DHR67 releasePacket（定向 6/6、audit 0 failure、模块体检 0 failure）。
+- verify 提交 SHA：本提交。
+- 签名：用户对话确认，AI 代签。

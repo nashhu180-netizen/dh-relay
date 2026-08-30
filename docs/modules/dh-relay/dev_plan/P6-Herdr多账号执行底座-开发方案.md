@@ -1,17 +1,18 @@
 # P6-Herdr 多账号与 Headless 执行底座 开发方案
 
 <!-- dh:plan-type: 开发 -->
-<!-- dh:planning-event:v1 id=DHR-B-30 stage=B-adjust artifact=dev_plan/P6-Herdr多账号执行底座-开发方案.md review=../design/evidence/28-DHR67-Attempt边界-B调整审核记录.md#review-b30 understanding=../design/evidence/28-DHR67-Attempt边界-B调整审核记录.md#understanding-b30 -->
 <!-- dh:status
 汇报: DHR_32（normal）已于 2026-08-30 经用户对话确认收口，verify `2f80fa1`；主干复验定向 profiles 14/14、contracts 审计 0 违规、模块体检 0 failure。DHR_33（heavy）已于 2026-08-30 经用户接受 E-3303 现场、E-3304 受限、E-3307/3308 Oracle 差异与 P6-M6 延后后收口，verify `5d662b6`；候选-40 依用户裁决 B 冻结为“fresh 实例 + 独立会话”，模型身份仅作诊断记录。DHR_34（heavy）已于 2026-08-30 经用户接受 P6-M4 受限结论，verify `0b72cb6`；quota 定向 12/12、Store/Attempt 组合 30/30、contracts 审计 0 违规、模块体检 0 failure。DHR_64（heavy）已于 2026-08-30 经用户本地收口授权完成，verify `8376e02`；稳定定向 15/15、contracts audit 0 违规、validator 57/57、capability 20/20。
-汇报补充: DHR_65（normal）已经用户 E11 明文认可；主干复验专项五项均 1/1、profiles 14/14、contracts audit 0、模块体检 0 failure。
-现状: DHR_32、DHR_33、DHR_61、DHR_34、DHR_63、DHR_64、DHR_65 已完成；DHR_66、DHR_67 已 D-start 并进行中；DHR_35 进行中但被两张新增前置卡阻塞
+汇报补充: DHR_65（normal）已经用户 E11 明文认可；主干复验专项五项均 1/1、profiles 14/14、contracts audit 0、模块体检 0 failure。DHR_67（heavy）已于 2026-08-31 经用户明文授权本地收口；主干定向 6/6、contracts audit 0 failure、模块体检 0 failure。
+现状: DHR_32、DHR_33、DHR_61、DHR_34、DHR_63、DHR_64、DHR_65、DHR_67 已完成；DHR_66 已 D-start 并进行中；DHR_35 进行中但仍被 DHR_66 阻塞
 进行到: P6 ▸ Windows 真实闭环的 Codex 非敏感投影与 Claude 受支持 Herdr 启动补卡；Linux SSH 维持 B-22 延后/受限
-下一步: 分别建立 DHR_66、DHR_67 独立 worktree 并按各自冻结范围施工；DHR_35 不运行 Windows 实录
+下一步: DHR_66 按冻结范围处理已声明 nonsecret 的 `/profiles`；DHR_35 不运行 Windows 实录
 待用户: P6 阶段闸仍等待 DHR_35 的真实闭环机器证与 P6-H 人判；DHR_34 的 P6-M4 已按用户裁决记为 constrained。
 看什么: workspace/DHR_33/review.md（验收表+签名区）→ review-consistency-opus.md §六/§八；workspace/DHR_32/review.md 签名区
-阻塞: DHR_35 新增被 DHR_66（Codex `/profiles` 非敏感投影）与 DHR_67（Windows Claude 受支持启动）阻塞；DHR34、63、64、65 已完成范围保留且不重开。Linux SSH 真实 smoke 按 B-22 延后，P6-M6 只能在阶段闸记延后/受限；DHR_34 的真实 quota 样本、detector/judge 与 retry 后执行闭环不得被 Result bridge 自动重启或误表述为完整自动切号可用。
+阻塞: DHR_35 仍被 DHR_66（Codex `/profiles` 非敏感投影）阻塞；DHR67（Windows Claude 受支持启动）已完成并不替代 DHR35 真实闭环。DHR34、63、64、65 已完成范围保留且不重开。Linux SSH 真实 smoke 按 B-22 延后，P6-M6 只能在阶段闸记延后/受限；DHR_34 的真实 quota 样本、detector/judge 与 retry 后执行闭环不得被 Result bridge 自动重启或误表述为完整自动切号可用。
 -->
+
+<!-- dh:planning-event:v1 id=DHR-B-30 stage=B-adjust artifact=dev_plan/P6-Herdr多账号执行底座-开发方案.md review=../design/evidence/28-DHR67-Attempt边界-B调整审核记录.md#review-b30 understanding=../design/evidence/28-DHR67-Attempt边界-B调整审核记录.md#understanding-b30 -->
 
 ## 0. B 方案审核与理解确认
 
@@ -152,7 +153,7 @@
 | DHR_64 | 实现 Receipt 绑定 Result 提交桥接 | 标准 | 已完成 | DHR_61、DHR_34 | [workspace/DHR_64/](../workspace/DHR_64/) | squash `0dd371d`；verify `8376e02`（2026-08-30） | 任务类型=heavy；五路复核 PASS，稳定定向 15/15；默认全量 Windows 未得终态不作绿色，旧 DHR_33/DHR_34 语义断言迁移另行决策；承接 P6-RI-A1~A3 |
 | DHR_65 | 让 runtime registry loader 对完整 registry fail-closed | 标准 | 已完成 | DHR_32、DHR_61 | [workspace/DHR_65/](../workspace/DHR_65/) | squash + verify 本提交（2026-08-30） | 任务类型=normal；用户 E11 已认可；主干专项 5/5、profiles 14/14、contracts audit 0、模块体检 0 failure；承接 P6-RI-A5 runtime/mutation 部分 |
 | DHR_66 | 补齐 Codex 非敏感 `/profiles` 身份投影 | 标准 | 进行中 | DHR_63、DHR_65（均已完成） | [workspace/DHR_66/](../workspace/DHR_66/) | | 任务类型=light；用户 2026-08-30 已 D-start，授权至 E10；仅读写已声明 nonsecret 的 `/profiles`，不保存投影值 |
-| DHR_67 | 接通 Windows Claude 受支持 Herdr 启动路径 | 标准 | 进行中 | DHR_33、DHR_64、DHR_65（均已完成） | [workspace/DHR_67/](../workspace/DHR_67/) | | 任务类型=heavy；用户 2026-08-30 已 D-start，授权至 E10；仅限精确 Herdr adapter/test 路径 |
+| DHR_67 | 接通 Windows Claude 受支持 Herdr 启动路径 | 标准 | 已完成 | DHR_33、DHR_64、DHR_65（均已完成） | [workspace/DHR_67/](../workspace/DHR_67/) | squash `eb3c618`；verify 本提交（2026-08-31）；release_mode=full | 任务类型=heavy；用户已授权本地收口；主干定向 6/6、contracts audit 0 failure、模块体检 0 failure；仅限精确 Herdr adapter/test 路径 |
 | DHR_35 | 用 Codex、Claude Code 跑 Windows 真实执行闭环 | 标准 | 进行中 | DHR_34、DHR_63、DHR_64、DHR_65、DHR_66、DHR_67 | [workspace/DHR_35/](../workspace/DHR_35/) | | DHR34/63/64/65 已完成范围保留；DHR66/67 是新增阻塞，Linux SSH 按 B-22 ① 延后，P6 阶段闸再裁决 |
 
 > 状态列只填五枚举，阶段闸阻塞写「备注」列。P5 未通过时 DHR_32~35 均不得开工。

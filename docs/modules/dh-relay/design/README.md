@@ -20,6 +20,7 @@
 - [A-26 Receipt 绑定结果提交与 P6 真实闭环交叉审核及整版确认](./evidence/22-Receipt绑定结果提交与P6真实闭环-交叉审核记录.md)
 - [B-25 DHR63 runtime fail-closed 补卡调整交叉审核及确认](./evidence/26-DHR63-runtime-fail-closed-B调整二次定向复审交叉审核记录.md)
 - [B-29 P6 Windows 真实闭环修复调整交叉审核及确认](./evidence/27-DHR66DHR67-P6真实闭环修复-B调整交叉审核记录.md)
+- [B-30 DHR67 Attempt 边界澄清审核及确认](./evidence/28-DHR67-Attempt边界-B调整审核记录.md)
 - [A-25 P6 身份与额度治理契约调整交叉审核及整版确认](./evidence/20-P6身份与额度治理契约调整-交叉审核记录.md)
 - [B-23 P6 前置契约卡调整审核及确认](./evidence/21-P6前置契约卡-B调整交叉审核记录.md)
 - [A-24 PlanHome 计划源与运行态续接交叉审核及确认](./evidence/19-PlanHome计划源与运行态续接-交叉审核记录.md)
