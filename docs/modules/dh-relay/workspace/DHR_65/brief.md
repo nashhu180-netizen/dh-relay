@@ -25,8 +25,8 @@
 
 ## 边界
 
-- In scope：`relay-core/runtime/executors/herdr/profile-registry.mjs`、新建 `relay-core/test/dhr65-registry-loader.test.mjs`、本工作区。
-- Out of scope：用户级 registry、Agent 产品配置、凭据、身份/额度选择、Receipt/Store/RPC/Result bridge、DHR_35、Linux、`herdr-executor.mjs`、现有测试、contracts/store/rpc/service/workflow-driver 和 CLI。
+- In scope：`relay-core/runtime/executors/herdr/profile-registry.mjs`、新建 `relay-core/test/dhr65-registry-loader.test.mjs`、`relay-core/package.json`（B-26 仅接入专属测试）、`knowledge/教训库-候选.md`（B-27 仅追加 miner 候选）、本工作区。
+- Out of scope：用户级 registry、Agent 产品配置、凭据、身份/额度选择、Receipt/Store/RPC/Result bridge、DHR_35、Linux、`herdr-executor.mjs`、既有 Profile 校验器、现有测试、contracts/store/rpc/service/workflow-driver 和 CLI。
 - 必须停止：若完成条件需要改动 driver/其他运行时文件，或要改变 design/12 契约，则停止并另走 A/B 调整。
 
 ## 触及子系统

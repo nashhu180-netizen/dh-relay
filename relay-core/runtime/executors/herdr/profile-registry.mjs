@@ -12,7 +12,7 @@ export const defaultRegistryPath = () => join(homedir(), '.dh-relay', 'executor-
 export async function loadExecutorProfiles({ registryPath = defaultRegistryPath(), environment = process.env } = {}) {
   try {
     const registry = JSON.parse(await readFile(registryPath, 'utf8'));
-    const checked = validateProfiles(registry, { resolveAlias: false, environment });
+    const checked = validateProfiles(registry, { resolveAlias: true, environment });
     if (!checked.ok) return { ok: false, reason: 'E_BAD_VALUE:PROFILE_REGISTRY', detail: checked.errors.map(item => item.code).join(',') };
     return { ok: true, registry };
   } catch (error) {
