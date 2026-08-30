@@ -27,6 +27,7 @@
 
 ## 边界
 
-- In scope：`relay-core/contracts/**`、`store/**`、`rpc/**`、service/driver、Herdr completion instruction、对应 CLI、定向测试和本工作区。
+- In scope：既有 `relay-core/contracts/**`、`store/**`、`rpc/**`、service/driver；Herdr completion instruction 仅 `relay-core/runtime/executors/herdr/herdr-executor.mjs`；CLI 仅 `relay-core/cli/client.mjs`、`relay-core/cli/main.mjs`；定向测试/基线仅 `relay-core/test/dhr64-result-bridge.test.mjs`、`relay-core/test/contracts.test.mjs`、`relay-core/package.json`、`relay-core/capability-baseline.json`、`relay-core/tools/capability-baseline.mjs`、`relay-core/tools/structural-tokens.txt` 和本工作区。
+- DHR_64 不得改 `relay-core/runtime/executors/herdr/profile-registry.mjs` 或 DHR_65 新测试；未列的 Herdr/CLI/测试路径不因本卡获得写入权限。
 - Out of scope：用户级 Agent/registry 配置、真实 Agent、Linux、quota/fallback 重新接线、DHR_35。
 - 必须停止：schema、恢复或原因码需要改变设计契约且无法由现有设计证明时，写 findings 并新开设计调整。
