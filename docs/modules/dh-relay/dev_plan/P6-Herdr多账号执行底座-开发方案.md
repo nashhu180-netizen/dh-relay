@@ -3,13 +3,13 @@
 <!-- dh:plan-type: 开发 -->
 <!-- dh:planning-no-event:v1 artifact=dev_plan/P6-Herdr多账号执行底座-开发方案.md reason=DHR_61在84eb2bf与45233b9完成后的机械状态及DHR_34前置解阻回填；不改变任务终点、依赖、范围或验收口径 -->
 <!-- dh:status
-汇报: DHR_32（normal）已于 2026-08-30 经用户对话确认收口，verify `2f80fa1`；主干复验定向 profiles 14/14、contracts 审计 0 违规、模块体检 0 failure。DHR_33（heavy）已于 2026-08-30 经用户接受 E-3303 现场、E-3304 受限、E-3307/3308 Oracle 差异与 P6-M6 延后后收口，verify `5d662b6`；候选-40 依用户裁决 B 冻结为“fresh 实例 + 独立会话”，模型身份仅作诊断记录。
-现状: DHR_32、DHR_33、DHR_61 已完成；DHR_34 已解除前置阻塞并恢复施工；DHR_35 未开始
-进行到: P6 ▸ DHR_34 D3 quota 分类、合格 fallback 选择与 fresh Attempt 编排
-下一步: 将 DHR_34 工作树 rebase 到含 DHR_61 冻结合同的 master，仅按既有 D3 范围施工
-待用户: 当前无 DHR_32/DHR_33 收口项；P6 阶段闸仍等待 DHR_34、DHR_35 的未完成机器证与 P6-H 人判。
+汇报: DHR_32（normal）已于 2026-08-30 经用户对话确认收口，verify `2f80fa1`；主干复验定向 profiles 14/14、contracts 审计 0 违规、模块体检 0 failure。DHR_33（heavy）已于 2026-08-30 经用户接受 E-3303 现场、E-3304 受限、E-3307/3308 Oracle 差异与 P6-M6 延后后收口，verify `5d662b6`；候选-40 依用户裁决 B 冻结为“fresh 实例 + 独立会话”，模型身份仅作诊断记录。DHR_34（heavy）已于 2026-08-30 经用户接受 P6-M4 受限结论，verify `0b72cb6`；quota 定向 12/12、Store/Attempt 组合 30/30、contracts 审计 0 违规、模块体检 0 failure。
+现状: DHR_32、DHR_33、DHR_61、DHR_34 已完成；DHR_35 未开始
+进行到: P6 ▸ DHR_35 真实 Codex/Claude Code 与 Linux SSH 执行闭环
+下一步: 仅在用户另行授权后为 DHR_35 建工作区并执行真实产品/SSH 取证
+待用户: P6 阶段闸仍等待 DHR_35 的真实闭环机器证与 P6-H 人判；DHR_34 的 P6-M4 已按用户裁决记为 constrained。
 看什么: workspace/DHR_33/review.md（验收表+签名区）→ review-consistency-opus.md §六/§八；workspace/DHR_32/review.md 签名区
-阻塞: DHR_34 的 DHR_61 前置阻塞已解除；DHR_32/DHR_33 人验项仍待用户批量处理，但不阻塞已合入产物的下游消费。findings 下游移交：DHR_32:F-3/F-5/F-11/F-12→DHR_35；DHR_33:F-3→DHR_34/35、DHR_33:F-6/F-7/F-11→DHR_35；DHR_61:F-006→后续存储维护/DHR_35
+阻塞: DHR_35 尚未获开工授权；DHR_34 的真实 quota 样本、detector/judge 与 retry 后执行闭环已移交 DHR_35，不得将本卡的 constrained 结论表述为完整自动切号可用。findings 下游移交：DHR_32:F-3/F-5/F-11/F-12→DHR_35；DHR_33:F-3→DHR_34/35、DHR_33:F-6/F-7/F-11→DHR_35；DHR_61:F-006→后续存储维护/DHR_35；DHR_34:F-002/F-008/F-011/F-013/F-014→DHR_35
 -->
 
 ## 0. B 方案审核与理解确认
@@ -123,7 +123,7 @@
 | DHR_32 | 审计本机 Codex/Claude 多账号并冻结 Executor Profile 注册表 | 标准 | 已完成 | P5 阶段闸（已过，2026-08-29） | [workspace/DHR_32/](../workspace/DHR_32/) | squash `2667f4a`（2026-08-29）；verify `2f80fa1`（2026-08-30） | 任务类型=normal；复核收敛（代码13+需求14+教训，返工1闭环，E-3201~05 通过）；用户 E10 收口确认、B-22 追认与 verify 已闭合 |
 | DHR_33 | 实现 Herdr Adapter、CLI/SSH 能力探测与状态对账 | 标准 | 已完成 | DHR_32（产物已合入） | [workspace/DHR_33/](../workspace/DHR_33/) | squash `66dd16a`（2026-08-29）；verify `5d662b6`（2026-08-30） | 任务类型=heavy；复核与返工已收敛；Linux 项延后获用户受理（B-22①）；E10、E-3303/3304/3307/3308 与候选-40 裁决 B 已闭合 |
 | DHR_61 | 冻结 Attempt 身份、暂停/重试、Store 恢复与 RPC 兼容契约 | 标准 | 已完成 | DHR_33（产物已合入，待人验不阻塞） | [workspace/DHR_61/](../workspace/DHR_61/) | squash `84eb2bf`；verify `45233b9`（2026-08-30） | 任务类型=heavy；用户人验放行；Opus 五路 P0/P1=0；237/237；模块 dh-check 0 failure |
-| DHR_34 | 接通 quota 分类、合格 fallback 选择与 fresh Attempt 编排 | 标准 | 进行中 | DHR_33、DHR_61（均已有可消费的 master 产物） | [workspace/DHR_34/](../workspace/DHR_34/) | | 任务类型=heavy；DHR_61 前置已解除；仅 D3，禁止 `contracts/**`、签发服务、Store 与 RPC；P6-M4 可 passed / constrained |
+| DHR_34 | 接通 quota 分类、合格 fallback 选择与 fresh Attempt 编排 | 标准 | 已完成 | DHR_33、DHR_61（均已有可消费的 master 产物） | [workspace/DHR_34/](../workspace/DHR_34/) | squash `8cae0f6`；verify `0b72cb6`（2026-08-30） | 任务类型=heavy；仅 D3，禁止 `contracts/**`、签发服务、Store 与 RPC；P6-M4 由用户接受为 constrained，真实样本/detector/judge/retry 执行闭环→DHR_35 |
 | DHR_35 | 用 Codex、Claude Code 和 Linux SSH 跑真实执行闭环 | 标准 | 未开始 | DHR_33、DHR_34（Receipt 身份链字段由 DHR_34 冻结，DHR_35 验收依赖它） | <开工时回填 workspace/…> | | 阶段闸阻塞；第一个端到端 demo；须补真实 SSH smoke（B-22 ① 延后，汇合点 = P6 阶段闸） |
 
 > 状态列只填五枚举，阶段闸阻塞写「备注」列。P5 未通过时 DHR_32~35 均不得开工。
