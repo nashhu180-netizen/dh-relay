@@ -1,7 +1,7 @@
 # P6-Herdr 多账号与 Headless 执行底座 开发方案
 
 <!-- dh:plan-type: 开发 -->
-<!-- dh:planning-event:v1 id=DHR-B-24 stage=B-adjust artifact=dev_plan/P6-Herdr多账号执行底座-开发方案.md review=../design/evidence/23-P6-Receipt结果提交与真实闭环-B调整交叉审核记录.md#review-b24 understanding=../design/evidence/23-P6-Receipt结果提交与真实闭环-B调整交叉审核记录.md#understanding-b24 -->
+<!-- dh:planning-no-event:v1 artifact="dev_plan/P6-Herdr多账号执行底座-开发方案.md" reason="DHR-B-24已于33219fe落盘；本次仅回填用户2026-08-30分别授权DHR_63与DHR_64 D-start后的机械状态与工作区链接，不改变终点、依赖、范围或验收口径" -->
 <!-- dh:status
 汇报: DHR_32（normal）已于 2026-08-30 经用户对话确认收口，verify `2f80fa1`；主干复验定向 profiles 14/14、contracts 审计 0 违规、模块体检 0 failure。DHR_33（heavy）已于 2026-08-30 经用户接受 E-3303 现场、E-3304 受限、E-3307/3308 Oracle 差异与 P6-M6 延后后收口，verify `5d662b6`；候选-40 依用户裁决 B 冻结为“fresh 实例 + 独立会话”，模型身份仅作诊断记录。DHR_34（heavy）已于 2026-08-30 经用户接受 P6-M4 受限结论，verify `0b72cb6`；quota 定向 12/12、Store/Attempt 组合 30/30、contracts 审计 0 违规、模块体检 0 failure。
 现状: DHR_32、DHR_33、DHR_61、DHR_34 已完成；DHR_63、DHR_64 未开始；DHR_35 进行中但被 DHR_63/DHR_64 阻塞
@@ -132,8 +132,8 @@
 | DHR_33 | 实现 Herdr Adapter、CLI/SSH 能力探测与状态对账 | 标准 | 已完成 | DHR_32（产物已合入） | [workspace/DHR_33/](../workspace/DHR_33/) | squash `66dd16a`（2026-08-29）；verify `5d662b6`（2026-08-30） | 任务类型=heavy；复核与返工已收敛；Linux 项延后获用户受理（B-22①）；E10、E-3303/3304/3307/3308 与候选-40 裁决 B 已闭合 |
 | DHR_61 | 冻结 Attempt 身份、暂停/重试、Store 恢复与 RPC 兼容契约 | 标准 | 已完成 | DHR_33（产物已合入，待人验不阻塞） | [workspace/DHR_61/](../workspace/DHR_61/) | squash `84eb2bf`；verify `45233b9`（2026-08-30） | 任务类型=heavy；用户人验放行；Opus 五路 P0/P1=0；237/237；模块 dh-check 0 failure |
 | DHR_34 | 接通 quota 分类、合格 fallback 选择与 fresh Attempt 编排 | 标准 | 已完成 | DHR_33、DHR_61（均已有可消费的 master 产物） | [workspace/DHR_34/](../workspace/DHR_34/) | squash `8cae0f6`；verify `0b72cb6`（2026-08-30） | 任务类型=heavy；仅 D3，禁止 `contracts/**`、签发服务、Store 与 RPC；P6-M4 由用户接受为 constrained，真实样本/detector/judge/retry 执行闭环→DHR_35 |
-| DHR_63 | 恢复并验证受限 Executor Profile registry 解析 | 标准 | 未开始 | DHR_32、DHR_61 | <D-start 时创建> | | 任务类型=normal；只改用户级 registry 的已冻结非敏感元数据，任何坏条目整体 fail-closed；须独立 D-start |
-| DHR_64 | 实现 Receipt 绑定 Result 提交桥接 | 标准 | 未开始 | DHR_61、DHR_34 | <D-start 时创建> | | 任务类型=heavy；承接 P6-RI-A1~A3；须独立 D-start |
+| DHR_63 | 恢复并验证受限 Executor Profile registry 解析 | 标准 | 进行中 | DHR_32、DHR_61 | [workspace/DHR_63/](../workspace/DHR_63/) | | 任务类型=normal；用户 2026-08-30 已明确 D-start；仅已冻结 registry 的非敏感维护；与 DHR_64 并行 |
+| DHR_64 | 实现 Receipt 绑定 Result 提交桥接 | 标准 | 进行中 | DHR_61、DHR_34 | [workspace/DHR_64/](../workspace/DHR_64/) | | 任务类型=heavy；用户 2026-08-30 已明确 D-start；承接 P6-RI-A1~A3；与 DHR_63 并行 |
 | DHR_35 | 用 Codex、Claude Code 跑 Windows 真实执行闭环 | 标准 | 进行中 | DHR_34、DHR_63、DHR_64 | [workspace/DHR_35/](../workspace/DHR_35/) | | `blocked-by:DHR_63,DHR_64`；已有授权不扩展；Linux SSH 按 B-22 ① 延后，P6 阶段闸再裁决 |
 
 > 状态列只填五枚举，阶段闸阻塞写「备注」列。P5 未通过时 DHR_32~35 均不得开工。
