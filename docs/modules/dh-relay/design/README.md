@@ -9,12 +9,15 @@
 - [DHR_30 仓库级 Runtime 服务](./07-DHR30-Runtime服务.md)
 - [DHR_30 RPC、Read Model 与操作账本合同](./08-DHR30-RPC与ReadModel合同.md)
 - [P6 身份与额度治理契约调整](./11-P6身份与额度治理契约调整.md)
+- [Receipt 绑定结果提交与 P6 真实闭环：契约调整](./12-Receipt绑定结果提交与P6真实闭环-契约调整.md)
 <!-- dh:design-inputs:end -->
 
 ## 内容目录
 
 - [当前正式设计输入](./10-薄RelayPlan与显式节点边界-产品设计调整.md)
 - [P6 身份与额度治理契约调整](./11-P6身份与额度治理契约调整.md)
+- [A-26 Receipt 绑定结果提交与 P6 真实闭环契约调整](./12-Receipt绑定结果提交与P6真实闭环-契约调整.md)
+- [A-26 Receipt 绑定结果提交与 P6 真实闭环交叉审核及整版确认](./evidence/22-Receipt绑定结果提交与P6真实闭环-交叉审核记录.md)
 - [A-25 P6 身份与额度治理契约调整交叉审核及整版确认](./evidence/20-P6身份与额度治理契约调整-交叉审核记录.md)
 - [B-23 P6 前置契约卡调整审核及确认](./evidence/21-P6前置契约卡-B调整交叉审核记录.md)
 - [A-24 PlanHome 计划源与运行态续接交叉审核及确认](./evidence/19-PlanHome计划源与运行态续接-交叉审核记录.md)
