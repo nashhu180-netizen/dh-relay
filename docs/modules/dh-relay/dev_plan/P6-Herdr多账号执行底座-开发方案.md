@@ -1,15 +1,15 @@
 # P6-Herdr 多账号与 Headless 执行底座 开发方案
 
 <!-- dh:plan-type: 开发 -->
-<!-- dh:planning-event:v1 id=DHR-B-25 stage=B-adjust artifact=dev_plan/P6-Herdr多账号执行底座-开发方案.md review=../design/evidence/26-DHR63-runtime-fail-closed-B调整二次定向复审交叉审核记录.md#review-b25 understanding=../design/evidence/26-DHR63-runtime-fail-closed-B调整二次定向复审交叉审核记录.md#understanding-b25 -->
+<!-- dh:planning-no-event:v1 artifact=dev_plan/P6-Herdr多账号执行底座-开发方案.md reason="DHR_63 已按既有 B-25 任务类型和范围完成本地收口；本次仅回填卡级 verify 状态与剩余三卡阻塞，不改变任务终点、依赖、范围或验收口径" -->
 <!-- dh:status
 汇报: DHR_32（normal）已于 2026-08-30 经用户对话确认收口，verify `2f80fa1`；主干复验定向 profiles 14/14、contracts 审计 0 违规、模块体检 0 failure。DHR_33（heavy）已于 2026-08-30 经用户接受 E-3303 现场、E-3304 受限、E-3307/3308 Oracle 差异与 P6-M6 延后后收口，verify `5d662b6`；候选-40 依用户裁决 B 冻结为“fresh 实例 + 独立会话”，模型身份仅作诊断记录。DHR_34（heavy）已于 2026-08-30 经用户接受 P6-M4 受限结论，verify `0b72cb6`；quota 定向 12/12、Store/Attempt 组合 30/30、contracts 审计 0 违规、模块体检 0 failure。
-现状: DHR_32、DHR_33、DHR_61、DHR_34 已完成；DHR_63、DHR_64 进行中；DHR_65 未开始；DHR_35 进行中但被 DHR_63/DHR_64/DHR_65 阻塞
-进行到: P6 ▸ Receipt 绑定 Result bridge、受限 registry 维护与 runtime registry loader fail-closed 补卡；Linux SSH 维持 B-22 延后/受限
-下一步: DHR_64 继续自动收口复核；DHR_63 按 light 配方补齐复核并与 DHR_65 共同闭合 P6-RI-A5；DHR_65 必须另行 D-start；DHR_35 不运行 Windows 实录
+现状: DHR_32、DHR_33、DHR_61、DHR_34、DHR_63 已完成；DHR_64 进行中；DHR_65 未开始；DHR_35 进行中但被 DHR_64/DHR_65 阻塞
+进行到: P6 ▸ Receipt 绑定 Result bridge 与 runtime registry loader fail-closed 补卡；Linux SSH 维持 B-22 延后/受限
+下一步: DHR_64 继续自动收口复核；DHR_65 必须另行 D-start 后与已完成的 DHR_63 registry 证据共同闭合 P6-RI-A5；DHR_35 不运行 Windows 实录
 待用户: P6 阶段闸仍等待 DHR_35 的真实闭环机器证与 P6-H 人判；DHR_34 的 P6-M4 已按用户裁决记为 constrained。
 看什么: workspace/DHR_33/review.md（验收表+签名区）→ review-consistency-opus.md §六/§八；workspace/DHR_32/review.md 签名区
-阻塞: DHR_35 先等待 DHR_63 的受限 registry 维护、DHR_65 的 runtime 全 registry fail-closed 证明和 DHR_64 的 Receipt 绑定 Result bridge；Linux SSH 真实 smoke 按 B-22 延后，P6-M6 只能在阶段闸记延后/受限；DHR_34 的真实 quota 样本、detector/judge 与 retry 后执行闭环不得被 Result bridge 自动重启或误表述为完整自动切号可用。
+阻塞: DHR_35 先等待 DHR_65 的 runtime 全 registry fail-closed 证明和 DHR_64 的 Receipt 绑定 Result bridge；Linux SSH 真实 smoke 按 B-22 延后，P6-M6 只能在阶段闸记延后/受限；DHR_34 的真实 quota 样本、detector/judge 与 retry 后执行闭环不得被 Result bridge 自动重启或误表述为完整自动切号可用。
 -->
 
 ## 0. B 方案审核与理解确认
@@ -138,7 +138,7 @@
 | DHR_33 | 实现 Herdr Adapter、CLI/SSH 能力探测与状态对账 | 标准 | 已完成 | DHR_32（产物已合入） | [workspace/DHR_33/](../workspace/DHR_33/) | squash `66dd16a`（2026-08-29）；verify `5d662b6`（2026-08-30） | 任务类型=heavy；复核与返工已收敛；Linux 项延后获用户受理（B-22①）；E10、E-3303/3304/3307/3308 与候选-40 裁决 B 已闭合 |
 | DHR_61 | 冻结 Attempt 身份、暂停/重试、Store 恢复与 RPC 兼容契约 | 标准 | 已完成 | DHR_33（产物已合入，待人验不阻塞） | [workspace/DHR_61/](../workspace/DHR_61/) | squash `84eb2bf`；verify `45233b9`（2026-08-30） | 任务类型=heavy；用户人验放行；Opus 五路 P0/P1=0；237/237；模块 dh-check 0 failure |
 | DHR_34 | 接通 quota 分类、合格 fallback 选择与 fresh Attempt 编排 | 标准 | 已完成 | DHR_33、DHR_61（均已有可消费的 master 产物） | [workspace/DHR_34/](../workspace/DHR_34/) | squash `8cae0f6`；verify `0b72cb6`（2026-08-30） | 任务类型=heavy；仅 D3，禁止 `contracts/**`、签发服务、Store 与 RPC；P6-M4 由用户接受为 constrained，真实样本/detector/judge/retry 执行闭环→DHR_35 |
-| DHR_63 | 恢复并验证受限 Executor Profile registry 解析 | 标准 | 进行中 | DHR_32、DHR_61 | [workspace/DHR_63/](../workspace/DHR_63/) | | 任务类型=light；用户 2026-08-30 已明确 D-start；仅已冻结 registry 的非敏感维护；与 DHR_64/DHR_65 并行；仅与 DHR_65 共同闭合 P6-RI-A5 |
+| DHR_63 | 恢复并验证受限 Executor Profile registry 解析 | 标准 | 已完成 | DHR_32、DHR_61 | [workspace/DHR_63/](../workspace/DHR_63/) | squash `eebaf24`；verify 本提交 | 任务类型=light；仅已冻结 registry 的非敏感维护已收口；仅与 DHR_65 共同闭合 P6-RI-A5，未解除 DHR_35 的 DHR_64/DHR_65 阻塞 |
 | DHR_64 | 实现 Receipt 绑定 Result 提交桥接 | 标准 | 进行中 | DHR_61、DHR_34 | [workspace/DHR_64/](../workspace/DHR_64/) | | 任务类型=heavy；用户 2026-08-30 已明确 D-start；承接 P6-RI-A1~A3；与 DHR_63 并行 |
 | DHR_65 | 让 runtime registry loader 对完整 registry fail-closed | 标准 | 未开始 | DHR_32、DHR_61 | —（须另行 D-start） | | 任务类型=normal；不接触用户级 registry；与 DHR_63/DHR_64 并行；承接 P6-RI-A5 runtime/mutation 部分 |
 | DHR_35 | 用 Codex、Claude Code 跑 Windows 真实执行闭环 | 标准 | 进行中 | DHR_34、DHR_63、DHR_64、DHR_65 | [workspace/DHR_35/](../workspace/DHR_35/) | | `blocked-by:DHR_63,DHR_64,DHR_65`；已有授权不扩展；Linux SSH 按 B-22 ① 延后，P6 阶段闸再裁决 |

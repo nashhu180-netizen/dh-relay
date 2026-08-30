@@ -47,4 +47,6 @@
 
 ## 人类签名区
 
-本卡验收项均为机器证；收口时仍须展示 E10 证据并取得用户的本地收口授权，不得预填通过。
+用户于 2026-08-30 对话明确“好的，你继续。一直到verify为止”，授权 DHR_63 的本地收口、squash、主线复验与 `verify(dh-relay)`；不授权 DHR_64/DHR_65/DHR_35、真实 Agent、Linux、push 或部署。
+
+本签收仅接受 DHR_63 的 registry-only 交付：formal validator、14 项 profiles 定向测试和模块体检通过；P6-RI-A5 的 runtime/mutation 仍由 DHR_65，DHR_35 真实闭环仍由 DHR_64/DHR_65 后续闭合。
