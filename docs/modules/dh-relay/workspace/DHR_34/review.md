@@ -77,6 +77,7 @@
 
 - [x] **E10 收口确认与 verify**（2026-08-30 用户对话「接受」）：认可本卡按 P6-M4 `constrained` 语义本地收口；真实 quota 样本、生产 detector/judge、retry 后执行闭环仍由 DHR_35 承接。
 - 复核身份按候选-40 的用户裁决 B 登记：fresh 实例 + 独立会话构成换人复核；模型身份冲突仅作诊断记录，不影响本卡既有复核有效性。
+- verify 结论：`risk-accepted`；DHR_34 的受控 quota/fallback 编排、身份链与一跳暂停护栏已由定向回归、契约审计和模块体检复验。真实样本、detector/judge 与 retry 后执行闭环不在本卡声称范围内，继续由 DHR_35 承接。
 
 ### 风险放行账
 
