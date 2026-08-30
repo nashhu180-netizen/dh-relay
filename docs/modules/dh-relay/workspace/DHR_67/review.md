@@ -9,13 +9,13 @@
 
 | 复核者 | 范围 | 发现 | 结论 | 派出证据 |
 |---|---|---|---|---|
-| `codex-review-dhr67-code1-reverify` | Claude 分支、Codex 不变、failure cleanup、真实对象形状与 fake 断言 | 初轮 F-6701；修正后复验 P0–P3=0；P2 修复另由 fresh code 复验 | PASS | 派出=e:E-6708；e:E-6713；e:E-6719 |
+| `codex-review-dhr67-code1-reverify` | Claude 分支、Codex 不变、failure cleanup、真实对象形状与 fake 断言 | 初轮 F-6701；修正后复验 P0–P3=0；P2 修复另由 fresh code 复验 | PASS | e:E-6708 |
 
 **第二轮（fresh-context 独立复核，未继承第一轮会话）**
 
 | 复核者 | 范围 | 发现 | 结论 | 派出证据 |
 |---|---|---|---|---|
-| `codex-review-dhr67-code2-reverify` | 全程与修复增量、有效 mutation | 初轮 F-6701；修正后 P0–P3=0；mutation 有效 | PASS | 派出=e:E-6709；e:E-6714；e:E-6719 |
+| `codex-review-dhr67-code2-reverify` | 全程与修复增量、有效 mutation | 初轮 F-6701；修正后 P0–P3=0；mutation 有效 | PASS | e:E-6709 |
 
 **需求复核结论**：PASS（F-6702 经 B-30 收窄并补 driver 回归后 resolved；P0/P1/P2/P3=0）｜派出=e:E-6710｜证据=`E-6722`
 
@@ -27,7 +27,7 @@
 
 | 比对对象 | 同类路径 | 定义是否一致 | 裁决 | 派出证据 |
 |---|---|---|---|---|
-| Herdr Claude 候选、rename target 与失败 cleanup | `herdr-cli.mjs`、`herdr-executor.mjs`、evidence/03、knowledge/herdr-派活操作.md | 一致：先按新 pane 判唯一，再验证 Claude 类型；rename 使用 pane ID；失败仅关闭同一新 pane；Codex 保持 `agent start` | PASS（F-6703 修复后 P0/P1/P2/P3=0；F-6702 已由 B-30 resolved） | 派出=e:E-6715；e:E-6720 |
+| Herdr Claude 候选、rename target 与失败 cleanup | `herdr-cli.mjs`、`herdr-executor.mjs`、evidence/03、knowledge/herdr-派活操作.md | 一致：先按新 pane 判唯一，再验证 Claude 类型；rename 使用 pane ID；失败仅关闭同一新 pane；Codex 保持 `agent start` | PASS（F-6703 修复后 P0/P1/P2/P3=0；F-6702 已由 B-30 resolved） | e:E-6715 |
 
 ## 有效单测·变异点登记
 
@@ -47,8 +47,8 @@
 
 | # | 完成条件 | 谁验 | 证据 | 达成? |
 |---|---|---|---|---|
-| 1 | fake Herdr 证明 Claude 调用顺序、唯一命名与返回 handle 是 `pane run → 唯一 Claude 识别 → rename(pane ID)`，Codex `agent start` 调用不变。 | machine | E-6716、E-6717 | 是 |
-| 2 | 识别到零/多个对象、识别超时或 rename 失败时，adapter 不额外创建 Attempt/Result；已创建 pane 时只关闭同一新 pane，既有 Attempt 进入人工处理。 | machine | E-6716、E-6722 | 是 |
+| 1 | fake Herdr 证明 Claude 调用顺序、唯一命名与返回 handle 是 `pane run → 唯一识别 → rename`，Codex `agent start` 调用不变。实现细化为唯一 Claude 与 pane ID rename。 | machine | E-6716、E-6717 | 是 |
+| 2 | 识别到零/多个对象、识别超时或 rename 失败时，adapter 不额外创建 Attempt/Result；已创建 pane 时仅关闭同一新 pane，无 pane 时不执行关闭；既有 Attempt 仍由 driver 进入既有人工作处理。 | machine | E-6716、E-6722 | 是 |
 | 3 | 工件、测试夹具与日志不泄露配置正文或凭据；Herdr observation 不生成 Result。 | machine | E-6706；E-6718 | 是 |
 
 ### 验收项元数据表
