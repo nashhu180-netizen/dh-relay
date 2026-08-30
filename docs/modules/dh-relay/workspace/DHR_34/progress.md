@@ -42,6 +42,11 @@
 - 2026-08-30 全量并发尝试：四路 Review Batch 活跃时出现 Herdr timing/锁争用并有一次长时间未得终态后中止；该次不计绿色证据。quiet 终态另行登记。
 - 当前节点：第二批整改、Store/Attempt 定向 30/30、Herdr/agent 定向 36/36、quiet 全量 249/249 与合同闸均完成；heavy 五路复核及全部复验 open P0/P1=0。技术候选待人验；尚未 verify、合并。
 
+- 2026-08-30 E6：`dh mine dh-relay DHR_34` 已跑出只读备料；复核现有 `lesson_candidates.md` 的五条候选，未发现需新增且未与候选区重复的候选。
+- 2026-08-30 E7：as-built 已更新为 `docs/modules/dh-relay/as-built/relay-core.md`，覆盖 DHR_34 的 quota 分类、受控 fallback 与 DHR_35 生产闭环边界。
+- 2026-08-30 E9：七段交付汇报已生成并发出至用户对话；内容包括目标、交付、机器证据、复核、受限边界、风险账和 DHR_35 后续。
+- 2026-08-30 E10：人验证据展示区已发出；用户对话明文「接受」，接受 P6-M4 constrained、本卡一跳上限与 detector 不内置未证产品规则三项。
+
 - 2026-08-29 主控：用户明确授权「继续 DHR_34，开 worktree，复核用 opus」。主树已建立标准档 8 件套并开独立 worktree；DHR_33 squash `66dd16a` 已在 master，故技术依赖可读。DHR_32/33 的人验、verify 和 B-22 追认均未被本卡代签或关闭。
 - 2026-08-29 worktree 已复核为 `D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_34`，branch=`wt/DHR_34`，base=`886c63a`（local `master`）；client=codex-cli。首次 `dh wt new` 误从 `origin/master` 建树且缺本卡工件，已在确认空树后移除并按 local `master` 重建。
 - 2026-08-29 主控尝试进入 S1 Opus fresh 开工预审前检查：当前终端没有 Herdr 管理身份（`HERDR_ENV`、workspace/tab/pane 均未设置）。`herdr.exe` 与 `claude.ps1` 可解析，但按 `knowledge/herdr-派活操作.md` 不得从外部终端控制 pane，故未启动 Claude、未派发、未改代码或账号配置。恢复条件：在 Herdr 管理的主控 pane 中进入本 worktree，再按手册以 `pane run` 拉起 `claude --model opus` 并取实际模型身份双证。

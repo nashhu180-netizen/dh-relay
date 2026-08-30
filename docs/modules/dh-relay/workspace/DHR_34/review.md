@@ -15,13 +15,13 @@
 
 ## 独立复核区
 
-### 代码轮 1（Opus · fresh）
+**第一轮**（Opus · fresh）
 
 | 复核者 | 范围 | 发现 | 派出证据 | 证据 |
 |---|---|---|---|---|
 | Opus 5 形态（身份来源冲突，待证）· `dhr34_code1` | 全程增量、D3/恢复/Store 边界与定向/全量探针 | 初审 P0=0、P1=1；整改复验后 APPROVED，open P0/P1=0 | Herdr `w1:p1C` | E-011~E-013；`review-code1-opus.md` |
 
-### 代码轮 2（Opus · fresh，实例须不同于轮 1）
+**第二轮**（Opus · fresh，实例须不同于轮 1）
 
 | 复核者 | 范围 | 结论 | 派出证据 | 证据 |
 |---|---|---|---|---|
@@ -34,6 +34,18 @@
 | 需求 | 完成条件与身份/quota边界 | APPROVED；复验 open P0/P1/P2=0 | Herdr `w1:p1E` | `review-req-opus.md` |
 | 教训 | 在册教训与候选 | APPROVED；fresh replacement 复验 open P0/P1=0 | Herdr `w1:p1H`（原 `w1:p1G` 交互异常后替换） | `review-lessons-opus.md` |
 | 一致性 | 同类 Attempt/Receipt 路径 | APPROVED；复验 open P0/P1/P2=0 | Herdr `w1:p1F` | `review-consistency-opus.md` |
+
+**需求复核结论**：approved；P6-M4 的可交付范围收敛为安全 seam，生产 detector/judge/真实样本与 retry 后执行闭环移交 DHR_35｜派出=e:E-014｜证据(E-019)
+
+**教训复核结论**：approved；身份分类边界、fresh Attempt 与 detector 登记的候选已在 `lesson_candidates.md` 留存，未把受控样本误报为产品规则｜派出=e:E-014｜证据(E-020)
+
+## 第 4 路·一致性复核
+
+<!-- dh:consistency-review:v1 task=DHR_34 -->
+
+| 比对对象 | 同类路径 | 定义是否一致 | 裁决 | 派出证据 |
+|---|---|---|---|---|
+| quota 分类、Attempt/Receipt 身份链与 DHR_61 pause 合同 | `workflow-driver.mjs`、DHR_61 Receipt/pause/retry、DHR_33 Herdr adapter 与恢复路径 | 一致；只消费脱敏结构化 signal，Receipt 为恢复身份权威，fallback 仅一跳 | open P0/P1/P2=0；生产可达性缺口由 DHR_35 承接 | e:E-014 |
 
 ## AI 提交区
 
@@ -65,3 +77,9 @@
 
 - [x] **E10 收口确认与 verify**（2026-08-30 用户对话「接受」）：认可本卡按 P6-M4 `constrained` 语义本地收口；真实 quota 样本、生产 detector/judge、retry 后执行闭环仍由 DHR_35 承接。
 - 复核身份按候选-40 的用户裁决 B 登记：fresh 实例 + 独立会话构成换人复核；模型身份冲突仅作诊断记录，不影响本卡既有复核有效性。
+
+### 风险放行账
+
+| 风险 ID | 接受人 | 授权依据 | 范围与影响 | 复查/解除条件 |
+|---|---|---|---|---|
+| RISK-DHR34-P6-M4-CONSTRAINED | user | 2026-08-30 对话「接受」 | DHR_34 只证明受控结构化 signal 下的 fallback 编排 seam；真实 quota 样本、detector/judge 与 retry 后执行闭环留待后续卡 | DHR_35 以真实脱敏样本、已登记 detector/judge 与执行闭环证据复查；完成前自动切号保持 `constrained` |
