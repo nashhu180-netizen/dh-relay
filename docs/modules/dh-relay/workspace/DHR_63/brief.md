@@ -7,7 +7,7 @@
 
 ## 目标
 
-只维护用户级 `~/.dh-relay/executor-profiles.json` 中两个已冻结 Windows Executor Profile 的非敏感元数据，恢复 Codex 与 Claude CLI/config 指纹规则的可解析性。DHR_63 只提供 P6-RI-A5 的 registry 证据；runtime/driver 在真实启动前的 fail-closed 与 mutation 由 DHR_65 独立证明。
+只维护用户级 `~/.dh-relay/executor-profiles.json` 中两个目标 Windows Executor Profile 的非敏感元数据，恢复 Codex 与 Claude CLI/config 指纹规则的可解析性。若该两个目标的现有引用指向 `herdr.codex.ninth`，仅可移除该引用 Profile 上不可展开的非敏感 `config_fingerprint_rule`，不把它作为第三个目标或可派 Profile。DHR_63 只提供 P6-RI-A5 的 registry 证据；runtime/driver 在真实启动前的 fail-closed 与 mutation 由 DHR_65 独立证明。
 
 ## 覆盖任务
 
@@ -32,5 +32,5 @@
 
 ## 允许路径
 
-- `~/.dh-relay/executor-profiles.json`（仅两个已冻结 Profile 的非敏感字段）
+- `~/.dh-relay/executor-profiles.json`（两个目标 Profile 的非敏感字段；其现有引用 Profile `herdr.codex.ninth` 仅限移除不可展开的 `config_fingerprint_rule`）
 - `docs/modules/dh-relay/workspace/DHR_63/**`
