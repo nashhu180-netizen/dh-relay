@@ -1,6 +1,8 @@
 <!-- dh:v1 -->
 # task_plan — DHR_66
 
+> **B-31 superseded notice（2026-08-31）**：下方初始步骤 1~4 保留为开工时历史，不再是活动施工合同。现役 Codex main 入口没有 overlay selector，基础配置不存在 `/profiles`；禁止向产品配置补键。当前唯一活动路径以 DevPlan B-31 / brief 为准：用户级 registry 仅删除目标 Profile 漂移的 `/profiles` field、保留 `/model`，产品 config 字节不变，随后执行 live freeze、四类 projection 负例、DHR63/65/66 联合证据与零泄露收口。
+
 ## 要读的上下文（Context Packet）
 
 | ID | 来源 | 为什么 |

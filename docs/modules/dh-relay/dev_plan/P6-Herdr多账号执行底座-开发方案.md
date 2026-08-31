@@ -3,16 +3,16 @@
 <!-- dh:plan-type: 开发 -->
 <!-- dh:status
 汇报: DHR_32（normal）已于 2026-08-30 经用户对话确认收口，verify `2f80fa1`；主干复验定向 profiles 14/14、contracts 审计 0 违规、模块体检 0 failure。DHR_33（heavy）已于 2026-08-30 经用户接受 E-3303 现场、E-3304 受限、E-3307/3308 Oracle 差异与 P6-M6 延后后收口，verify `5d662b6`；候选-40 依用户裁决 B 冻结为“fresh 实例 + 独立会话”，模型身份仅作诊断记录。DHR_34（heavy）已于 2026-08-30 经用户接受 P6-M4 受限结论，verify `0b72cb6`；quota 定向 12/12、Store/Attempt 组合 30/30、contracts 审计 0 违规、模块体检 0 failure。DHR_64（heavy）已于 2026-08-30 经用户本地收口授权完成，verify `8376e02`；稳定定向 15/15、contracts audit 0 违规、validator 57/57、capability 20/20。
-汇报补充: DHR_65（normal）已经用户 E11 明文认可；主干复验专项五项均 1/1、profiles 14/14、contracts audit 0、模块体检 0 failure。DHR_67（heavy）已于 2026-08-31 经用户明文授权本地收口；主干定向 6/6、contracts audit 0 failure、模块体检 0 failure。
-现状: DHR_32、DHR_33、DHR_61、DHR_34、DHR_63、DHR_64、DHR_65、DHR_67 已完成；DHR_66 已 D-start 并进行中；DHR_35 进行中但仍被 DHR_66 阻塞
+汇报补充: DHR_65（normal）已经用户 E11 明文认可；主干复验专项五项均 1/1、profiles 14/14、contracts audit 0、模块体检 0 failure。DHR_67（heavy）已于 2026-08-31 经用户明文授权本地收口；主干定向 6/6、contracts audit 0 failure、模块体检 0 failure。DHR_66（light）已于 2026-08-31 经用户 E11 认可收口；主干复验 registry validator PASS、strict config exit 0、定向 23/23、模块体检 0 failure。
+现状: DHR_32、DHR_33、DHR_61、DHR_34、DHR_63、DHR_64、DHR_65、DHR_66、DHR_67 已完成；DHR_35 进行中，等待本卡范围外的安全恢复与单独开工授权
 进行到: P6 ▸ Windows 真实闭环的 Codex 非敏感投影与 Claude 受支持 Herdr 启动补卡；Linux SSH 维持 B-22 延后/受限
-下一步: DHR_66 按冻结范围处理已声明 nonsecret 的 `/profiles`；DHR_35 不运行 Windows 实录
+下一步: DHR_35 仅可在另获开工授权后，先安全恢复其 worktree 与隔离 runner，再运行 Windows 实录
 待用户: P6 阶段闸仍等待 DHR_35 的真实闭环机器证与 P6-H 人判；DHR_34 的 P6-M4 已按用户裁决记为 constrained。
 看什么: workspace/DHR_33/review.md（验收表+签名区）→ review-consistency-opus.md §六/§八；workspace/DHR_32/review.md 签名区
-阻塞: DHR_35 仍被 DHR_66（Codex `/profiles` 非敏感投影）阻塞；DHR67（Windows Claude 受支持启动）已完成并不替代 DHR35 真实闭环。DHR34、63、64、65 已完成范围保留且不重开。Linux SSH 真实 smoke 按 B-22 延后，P6-M6 只能在阶段闸记延后/受限；DHR_34 的真实 quota 样本、detector/judge 与 retry 后执行闭环不得被 Result bridge 自动重启或误表述为完整自动切号可用。
+阻塞: DHR_66 的依赖已闭合，DHR67（Windows Claude 受支持启动）已完成但均不替代 DHR35 真实闭环。DHR35 旧 worktree 另有未跟踪现场与 runner 用户级 index 隔离缺口；本地收口授权包不包含下一卡开工，须另获授权后安全恢复再开跑。DHR34、63、64、65 已完成范围保留且不重开。Linux SSH 真实 smoke 按 B-22 延后，P6-M6 只能在阶段闸记延后/受限；DHR_34 的真实 quota 样本、detector/judge 与 retry 后执行闭环不得被 Result bridge 自动重启或误表述为完整自动切号可用。
 -->
 
-<!-- dh:planning-event:v1 id=DHR-B-30 stage=B-adjust artifact=dev_plan/P6-Herdr多账号执行底座-开发方案.md review=../design/evidence/28-DHR67-Attempt边界-B调整审核记录.md#review-b30 understanding=../design/evidence/28-DHR67-Attempt边界-B调整审核记录.md#understanding-b30 -->
+<!-- dh:planning-event:v1 id=DHR-B-31 stage=B-adjust artifact=dev_plan/P6-Herdr多账号执行底座-开发方案.md review=../design/evidence/29-DHR66-Codex-projection漂移-B调整交叉审核记录.md#review-b31 understanding=../design/evidence/29-DHR66-Codex-projection漂移-B调整交叉审核记录.md#understanding-b31 -->
 
 ## 0. B 方案审核与理解确认
 
@@ -78,6 +78,7 @@
 
 - **B-29 P6 Windows 真实闭环修复（2026-08-30，已确认）**：DHR35 E-3512 证明 Codex 在 Attempt 前因 `E_NONSECRET_PROJECTION_MISSING:/profiles` fail-closed；Windows Claude 的 `agent start --kind claude` 不满足 PATH shim 约束。两轮 fresh 定向复审最终 P1/P2=0，详见 [evidence/27](../design/evidence/27-DHR66DHR67-P6真实闭环修复-B调整交叉审核记录.md)。新增 DHR_66（standard/light）：仅维护 registry 已声明 nonsecret 的 `/profiles`，程序只留 hash/错误码/脱敏摘要，Receipt 保持四字段；新增 DHR_67（standard/heavy）：固定 `pane run → 唯一识别 → rename → Attempt`，失败关闭同一新 pane。DHR_35 保留 DHR34/63/64/65 并新增依赖 DHR66/67；P6-RI-A4/A5、Receipt-bound Result 和 Linux 延后语义不变。用户先明确“是的，可以”接受 `/profiles` 最小读取边界，再明文“确认”。本确认只授权本次 DevPlan、在建 DHR35 合同和审核工件落盘；不授权 DHR66/DHR67 D-start、registry 写入、生产代码、真实 Agent、verify、合并、推送、部署或环境动作。
 - **B-30 DHR_67 Attempt 边界澄清（2026-08-30，已确认）**：DHR67 需求复核发现既有 driver 先开 Attempt/Receipt、再调 adapter；因此将 DHR67 的失败验收收窄为“adapter 不额外创建 Attempt/Result，已创建 pane 时只关闭同一 pane；既有 Attempt 仍由 driver 进入既有人工处理”。[fresh 审核记录](../design/evidence/28-DHR67-Attempt边界-B调整审核记录.md) P0=0；不改 driver、Store、Receipt/Result 合同、任务类型、允许路径、依赖或 DHR35 真实闭环责任。用户在解释后明文“按你推荐的来”。
+- **B-31 DHR_66 Codex projection 漂移修复（2026-08-31，已确认并生效）**：DHR66 E-6602 证明现役 Codex 配置已无旧 `/profiles` 顶层键；本机 Codex CLI 0.151.0 的 `--profile` 使用 `$CODEX_HOME/<name>.config.toml` overlay，当前 main 入口又未选择 overlay。向基础 `config.toml` 伪造 `profiles` 标量既不代表现役入口身份，也可能破坏 strict config。最终方案为删除 registry 中已漂移的 `/profiles` projection 声明、保留现役且已声明 nonsecret 的 `/model`，由既有 reader 生成 Receipt 四字段；不得修改 Codex 产品配置、读取/落盘 projection 值或扩大生产代码。正式设计的 P6-RI-A5 仍是“坏 registry 拒绝 + 两个指定 Profile 修复后通过 + 零配置正文/凭据”，不变。fresh 审核初轮 P0=0/P1=3，整改后定向复审 P0/P1=0；用户 2026-08-31 明文授权主控完成 P6 剩余任务并按需求自行裁决，审核与理解记录见 [evidence/29](../design/evidence/29-DHR66-Codex-projection漂移-B调整审核记录.md)。
 
 - **DHR_61 D 开工（2026-08-29，已确认）**：用户在 B-23 落盘、`DHR_34 blocked-by:DHR_61` 与“下一关为 DHR_61 独立工作区”说明后明文“确认”。本次只开启 DHR_61 的标准档 S0/S1/S2：主树建八件套、冻结施工合同并切独立 `wt/DHR_61`；不授权 DHR_34 施工、凭据读取、账号配置、真实产品操作、verify、推送、部署或环境操作。
 
@@ -112,7 +113,7 @@
 | identity-quota-contract | Attempt Receipt、fallback pause/retry、Store mutation、fence/Attention、RPC v1/v2 兼容与 registry 容量校验 | `relay-core/contracts/`、`store/`、`rpc/`、`profiles/`、Runtime 签发接点 | DHR_61 |
 | identity-quota | quota 检测器、合格 fallback 选择与 fresh Attempt 编排 | Runtime `executors/identity/`、`quota/`、`workflow-driver.mjs` | DHR_34 |
 | registry-repair | 已冻结 executor registry 的非敏感元数据维护与整体 fail-closed 复验 | 用户级 registry、`workspace/DHR_63/evidence/` | DHR_63 |
-| codex-projection-repair | 已声明 nonsecret 的 Codex `/profiles` 投影修复与 Receipt 身份复验 | 用户级 registry、`workspace/DHR_66/evidence/` | DHR_66 |
+| codex-projection-repair | Codex nonsecret projection 漂移修复与 Receipt 身份复验 | 用户级 registry、`workspace/DHR_66/` | DHR_66 |
 | receipt-result-bridge | Receipt 绑定 submission、v2 RPC、service/driver gate、恢复与 Herdr completion instruction | `contracts/`、`store/`、`rpc/`、`runtime/` | DHR_64 |
 | claude-windows-launch | Windows Claude 的受支持 Herdr 启动、识别、rename 与新 pane 失败收口 | `runtime/executors/herdr/`、定向测试、`workspace/DHR_67/` | DHR_67 |
 | e2e-evidence | Windows Codex + Claude Code Receipt submission 真实节点、DSH 关闭闭环实录 | `workspace/DHR_35/evidence/` | DHR_35 |
@@ -152,7 +153,7 @@
 | DHR_63 | 恢复并验证受限 Executor Profile registry 解析 | 标准 | 已完成 | DHR_32、DHR_61 | [workspace/DHR_63/](../workspace/DHR_63/) | squash `eebaf24`；verify `3a9a7e7` | 任务类型=light；仅已冻结 registry 的非敏感维护已收口；仅与 DHR_65 共同闭合 P6-RI-A5，未解除 DHR_35 的 DHR_64/DHR_65 阻塞 |
 | DHR_64 | 实现 Receipt 绑定 Result 提交桥接 | 标准 | 已完成 | DHR_61、DHR_34 | [workspace/DHR_64/](../workspace/DHR_64/) | squash `0dd371d`；verify `8376e02`（2026-08-30） | 任务类型=heavy；五路复核 PASS，稳定定向 15/15；默认全量 Windows 未得终态不作绿色，旧 DHR_33/DHR_34 语义断言迁移另行决策；承接 P6-RI-A1~A3 |
 | DHR_65 | 让 runtime registry loader 对完整 registry fail-closed | 标准 | 已完成 | DHR_32、DHR_61 | [workspace/DHR_65/](../workspace/DHR_65/) | squash + verify 本提交（2026-08-30） | 任务类型=normal；用户 E11 已认可；主干专项 5/5、profiles 14/14、contracts audit 0、模块体检 0 failure；承接 P6-RI-A5 runtime/mutation 部分 |
-| DHR_66 | 补齐 Codex 非敏感 `/profiles` 身份投影 | 标准 | 进行中 | DHR_63、DHR_65（均已完成） | [workspace/DHR_66/](../workspace/DHR_66/) | | 任务类型=light；用户 2026-08-30 已 D-start，授权至 E10；仅读写已声明 nonsecret 的 `/profiles`，不保存投影值 |
+| DHR_66 | 修复 Codex nonsecret identity projection 漂移 | 标准 | 已完成 | DHR_63、DHR_65（均已完成） | [workspace/DHR_66/](../workspace/DHR_66/) | squash `459b8ac`（2026-08-31）；verify 本提交 | 任务类型=light；E11 用户明文认可；release_mode=full；主干复验 validator PASS、strict config exit 0、定向 23/23、模块体检 0 failure；仅删 registry 漂移 `/profiles`、保留 `/model` |
 | DHR_67 | 接通 Windows Claude 受支持 Herdr 启动路径 | 标准 | 已完成 | DHR_33、DHR_64、DHR_65（均已完成） | [workspace/DHR_67/](../workspace/DHR_67/) | squash `eb3c618`；verify 本提交（2026-08-31）；release_mode=full | 任务类型=heavy；用户已授权本地收口；主干定向 6/6、contracts audit 0 failure、模块体检 0 failure；仅限精确 Herdr adapter/test 路径 |
 | DHR_35 | 用 Codex、Claude Code 跑 Windows 真实执行闭环 | 标准 | 进行中 | DHR_34、DHR_63、DHR_64、DHR_65、DHR_66、DHR_67 | [workspace/DHR_35/](../workspace/DHR_35/) | | DHR34/63/64/65 已完成范围保留；DHR66/67 是新增阻塞，Linux SSH 按 B-22 ① 延后，P6 阶段闸再裁决 |
 
@@ -273,18 +274,20 @@
 
 #### DHR_66
 
-- **目标**：仅补齐 `herdr.codex.main` 用户级 registry 中已声明为 nonsecret 的 `/profiles` 身份投影，让 `freezeProfileIdentity` 在真实 Attempt 前冻结既有 Receipt 身份，不扩大身份合同。
-- **非目标**：不读写凭据、Token、Cookie、产品配置正文或投影值；不登录；不改 registry schema/validator、fallback、Runtime、Store、RPC、Result、Herdr 或 DHR35；不启动真实 Agent。
+- **目标**：修复 `herdr.codex.main` 用户级 registry 的 nonsecret identity projection 与现役 Codex 配置漂移：移除当前入口已不存在且不代表 overlay 选择的 `/profiles` 声明，保留可由既有 reader 证明的 `/model`，让 `freezeProfileIdentity` 在真实 Attempt 前冻结既有 Receipt 身份，不扩大身份合同。
+- **非目标**：不向 Codex 产品配置伪造 `profiles` 键，不读写凭据、Token、Cookie、产品配置正文或投影值；不登录；不改 registry schema/validator、fallback、Runtime、Store、RPC、Result、Herdr 或 DHR35；不启动真实 Agent。
 - **验收口径**：
-  - **机器证**：[design/12 P6-RI-A5](../design/12-Receipt绑定结果提交与P6真实闭环-契约调整.md#4-验收清单) 的新增指定 Codex Profile 复验：缺失 `/profiles` 的红证在 Attempt、Agent、pane、Result 前拒绝；修复后 `freezeProfileIdentity` 仍产生 `executor_profile_id`、脱敏 `account_alias`、`config_fingerprint`、`executor_capability_hash` 四字段，工件仅含 hash/错误码/脱敏摘要。
-  - **机器证**：`/profiles` 未声明 nonsecret、pointer 坏/不安全或值不可证时 fail-closed；投影值、配置正文与凭据零进入工件。
+  - **机器证**：[design/12 P6-RI-A5](../design/12-Receipt绑定结果提交与P6真实闭环-契约调整.md#4-验收清单) 的指定 Codex Profile 复验：旧 `/profiles` 声明缺键的红证在 Attempt、Agent、pane、Result 前拒绝；修复 registry 声明后 `freezeProfileIdentity` 仍产生 `executor_profile_id`、脱敏 `account_alias`、`config_fingerprint`、`executor_capability_hash` 四字段，工件仅含 hash/错误码/脱敏摘要。
+  - **机器证**：现役入口没有 overlay selector，Codex 基础配置不因本卡写入；`/model` 未声明 nonsecret、pointer 坏/不安全或值不可证时仍 fail-closed；projection 值、配置正文与凭据零进入工件。
 - **变更范围**：
   <!-- dh:allowed-paths:v1 task=DHR_66 -->
+  - `docs/modules/dh-relay/design/README.md`
+  - `docs/modules/dh-relay/design/evidence/29-DHR66-Codex-projection漂移-B调整交叉审核记录.md`
   - `docs/modules/dh-relay/workspace/DHR_66/**`
-  Git 范围对账只覆盖仓内 workspace；用户级 registry 的已声明 nonsecret `/profiles` 仍以本卡目标与非目标为唯一边界，绝不扩大。不得改仓内生产代码、DHR63/65 已完成工件或其他用户配置。
+  Git 范围对账只覆盖仓内 workspace；用户级 registry 仅可删除 `herdr.codex.main.config_fingerprint_rule.fields` 中已漂移的 `/profiles` 一项并保留 `/model`，绝不扩大。不得修改 Codex 产品配置、仓内生产代码、DHR63/65 已完成工件或其他用户配置。
 - **档位**：标准（用户级身份元数据与零敏感证据）。
 - **任务类型**：轻量<!-- dh:task-type:v1 task=DHR_66 type=light -->
-- **实施提示**：必须另行 D-start；只可读取 registry 已声明 nonsecret 的 `/profiles`，且不得把投影值或配置正文写入命令输出、证据或 commit。
+- **实施提示**：B-31 后只可修改上述 registry field 声明；不得把 projection 值或配置正文写入命令输出、证据或 commit。变更前后以 registry/config hash、字段名、错误码、四字段键名和长度证明，不记录值。
 
 #### DHR_67
 

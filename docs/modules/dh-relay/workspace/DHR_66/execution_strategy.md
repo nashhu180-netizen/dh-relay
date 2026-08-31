@@ -3,7 +3,7 @@
 
 ## 操作模型
 
-先用既有 identity 专项确认缺失投影的 fail-closed 基线，再在已声明 nonsecret 的单一 `/profiles` 路径做最小修复，随后重跑正负例。任何需要读取值、扩大 pointer、修改 schema 或仓内代码的迹象均立即停下并写 findings。
+先用既有 identity 专项保留旧 `/profiles` 声明缺键的 fail-closed 基线，再按 B-31 仅从目标用户级 registry projection fields 删除已漂移的 `/profiles`、保留 `/model`；Codex 产品 config 不写且前后 hash 必须相同。随后重跑 live freeze、四类 projection 负例与 DHR65 runtime 零副作用证据。任何需要读取值、扩大 pointer、修改产品 config、schema 或仓内代码的迹象均立即停下并写 findings。
 
 ## 收尾铁律
 
