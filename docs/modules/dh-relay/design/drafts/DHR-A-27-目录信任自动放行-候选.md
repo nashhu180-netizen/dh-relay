@@ -1,6 +1,8 @@
-<!-- dh:planning-event:v1 id=DHR-A-27 stage=A-full artifact=design/drafts/DHR-A-27-目录信任自动放行-候选.md review=待补 understanding=待补 -->
+<!-- dh:planning-event:v1 id=DHR-A-27 stage=A-full artifact=design/drafts/DHR-A-27-目录信任自动放行-候选.md review=evidence/31-A27-目录信任自动放行-交叉审核记录.md#review-a27 understanding=待补 -->
 # 目录信任自动放行：产品设计与验收（**候选草案 · 未确认**）
 
+> **⚠️ 状态：草案 · 两名 fresh 审核均判「不通过」（2026-08-31）。** 裁决与整改方向见 [evidence/31](../evidence/31-A27-目录信任自动放行-交叉审核记录.md#review-a27)。核心问题是**文本匹配无法证明「这就是目录信任框」**（modal provenance 缺失）；另有「D-2 已被判定为安慰剂、须重问用户」与「排除路线 A 的论证证据不足、D-1 恢复三选项」。**本文正文尚未按裁决整改，读时以 evidence/31 为准。**
+>
 > **状态：草案。** 尚未经 fresh 审核、理解对齐与用户整版确认，**不是** `design/README.md` `designInputs[]` 的正式输入，**不授权** B-adjust、开工、代码改动、产品配置写入、真实 Agent、verify、推送或部署。
 >
 > 触发：2026-08-31 用户在 DHR_68 收口后明文提出「不是等人处理，直接信任」，追问范围时答「**任何目录都信。因为目录是用户自己开的**」，理解对齐时再答「**产品弹的所有目录都信任**」。该诉求与 `B-32` 冻结的「安全暂停 + 人工确认」相反，故按约定走 A-full，不走 B-adjust。
@@ -78,7 +80,9 @@ launch 前把 `work_dir_root` 写进该 profile 的产品配置：Claude 是 `~/
 3. 路线 B 已被本项目本月在**两个产品上各跑通一次**，路线 A 只在 Claude 上手工验证过一次、Codex 侧格式未实测。
 4. 路线 B 不要求松绑 `B-22` ② 的产品配置边界，改动面小。
 
-**D-1 仍标为待决策**，但选项已从「A / B / A+B」收窄为：
+> **⚠️ 以下收窄论证已被审核部分推翻。** 主控回查本机实测后确认：「父目录信任不向嵌套仓传递」对 **Codex** 是实测事实（`workspace/DHR_35/evidence/f3508-root-cause/probe-results.json` 的 `nested-git-repo-inside-trusted-dir` → `blocked / agent_not_ready`），但对 **Claude Code 未实测**，而审核者引用的 Claude 文档称父目录 trust 可扩展到子目录。原草案的缺陷是**把只对 Codex 实测过的结论写成跨产品一般事实、且正文未挂证据**。**D-1 恢复 A / B / A+B 三选项**，裁定前置 = 两产品 × {父目录 / 嵌套仓 / 中途切目录} 的只读能力矩阵。详见 [evidence/31 §3](../evidence/31-A27-目录信任自动放行-交叉审核记录.md)。
+
+**（以下为整改前原文，保留作形成史）D-1 仍标为待决策**，但选项已从「A / B / A+B」收窄为：
 - **B 单用**（主控倾向）；
 - **A+B 混合**——对已知的 `work_dir_root` 预置以减少弹框次数，其余时刻仍靠 B 兜底。混合的代价是同时背上路线 A 的配置写入风险，收益只是"少弹几次框"，而 B 本来就不需要人参与，**收益存疑**。
 
@@ -111,7 +115,9 @@ launch 前把 `work_dir_root` 写进该 profile 的产品配置：Claude 是 `~/
 
 ### D-2 已裁决：默认开，但只对本机已登记的 executor profile 生效
 
-<!-- dh:decided:v1 id=A27-D2 by=user at=2026-08-31 -->
+<!-- dh:pending-decision:v1 id=A27-D2-REASK -->
+
+> **⚠️ 本节已被审核推翻，D-2 退回待决策。** 两名 fresh 审核独立判定选项②是**安慰剂**：现役 driver 本来就要求 profile 可解析才能执行，故「已登记 profile」只排除了本来也跑不起来的机器。主控当初把②表述为「默认安全」是错的，用户是基于该错误框架做的选择。**须重问，见 [evidence/31 §4](../evidence/31-A27-目录信任自动放行-交叉审核记录.md)。** 以下原文保留作形成史。
 
 **用户 2026-08-31 对话明文裁决：「那就对我 0 差别好了」= 选项 ②。**
 
