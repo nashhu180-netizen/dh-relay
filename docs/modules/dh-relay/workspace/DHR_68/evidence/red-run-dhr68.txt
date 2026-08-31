@@ -1,0 +1,39 @@
+✖ DHR_68/A adapter：启动超时先对账——agent 已建成沿用 handle，未建成才关同一 pane，且永不重发启动 (1.2067ms)
+✖ DHR_68/A herdr-cli：启动专用超时与其余动词分离，超时带 timedOut 语义位 (641.7122ms)
+✖ DHR_68/B：pane run 不解 JSON，Claude 在真实空 stdout 形态下仍完成识别与 rename (930.0652ms)
+✖ DHR_68/C adapter：启动期 blocked 保留 handle、不关 pane、不重试 (0.4887ms)
+✖ DHR_68/C driver：启动即 blocked 恰写一次 waiting_human，不写 HOST_LOST，指令延后到解除后补发 (775.1486ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 16
+ℹ fail 8
+--
+✖ DHR_68/A adapter：启动超时先对账——agent 已建成沿用 handle，未建成才关同一 pane，且永不重发启动 (1.2067ms)
+  AssertionError [ERR_ASSERTION]: timeout+agent alive must keep the launch
+
+  false !== true
+
+--
+✖ DHR_68/A herdr-cli：启动专用超时与其余动词分离，超时带 timedOut 语义位 (641.7122ms)
+  AssertionError [ERR_ASSERTION]: Windows 上超时命中 child.error.code=ETIMEDOUT，也必须标 timedOut
+  + actual - expected
+
+  + undefined
+--
+✖ DHR_68/B：pane run 不解 JSON，Claude 在真实空 stdout 形态下仍完成识别与 rename (930.0652ms)
+  AssertionError [ERR_ASSERTION]: pane run 不得被当成 JSON 解析
+
+  'object' !== 'string'
+
+--
+✖ DHR_68/C adapter：启动期 blocked 保留 handle、不关 pane、不重试 (0.4887ms)
+  AssertionError [ERR_ASSERTION]: start-time blocked 是要人来处理的暂停，不是启动失败
+
+  false !== true
+
+--
+✖ DHR_68/C driver：启动即 blocked 恰写一次 waiting_human，不写 HOST_LOST，指令延后到解除后补发 (775.1486ms)
+  AssertionError [ERR_ASSERTION]: Attention 必须带真实 blocked 观测，不能写成 unknown
+      at TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_68/relay-core/test/herdr-adapter.test.mjs:518:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {

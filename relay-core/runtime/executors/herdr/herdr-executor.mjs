@@ -66,7 +66,20 @@ export async function launchHerdrAgent({ cli, registryProfile, runId, nodeId, at
       return cli.paneRun({ paneId, command: registryProfile.command_alias, args });
     })()
     : cli.agentStart({ name: agentName, kind: agentKind(registryProfile), paneId, args });
-  if (!start.ok) return closeFailedPane(start);
+  // DHR_68/A：启动调用**超时**不等于启动失败——真实 herdr 自己的 `agent start` 等待窗口
+  // 默认就有 30 秒，超时时 agent 往往已经建成。先只读对账一次，再决定是否回滚。
+  // DHR_68/C：启动期 `agent_not_ready`（产品自己的目录信任框之类）是要人处理的暂停，
+  // 不是启动失败——保留 handle、不关 pane，由 driver 写一条 Attention。
+  const startBlocked = start.notReady === true;
+  if (!start.ok && !startBlocked) {
+    if (start.timedOut !== true) return closeFailedPane(start);
+    // 对账**只读**。绝不重发启动调用：那会在真实宿主上拉起第二个 Agent 进程。
+    const listed = isClaudeProfile(registryProfile) ? cli.agentList() : null;
+    const reconciled = isClaudeProfile(registryProfile)
+      ? listed.ok === true && paneCandidates(listed.value, paneId).length > 0
+      : cli.agentGet(agentName).ok === true;
+    if (!reconciled) return closeFailedPane(start);
+  }
   const renamed = isClaudeProfile(registryProfile)
     ? await renameClaudeAgent({ cli, paneId, agentName, readyTimeoutMs, readyPollMs })
     : { ok: true, terminalId: field(entity(start.value), 'terminal_id', 'pane_id') ?? paneId };
@@ -80,7 +93,8 @@ export async function launchHerdrAgent({ cli, registryProfile, runId, nodeId, at
     started_at: new Date().toISOString(),
     launch_constraints: isClaudeProfile(registryProfile) ? ['claude-requires-pane-run'] : [],
   };
-  const deadline = Date.now() + readyTimeoutMs;
+  // 已知启动期就 blocked 时不必再等就绪：等不到，只会把该给人的 Attention 拖后。
+  const deadline = Date.now() + (startBlocked ? 0 : readyTimeoutMs);
   let observed = await observeHerdrAgent({ cli, handle });
   while (observed.ok && !['idle', 'working'].includes(observed.observation.herdr_status) && Date.now() < deadline) {
     await sleep(readyPollMs);
@@ -88,7 +102,9 @@ export async function launchHerdrAgent({ cli, registryProfile, runId, nodeId, at
   }
   const readyObservation = observed.ok ? observed.observation : null;
   const blind = readyObservation !== null && !['idle', 'working'].includes(readyObservation.herdr_status);
-  return { ok: true, handle, blind, ready_observation: readyObservation,
+  // Claude 的信任框出现在 `pane run` 成功**之后**，所以启动期 blocked 也可能只由观测报出来。
+  const launchBlocked = startBlocked || readyObservation?.herdr_status === 'blocked';
+  return { ok: true, handle, blind, launch_blocked: launchBlocked, ready_observation: readyObservation,
     ready_state_change_seq: readyObservation?.state_change_seq ?? null, ready_timeout_ms: readyTimeoutMs };
 }
 

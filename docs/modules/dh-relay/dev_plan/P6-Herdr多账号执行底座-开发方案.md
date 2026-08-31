@@ -4,12 +4,12 @@
 <!-- dh:status
 汇报: DHR_32（normal）已于 2026-08-30 经用户对话确认收口，verify `2f80fa1`；主干复验定向 profiles 14/14、contracts 审计 0 违规、模块体检 0 failure。DHR_33（heavy）已于 2026-08-30 经用户接受 E-3303 现场、E-3304 受限、E-3307/3308 Oracle 差异与 P6-M6 延后后收口，verify `5d662b6`；候选-40 依用户裁决 B 冻结为“fresh 实例 + 独立会话”，模型身份仅作诊断记录。DHR_34（heavy）已于 2026-08-30 经用户接受 P6-M4 受限结论，verify `0b72cb6`；quota 定向 12/12、Store/Attempt 组合 30/30、contracts 审计 0 违规、模块体检 0 failure。DHR_64（heavy）已于 2026-08-30 经用户本地收口授权完成，verify `8376e02`；稳定定向 15/15、contracts audit 0 违规、validator 57/57、capability 20/20。
 汇报补充: DHR_65（normal）已经用户 E11 明文认可；主干复验专项五项均 1/1、profiles 14/14、contracts audit 0、模块体检 0 failure。DHR_67（heavy）已于 2026-08-31 经用户明文授权本地收口；主干定向 6/6、contracts audit 0 failure、模块体检 0 failure。DHR_66（light）已于 2026-08-31 经用户 E11 认可收口；主干复验 registry validator PASS、strict config exit 0、定向 23/23、模块体检 0 failure。
-现状: DHR_32、DHR_33、DHR_61、DHR_34、DHR_63、DHR_64、DHR_65、DHR_66、DHR_67 已完成；DHR_35 进行中但被阻断（fixture 侧已就绪，剩余全在其禁改的生产路径）；DHR_68 进行中（2026-08-31 用户明文「授权开工」D-start，承接该三条缺陷）
-进行到: P6 ▸ DHR_35 首次真实实录已跑出三条只有真实宿主才暴露的 adapter/driver 缺陷，B-32 新增 DHR_68 承接；Linux SSH 维持 B-22 延后/受限
-下一步: DHR_68 施工中——先用真实 herdr 做逐命令形态对照（验收 D），再依次接线启动专用 60s 超时+超时对账、`pane run` 不解 JSON、启动期 blocked 转一次人工暂停；闭合后 DHR_35 才能重跑 Windows 实录
-待用户: P6 阶段闸仍等待 DHR_35 的真实闭环机器证与 P6-H 人判；DHR_34 的 P6-M4 已按用户裁决记为 constrained。
+现状: DHR_32、DHR_33、DHR_61、DHR_34、DHR_63、DHR_64、DHR_65、DHR_66、DHR_67、DHR_68 已完成；DHR_35 进行中，其三条宿主缺陷已由 DHR_68 闭合，可重跑 Windows 实录（需用户重新授权真实 Agent）
+进行到: P6 ▸ DHR_68 已于 2026-08-31 经用户明文「可以收口」完成，三条 Herdr 宿主接线缺陷闭合；DHR_35 的最后一层阻塞解除；Linux SSH 维持 B-22 延后/受限
+下一步: DHR_35 重跑 Windows 真实闭环实录（需用户重新授权真实 Agent）；另有两项范围外跟踪：F-6807（driver 恢复届无条件发 completion instruction，与启动期同类，属候选-11「同类目标逐项巡检」）与 F-6808（as-built/relay-core.md 未含 DHR_68 三条新行为）
+待用户: P6 阶段闸仍等待 DHR_35 的真实闭环机器证与 P6-H 人判；DHR_34 的 P6-M4 已按用户裁决记为 constrained。**2026-08-31 用户在 DHR_68 收口后提出「不是等人处理，直接信任」——即把新项目目录信任从「安全暂停+人工确认」改为受控自动信任，这与 B-32 冻结的产品语义相反，须先走 A-full（授权范围/路径白名单/审计/撤销四项安全语义），待用户确认后立项。**
 看什么: workspace/DHR_33/review.md（验收表+签名区）→ review-consistency-opus.md §六/§八；workspace/DHR_32/review.md 签名区
-阻塞: DHR_35 的 fixture 侧阻塞已解除（固定 fixture 根 + 幂等信任 bootstrap，两条 Profile 身份四字段齐、启动均达 attempt_started）；剩余阻塞全在其禁改路径 `relay-core/runtime/executors/herdr/**` 与 `workflow-driver.mjs`：启动超时上限、`pane run` 期待 JSON、启动期 blocked 被报成失败，三条由 DHR_68 承接。DHR34、63、64、65 已完成范围保留且不重开。Linux SSH 真实 smoke 按 B-22 延后，P6-M6 只能在阶段闸记延后/受限；DHR_34 的真实 quota 样本、detector/judge 与 retry 后执行闭环不得被 Result bridge 自动重启或误表述为完整自动切号可用。
+阻塞: DHR_35 的三条宿主缺陷已由 DHR_68 闭合（启动专用 60s + 超时只读对账、`pane run` 不解 JSON、启动期 blocked 保留 handle 并转一次人工暂停 + 延后补发提交指令），fixture 侧此前已解除，故 DHR_35 已无技术阻塞、只待用户重新授权真实 Agent。DHR34、63、64、65 已完成范围保留且不重开。Linux SSH 真实 smoke 按 B-22 延后，P6-M6 只能在阶段闸记延后/受限；DHR_34 的真实 quota 样本、detector/judge 与 retry 后执行闭环不得被 Result bridge 自动重启或误表述为完整自动切号可用。
 -->
 
 <!-- dh:planning-event:v1 id=DHR-B-31 stage=B-adjust artifact=dev_plan/P6-Herdr多账号执行底座-开发方案.md review=../design/evidence/29-DHR66-Codex-projection漂移-B调整交叉审核记录.md#review-b31 understanding=../design/evidence/29-DHR66-Codex-projection漂移-B调整交叉审核记录.md#understanding-b31 -->
@@ -156,8 +156,8 @@
 | DHR_65 | 让 runtime registry loader 对完整 registry fail-closed | 标准 | 已完成 | DHR_32、DHR_61 | [workspace/DHR_65/](../workspace/DHR_65/) | squash + verify 本提交（2026-08-30） | 任务类型=normal；用户 E11 已认可；主干专项 5/5、profiles 14/14、contracts audit 0、模块体检 0 failure；承接 P6-RI-A5 runtime/mutation 部分 |
 | DHR_66 | 修复 Codex nonsecret identity projection 漂移 | 标准 | 已完成 | DHR_63、DHR_65（均已完成） | [workspace/DHR_66/](../workspace/DHR_66/) | squash `459b8ac`（2026-08-31）；verify 本提交 | 任务类型=light；E11 用户明文认可；release_mode=full；主干复验 validator PASS、strict config exit 0、定向 23/23、模块体检 0 failure；仅删 registry 漂移 `/profiles`、保留 `/model` |
 | DHR_67 | 接通 Windows Claude 受支持 Herdr 启动路径 | 标准 | 已完成 | DHR_33、DHR_64、DHR_65（均已完成） | [workspace/DHR_67/](../workspace/DHR_67/) | squash `eb3c618`；verify `aecb159`（2026-08-31）；release_mode=full | 任务类型=heavy；用户已授权本地收口；主干定向 6/6、contracts audit 0 failure、模块体检 0 failure；仅限精确 Herdr adapter/test 路径。**B-32 限定**：已完成仅指当时 fake 覆盖；其 fake `paneRun` 返回 `{ok:true,value:{}}`，与真实 herdr 的 exit 0 + 空 stdout 不符，**真实 Claude 启动未被覆盖**，反例与修复由 DHR_68 承接 |
-| DHR_68 | 修 Herdr adapter/driver 的真实宿主接线缺陷 | 标准 | 进行中 | DHR_64、DHR_67 | [workspace/DHR_68/](../workspace/DHR_68/) | | 任务类型=heavy；2026-08-31 用户明文「授权开工」D-start，授权至 E10 人验准备，不含 verify/合并/推送/部署/真实闭环实录；worktree `wt/DHR_68`；B-32 新增，承接 DHR_35 实测的三缺陷（启动超时上限 / `pane run` 期待 JSON / 启动期 blocked 报成失败）；启动专用超时冻结为 60s 且不暴露配置面；不代产品做信任决定 |
-| DHR_35 | 用 Codex、Claude Code 跑 Windows 真实执行闭环 | 标准 | 进行中 | DHR_34、DHR_63、DHR_64、DHR_65、DHR_66、DHR_67、DHR_68 | [workspace/DHR_35/](../workspace/DHR_35/) | | DHR34/63/64/65/66/67 已完成范围保留；fixture 侧已就绪，DHR_68 是新增阻塞；Linux SSH 按 B-22 ① 延后，P6 阶段闸再裁决 |
+| DHR_68 | 修 Herdr adapter/driver 的真实宿主接线缺陷 | 标准 | 已完成 | DHR_64、DHR_67 | [workspace/DHR_68/](../workspace/DHR_68/) | squash 本提交；verify 见下一提交（2026-08-31）；release_mode=full | 任务类型=heavy；用户明文「可以收口」；五路复核+一次整改复验全闭合、发现全采纳无驳回；变异点由第二轮复核实例选点并验红绿；定向 27 例 24 通过（3 例与未改代码的 master 同名同因）、`dh dh-relay` 0 失败；范围外跟踪 F-6807（recovery 届同类缺陷）与 F-6808（as-built delta）；B-32 新增，承接 DHR_35 实测的三缺陷（启动超时上限 / `pane run` 期待 JSON / 启动期 blocked 报成失败）；启动专用超时冻结为 60s 且不暴露配置面；不代产品做信任决定 |
+| DHR_35 | 用 Codex、Claude Code 跑 Windows 真实执行闭环 | 标准 | 进行中 | DHR_34、DHR_63、DHR_64、DHR_65、DHR_66、DHR_67、DHR_68（全部已完成） | [workspace/DHR_35/](../workspace/DHR_35/) | | 前置卡全部闭合，fixture 侧与宿主接线均已就绪，**已无技术阻塞**，重跑真实实录需用户重新授权真实 Agent；Linux SSH 按 B-22 ① 延后，P6 阶段闸再裁决 |
 
 > 状态列只填五枚举，阶段闸阻塞写「备注」列。P5 未通过时 DHR_32~35 均不得开工。
 

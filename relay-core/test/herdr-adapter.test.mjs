@@ -6,7 +6,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { renderFocus } from '../cli/render.mjs';
-import { makeHerdrCli } from '../runtime/executors/herdr/herdr-cli.mjs';
+import { HERDR_START_TIMEOUT_MS, makeHerdrCli } from '../runtime/executors/herdr/herdr-cli.mjs';
 import { startWorkflowDriver } from '../runtime/workflow-driver.mjs';
 import { createStore, openStore } from '../store/store.mjs';
 import { HEADLESS_SSH_SCENARIO } from './helpers/headless-ssh-scenario.mjs';
@@ -36,10 +36,13 @@ test('DHR_33 adapter：状态映射、句柄、附着与输入均不触碰 Store
   assert.equal((await observeHerdrAgent({ cli: fake.cli, handle: launched.handle })).observation.herdr_status, 'blocked');
   const captured = await captureHerdrResult({ cli: fake.cli, handle: launched.handle, judge: text => text.includes('ok') ? { outcome: 'succeeded', reason: null, structured: { verdict: 'ok' } } : null });
   assert.equal(captured.verdict.outcome, 'succeeded');
-  assert.deepEqual(await sendToHerdrAgent({ cli: fake.cli, handle: launched.handle, text: 'hello' }), { ok: true, value: {} });
+  // DHR_68/D：真实 `agent prompt` 的 result 是 `{agent:{…},type}`，不是空对象、也不是只有 type。
+  const prompted = await sendToHerdrAgent({ cli: fake.cli, handle: launched.handle, text: 'hello' });
+  assert.equal(prompted.ok, true);
+  assert.deepEqual(Object.keys(prompted.value).sort(), ['agent', 'type']);
   assert.equal(fake.sent[0].text, 'hello');
   assert.equal(attachHerdrAgent({ handle: launched.handle }).instruction, `herdr agent attach ${launched.handle.agent_name}`);
-  assert.deepEqual(await stopHerdrAgent({ cli: fake.cli, handle: launched.handle }), { ok: true, value: {} });
+  assert.deepEqual(await stopHerdrAgent({ cli: fake.cli, handle: launched.handle }), { ok: true, value: { type: 'ok' } });
   const failedLaunchFake = makeFakeHerdr({ agentStartResult: { ok: false, reason: 'E_BAD_VALUE:HERDR_CLI', detail: 'agent-start-failed' } });
   const launchFailed = await launchHerdrAgent({ cli: failedLaunchFake.cli,
     registryProfile: profile, runId: 'R001-herdr-20260829', nodeId: 'node-a', attemptId: 'attempt-b', workDirRoot: 'C:/work' });
@@ -368,4 +371,269 @@ test('DHR_33 driver：恢复届 transient 探测与无 ref 都只落 observation
   await noRef.driver.done;
   assert.equal(noRef.store.events.some(event => event.kind === 'attempt_orphaned'), false);
   assert.ok(noRef.store.events.some(event => event.observation_status === 'observation_lost'));
+});
+
+// ---------------------------------------------------------------------------
+// DHR_68：真实宿主接线。三条缺陷均由 DHR_35 的真实 Windows 实录暴露，fake 之所以
+// 看不见，是因为它当时的返回形态与真实 herdr 不一致（见验收项 D 与
+// workspace/DHR_68/evidence/real-herdr-command-shapes.json）。
+// ---------------------------------------------------------------------------
+
+test('DHR_68/A adapter：启动超时先对账——agent 已建成沿用 handle，未建成才关同一 pane，且永不重发启动', async () => {
+  // 真实形态：Windows 上 spawnSync 超时命中 child.error.code=ETIMEDOUT（DHR_35 实测 `spawn:ETIMEDOUT`）。
+  const timedOut = { ok: false, reason: 'E_BAD_VALUE:HERDR_CLI', detail: 'spawn:ETIMEDOUT', timedOut: true };
+
+  const alive = makeFakeHerdr({ agentStartResult: timedOut, agentAlive: true, statuses: ['idle'] });
+  const kept = await launchHerdrAgent({ cli: alive.cli, registryProfile: profile,
+    runId: 'R001', nodeId: 'node-a', attemptId: 'attempt-timeout-alive', workDirRoot: 'C:/work' });
+  assert.equal(kept.ok, true, 'timeout+agent alive must keep the launch');
+  assert.equal(kept.handle.agent_name, 'herdr-attempt-timeout-alive');
+  assert.equal(kept.handle.pane_id, 'pane-1');
+  assert.equal(alive.paneKills, 0, 'must not kill a pane that already hosts a live agent');
+  assert.equal(alive.calls.filter(([kind]) => kind === 'agentStart').length, 1, 'reconcile must never re-issue agent start');
+
+  const gone = makeFakeHerdr({ agentStartResult: timedOut, agentAlive: false, missing: true });
+  const closed = await launchHerdrAgent({ cli: gone.cli, registryProfile: profile,
+    runId: 'R001', nodeId: 'node-a', attemptId: 'attempt-timeout-dead', workDirRoot: 'C:/work' });
+  assert.equal(closed.ok, false);
+  assert.equal(gone.paneKills, 1);
+  assert.deepEqual(gone.calls.at(-1), ['paneKill', 'pane-1'], 'only the pane this launch created may be closed');
+  assert.equal(gone.calls.filter(([kind]) => kind === 'agentStart').length, 1);
+
+  // 非超时失败保持既有语义：即便 agent 恰好存在也不对账、照旧关闭同一新 pane。
+  const plain = makeFakeHerdr({ agentStartResult: { ok: false, reason: 'E_BAD_VALUE:HERDR_CLI', detail: 'agent-start-failed' }, agentAlive: true });
+  const plainLaunch = await launchHerdrAgent({ cli: plain.cli, registryProfile: profile,
+    runId: 'R001', nodeId: 'node-a', attemptId: 'attempt-plain-fail', workDirRoot: 'C:/work' });
+  assert.equal(plainLaunch.ok, false);
+  assert.equal(plain.paneKills, 1);
+
+  // Claude 分支的启动调用是 pane run；超时对账走 agent list 按新 pane 过滤。
+  const claudeProfile = { ...profile, executor_profile_id: 'herdr.claude.main', product: 'claude-code', command_alias: 'claude' };
+  const claudeAlive = makeFakeHerdr({ paneRunResult: { ...timedOut }, statuses: ['idle'] });
+  const claudeKept = await launchHerdrAgent({ cli: claudeAlive.cli, registryProfile: claudeProfile,
+    runId: 'R001', nodeId: 'node-a', attemptId: 'attempt-claude-timeout', workDirRoot: 'C:/work' });
+  assert.equal(claudeKept.ok, true);
+  assert.equal(claudeAlive.paneKills, 0);
+  assert.equal(claudeAlive.calls.filter(([kind]) => kind === 'paneRun').length, 1, 'reconcile must never re-issue pane run');
+});
+
+test('DHR_68/A herdr-cli：启动专用超时与其余动词分离，超时带 timedOut 语义位', async (t) => {
+  assert.equal(HERDR_START_TIMEOUT_MS, 60_000, '启动专用超时冻结为 60 秒（B-32 用户裁决）');
+  const root = await mkdtemp(join(tmpdir(), 'dhr68-herdr-bin-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const statePath = join(root, 'state.json');
+  const bin = fileURLToPath(new URL('./helpers/fake-herdr-bin.mjs', import.meta.url));
+  await writeFile(statePath, JSON.stringify({ delay_ms: 120, responses: { 'agent start': { agent: { terminal_id: 't1' } } } }), 'utf8');
+
+  // 通用上限 30ms：agent get 超时；agent start 因为用启动专用上限（默认 60s）而通过。
+  const cli = makeHerdrCli({ herdrBin: process.execPath, herdrArgs: [bin, statePath], timeoutMs: 30 });
+  const slowGet = cli.agentGet('slow');
+  assert.equal(slowGet.ok, false);
+  assert.equal(slowGet.timedOut, true, 'Windows 上超时命中 child.error.code=ETIMEDOUT，也必须标 timedOut');
+  assert.equal(slowGet.missing, false);
+  assert.equal(cli.agentStart({ name: 'a', kind: 'codex', paneId: 'p1' }).ok, true, 'agent start 不受通用 10s 上限约束');
+
+  // 启动专用上限本身可被压低，证明它确实被 agent start 使用。
+  const tight = makeHerdrCli({ herdrBin: process.execPath, herdrArgs: [bin, statePath], startTimeoutMs: 20 });
+  const startTimeout = tight.agentStart({ name: 'a', kind: 'codex', paneId: 'p1' });
+  assert.equal(startTimeout.ok, false);
+  assert.equal(startTimeout.timedOut, true);
+
+  // agent_not_ready 是启动期 blocked，不是 missing。
+  await writeFile(statePath, JSON.stringify({ exit_code: 1,
+    stderr: '{"error":{"code":"agent_not_ready","message":"agent a is not ready"},"id":"cli:agent:start"}' }), 'utf8');
+  const notReady = makeHerdrCli({ herdrBin: process.execPath, herdrArgs: [bin, statePath] })
+    .agentStart({ name: 'a', kind: 'codex', paneId: 'p1' });
+  assert.equal(notReady.ok, false);
+  assert.equal(notReady.notReady, true);
+  assert.equal(notReady.missing, false);
+});
+
+test('DHR_68/B：pane run 不解 JSON，Claude 在真实空 stdout 形态下仍完成识别与 rename', async (t) => {
+  // fake 的默认值就是真实形态：exit 0 + 空 stdout（对照 evidence/real-herdr-command-shapes.json）。
+  const shapeProbe = makeFakeHerdr();
+  assert.deepEqual(shapeProbe.cli.paneRun({ paneId: 'pane-1', command: 'claude', args: [] }), { ok: true, value: '' });
+
+  const claudeProfile = { ...profile, executor_profile_id: 'herdr.claude.main', product: 'claude-code', command_alias: 'claude' };
+  const fake = makeFakeHerdr({ paneRunResult: { ok: true, value: '' }, statuses: ['idle'] });
+  const launched = await launchHerdrAgent({ cli: fake.cli, registryProfile: claudeProfile,
+    runId: 'R001', nodeId: 'node-a', attemptId: 'attempt-empty-stdout', workDirRoot: 'C:/work', args: ['--test'] });
+  assert.equal(launched.ok, true, '真实 pane run 返回空 stdout 时 Claude 启动必须成功');
+  assert.equal(fake.paneKills, 0);
+  assert.deepEqual(fake.calls.slice(0, 4), [
+    ['paneSplit', 'C:/work'],
+    ['paneRun', 'pane-1', 'claude', ['--test']],
+    ['agentList'],
+    ['agentRename', 'pane-1', 'herdr-attempt-empty-stdout'],
+  ]);
+
+  // wrapper 层：paneRun 必须走 json:false，返回字符串而不是解析后的对象。
+  const root = await mkdtemp(join(tmpdir(), 'dhr68-panerun-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const statePath = join(root, 'state.json');
+  const bin = fileURLToPath(new URL('./helpers/fake-herdr-bin.mjs', import.meta.url));
+  await writeFile(statePath, JSON.stringify({ responses: { 'pane run': {}, 'agent start': { agent: { terminal_id: 't1' } } } }), 'utf8');
+  const cli = makeHerdrCli({ herdrBin: process.execPath, herdrArgs: [bin, statePath] });
+  const ran = cli.paneRun({ paneId: 'p1', command: 'claude', args: ['--x'] });
+  assert.equal(ran.ok, true);
+  assert.equal(typeof ran.value, 'string', 'pane run 不得被当成 JSON 解析');
+  // Codex 的 agent start 返回处理不变：仍拆信封、仍读 agent.terminal_id。
+  assert.equal(cli.agentStart({ name: 'a', kind: 'codex', paneId: 'p1', args: ['--x'] }).value.agent.terminal_id, 't1');
+  const calls = JSON.parse(await readFile(statePath, 'utf8')).calls;
+  assert.deepEqual(calls[0], ['pane', 'run', 'p1', 'claude', '--x']);
+  assert.deepEqual(calls[1], ['agent', 'start', 'a', '--kind', 'codex', '--pane', 'p1', '--', '--x']);
+});
+
+test('DHR_68/C adapter：启动期 blocked 保留 handle、不关 pane、不重试', async () => {
+  const notReady = { ok: false, reason: 'E_BAD_VALUE:HERDR_CLI', detail: 'exit:1:{"error":{"code":"agent_not_ready"}}', notReady: true };
+  const fake = makeFakeHerdr({ agentStartResult: notReady, statuses: ['blocked'] });
+  const launched = await launchHerdrAgent({ cli: fake.cli, registryProfile: profile,
+    runId: 'R001', nodeId: 'node-a', attemptId: 'attempt-blocked', workDirRoot: 'C:/work', readyTimeoutMs: 0 });
+  assert.equal(launched.ok, true, 'start-time blocked 是要人来处理的暂停，不是启动失败');
+  assert.equal(launched.launch_blocked, true);
+  assert.equal(launched.handle.agent_name, 'herdr-attempt-blocked');
+  assert.equal(launched.handle.pane_id, 'pane-1');
+  assert.equal(fake.paneKills, 0, '不得关掉正等着用户确认信任的 pane');
+  assert.equal(fake.calls.filter(([kind]) => kind === 'agentStart').length, 1, '不得重试启动');
+  assert.equal(launched.ready_observation?.herdr_status, 'blocked');
+
+  // 观测本身报 blocked（Claude 的信任框出现在 pane run 成功之后）也算启动期 blocked。
+  const claudeProfile = { ...profile, executor_profile_id: 'herdr.claude.main', product: 'claude-code', command_alias: 'claude' };
+  const claudeFake = makeFakeHerdr({ statuses: ['blocked'] });
+  const claudeLaunched = await launchHerdrAgent({ cli: claudeFake.cli, registryProfile: claudeProfile,
+    runId: 'R001', nodeId: 'node-a', attemptId: 'attempt-claude-blocked', workDirRoot: 'C:/work', readyTimeoutMs: 0 });
+  assert.equal(claudeLaunched.ok, true);
+  assert.equal(claudeLaunched.launch_blocked, true);
+  assert.equal(claudeFake.paneKills, 0);
+});
+
+test('DHR_68/C driver：启动即 blocked 恰写一次 waiting_human，不写 HOST_LOST，指令扣住不发', async (t) => {
+  // 状态序列全为 blocked（fake 的最后一项是粘性的），所以这一段是确定性的：
+  // 节点会稳定停在 waiting_human，不会被后续观测推回 running。
+  const notReady = { ok: false, reason: 'E_BAD_VALUE:HERDR_CLI', detail: 'exit:1:{"error":{"code":"agent_not_ready"}}', notReady: true };
+  const { store, root, driver, fake } = await runtimeFixture(t, ['blocked'], {
+    fake: { agentStartResult: notReady },
+    driver: { herdrReadyTimeoutMs: 0 },
+  });
+  t.after(() => driver.stop());
+
+  // 等**派生状态**而不是事件数组：事件先入内存、状态稍后收敛，等事件会取到半路的现场。
+  await runtimeUntil(async () => (await store.readState()).node_states[0]?.status === 'waiting_human', 'blocked waiting_human', 45_000);
+  const attention = store.events.filter(event => event.kind === 'human_input_requested');
+  assert.equal(attention.length, 1, '启动期 blocked 只应产生一条持久 Attention');
+  assert.match(attention[0].detail, /herdr_status=blocked/, 'Attention 必须带真实 blocked 观测，不能写成 unknown');
+  assert.equal(attention[0].reason ?? null, null, '这是等人，不是宿主失联');
+  assert.equal(store.events.some(event => event.reason === 'E_EXECUTOR_HOST_LOST'), false);
+  assert.equal((await store.readState()).node_states[0].status, 'waiting_human');
+  assert.equal(fake.sent.length, 0, 'blocked 期间不得把提交指令打进信任对话框');
+  assert.equal(fake.paneKills, 0, '不得关掉正等着用户确认信任的 pane');
+  assert.equal(store.events.some(event => event.kind === 'attempt_started'), true);
+
+  // 再等若干轮观测，确认 Attention 不会被反复写。
+  await runtimeUntil(() => fake.agentGets >= 5, 'several blocked polls', 45_000);
+  assert.equal(store.events.filter(event => event.kind === 'human_input_requested').length, 1);
+  assert.equal(fake.sent.length, 0);
+  assert.deepEqual(await readdir(join(root, 'results')), [], 'blocked 与观测都不得产生 Result');
+});
+
+test('DHR_68/C driver：人处理完信任后离开 blocked，提交指令恰好补发一次', async (t) => {
+  const notReady = { ok: false, reason: 'E_BAD_VALUE:HERDR_CLI', detail: 'exit:1:{"error":{"code":"agent_not_ready"}}', notReady: true };
+  const { store, driver, fake } = await runtimeFixture(t, ['blocked', 'blocked', 'working'], {
+    fake: { agentStartResult: notReady },
+    driver: { herdrReadyTimeoutMs: 0 },
+  });
+  t.after(() => driver.stop());
+
+  // 这些断言都是单调的（事件与 sent 只增不减），不依赖采样时机。
+  await runtimeUntil(() => fake.sent.length === 1, 'deferred completion instruction', 45_000);
+  assert.match(fake.sent[0].text, /submit-result --receipt-id /);
+  await runtimeUntil(() => store.events.some(event => event.kind === 'checkpoint_recorded'), 'working checkpoint', 45_000);
+  await runtimeUntil(() => fake.agentGets >= 8, 'several working polls', 45_000);
+  assert.equal(fake.sent.length, 1, 'completion instruction 只补发一次');
+  assert.equal(store.events.filter(event => event.kind === 'human_input_requested').length, 1, 'Attention 不因解除 blocked 而重复');
+  assert.equal(store.events.some(event => event.reason === 'E_EXECUTOR_HOST_LOST'), false);
+  assert.equal(fake.paneKills, 0);
+});
+
+test('DHR_68/C driver：blocked 直接跳到 done 时提交指令仍补发一次（复核轮 2 · F-68-R2-01）', async (t) => {
+  // 轮 2 抓到的漏洞：补发条件曾是白名单 ['working','idle']，blocked → done 会整条漏掉，
+  // 随后 done 分支去等 Result，最终误落 E_EXECUTOR_RESULT_MISSING。
+  const notReady = { ok: false, reason: 'E_BAD_VALUE:HERDR_CLI', detail: 'exit:1:{"error":{"code":"agent_not_ready"}}', notReady: true };
+  const { store, driver, fake } = await runtimeFixture(t, ['blocked', 'blocked', 'done'], {
+    fake: { agentStartResult: notReady },
+    driver: { herdrReadyTimeoutMs: 0, doneTimeoutMs: 40 },
+  });
+  t.after(() => driver.stop());
+
+  await runtimeUntil(() => fake.sent.length === 1, 'deferred instruction on blocked->done', 45_000);
+  assert.match(fake.sent[0].text, /submit-result --receipt-id /);
+  await driver.done;
+  assert.equal(fake.sent.length, 1, 'completion instruction 只补发一次');
+  assert.equal(store.events.filter(event => event.kind === 'human_input_requested'
+    && (event.reason ?? null) === null).length, 1, '启动期 blocked 的等人事件仍只有一条');
+  assert.equal(store.events.some(event => event.reason === 'E_EXECUTOR_HOST_LOST'), false);
+  assert.equal(fake.paneKills, 0);
+});
+
+test('DHR_68/D：fake-herdr 每个被触及命令的返回形态逐条对齐真实 herdr 的实测记录', async () => {
+  // 验收 D 的机器化：不靠人眼比对注释，直接拿真实 probe 的 `result_keys` 当 oracle。
+  // 对照表由 `workspace/DHR_68/scripts/probe-command-shapes.mjs` 对真实 herdr 0.8.2 跑出。
+  const shapesPath = fileURLToPath(new URL(
+    '../../docs/modules/dh-relay/workspace/DHR_68/evidence/real-herdr-command-shapes.json', import.meta.url));
+  const recorded = JSON.parse(await readFile(shapesPath, 'utf8'));
+  const probeOf = (label) => {
+    // 先精确匹配，再退回前缀匹配——`pane close` 的 label 带动态 pane id，
+    // 但 `agent-get` 必须命中自己而不是 `agent-get-missing`。
+    const found = recorded.probes.find(probe => probe.label === label)
+      ?? recorded.probes.find(probe => probe.label.startsWith(`${label}-`));
+    assert.ok(found, `真实对照表缺少命令 ${label}——验收 D 要求逐命令有实测证据`);
+    return found;
+  };
+
+  const fake = makeFakeHerdr();
+  // 左：fake 的调用；右：真实 probe 的 label。json:false 的命令在 wrapper 层返回字符串。
+  const jsonCommands = [
+    ['pane-split', () => fake.cli.paneSplit({ cwd: 'C:/work' })],
+    ['pane-get', () => fake.cli.paneGet('pane-1')],
+    ['pane-close', () => fake.cli.paneKill('pane-1')],
+    ['agent-start', () => fake.cli.agentStart({ name: 'a', kind: 'codex', paneId: 'pane-1' })],
+    ['agent-list', () => fake.cli.agentList()],
+    ['agent-get', () => fake.cli.agentGet('a')],
+    ['agent-rename', () => fake.cli.agentRename({ target: 'pane-1', name: 'a' })],
+    ['agent-prompt', () => fake.cli.agentPrompt('a', 'hi')],
+    ['agent-send-keys', () => fake.cli.agentSendKeys('a', ['enter'])],
+  ];
+  for (const [label, call] of jsonCommands) {
+    const probe = probeOf(label);
+    assert.equal(probe.stdout_is_json, true, `${label} 真实输出应为 JSON`);
+    assert.ok(Array.isArray(probe.result_keys), `${label} 真实对照表缺 result_keys`);
+    const value = call().value;
+    assert.deepEqual(Object.keys(value).sort(), [...probe.result_keys].sort(),
+      `${label} 的 fake 返回形态与真实 herdr 不一致——DHR_67 正是栽在这里`);
+  }
+
+  // 走 `json:false` 的命令：真实 stdout 不是 JSON，wrapper 返回字符串。
+  for (const [label, call] of [
+    ['pane-run', () => fake.cli.paneRun({ paneId: 'pane-1', command: 'claude', args: [] })],
+    ['agent-read', () => fake.cli.agentRead('a')],
+  ]) {
+    const probe = probeOf(label);
+    assert.equal(probe.stdout_is_json, false, `${label} 真实输出不应是 JSON`);
+    assert.equal(typeof call().value, 'string', `${label} 的 fake 应返回字符串`);
+  }
+  // `pane run` 成功时真实 stdout 是**空**的——这正是 DHR_67 的 fake 掩盖掉的那条。
+  assert.equal(probeOf('pane-run').stdout_len, 0);
+  assert.equal(fake.cli.paneRun({ paneId: 'pane-1', command: 'claude', args: [] }).value, '');
+
+  // 失败形态：真实 herdr 把 JSON 错误写 stderr 且 exit 1；`missing` 靠 message 里的 "not found"。
+  for (const label of ['pane-get-missing', 'agent-get-missing']) {
+    const probe = probeOf(label);
+    assert.equal(probe.exit_code, 1);
+    assert.equal(probe.stdout_len, 0);
+    assert.match(probe.stderr_head, /"code":"(pane|agent)_not_found"/);
+    assert.match(probe.stderr_head, /not found/);
+  }
+  const dead = makeFakeHerdr({ agentAlive: false, paneAlive: false, missing: true });
+  assert.match(dead.cli.agentGet('a').detail, /^exit:1:\{"error":\{"code":"agent_not_found"/);
+  assert.match(dead.cli.paneGet('pane-1').detail, /^exit:1:\{"error":\{"code":"pane_not_found"/);
 });

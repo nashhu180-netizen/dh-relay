@@ -1,0 +1,417 @@
+{
+  "probed_at": "2026-08-31T05:54:30.870Z",
+  "herdr_bin": "herdr",
+  "purpose": "DHR_68 验收项 D：fake-herdr 返回形态必须与真实 herdr 逐命令一致",
+  "agent_start_own_timeout": {
+    "default_ms": 30000,
+    "max_ms": 300000,
+    "source": "herdr agent start --help (herdr 0.8.2)"
+  },
+  "probes": [
+    {
+      "label": "version",
+      "argv": [
+        "--version"
+      ],
+      "elapsed_ms": 250,
+      "exit_code": 0,
+      "spawn_error_code": null,
+      "signal": null,
+      "stdout_len": 12,
+      "stdout_is_json": false,
+      "stdout_top_level_keys": null,
+      "has_result_envelope": false,
+      "result_keys": null,
+      "stderr_head": "",
+      "stdout_head": "herdr 0.8.2",
+      "note": "wrapper 以 json:false 调用"
+    },
+    {
+      "label": "pane-split",
+      "argv": [
+        "pane",
+        "split",
+        "--current",
+        "--no-focus",
+        "--direction",
+        "right",
+        "--cwd",
+        "C:\\Users\\nash\\AppData\\Local\\Temp\\DHR68-probe-YZdl2u"
+      ],
+      "elapsed_ms": 325,
+      "exit_code": 0,
+      "spawn_error_code": null,
+      "signal": null,
+      "stdout_len": 358,
+      "stdout_is_json": true,
+      "stdout_top_level_keys": [
+        "id",
+        "result"
+      ],
+      "has_result_envelope": true,
+      "result_keys": [
+        "pane",
+        "type"
+      ],
+      "stderr_head": "",
+      "stdout_head": "{\"id\":\"cli:pane:split\",\"result\":{\"pane\":{\"agent_status\":\"unknown\",\"cwd\":\"C:\\\\Users\\\\nash\\\\AppData\\\\Local\\\\Temp\\\\DHR68-probe-YZdl2u\\\\\",\"focused\":false,\"pane_id\":\"w1:p2S\",\"revision\":0,\"scroll\":{\"max_off",
+      "note": null
+    },
+    {
+      "label": "pane-get",
+      "argv": [
+        "pane",
+        "get",
+        "w1:p2S"
+      ],
+      "elapsed_ms": 251,
+      "exit_code": 0,
+      "spawn_error_code": null,
+      "signal": null,
+      "stdout_len": 356,
+      "stdout_is_json": true,
+      "stdout_top_level_keys": [
+        "id",
+        "result"
+      ],
+      "has_result_envelope": true,
+      "result_keys": [
+        "pane",
+        "type"
+      ],
+      "stderr_head": "",
+      "stdout_head": "{\"id\":\"cli:pane:get\",\"result\":{\"pane\":{\"agent_status\":\"unknown\",\"cwd\":\"C:\\\\Users\\\\nash\\\\AppData\\\\Local\\\\Temp\\\\DHR68-probe-YZdl2u\\\\\",\"focused\":false,\"pane_id\":\"w1:p2S\",\"revision\":0,\"scroll\":{\"max_offse",
+      "note": null
+    },
+    {
+      "label": "pane-run",
+      "argv": [
+        "pane",
+        "run",
+        "w1:p2S",
+        "echo",
+        "dhr68-probe"
+      ],
+      "elapsed_ms": 348,
+      "exit_code": 0,
+      "spawn_error_code": null,
+      "signal": null,
+      "stdout_len": 0,
+      "stdout_is_json": false,
+      "stdout_top_level_keys": null,
+      "has_result_envelope": false,
+      "result_keys": null,
+      "stderr_head": "",
+      "stdout_head": "",
+      "note": null
+    },
+    {
+      "label": "pane-get-missing",
+      "argv": [
+        "pane",
+        "get",
+        "pane-does-not-exist-dhr68"
+      ],
+      "elapsed_ms": 761,
+      "exit_code": 1,
+      "spawn_error_code": null,
+      "signal": null,
+      "stdout_len": 0,
+      "stdout_is_json": false,
+      "stdout_top_level_keys": null,
+      "has_result_envelope": false,
+      "result_keys": null,
+      "stderr_head": "{\"error\":{\"code\":\"pane_not_found\",\"message\":\"pane pane-does-not-exist-dhr68 not found\"},\"id\":\"cli:pane:get\"}",
+      "stdout_head": "",
+      "note": "错误形态：判 missing 正则"
+    },
+    {
+      "label": "pane-split-for-agent",
+      "argv": [
+        "pane",
+        "split",
+        "--current",
+        "--no-focus",
+        "--direction",
+        "right",
+        "--cwd",
+        "C:\\Users\\nash\\AppData\\Local\\Temp\\DHR35-fixture-herdr-codex-main"
+      ],
+      "elapsed_ms": 632,
+      "exit_code": 0,
+      "spawn_error_code": null,
+      "signal": null,
+      "stdout_len": 370,
+      "stdout_is_json": true,
+      "stdout_top_level_keys": [
+        "id",
+        "result"
+      ],
+      "has_result_envelope": true,
+      "result_keys": [
+        "pane",
+        "type"
+      ],
+      "stderr_head": "",
+      "stdout_head": "{\"id\":\"cli:pane:split\",\"result\":{\"pane\":{\"agent_status\":\"unknown\",\"cwd\":\"C:\\\\Users\\\\nash\\\\AppData\\\\Local\\\\Temp\\\\DHR35-fixture-herdr-codex-main\\\\\",\"focused\":false,\"pane_id\":\"w1:p2T\",\"revision\":0,\"scrol",
+      "note": null
+    },
+    {
+      "label": "agent-get-missing",
+      "argv": [
+        "agent",
+        "get",
+        "agent-does-not-exist-dhr68"
+      ],
+      "elapsed_ms": 361,
+      "exit_code": 1,
+      "spawn_error_code": null,
+      "signal": null,
+      "stdout_len": 0,
+      "stdout_is_json": false,
+      "stdout_top_level_keys": null,
+      "has_result_envelope": false,
+      "result_keys": null,
+      "stderr_head": "{\"error\":{\"code\":\"agent_not_found\",\"message\":\"agent target agent-does-not-exist-dhr68 not found\"},\"id\":\"cli:agent:get\"}",
+      "stdout_head": "",
+      "note": "错误形态：判 missing 正则"
+    },
+    {
+      "label": "agent-start",
+      "argv": [
+        "agent",
+        "start",
+        "dhr68probe20457",
+        "--kind",
+        "codex",
+        "--pane",
+        "w1:p2T",
+        "--"
+      ],
+      "elapsed_ms": 6615,
+      "exit_code": 0,
+      "spawn_error_code": null,
+      "signal": null,
+      "stdout_len": 493,
+      "stdout_is_json": true,
+      "stdout_top_level_keys": [
+        "id",
+        "result"
+      ],
+      "has_result_envelope": true,
+      "result_keys": [
+        "agent",
+        "argv",
+        "type"
+      ],
+      "stderr_head": "",
+      "stdout_head": "{\"id\":\"cli:agent:start\",\"result\":{\"agent\":{\"agent\":\"codex\",\"agent_status\":\"idle\",\"cwd\":\"C:\\\\Users\\\\nash\\\\AppData\\\\Local\\\\Temp\\\\DHR35-fixture-herdr-codex-main\",\"focused\":false,\"interactive_ready\":true,",
+      "note": "herdr 自带 --timeout 默认 30000ms；本调用不传 --timeout，保持 argv 不变"
+    },
+    {
+      "label": "agent-list",
+      "argv": [
+        "agent",
+        "list"
+      ],
+      "elapsed_ms": 238,
+      "exit_code": 0,
+      "spawn_error_code": null,
+      "signal": null,
+      "stdout_len": 788,
+      "stdout_is_json": true,
+      "stdout_top_level_keys": [
+        "id",
+        "result"
+      ],
+      "has_result_envelope": true,
+      "result_keys": [
+        "agents",
+        "type"
+      ],
+      "stderr_head": "",
+      "stdout_head": "{\"id\":\"cli:agent:list\",\"result\":{\"agents\":[{\"agent\":\"claude\",\"agent_status\":\"working\",\"cwd\":\"D:\\\\MyFiles\\\\ai-workflow\\\\dh-relay\",\"focused\":true,\"pane_id\":\"w1:p1\",\"revision\":7,\"state_change_seq\":85,\"ta",
+      "note": null
+    },
+    {
+      "label": "agent-get",
+      "argv": [
+        "agent",
+        "get",
+        "dhr68probe20457"
+      ],
+      "elapsed_ms": 436,
+      "exit_code": 0,
+      "spawn_error_code": null,
+      "signal": null,
+      "stdout_len": 471,
+      "stdout_is_json": true,
+      "stdout_top_level_keys": [
+        "id",
+        "result"
+      ],
+      "has_result_envelope": true,
+      "result_keys": [
+        "agent",
+        "type"
+      ],
+      "stderr_head": "",
+      "stdout_head": "{\"id\":\"cli:agent:get\",\"result\":{\"agent\":{\"agent\":\"codex\",\"agent_status\":\"idle\",\"cwd\":\"C:\\\\Users\\\\nash\\\\AppData\\\\Local\\\\Temp\\\\DHR35-fixture-herdr-codex-main\",\"focused\":false,\"interactive_ready\":true,\"n",
+      "note": null
+    },
+    {
+      "label": "agent-rename",
+      "argv": [
+        "agent",
+        "rename",
+        "w1:p2T",
+        "dhr68probe20457r"
+      ],
+      "elapsed_ms": 279,
+      "exit_code": 0,
+      "spawn_error_code": null,
+      "signal": null,
+      "stdout_len": 475,
+      "stdout_is_json": true,
+      "stdout_top_level_keys": [
+        "id",
+        "result"
+      ],
+      "has_result_envelope": true,
+      "result_keys": [
+        "agent",
+        "type"
+      ],
+      "stderr_head": "",
+      "stdout_head": "{\"id\":\"cli:agent:rename\",\"result\":{\"agent\":{\"agent\":\"codex\",\"agent_status\":\"idle\",\"cwd\":\"C:\\\\Users\\\\nash\\\\AppData\\\\Local\\\\Temp\\\\DHR35-fixture-herdr-codex-main\",\"focused\":false,\"interactive_ready\":true",
+      "note": null
+    },
+    {
+      "label": "agent-prompt",
+      "argv": [
+        "agent",
+        "prompt",
+        "dhr68probe20457r",
+        "probe: reply with the single word ok"
+      ],
+      "elapsed_ms": 268,
+      "exit_code": 0,
+      "spawn_error_code": null,
+      "signal": null,
+      "stdout_len": 479,
+      "stdout_is_json": true,
+      "stdout_top_level_keys": [
+        "id",
+        "result"
+      ],
+      "has_result_envelope": true,
+      "result_keys": [
+        "agent",
+        "type"
+      ],
+      "stderr_head": "",
+      "stdout_head": "{\"id\":\"cli:agent:prompt\",\"result\":{\"agent\":{\"agent\":\"codex\",\"agent_status\":\"idle\",\"cwd\":\"C:\\\\Users\\\\nash\\\\AppData\\\\Local\\\\Temp\\\\DHR35-fixture-herdr-codex-main\",\"focused\":false,\"interactive_ready\":true",
+      "note": null
+    },
+    {
+      "label": "agent-send-keys",
+      "argv": [
+        "agent",
+        "send-keys",
+        "dhr68probe20457r",
+        "enter"
+      ],
+      "elapsed_ms": 257,
+      "exit_code": 0,
+      "spawn_error_code": null,
+      "signal": null,
+      "stdout_len": 52,
+      "stdout_is_json": true,
+      "stdout_top_level_keys": [
+        "id",
+        "result"
+      ],
+      "has_result_envelope": true,
+      "result_keys": [
+        "type"
+      ],
+      "stderr_head": "",
+      "stdout_head": "{\"id\":\"cli:agent:send-keys\",\"result\":{\"type\":\"ok\"}}",
+      "note": null
+    },
+    {
+      "label": "agent-read",
+      "argv": [
+        "agent",
+        "read",
+        "dhr68probe20457r",
+        "--source",
+        "recent-unwrapped",
+        "--lines",
+        "5"
+      ],
+      "elapsed_ms": 266,
+      "exit_code": 0,
+      "spawn_error_code": null,
+      "signal": null,
+      "stdout_len": 106,
+      "stdout_is_json": false,
+      "stdout_top_level_keys": null,
+      "has_result_envelope": false,
+      "result_keys": null,
+      "stderr_head": "",
+      "stdout_head": "<redacted: terminal text not recorded>",
+      "note": "wrapper 以 json:false 调用；正文不入证据"
+    },
+    {
+      "label": "pane-close-w1:p2S",
+      "argv": [
+        "pane",
+        "close",
+        "w1:p2S"
+      ],
+      "elapsed_ms": 436,
+      "exit_code": 0,
+      "spawn_error_code": null,
+      "signal": null,
+      "stdout_len": 47,
+      "stdout_is_json": true,
+      "stdout_top_level_keys": [
+        "id",
+        "result"
+      ],
+      "has_result_envelope": true,
+      "result_keys": [
+        "type"
+      ],
+      "stderr_head": "",
+      "stdout_head": "{\"id\":\"cli:pane:close\",\"result\":{\"type\":\"ok\"}}",
+      "note": "清理本脚本自建 pane"
+    },
+    {
+      "label": "pane-close-w1:p2T",
+      "argv": [
+        "pane",
+        "close",
+        "w1:p2T"
+      ],
+      "elapsed_ms": 4688,
+      "exit_code": 0,
+      "spawn_error_code": null,
+      "signal": null,
+      "stdout_len": 47,
+      "stdout_is_json": true,
+      "stdout_top_level_keys": [
+        "id",
+        "result"
+      ],
+      "has_result_envelope": true,
+      "result_keys": [
+        "type"
+      ],
+      "stderr_head": "",
+      "stdout_head": "{\"id\":\"cli:pane:close\",\"result\":{\"type\":\"ok\"}}",
+      "note": "清理本脚本自建 pane"
+    }
+  ]
+}

@@ -1,0 +1,540 @@
+
+> @dh-relay/relay-core@0.0.0 test
+> node --test --test-concurrency=4 test/contracts.test.mjs test/store.test.mjs test/attempt-contract.test.mjs test/profile-identity.test.mjs test/identity-quota.test.mjs test/runtime.test.mjs test/rpc.test.mjs test/rpc-service.test.mjs test/ledger.test.mjs test/discovery.test.mjs test/service.test.mjs test/cli.test.mjs test/dsh-bridge.test.mjs test/client-fixtures.test.mjs test/read-model-mirror.test.mjs test/control-plane-imports.test.mjs test/reachability.test.mjs test/workflow.test.mjs test/e2e-basic-agent-task.test.mjs test/agent-node.test.mjs test/profiles.test.mjs test/dhr65-registry-loader.test.mjs test/herdr-adapter.test.mjs test/dhr64-result-bridge.test.mjs test/dhr64-store-reject-matrix.test.mjs test/dhr64-driver-observation.test.mjs
+
+✔ 批4 边界钉：driver 不托管 agent 节点——不开 Attempt、不写任何事件 (7639.7708ms)
+✖ DHR_33 窄路径：driver 托管 herdr-agent，开 Attempt、记心跳并按 stop 落 killed (977.6535ms)
+✖ DHR_61 D1: Herdr Attempt freezes source and ordered fallback identities before launch (1769.0584ms)
+✔ DHR_61 D1: a Herdr profile without a projection rule leaves only that node pending (1530.5245ms)
+✔ DHR_33 分叉顺序：同一节点同时声明 process 与 herdr-agent 时必须先走 process (2196.2705ms)
+✔ 批4 ①：外部代持的 Attempt 其 Adapter 消失 → 仅该 Attempt failed(E_EXECUTOR_ADAPTER_LOST) (494.362ms)
+✔ 批4 ①bis：dsh-agent 同形——宿主消失 → 仅该 Attempt orphaned(E_EXECUTOR_HOST_LOST) + fresh retry (529.4282ms)
+✔ 批4 ②：恢复后探活失败 → orphaned(E_EXECUTOR_ORPHANED)，retry 产生 fresh Attempt (306.235ms)
+✔ 批4 ③：Agent 失败不推翻 Process 结论（真实 driver 跑完闭环后外部代持补记账） (11854.5724ms)
+✔ DHR_61 D1: Attempt Receipt freezes a non-secret identity and its ordered fallback snapshots (70.8838ms)
+✔ DHR_61 D1: Store persists and replays the same validated Attempt Receipt (125.7975ms)
+✔ DHR_61 D2: one canonical pause fences the old Attempt and projects waiting_human (142.3223ms)
+✔ DHR_61 D2: a pause with a forged derived identifier is rejected before it can fence an Attempt (27.5686ms)
+✔ DHR_61 D2: manual retry profiles must remain an ordered subset of the Receipt snapshots (121.9552ms)
+✔ DHR_61 D2: opening a Store completes a prepared pause mutation before allowing writes (148.8211ms)
+✔ DHR_61 D2: an incomplete pause without its recoverable mutation fails closed (97.7043ms)
+✔ DHR_61 D2: a tampered mutation journal cannot escape the Run root (124.1362ms)
+✔ DHR_61 D2: committed pause and resolution journals are not replayed after later ledger writes (226.539ms)
+✔ DHR_61 D2: raw pause events and terminal-to-pause regressions are rejected at the Store boundary (30.2516ms)
+✔ DHR_61 D2: a retry resolution atomically closes the pause and opens one fresh Attempt (194.8154ms)
+✔ DHR_61 D2: a retry may only select a frozen snapshot and a closed pause rejects a new key (111.6398ms)
+✔ DHR_61 D2: retry-with-profile rechecks the current nonsecret projection before the atomic resolution (5557.0899ms)
+✔ DHR_61 D2: a failed mutation poisons the live handle until reopen completes recovery (934.0001ms)
+✔ CLI：七命令 text/json 渲染同一 Read Model，receipt 与 client 身份贯通 (38777.4209ms)
+✔ CLI：错误渲染二分——failed Receipt 与「结果未知」措辞可区分 (22659.8838ms)
+✔ CLI：legacy 只读投影与 control 拒绝按服务端原样透传 (12014.5549ms)
+✔ CLI：孤儿 Store 可读，control 拒绝透传 E_ORPHAN_STORE_READ_ONLY (8243.0345ms)
+✔ CLI：pending record 崩溃残留按原幂等键收敛后收回 (13673.9497ms)
+✔ CLI：events --follow 断线重连按 after_seq 续传，不重不漏 (17418.3697ms)
+✔ CLI：events --follow 遇 E_CURSOR_GAP 整体重新快照，不拼接补缝 (41212.8266ms)
+✔ CLI：本机凭据缺失报 E_LOCAL_USER_UNAUTHORIZED；未知命令给 usage 且退出码非 0 (2405.2675ms)
+✔ CLI：首次双 CLI 并发采用同一赢家身份；预置身份绝不被覆盖（F-018/F-023·RW2-3） (3850.0694ms)
+✖ CLI：pending 账 50 路并发 add/remove 经跨进程锁零丢失（F-019） (44731.1893ms)
+✔ CLI：两个 CLI 并发 mutating——轮询到两条 request_id 都在账才收场，零丢失（F-019/F-023·RW2-3） (19874.325ms)
+✔ CLI：凭据缺失走子进程 E2E——端点有活 service 而本机无凭据 → E_LOCAL_USER_UNAUTHORIZED（F-023） (5016.5567ms)
+✔ CLI：error data 缺 receipt 字段按协议违约 fail-closed，pending 保留（RW-5） (3660.2186ms)
+✔ CLI：非 follow events 按 next_seq 精确收齐补发，慢管道不丢事件（RW-4） (4305.5485ms)
+✔ CLI：多余 positional 一律 usage 退出码 1（F-025） (2485.7946ms)
+✔ CLI：pending 落盘显式收权——private/ 独立私有子目录 owner-only（F-020 终稿） (838.4045ms)
+✔ CLI：pending 锁零自动回收——外锁一律稳定拒绝并给恢复指引（F-019 终稿） (15781.3052ms)
+✔ client fixtures：每份 Pi/通用 JSON 都过对应冻结契约 (70.3937ms)
+✔ client fixtures：Pi 式中立解析只按 JSON 字段取值 (8.1687ms)
+✔ 校验器 selftest：golden 全过、negative 逐条命中写死的 reason code (929.2813ms)
+✔ fail-closed：未知字段 / 未知版本有反例钉住；能力不匹配只有形态例 (7.1573ms)
+✔ H6 契约级断言有反例钉住（验收口径第 3 条唯一落点） (8.29ms)
+✔ DHR_30 冻结的两份新协议各有正例，且六个新 reason code 全在权威全集里 (4.7974ms)
+✔ design/08 §1 的 CLI↔RPC method↔Read Model 映射表逐行经冻结契约校验 (407.7543ms)
+✔ fixture 基线对证：逐份 canonical sha256 与 manifest.json 相符，份数相等 (1097.8136ms)
+✔ JCS 规范化实现符合 CANONICALIZATION.md 口径 (3.7228ms)
+✔ G2 聚合条款①~⑥逐档红绿矩阵（allOf 自身的回归护栏） (56.8566ms)
+✔ capability 基线：20 份（19 顶层协议 + 1 共享定义模块）的 digest 与 capability_hash 与基线相符 (628.7152ms)
+✔ JCS：digestExcluding 不会被 __proto__ 键静默吃掉（原型污染回归） (1.2549ms)
+✔ 契约静态审计 11 维度全绿 (572.1108ms)
+✔ 中立性：结构位置零私有类型泄漏（design/05 §6.2） (580.4896ms)
+✔ 控制面 import 纪律：cli/adapters/rpc 不引 Store 与宿主/发号直写原语（design/07 §4） (31.2454ms)
+✔ 生产 runtime 无人引用 detached 宿主入口与发号原语——它们只由 lease fencing 仲裁的宿主侧使用 (29.3559ms)
+✔ DHR64 driver: done without Receipt submission raises attention and creates no Result (11909.1795ms)
+✔ DHR64 driver: idle without Receipt submission raises attention and creates no Result (2556.7259ms)
+✔ DHR64 driver: host loss creates attention and never a Result (1775.1942ms)
+✔ DHR64 contract: receipt-bound submission has a closed schema and fixed failure reason (77.6532ms)
+✔ DHR64 Store bridge: only a current receipt-bound submission commits a server result (220.1386ms)
+✔ DHR64 Store bridge: a lost lease or a non-Attempt receipt cannot commit Result (72.5172ms)
+✔ DHR64 Store bridge: prepared result mutation recovers before load and fails closed when its blob is corrupt (193.487ms)
+✔ DHR64 driver gate: an early submission finishes a working Herdr Attempt without pane inference (1093.4785ms)
+✔ DHR64 driver gate: missing done submission becomes E_EXECUTOR_RESULT_MISSING attention (478.1073ms)
+✔ DHR64 service v2: restart-recovered gate routes submission through actor and Store (10776.1301ms)
+✔ DHR64 bootstrap: an invalid later Receipt rejects before any earlier Run takes a lease (1838.4003ms)
+✔ DHR64 terminal duplicate: a forged persisted Receipt fails closed after restart (4028.9377ms)
+✔ DHR64 CLI client: v2 bootstrap/handshake is explicit and does not downgrade (4990.6086ms)
+✔ DHR64 matrix: old Receipt and canonical fallback fence cannot commit Result (295.0746ms)
+✔ DHR64 matrix: v2 transport close rejects every in-flight waiter (0.8896ms)
+✔ DHR_65 loader accepts the complete structural registry and resolves both target profiles (3511.5768ms)
+✔ DHR_65 loader rejects a bad alias in every registered profile (21744.652ms)
+✔ DHR_65 loader rejects a bad config in every registered profile (10924.3822ms)
+✔ DHR_65 driver rejects a bad alias complete registry before Attempt, Agent, pane, or Result (7560.7478ms)
+✔ DHR_65 driver rejects a bad config complete registry before Attempt, Agent, pane, or Result (3529.6582ms)
+✔ discovery：完整 v2 Run 进 Read Model，残缺根只进 report 不冒充 Run (263.9029ms)
+✔ discovery：损坏事件账不得冒充完整 v2 Run——JSON 坏 / torn tail / seq 缺口三类都进 fail-closed report (200.3207ms)
+✔ discovery：ledger 与 Run Store 冲突时以 Store 事件为准并修复 ledger (96.9823ms)
+✔ discovery：缺根的 reservation 保号不释放，孤儿 Store 进 report (48.7026ms)
+✔ discovery：legacy v1 只读投影，事实读不到就是 null，绝不从 v1 猜值 (18.9578ms)
+✔ discovery：用发现结果修复 runs.json 索引，且索引永远不是 Run 真相 (45.8083ms)
+✔ dsh bridge：查询原样返回 Read Model，控制拒绝原样透传且不写 pending (1473.0418ms)
+✔ dsh bridge：E_CURSOR_GAP 整体回快照，状态仅来自快照 (2283.7744ms)
+✔ dsh bridge：真实 socket 断线中途按已送达高水位续传，事件不重不漏 (18674.6163ms)
+✔ dsh bridge：真实 service 停止后重试耗尽通知宿主且订阅只终止一次 (6763.6088ms)
+✔ dsh bridge：真实 socket close 立即拒绝在途请求，不等待 120s 超时 (3473.4441ms)
+✔ dsh bridge：reconnectAttempts=0 零预算断线也走 onClosed，绝不静默死（R-H-01） (5978.2281ms)
+✔ dsh bridge：重连途中 E_CURSOR_GAP 不消耗重试预算，仍按合同整体重快照（R-H-02） (2682.0318ms)
+✔ e2e basic-agent-task：CLI 进程级 start → events → status/inspect 走到 succeeded (20734.81ms)
+✔ DHR_33 adapter：状态映射、句柄、附着与输入均不触碰 Store (7.4543ms)
+✔ DHR_67 adapter：Claude 固定 pane run→唯一识别→rename，Codex 保持 agent start (0.884ms)
+✔ DHR_67 adapter：Claude 零/多个、识别超时或 rename 失败仅关闭同一新 pane (5.5621ms)
+✔ DHR_67 adapter：Claude 只接受同 pane 的唯一 Claude，且有界等待后续识别 (1.8545ms)
+✔ DHR_33 adapter：unknown 经 pane 复核区分 observation_lost 与 host_lost，均不造 reason code (0.6275ms)
+✔ DHR_33 profile registry：只读校验、未命中 profile 保持 null (1067.4383ms)
+✔ DHR_33 focus：只渲染事件既有字段，无观测降级 (0.5278ms)
+✔ DHR_33 herdr-cli：文件状态可执行桩逐字接收六个动词参数并拆 result 信封 (8761.5817ms)
+✔ DHR_33 herdr-cli：超时与明确 not-found 分别保留 transient/missing 语义 (1000.3247ms)
+✔ DHR_33 driver #1/#2：心跳逐次落账，blocked 第二沿与重放持久 (4764.7492ms)
+✖ DHR_33 driver #3/#5：done 有界、判定成功与双亡 HOST_LOST (11745.4348ms)
+✔ DHR_33 driver：blocked 后 send、恢复心跳；观测断不落 Result (5717.1081ms)
+✖ DHR_33 driver：stop 撞 launch 窗口仍杀 pane，失败写 killed Result 且不造 Attention (2236.6899ms)
+✔ DHR_67 driver：Claude adapter 启动失败保留既有 Attempt，进入人工处理且不造 Result (1623.3182ms)
+✔ DHR_33 driver：idle 超阈值单次 Attention 后停止轮询 (777.4874ms)
+✔ DHR_33 driver #4/#7/#9：观测断单次升级、恢复后再升级；SSH 桩不冒充 (1502.6544ms)
+✔ DHR_33 driver #7/#8：成功观测的非 ready 是盲区；未知 profile 零事件 (1542.5498ms)
+✖ DHR_33 driver #10：恢复届按账上 ref 判 orphaned 或接管同一 attempt (10872.8386ms)
+✔ DHR_33 driver：恢复届 transient 探测与无 ref 都只落 observation_lost (3793.1049ms)
+✔ DHR_68/A adapter：启动超时先对账——agent 已建成沿用 handle，未建成才关同一 pane，且永不重发启动 (18.067ms)
+✔ DHR_68/A herdr-cli：启动专用超时与其余动词分离，超时带 timedOut 语义位 (12330.59ms)
+✔ DHR_68/B：pane run 不解 JSON，Claude 在真实空 stdout 形态下仍完成识别与 rename (4359.9323ms)
+✔ DHR_68/C adapter：启动期 blocked 保留 handle、不关 pane、不重试 (0.6105ms)
+✖ DHR_68/C driver：启动即 blocked 恰写一次 waiting_human，不写 HOST_LOST，指令延后到解除后补发 (3243.3062ms)
+✔ DHR_34: quota requires a registered detector plus explicit 429/code agreement (2.2399ms)
+✔ DHR_34: fallback selection follows Receipt order and skips drift or platform mismatch (43.2427ms)
+✔ DHR_34: no qualified fallback produces the frozen canonical pause identity chain (0.7757ms)
+✖ DHR_34: confirmed quota starts one qualified fallback as a fresh Attempt (64440.7998ms)
+✖ DHR_34: confirmed quota without a qualified fallback pauses and opens no Attempt (74079.043ms)
+✖ DHR_34: a failed canonical pause write fails closed without a text-only Attention (63349.5225ms)
+✖ DHR_34: permission failure remains terminal and never switches identity (61351.1316ms)
+✖ DHR_34: an unregistered detector cannot trigger an automatic identity switch (62793.014ms)
+✖ DHR_34: an unsignable nested fallback makes the candidate unavailable and pauses canonically (62024.3087ms)
+✖ DHR_34: fallback quota pauses for human choice and cannot chain to a third identity (61920.6473ms)
+✖ DHR_34: an invalid current registry fails closed through canonical pause (60734.7877ms)
+✖ DHR_34: recovery trusts the fallback Receipt and cannot regain automatic chaining (17912.9913ms)
+✔ ledger：request_digest 复用 JCS 且只排除 id 与 handshake.request_id (2.3251ms)
+✔ ledger：幂等键是 (client_id, request_id, method) 复合键 (0.2897ms)
+✔ ledger：写入原子且不留临时文件，损坏文件 fail-closed (32.4743ms)
+✔ ledger：next_seq 的 seed 取 v2 Run 根与 runs.json 本仓最大号的最大值 (0.4926ms)
+✔ ledger：六个 phase 的恢复动作与 design/08 §3 的表逐行一致 (0.3408ms)
+✔ DHR_61 D1: an identity snapshot hashes only declared nonsecret projections (3.5999ms)
+✔ DHR_61 D1: registry migration only annotates legacy fingerprint field names as nonsecret (0.5255ms)
+✔ DHR_61 D1: registry migration sorts legacy projection pointers by UTF-16 code units (0.6389ms)
+✔ DHR_61 D1: projection provider reads only approved TOML fields and refuses a missing pointer (19.8436ms)
+✔ DHR_32 golden registry resolves every audited Windows profile (2721.9112ms)
+✔ DHR_32 negative-credential-field is rejected with its frozen code (0.6959ms)
+✔ DHR_32 negative-credential-value is rejected with its frozen code (173.3277ms)
+✔ DHR_32 negative-dangling-fallback is rejected with its frozen code (152.6313ms)
+✔ DHR_32 negative-unknown-field is rejected with its frozen code (457.3885ms)
+✔ DHR_32 negative-unresolved-alias is rejected with its frozen code (1920.573ms)
+✔ DHR_32 negative-unresolved-config is rejected with its frozen code (29.8068ms)
+✔ DHR_32 negative-username-path is rejected with its frozen code (196.1216ms)
+✔ DHR_32 golden registry contains neither credential-shaped keys nor values (15.1287ms)
+✔ DHR_32 capability states are anchored in their own audit-evidence lines (6.4987ms)
+✔ DHR_32 profiles without expected identity are explicitly marked unproven in evidence (3.2594ms)
+✔ DHR_32 headless_supported agrees with the headless capability (162.4796ms)
+✔ DHR_61 D2: registry rejects fallback sets whose maximum legal pause detail exceeds 4096 bytes (264.0792ms)
+✔ DHR_61 D2: registry freezes profile and account identity bounds before Attempt signing (398.7874ms)
+✔ H6 可达性：OPEN-POINTS 深度 1 原样例拒绝 dsh-only 事实必经节点 (1.9056ms)
+✔ H6 可达性：深度 >=2 的传递依赖仍拒绝 dsh-only 事实必经节点 (0.5125ms)
+✔ H6 可达性：不被任何 required 节点传递可达的 dsh-only 节点放行 (0.4122ms)
+✔ H6 可达性：直接形态复用冻结 negative fixture 并拒绝 (8.4501ms)
+✔ 图校验：depends_on 引用不存在节点时 fail-closed (0.3501ms)
+✔ 图校验：depends_on 成环时 fail-closed (0.2814ms)
+✔ 图校验：self-loop 时 fail-closed (0.4638ms)
+✔ Read Model 镜像：源头 group 改变时 run_list 的分组/排序位置必须移动 (726.1122ms)
+✔ Read Model 镜像：只改同组 run_status 时，除该字段外投影逐字不变 (624.504ms)
+✔ service：bind 失败的候选一个字节都不碰私有 credential (1003.226ms)
+✔ service：contracts 是连接唯一首请求，未授权与身份不符都不断连 (1018.9661ms)
+✔ service：未知 run / legacy 只读 / cursor 缺口都是稳定 error，连接一路不断 (12849.1435ms)
+✔ service：孤儿 Store 只读——可 list/inspect/subscribe，一切 mutation 与 actor 建立都拒绝 (4790.297ms)
+✔ service：每一份 error data 都带 receipt——非 operation 错误为 null，operation 可预期失败为 failed Receipt (19569.6746ms)
+✔ service：start 保留号后崩溃重试不发第二个号，Receipt 唯一且落在 Run 事件账 (21302.1088ms)
+✔ service：stop 在 lease 内先提交 Receipt 再停机，resume 只在新 actor ready 后提交 (23879.9837ms)
+✔ service：subscribe 先快照后增量，cursor 严格连续，断开只清订阅不取消 Run (14864.0964ms)
+✔ service：actor 换代后订阅无缝重挂——subscribe → stop → resume，新事件仍推给原连接且不重不漏 (17589.8551ms)
+✔ service：并发同键 start 只落一个 Receipt，并发不同键各得其所 (11005.9631ms)
+✔ service：ledger 每个 phase 崩溃后重试都收敛到同一 run_id 与同一 Receipt (31024.2163ms)
+✔ DHR_61：bootstrap 协商独立 v2，Attention 可见且 retry-with-profile 原子开 fresh Attempt (8080.3898ms)
+✔ DHR_61：坏 Run 让列表稳定 fail-closed，但连接仍可读取健康 Run (3653.5979ms)
+✔ 基线平等：localCapability() 复算指纹与权威快照 capability_hash 逐字相等 (4.1015ms)
+✔ 基线平等：本地指纹是 64 位小写十六进制 sha256（形态合法） (0.4421ms)
+✔ 握手通过：与本地指纹相同的 peer hash → ok:true (0.2109ms)
+✔ 拒绝不匹配：不同但格式合法的 peer hash → E_CAPABILITY_MISMATCH (0.2068ms)
+✔ 拒绝不匹配：非字符串 peer hash 同样无法匹配 → E_CAPABILITY_MISMATCH (0.2213ms)
+✔ 分帧：单帧整块喂入 → 一个对象 (0.5351ms)
+✔ 分帧：逐字节喂入（含打断多字节 UTF-8 边界）与整块结果逐字一致 (0.8392ms)
+✔ 分帧：一次 push 两行帧 → 两个独立对象 (0.281ms)
+✔ 坏帧：不可解析 JSON → E_TRANSPORT_FRAME_INVALID (0.3423ms)
+✔ 坏帧：非法 UTF-8 → E_TRANSPORT_FRAME_INVALID，不替换为 U+FFFD 后继续解析 (0.3877ms)
+✔ 坏帧：非对象帧（数字/字符串/数组/null）→ E_TRANSPORT_FRAME_INVALID (0.3602ms)
+✔ 坏帧：超长帧（超过 maxFrameBytes）→ E_TRANSPORT_FRAME_INVALID（有界防无界累积） (0.2434ms)
+✔ 坏帧：不完整超长帧必须丢弃到换行，尾部不得按新帧执行 (0.229ms)
+✔ 传输：真实本地 socket 双向 NDJSON 往返 (56.707ms)
+✔ 传输：partial 写入（一帧切成三段，含打断多字节 UTF-8）仍确定性组帧 (77.1271ms)
+✔ 传输：真实 socket 上坏 JSON → 服务端报 E_TRANSPORT_FRAME_INVALID (43.4921ms)
+✔ 传输：客户端关闭仅触发传输清理（onClose），不产生任何业务副作用 (46.586ms)
+✔ 传输：关闭服务端清理端点（非 Windows 移除 UDS socket） (4.8528ms)
+✔ 传输 seam：createConnectionHandlers 每连接生成 handlers——帧与关闭都回落具体连接 (128.0503ms)
+✔ 传输：客户端仍连着时服务端 close 确定性完成（不挂起） (58.4651ms)
+✔ server：合法 request 只调 handlers[method] 并回其 result，响应帧过冻结信封 (656.0249ms)
+✔ server：形态合法但不同的 capability hash → E_CAPABILITY_MISMATCH（不降级、不调 handler） (50.2485ms)
+✔ server：未实现方法（subscribe）→ E_UNKNOWN_METHOD (101.2531ms)
+✔ server：不合冻结信封（缺 handshake）→ 既有 reason E_MISSING_FIELD (116.1791ms)
+✔ server：坏 JSON 帧 → E_TRANSPORT_FRAME_INVALID（id null） (67.293ms)
+✔ server：客户端断开只清连接本地状态——Store 零调用、handler 零调用、服务端继续服务 (130.8383ms)
+✔ server：客户端断开不改变真实 Store state/events，重连仍取得同一状态 (194.9652ms)
+✔ server：并发连接请求/回复/坏帧/断连各回各的连接（连接级 seam，不靠移除监听器） (122.374ms)
+✔ server：subscribe 注入 seam——sink.event/runStateChanged 推送完整冻结对象并返回 true (362.5106ms)
+✔ DHR_61：v1 subscription sink 先发标准 Attention error 再关闭并移除连接 (1218.3709ms)
+✔ server：sink 对三种无效载荷 fail-closed——返回 false、不发任何帧 (6662.9485ms)
+✔ server：通知从数组 snapshot 发送，不受 Proxy 或原型 toJSON 影响 (1599.7063ms)
+✔ server：连接关闭后遗留 sink 返回 false，不假称已送达 (313.7884ms)
+✔ server：错误详情不超过冻结 response 信封的 4096 字符上限 (2639.5615ms)
+✔ server：非 JSON handler 结果不发非法 response 或击穿服务端 (1100.5605ms)
+✔ server：通知写入出现背压时断开该连接并返回 false (649.7655ms)
+✔ F-057：已注册同名新版本保持 E_UNSUPPORTED_VERSION，不误报协议错位 (1877.9631ms)
+✔ server：客户端断开对订阅的 unsubscribe 恰调用一次，Store 零调用、零 cancel (1030.5618ms)
+✔ server：回归——订阅存活期间 unsubscribe 零调用（响应后/推送后），断开后恰一次 (946.7286ms)
+✔ server：异步 handler reject 只断开当前连接，服务端仍可服务后续连接 (1093.5583ms)
+✔ server：连接关闭后迟到的 subscribe resolve 立即且仅调用一次 unsubscribe (611.5299ms)
+✔ runid：正例成形、R 序号三位补零、完整 run_id 可回验 (2.1856ms)
+✔ runid：五反例逐个拒绝且报错携带原输入（证明无静默截断/转写，P5-M8b 反例集） (0.6944ms)
+✔ repolock：活锁超时拒、陈旧锁（死 pid）立即回收、释放后可重取 (301.6702ms)
+✔ repolock：TTL 过期按时钟回收；release 只删仍属于自己的锁 (38.0348ms)
+✔ repolock：空文件=在途锁不得被偷（双持有人窗口回归——E14 @ReviewRound1 实证） (231.4877ms)
+✔ pidalive：死 pid 判死、自 pid 判活、非法入参判死 (1.1995ms)
+✔ lease：首取 epoch=1；第二宿主 E_LEASE_HELD；优雅释放后 inspect=dead (50.3511ms)
+✔ lease：TTL 过期可接管 epoch 递增；旧持有人 renew 不得覆盖接管者 (26.5391ms)
+✔ lease：持有人进程已死视同过期可接管（强于字面 TTL，等价性结论明示此项） (21.7896ms)
+✔ lease：僵尸持有者——租约被换手后 verify 失效、 renew 拒绝（fencing 本体） (15.465ms)
+✔ lease：过期租约不得续租——陈旧宿主 renew 被新鲜度闸拒绝且不碰文件（R1-03 闭合） (50.9789ms)
+✔ lease：空/损坏租约文件可被回收，不再无限自旋（P1 修复——open-wx 与 writeFile 之间被强杀即触发） (104.0065ms)
+✔ lease：持久无法创建的损坏现场走有界超时，绝不无限自旋 (385.5509ms)
+✔ lease：inspect 三态与 acquire 成败构成不变量（B7 三态半条） (74.0302ms)
+✔ 移交②：P1 恢复锁/CAS Oracle 复验——旧权威代次的写者被拒 ≙ 失去 lease 的陈旧写者被 fencing 拒（compat-matrix §6 第 1 条） (360.0987ms)
+✔ startRun：缺忽略前置 → E_GITIGNORE_MISSING 且零落盘；任意深度模式放行（F-009 反例） (10975.7192ms)
+✔ startRun：slug 违例在闸前被拒（E_RUN_ID_INVALID） (5248.4859ms)
+✔ startRun：Run 根已存在（无 run.json 的残缺目录）fail-closed 拒绝接管，零落盘（F-036） (5971.3109ms)
+✔ startRun：同仓连发序号递增、复合键入账；零误跟踪双证（P5-M8a/M8b） (7698.9923ms)
+✔ startRun：真并发两进程同时发号——不同序号、无跳号无重号（实施提示 4） (5821.1137ms)
+✔ startRun：跨仓并发建 run 共享索引锁——两仓分段都入账、不丢分段（E14 遗漏修复） (5441.7179ms)
+✔ host：detached 宿主存活可读（P5-M1 机器面）；强杀 -9 后 Store 重建逐字节同签名（P5-M3） (4535.6777ms)
+✔ host：shouldStop 会话优雅停机并释放租约 (4189.5409ms)
+✔ host：会话在宿主层真实续租（E5 MUT-C 空洞修复——删 renew 调用此断言红） (5463.2821ms)
+✔ host：租约被换手后旧会话自动停机且不释放别人的租约（lost_lease 路径） (8722.2421ms)
+✔ status：读数区分三态并带账面；run 缺失报 E_RUN_NOT_FOUND (2291.6225ms)
+✔ Runtime service：先 contracts 身份确认，随后 listRuns 返回唯一 Read Model (7510.0664ms)
+✔ Runtime validate 直连接口：H6 四例与坏图返回冻结 valid/reason 形状 (412.4484ms)
+✔ F-003 证据钉：RPC 冻结信封拒绝含斜杠的 relay.run/v2 contract_id (1061.0822ms)
+✔ Runtime service start：H6 深度 1 在落 Run 目录前拒绝，golden 仍成功 (6931.6101ms)
+✔ endpoint：canonical repo root 折叠同一仓的不同写法，且 endpoint 名只含 hash (5932.215ms)
+✔ owner-aware bind：活 owner 在时输家被拒且绝不清理对方端点 (58.5448ms)
+✔ owner-aware bind：残留 socket 可回收，但新 owner 已接手后旧 close 不得 unlink (0.4575ms)
+✔ owner-aware 决策：探测结果与 owner token 逐档决定回收与清理（跨平台纯函数） (0.7772ms)
+✔ actor：ready 只在 lease 与 lease_acquired 都落定后兑现，控制走同一串行队列 (944.8776ms)
+✔ actor：失租后队列拒绝一切写，done 报 lost_lease；启动失败报 failed (1361.098ms)
+✔ launcher：双 launcher 并发只产生一个 service，两边回证到同一代次 (2175.2736ms)
+✔ launcher：篡改/陈旧 descriptor 一律 fail-closed，绝不把凭据导向别的端点 (2036.0099ms)
+✔ launcher：service 被强杀后重启，既有 Run 被重新发现且陈旧 descriptor 不是所有权 (3158.2861ms)
+✔ Store：事件账只追加，独立回放得到相同 state_signature (118.814ms)
+✔ Store：checkpoint/result 幂等；冲突和迟到结果不得污染终态 (60.5627ms)
+✔ Store：waiting_human 只能由事件账产生，快照加增量回放与全量一致 (16.9544ms)
+✔ Store：拒绝非规范 labels，并按 v1 口径脱敏 structured 落盘 (25.252ms)
+✔ Store：openStore 从磁盘重建事件账与工件，幂等与冲突判定跨重启成立 (40.1887ms)
+✔ Store：openStore 对事件账损坏 fail-closed (26.0078ms)
+✔ Store：快照加增量回放与全量回放在每个切点逐字节一致 (26.9277ms)
+✔ Store：写前 schema 校验拒绝非法事件且不落盘不留痕 (17.5048ms)
+✔ Store：receipt+attempt 身份链不符按 B11 口径处置 (26.3794ms)
+✔ Store：终态不可被本 attempt 后续事件污染，fresh attempt 不被旧终态锁死 (32.151ms)
+✔ Store：并发 append 的 seq 串行化无重号无断档 (30.3212ms)
+✔ Store：P1 迟到结果 fixture 复验 v2 判定不弱于 v1（compat-matrix §6 移交第 2 条） (49.9829ms)
+✔ Store：node_states 覆盖全集与 done<=total（schema 表达不了、实现期守的约束各一反例） (24.3449ms)
+✔ Store：F-011 封堵——终态 kind 不得经 raw appendEvent 落账（DHR_29 移交，DHR_51 承接） (17.94ms)
+✔ Store：writeGuard 失守时拦截一切变更，事件与工件零落盘（fencing 接线） (14.9245ms)
+✔ Store：operation Receipt 与 operation_* 事件同批落账，同 receipt 重投幂等 (21.7528ms)
+✔ Store：订阅 barrier 在写队列内取尾 seq，快照与增量之间零缝隙 (28.7037ms)
+✔ Store：cursor 补发严格连续，越界 cursor 报 E_CURSOR_GAP 而不猜测 (22.1138ms)
+✔ basic-agent-task：三节点 Process 闭环按依赖序推进到 run_finished (6551.2308ms)
+✔ basic-agent-task：步骤非 0 退出 → attempt_failed + E_EXECUTOR_EXIT_NONZERO，run 不得 succeeded (7072.1909ms)
+✔ basic-agent-task：resume 从事件账重建进度，对失败节点开 fresh attempt (6936.9159ms)
+✔ basic-agent-task：stop 中断在跑的子进程 → attempt_failed + E_EXECUTOR_KILLED (6256.507ms)
+✔ executor ref：仓内相对路径守卫拒绝目录逃逸，驱动侧记 attempt_failed (8074.8779ms)
+[F-009] 链接逃逸回归以 目录 junction 形态执行
+✔ executor ref：符号链接指向仓外必须与词法逃逸同途 fail-closed（F-009） (17555.8481ms)
+✔ executor ref：仓内合法但文件不存在 → 节点保持 pending，零 node_started / 零 attempt_started（F-010） (10511.2358ms)
+✔ basic-agent-task：delay_ms label 让 process-task 真的慢跑，且计入结构化结果（批 3 · 3.2 备料） (15088.4991ms)
+✔ basic-agent-task：delay_ms label 值非法时 fail-closed，不得当 0 静默跑完 (7839.059ms)
+ℹ tests 278
+ℹ suites 0
+ℹ pass 262
+ℹ fail 16
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 600599.6536
+
+✖ failing tests:
+
+test at test\agent-node.test.mjs:198:1
+✖ DHR_33 窄路径：driver 托管 herdr-agent，开 Attempt、记心跳并按 stop 落 killed (977.6535ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+
+  + undefined
+  - 'E_EXECUTOR_KILLED'
+
+      at TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_68/relay-core/test/agent-node.test.mjs:228:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: 'E_EXECUTOR_KILLED',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test\agent-node.test.mjs:231:1
+✖ DHR_61 D1: Herdr Attempt freezes source and ordered fallback identities before launch (1769.0584ms)
+  Error: timeout waiting for DHR61 receipt heartbeat
+      at untilAsync (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_68/relay-core/test/agent-node.test.mjs:43:33)
+      at async TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_68/relay-core/test/agent-node.test.mjs:255:3)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)
+
+test at test\cli.test.mjs:663:1
+✖ CLI：pending 账 50 路并发 add/remove 经跨进程锁零丢失（F-019） (44731.1893ms)
+  Error: E_PENDING_LOCK_BUSY:lock-holder-alive:pid=41296:since=2026-08-31T06:27:58.122Z:C:\Users\nash\AppData\Local\Temp\dhr30-cli-lyssAe\.dh-relay\private\pending-operations.lock 正被占用，稍后重试；pid 不能证明所有权，仅当停光本机 CLI 并复核锁面后才可手工删锁
+      at lockBusy (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_68/relay-core/cli/pending.mjs:49:17)
+      at withPendingLock (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_68/relay-core/cli/pending.mjs:170:17)
+      at async addPendingRecord (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_68/relay-core/cli/pending.mjs:235:3)
+      at async Promise.all (index 34)
+      at async TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_68/relay-core/test/cli.test.mjs:678:3)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    reason: 'E_PENDING_LOCK_BUSY'
+  }
+
+test at test\herdr-adapter.test.mjs:240:1
+✖ DHR_33 driver #3/#5：done 有界、判定成功与双亡 HOST_LOST (11745.4348ms)
+  Error: timeout:judge result
+      at runtimeUntil (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_68/relay-core/test/herdr-adapter.test.mjs:205:33)
+      at async TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_68/relay-core/test/herdr-adapter.test.mjs:247:3)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)
+
+test at test\herdr-adapter.test.mjs:277:1
+✖ DHR_33 driver：stop 撞 launch 窗口仍杀 pane，失败写 killed Result 且不造 Attention (2236.6899ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+
+  + undefined
+  - 'E_EXECUTOR_KILLED'
+
+      at TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_68/relay-core/test/herdr-adapter.test.mjs:286:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: 'E_EXECUTOR_KILLED',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test\herdr-adapter.test.mjs:352:1
+✖ DHR_33 driver #10：恢复届按账上 ref 判 orphaned 或接管同一 attempt (10872.8386ms)
+  Error: timeout:orphaned recovery
+      at runtimeUntil (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_68/relay-core/test/herdr-adapter.test.mjs:205:33)
+      at async TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_68/relay-core/test/herdr-adapter.test.mjs:354:3)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)
+
+test at test\herdr-adapter.test.mjs:508:1
+✖ DHR_68/C driver：启动即 blocked 恰写一次 waiting_human，不写 HOST_LOST，指令延后到解除后补发 (3243.3062ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+
+  + 'running'
+  - 'waiting_human'
+
+      at TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_68/relay-core/test/herdr-adapter.test.mjs:521:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'running',
+    expected: 'waiting_human',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test\identity-quota.test.mjs:131:1
+✖ DHR_34: confirmed quota starts one qualified fallback as a fresh Attempt (64440.7998ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  1 !== 2
+
+      at TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_68/relay-core/test/identity-quota.test.mjs:148:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 2,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test\identity-quota.test.mjs:167:1
+✖ DHR_34: confirmed quota without a qualified fallback pauses and opens no Attempt (74079.043ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  0 !== 1
+
+      at TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_68/relay-core/test/identity-quota.test.mjs:183:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test\identity-quota.test.mjs:187:1
+✖ DHR_34: a failed canonical pause write fails closed without a text-only Attention (63349.5225ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  true !== false
+
+      at TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_68/relay-core/test/identity-quota.test.mjs:205:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test\identity-quota.test.mjs:212:1
+✖ DHR_34: permission failure remains terminal and never switches identity (61351.1316ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  0 !== 1
+
+      at TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_68/relay-core/test/identity-quota.test.mjs:227:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test\identity-quota.test.mjs:231:1
+✖ DHR_34: an unregistered detector cannot trigger an automatic identity switch (62793.014ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  0 !== 1
+
+      at TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_68/relay-core/test/identity-quota.test.mjs:245:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test\identity-quota.test.mjs:249:1
+✖ DHR_34: an unsignable nested fallback makes the candidate unavailable and pauses canonically (62024.3087ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  0 !== 1
+
+      at TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_68/relay-core/test/identity-quota.test.mjs:265:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test\identity-quota.test.mjs:269:1
+✖ DHR_34: fallback quota pauses for human choice and cannot chain to a third identity (61920.6473ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  1 !== 2
+
+      at TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_68/relay-core/test/identity-quota.test.mjs:283:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 2,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test\identity-quota.test.mjs:289:1
+✖ DHR_34: an invalid current registry fails closed through canonical pause (60734.7877ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  0 !== 1
+
+      at TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_68/relay-core/test/identity-quota.test.mjs:306:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test\identity-quota.test.mjs:309:1
+✖ DHR_34: recovery trusts the fallback Receipt and cannot regain automatic chaining (17912.9913ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  0 !== 1
+
+      at TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_68/relay-core/test/identity-quota.test.mjs:339:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

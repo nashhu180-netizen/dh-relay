@@ -218,6 +218,9 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
     let attemptReceipt;
     let handle;
     let blind = false;
+    // DHR_68/C：启动期 blocked 时提交指令要扣住——不能把它打进产品自己的信任对话框。
+    let launchBlocked = false;
+    let instructionPending = false;
     let launch = null;
     let stopHandle = null;
     if (recovery) {
@@ -245,6 +248,7 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
       }
       ({ handle } = launch);
       blind = launch.blind;
+      launchBlocked = launch.launch_blocked === true;
       stopHandle = { result: null, async kill() { this.result = await stopHerdrAgent({ cli: herdrCli, handle }); return this.result; } };
       current = stopHandle;
       if (stopping) await stopHandle.kill();
@@ -254,7 +258,9 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
         executor_ref: handle.agent_name, observation_status: readyObservation ? 'alive' : 'observation_lost',
         detail: herdrDetail(handle, readyObservation?.herdr_status ?? 'unknown', launch.ready_state_change_seq),
       }));
-      if (receiptBound) {
+      if (receiptBound && launchBlocked) {
+        instructionPending = true;
+      } else if (receiptBound) {
         const instruction = await sendToHerdrAgent({ cli: herdrCli, handle, text: receiptSubmissionInstruction(receiptId) });
         if (!instruction?.ok) {
           await actor.submitControl(store => store.appendEvent({ kind: 'human_input_requested', at: nowIso(), node_id: node.node_id,
@@ -279,10 +285,13 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
     let lastStatus = recovery ? null : launch?.ready_observation?.herdr_status ?? null;
     let lastSeq = recovery ? null : launch?.ready_state_change_seq ?? null;
     let lastObservationStatus = recovery ? null : launch?.ready_observation ? 'alive' : 'observation_lost';
-    if (blind) {
+    if (blind || launchBlocked) {
+      // 启动即 blocked 时 lastStatus 已是 'blocked'，轮询段的 blocked 分支因此不会重复写——
+      // 这一条就是 design/06 要求的那**一次**持久 Attention。
       await actor.submitControl(store => store.appendEvent({
         kind: 'human_input_requested', at: nowIso(), node_id: node.node_id, attempt_id: attemptId,
-        executor_ref: handle.agent_name, detail: herdrDetail(handle, 'unknown', lastSeq),
+        executor_ref: handle.agent_name,
+        detail: herdrDetail(handle, lastStatus ?? (launchBlocked ? 'blocked' : 'unknown'), lastSeq),
       }));
     }
     try {
@@ -318,6 +327,18 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
               executor_ref: handle.agent_name, observation_status: 'alive', detail: herdrDetail(handle, observation.herdr_status, observation.state_change_seq) }));
           }
           lastObservationStatus = 'alive';
+          // 人处理完信任框、agent 首次离开 blocked：把启动期扣住的提交指令补发恰好一次。
+          // 判据是「不再是 blocked」而不是白名单 working/idle——blocked 直接跳到 done 时
+          // 白名单会漏发，随后 done 分支去等 Result，最终误落 E_EXECUTOR_RESULT_MISSING。
+          if (instructionPending && observation.herdr_status !== 'blocked') {
+            instructionPending = false;
+            const deferred = await sendToHerdrAgent({ cli: herdrCli, handle, text: receiptSubmissionInstruction(receiptId) });
+            if (!deferred?.ok) {
+              await actor.submitControl(store => store.appendEvent({ kind: 'human_input_requested', at: nowIso(), node_id: node.node_id,
+                attempt_id: attemptId, reason: 'E_EXECUTOR_HOST_LOST', executor_ref: handle.agent_name,
+                detail: `completion-instruction-failed:${deferred?.detail ?? deferred?.reason ?? 'unknown'}` }));
+            }
+          }
           if (observation.herdr_status === 'working') {
             checkpoint += 1;
             await actor.submitControl(store => store.appendCheckpoint({ receipt_id: receiptId, node_id: node.node_id, attempt_id: attemptId,
