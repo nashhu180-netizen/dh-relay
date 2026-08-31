@@ -1,8 +1,9 @@
 <!-- dh:v1 · dev_plan/drafts/DHR-B-33-Claude假就绪blocked盲区-候选.md -->
-# DHR-B-33 候选 · Claude 假就绪导致的 blocked 盲区（v2 · 草案）
+# DHR-B-33 候选 · Claude 假就绪导致的 blocked 盲区（v3 · 草案）
 
-> 状态：**草案 v2，已过一轮 fresh 只读审核，未经用户确认、未落盘**。它不发 ID、不授权开工。
-> v2 = 按 [evidence/33](../../design/evidence/33-DHR69-Claude假就绪blocked盲区-B调整交叉审核记录.md) 第一轮裁决修订（`W-01`~`W-09` 全部采纳，无驳回）。**其中 `W-01` 推翻了 v1 的一条核心论证**（"误判会自愈"），已按裁决重写 §3.1。
+> 状态：**草案 v3，已过两轮 fresh 只读审核，未经用户确认、未落盘**。它不发 ID、不授权开工。
+> v2 = 按 [evidence/33](../../design/evidence/33-DHR69-Claude假就绪blocked盲区-B调整交叉审核记录.md) §1 第一轮裁决修订（`W-01`~`W-09` 全部采纳，无驳回）。**其中 `W-01` 推翻了 v1 的一条核心论证**（"误判会自愈"），已按裁决重写 §3.1。
+> v3 = 按同一记录 §2 的**定向复审**裁决修订（`X-01`~`X-05` 全部采纳，无驳回）。复审判 `W-01` / `W-02` 只是**部分落地**：整改本身又引入了三条与既有契约冲突的要求，且"收敛"二字仍是过头表述。
 > 触发：`design/13`（A-27 正式输入）§0 登记的硬前置 `F-6809`；用户 2026-08-31 对话明文「现在拆」。
 
 ## 1. 触发与授权链
@@ -53,13 +54,21 @@
 > **⚠️【`W-01` 采纳 · v1 的原第 2 条理由已被推翻，保留形成史】** v1 写的是「失败方向是安全的：一次误判只会晚发几百毫秒，会自愈，因为 DHR_68 已建好离开 blocked 后恰补发一次的路径」。
 > **两名复审各自独立打开代码核出这句是假的**：补发的条件是 `instructionPending && observation.herdr_status !== 'blocked'`（`workflow-driver.mjs:333`）。派生状态是从 `pane get` 来的——**若 `pane get` 持续报陈旧的 `blocked`，派生状态永远离不开 `blocked`，指令永不补发**。而 evidence/32 只证明两个信号"曾经不一致"，**从未证明 `pane get` 会自行刷新**。所以正常打完一轮变 `idle` 的 agent 可能被**永久**扣在 `waiting_human`，不是"晚几百毫秒"。
 
-**因此本草案补上一条明确的收敛策略（成为验收项 `机器证 F`，不是提示）**：
+**因此本草案补上一条明确的"不静默"策略（成为验收项 `机器证 F`，不是提示）**：
 
-- **判定方向仍是 fail-closed**：`idle` ∧ `pane=blocked` → 判 `blocked`、扣住提交指令。**宁可停下等人，也不把指令打进框。**
-- **但不允许静默地永远停下去**。两信号**持续不一致超过 `T`**（冻结为 **60_000 ms**，与现役 `observationLostMs` / `doneTimeoutMs` 同形态、同为 driver 默认参数，**不新增环境变量或 registry 字段**）时，**恰再写一条**可区分的升级 Attention（`reason` 用一个**新的、专表"宿主两个状态源持续打架"**的错误码，不复用 `E_EXECUTOR_HOST_LOST` / `E_EXECUTOR_RESULT_MISSING`），把两个原始信号一起摆出来。**指令继续扣住**——升级只改变可见性，不改变安全方向。
+- **判定方向是 fail-closed**：`idle` ∧ `pane=blocked` → 判 `blocked`、扣住提交指令。**宁可停下等人，也不把指令打进框。**
+- **但不允许静默地停下去**。两信号**持续不一致超过 `T`**（冻结为 **60_000 ms**，与现役 `observationLostMs` / `doneTimeoutMs` 同形态、同为 driver 默认参数，**不新增环境变量或 registry 字段**）时，**恰再写一条**可区分的升级 Attention，把两个原始信号一起摆出来。**指令继续扣住**——升级只改变可见性，不改变安全方向。
 - **一致后恰补发一次**提交指令（沿用 DHR_68 的既有路径，不新写第二条补发逻辑）。
 
-> 这条正是本卡的立卡理由本身：**不静默**。一个"两个状态源持续打架"的宿主，本身就是该让人看见的事实，而不是一个安静的永久等待。
+> **⚠️【`X-03` 采纳 · "收敛"是过头表述，已改口】** 定向复审指出：升级 Attention **只解决了"看不见"，没有解决"永远等"**。老实说法是——
+>
+> **这是一个可见的人工暂停，不是自动收敛。** 若 `pane get` 的信号永久陈旧、屏幕上其实并没有对话框，节点就**停在那条可见的 Attention 上，由人来裁**，relay 侧**不自动放行**。
+>
+> **为什么不给它一条自动出路**：唯一现成的自动出路是"超时后改信 `agent get`"——而 `agent get` 正是已被实测证明会说谎的那个信号（§2 ①）；照它放行，等于把本卡要修的洞按超时重新打开一遍。另一条"直接判节点失败"会触及 Result 语义，属本卡非目标。**故本卡明确不承诺自动收敛，只承诺不静默。**
+
+> **⚠️【`X-01` / `X-04` 采纳 · 升级 Attention 不新增协议码】** v2 要求"用一个新的错误码"。复审核出：`relay-core/contracts/reason-codes.md` 是**协议码全集的唯一权威**，新增码必须①入表②补可复跑反例③说明与既有码的边界——这会把 contracts 拖进本卡，与非目标直接冲突。且现役"启动期 blocked"那条 Attention **本来就不带 `reason`**，只靠 `herdrDetail()` 的 `detail` 键值串区分。
+>
+> **裁定：本卡不新增任何协议 reason code。** 升级 Attention 用**冻结的 `detail` 键格式**区分（与现役 `herdrDetail` 同形态），`reason` 留空。`relay.event/v2` 的 `additionalProperties: false` 也决定了两个原始信号只能走 `detail`（`X-04`）。若将来判定它必须升格为协议码，**另立卡**按 `reason-codes.md` 的三条规矩加，不在本卡顺手做。
 
 ### 3.2 决定点 D-B33-2：`F-6807`（③ recovery 分支）是否并入本卡
 
@@ -110,10 +119,10 @@
   |---|---|---|
   | **机器证 A** | **启动期**：夹具令 `agent start` 返回 exit 0、`agent get` 返回 `idle`、`pane get` 返回 `blocked` → adapter 返回 `launch_blocked=true` 且保留 handle、不关 pane、不额外创建 Attempt/Result；driver **不发**提交指令，**恰写一次**带 blocked 观测的 `human_input_requested`，不写 `E_EXECUTOR_HOST_LOST`。Codex 的既有 `agent_not_ready` 路径 argv 与行为**逐字不变**（负例断言）。 | fake 正负例 + driver 事件序列断言 |
   | **机器证 B** | **轮询期**：agent 启动时正常，中途转为假 `idle`（`pane get` = `blocked`）→ **不得**落进 `done\|\|idle` 分支、**不得**写 `E_EXECUTOR_RESULT_MISSING`、**不得**结束 Attempt；须走 blocked 分支并恰写一条 `human_input_requested`。此为本草案首次登记的后果 ②。 | driver 事件序列断言 |
-  | **机器证 C** | **recovery 期**（`D-B33-2` 采纳时生效）：恢复到一个假 `idle` / 真 `blocked` 的 agent → 发提交指令**之前**先做一次观测；观测为 blocked 时扣住指令走人工暂停，离开 blocked 后**在同一 driver 届内恰补发一次**。**【`W-03` 采纳】口径显式收窄到"届内"**：跨 driver 重启的重复发送**是本卡明确接受的已知限制**，须写进卡面与 `progress`，不得表述成 Attempt 级唯一。 | driver recovery 双路径断言 + 跨届重复的显式负向登记 |
-  | **机器证 D** | **不静默改写观测**：`host_observation_changed` 同时含 `agent get` 原始值、`pane get` 原始值与派生结论三者；仅在 `agent get` = `idle` 时才发起 `pane get`（`working` / `done` / `unknown` 三态下 `pane get` 调用次数断言为 0）。 | 事件字段断言 + CLI 调用计数断言 |
-  | **机器证 E** | **fake 形态取证纪律（承接 DHR_68/D）**，**【`W-02` 采纳】拆成两半，两半都可机器判**：<br>**E-1** 一个**可复跑的只读 shape probe 脚本**（`herdr pane get` / `agent get` 的真实返回：exit code、是否 JSON、`agent_status` 字段路径与取值域），probe 自身带**自动解析与断言**，不是给人读的表格；<br>**E-2** fake 的 `paneGet` 必须按 E-1 的实测形态返回（现役只是个 `paneAlive` 布尔桩，**没有状态字段，不得照它想当然**），并以 evidence/32 已实测的 `F-6809` 形态作为 fixture 的事实基准。 | E-1 可复跑 probe（只读，不启动产品 Agent）+ E-2 fake 形态断言 |
-  | **机器证 F** | **【`W-01` 采纳 · 新增】持续不一致必须收敛且可见**：夹具令 `agent get` = `idle` ∧ `pane get` = `blocked` **持续超过 `T`=60_000 ms** → 断言：①提交指令始终未发；②初始 Attention **恰一条**；③超过 `T` 后**恰一条**可区分的升级 Attention（新错误码，不复用 `E_EXECUTOR_HOST_LOST` / `E_EXECUTOR_RESULT_MISSING`），事件里同时留两个原始信号；④两信号恢复一致后**恰补发一次**提交指令。**不得出现"安静地永远等下去"。** | driver 事件序列 + 假时钟夹具 |
+  | **机器证 C** | **recovery 期**（`D-B33-2` 采纳时生效）：恢复到一个假 `idle` / 真 `blocked` 的 agent → 发提交指令**之前**先做一次观测；观测为 blocked 时扣住指令走人工暂停，离开 blocked 后**在同一 driver 届内恰补发一次**。**【`W-03` 采纳】口径显式收窄到"届内"**：跨 driver 重启的重复发送**是本卡明确接受的已知限制**，不得表述成 Attempt 级唯一。**【`X-05` 采纳】** 该限制写进卡面与 `progress` 这一条**不算机器证**（机器验不了文档措辞），降为**收口时的一致性复核检查项**。 | driver recovery 双路径断言（机器证）＋ 限制表述由收口一致性复核检查（非机器证） |
+  | **机器证 D** | **不静默改写观测**：`host_observation_changed` 同时留下 `agent get` 原始值、`pane get` 原始值与派生结论三者；仅在 `agent get` = `idle` 时才发起 `pane get`（`working` / `done` / `unknown` 三态下 `pane get` 调用次数断言为 0）。**【`X-04` 采纳】承载结构冻结**：`relay.event/v2` 是 `additionalProperties: false`、`detail` 是唯一可扩充字段，故三者一律编码进 `detail` 的**受控键值格式**（沿用现役 `herdrDetail()` 的 `k=v;k=v` 形态，键名在 B-adjust 落盘时冻结），并以**解析断言**验证，**不新增任何顶层字段、不改 schema**。 | `detail` 解析断言 + CLI 调用计数断言 |
+  | **机器证 E** | **fake 形态取证纪律（承接 DHR_68/D）**，**【`W-02` 采纳】拆成两半，两半都可机器判**：<br>**E-1** 一个**可复跑的只读 shape probe**；**【`X-02` 采纳】落点与形态一并冻结**——脚本 `docs/modules/dh-relay/workspace/DHR_69/evidence/scripts/herdr-shape-probe.mjs`，`node` 直接跑，取样对象是**一个普通 shell pane**（`pane split` 出来的空壳，**不启动任何产品 Agent**），采 `herdr pane get` / `herdr agent get` 的 exit code、stdout 是否 JSON、`agent_status` 的**字段路径**与**取值域**，probe 自带解析与断言，产物落 `.../evidence/herdr-command-shapes.json`（脱敏，只留形态不留内容）；<br>**E-2** fake 的 `paneGet` 必须按 E-1 的实测形态返回（现役只是个 `paneAlive` 布尔桩，**没有状态字段，不得照它想当然**）。<br>**取值边界（如实登记）**：`blocked` 这个**取值**本身不由 E-1 取（那需要真实卡住的产品 Agent，属本卡非目标），其事实基准取自 [evidence/32 §2](../../design/evidence/32-A27-目录信任能力矩阵-实测.md) 已实测的 `F-6809` 记录。 | E-1 可复跑 probe（只读、不启动产品 Agent）+ E-2 fake 形态断言 |
+  | **机器证 F** | **【`W-01` 采纳 · 新增；`X-01` / `X-03` 修订】持续不一致必须"可见"（不承诺自动收敛）**：夹具令 `agent get` = `idle` ∧ `pane get` = `blocked` **持续超过 `T`=60_000 ms** → 断言：①提交指令始终未发；②初始 Attention **恰一条**；③超过 `T` 后**恰一条**可区分的升级 Attention——**靠冻结的 `detail` 键区分，`reason` 留空、不新增协议码**，事件里同时留两个原始信号；④两信号恢复一致后**恰补发一次**提交指令；⑤**负向断言**：超过 `T` 后**不得**改信 `agent get` 自动放行、**不得**自动判节点失败。**不得出现"安静地永远等下去"；也不得声称"自动收敛"。** | driver 事件序列 + 假时钟夹具 |
   | **有效单测（重核卡必做）** | 变异点由第二轮复核实例选点：把交叉核对判据改坏（如 `pane get` 结论被忽略）后，指定测试必须变红。 | 改坏必红九字段 |
 
 - **变更范围**：
@@ -161,4 +170,12 @@
 
 ## 8. 审核账
 
-一轮 fresh 只读审核（`b33rev1` / `b33rev2`，两名互不可见），共 10 条、去重后 **9 个独立议题：采纳 9 · 驳回 0**。裁决与落点见 [evidence/33](../../design/evidence/33-DHR69-Claude假就绪blocked盲区-B调整交叉审核记录.md)。**其中 `W-01` 推翻了 v1 的一条核心论证**，`W-02` / `W-03` 各补上一条本来证不了的验收，`W-05` 砍掉一条多余的允许路径。
+| 轮次 | 复审者 | 结论 | 独立议题 | 裁决 |
+|---|---|---|---|---|
+| 一轮 fresh 审核 | `b33rev1` / `b33rev2`（互不可见） | 均不通过 | 9 | 采纳 9 · 驳回 0 |
+| 二轮定向复审（验证性） | `b33ver1` | 不通过（判 `W-01` / `W-02` 只是部分落地） | 5 | 采纳 5 · 驳回 0 |
+| **合计** | | | **14** | **采纳 14 · 驳回 0** |
+
+全部只读派发（Herdr pane + codex `--sandbox read-only`），每轮回收均以 git 基线比对证明零写入。裁决与落点见 [evidence/33](../../design/evidence/33-DHR69-Claude假就绪blocked盲区-B调整交叉审核记录.md)。
+
+**两条是主控自己的错误，保留登记**：`W-01`（把"DHR_68 有补发路径"当成"误判会自愈"，没核补发的触发条件）；`X-03`（整改时又把"可见的人工暂停"写成了"收敛"）。`X-01` / `X-02` / `X-04` 则是主控开出的三条要求**与既有契约冲突或无落点**，若照 v2 施工会当场卡住。
