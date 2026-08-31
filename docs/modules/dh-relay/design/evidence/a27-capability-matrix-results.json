@@ -1,0 +1,375 @@
+{
+  "matrix": {
+    "probed_at": "2026-08-31T09:59:53.987Z",
+    "question": "A-27 D-1 前置：两产品 × 目录形态，目录信任框是否出现 / 信任以什么为单位",
+    "herdr_version": "herdr 0.8.2",
+    "start_timeout_ms": 60000,
+    "observations": [
+      {
+        "product": "codex",
+        "case": "root",
+        "dimension": "对照·已信任仓根",
+        "cwd_class": "root",
+        "name": "a27codexroot",
+        "pane_id": "w1:p38",
+        "start_exit": 0,
+        "start_elapsed_ms": 4709,
+        "error_code": null,
+        "agent_status": "working",
+        "agent_visible": true,
+        "pane_agent_status": "idle",
+        "pane_agent": "codex",
+        "process_info": {
+          "name": "cmd.exe",
+          "pid": 18904,
+          "cwd": "D:\\MyFiles\\ai-workflow\\dh-relay\\"
+        },
+        "filtered_text_lines": [
+          "│ directory:   D:\\MyFiles\\ai-workflow\\dh-relay       │"
+        ]
+      },
+      {
+        "product": "codex",
+        "case": "subdir",
+        "dimension": "已信任 git 仓的普通子目录",
+        "cwd_class": "subdir",
+        "name": "a27codexsubdir",
+        "pane_id": "w1:p39",
+        "start_exit": 0,
+        "start_elapsed_ms": 5008,
+        "error_code": null,
+        "agent_status": "idle",
+        "agent_visible": true,
+        "pane_agent_status": "working",
+        "pane_agent": "codex",
+        "process_info": {
+          "name": "cmd.exe",
+          "pid": 39572,
+          "cwd": "D:\\MyFiles\\ai-workflow\\dh-relay\\.ai-workspace\\a27-probe\\plain-child\\"
+        },
+        "filtered_text_lines": [
+          "│ directory:   D:\\MyFiles\\…\\a27-probe\\plain-child    │"
+        ]
+      },
+      {
+        "product": "codex",
+        "case": "nested",
+        "dimension": "已信任仓内的嵌套 git 仓",
+        "cwd_class": "nested",
+        "name": "a27codexnested",
+        "pane_id": "w1:p3A",
+        "start_exit": 1,
+        "start_elapsed_ms": 4678,
+        "error_code": "agent_not_ready",
+        "agent_status": "blocked",
+        "agent_visible": true,
+        "pane_agent_status": "blocked",
+        "pane_agent": "codex",
+        "process_info": {
+          "name": "cmd.exe",
+          "pid": 47004,
+          "cwd": "D:\\MyFiles\\ai-workflow\\dh-relay\\.ai-workspace\\a27-probe\\nested-repo\\"
+        },
+        "filtered_text_lines": [
+          "Do you trust the contents of this directory? Working with untrusted contents comes with higher risk of prompt injection. Trusting the",
+          "directory allows project-local config, hooks, and exec policies to load.",
+          "› 1. Yes, continue",
+          "2. No, quit",
+          "Press enter to continue"
+        ]
+      },
+      {
+        "product": "codex",
+        "case": "worktree",
+        "dimension": "已信任仓的 git worktree",
+        "cwd_class": "worktree",
+        "name": "a27codexworktree",
+        "pane_id": "w1:p3B",
+        "start_exit": 0,
+        "start_elapsed_ms": 8185,
+        "error_code": null,
+        "agent_status": "idle",
+        "agent_visible": true,
+        "pane_agent_status": "idle",
+        "pane_agent": "codex",
+        "process_info": {
+          "name": "cmd.exe",
+          "pid": 49636,
+          "cwd": "D:\\MyFiles\\ai-workflow\\dh-relay\\.dh-worktrees\\DHR_35\\"
+        },
+        "filtered_text_lines": [
+          "│ directory:   D:\\MyFiles\\…\\dh-relay\\.dh-worktrees\\DHR_35 │"
+        ]
+      },
+      {
+        "product": "codex",
+        "case": "outside",
+        "dimension": "完全外部的非仓目录（基线）",
+        "cwd_class": "outside",
+        "name": "a27codexoutside",
+        "pane_id": "w1:p3C",
+        "start_exit": 1,
+        "start_elapsed_ms": 4516,
+        "error_code": "agent_not_ready",
+        "agent_status": "blocked",
+        "agent_visible": true,
+        "pane_agent_status": "blocked",
+        "pane_agent": "codex",
+        "process_info": {
+          "name": "cmd.exe",
+          "pid": 41676,
+          "cwd": "C:\\Users\\nash\\AppData\\Local\\Temp\\A27-outside-1788170203204\\"
+        },
+        "filtered_text_lines": [
+          "Do you trust the contents of this directory? Working with untrusted contents comes with higher risk of prompt injection. Trusting the",
+          "directory allows project-local config, hooks, and exec policies to load.",
+          "› 1. Yes, continue",
+          "2. No, quit",
+          "Press enter to continue"
+        ]
+      },
+      {
+        "product": "claude",
+        "case": "root",
+        "dimension": "对照·已信任仓根",
+        "cwd_class": "root",
+        "name": "a27clauderoot",
+        "pane_id": "w1:p3D",
+        "start_exit": 0,
+        "start_elapsed_ms": 4849,
+        "error_code": null,
+        "agent_status": "idle",
+        "agent_visible": true,
+        "pane_agent_status": "idle",
+        "pane_agent": "claude",
+        "process_info": {
+          "name": "claude.exe",
+          "pid": 40032,
+          "cwd": "D:\\MyFiles\\ai-workflow\\dh-relay\\"
+        },
+        "filtered_text_lines": []
+      },
+      {
+        "product": "claude",
+        "case": "subdir",
+        "dimension": "已信任 git 仓的普通子目录",
+        "cwd_class": "subdir",
+        "name": "a27claudesubdir",
+        "pane_id": "w1:p3E",
+        "start_exit": 0,
+        "start_elapsed_ms": 5225,
+        "error_code": null,
+        "agent_status": "idle",
+        "agent_visible": true,
+        "pane_agent_status": "idle",
+        "pane_agent": "claude",
+        "process_info": {
+          "name": "claude.exe",
+          "pid": 45996,
+          "cwd": "D:\\MyFiles\\ai-workflow\\dh-relay\\.ai-workspace\\a27-probe\\plain-child\\"
+        },
+        "filtered_text_lines": []
+      },
+      {
+        "product": "claude",
+        "case": "nested",
+        "dimension": "已信任仓内的嵌套 git 仓",
+        "cwd_class": "nested",
+        "name": "a27claudenested",
+        "pane_id": "w1:p3F",
+        "start_exit": 1,
+        "start_elapsed_ms": 6741,
+        "error_code": "agent_not_ready",
+        "agent_status": "blocked",
+        "agent_visible": true,
+        "pane_agent_status": "blocked",
+        "pane_agent": "claude",
+        "process_info": {
+          "name": "claude.exe",
+          "pid": 45360,
+          "cwd": "D:\\MyFiles\\ai-workflow\\dh-relay\\.ai-workspace\\a27-probe\\nested-repo\\"
+        },
+        "filtered_text_lines": [
+          "Quick safety check: Is this a project you created or one you trust? (Like your own code, a well-known open source project, or work",
+          "from your team). If not, take a moment to review what's in this folder first.",
+          "❯ No, exit",
+          "Yes, I trust this folder",
+          "Enter to confirm · Esc to cancel"
+        ]
+      },
+      {
+        "product": "claude",
+        "case": "worktree",
+        "dimension": "已信任仓的 git worktree",
+        "cwd_class": "worktree",
+        "name": "a27claudeworktree",
+        "pane_id": "w1:p3G",
+        "start_exit": 0,
+        "start_elapsed_ms": 4887,
+        "error_code": null,
+        "agent_status": "idle",
+        "agent_visible": true,
+        "pane_agent_status": "idle",
+        "pane_agent": "claude",
+        "process_info": {
+          "name": "claude.exe",
+          "pid": 51016,
+          "cwd": "D:\\MyFiles\\ai-workflow\\dh-relay\\.dh-worktrees\\DHR_35\\"
+        },
+        "filtered_text_lines": []
+      },
+      {
+        "product": "claude",
+        "case": "outside",
+        "dimension": "完全外部的非仓目录（基线）",
+        "cwd_class": "outside",
+        "name": "a27claudeoutside",
+        "pane_id": "w1:p3H",
+        "start_exit": 0,
+        "start_elapsed_ms": 8042,
+        "error_code": null,
+        "agent_status": "idle",
+        "agent_visible": true,
+        "pane_agent_status": "blocked",
+        "pane_agent": "claude",
+        "process_info": {
+          "name": "claude.exe",
+          "pid": 50216,
+          "cwd": "C:\\Users\\nash\\AppData\\Local\\Temp\\A27-outside-1788170203204\\"
+        },
+        "filtered_text_lines": [
+          "Quick safety check: Is this a project you created or one you trust? (Like your own code, a well-known open source project, or work",
+          "from your team). If not, take a moment to review what's in this folder first.",
+          "❯ No, exit",
+          "Yes, I trust this folder",
+          "Enter to confirm · Esc to cancel"
+        ]
+      }
+    ],
+    "boundaries_respected": [
+      "未读取、未写入任何 Codex / Claude 产品配置或凭据文件",
+      "未回答任何目录信任框（回答等于写产品配置）",
+      "落盘文本按白名单正则先过滤再入仓，非事后扫描兜底",
+      "每个探针 pane 已关闭，每个临时目录已删除"
+    ]
+  },
+  "followup": {
+    "probed_at": "2026-08-31T10:01:36.143Z",
+    "probes": [
+      {
+        "probe": "F1-fresh-worktree",
+        "product": "codex",
+        "cwd": "new git worktree outside repo path",
+        "pane_id": "w1:p3J",
+        "start_exit": 0,
+        "error_code": null,
+        "agent_status": "idle",
+        "pane_agent_status": "idle",
+        "process": {
+          "name": "cmd.exe",
+          "pid": 49308,
+          "cwd": "C:\\Users\\nash\\AppData\\Local\\Temp\\A27-wt-fresh-1788170496143\\"
+        },
+        "filtered_text_lines": []
+      },
+      {
+        "probe": "F1-fresh-worktree",
+        "product": "claude",
+        "cwd": "new git worktree outside repo path",
+        "pane_id": "w1:p3K",
+        "start_exit": 0,
+        "error_code": null,
+        "agent_status": "idle",
+        "pane_agent_status": "idle",
+        "process": {
+          "name": "claude.exe",
+          "pid": 40696,
+          "cwd": "C:\\Users\\nash\\AppData\\Local\\Temp\\A27-wt-fresh-1788170496143\\"
+        },
+        "filtered_text_lines": []
+      },
+      {
+        "probe": "F2-mid-session-add-dir",
+        "product": "claude",
+        "pane_id": "w1:p3M",
+        "start_exit": 0,
+        "error_code": null,
+        "agent_status": "idle",
+        "pane_agent_status": "idle",
+        "process": {
+          "name": "claude.exe",
+          "pid": 49744,
+          "cwd": "D:\\MyFiles\\ai-workflow\\dh-relay\\"
+        },
+        "filtered_text_lines": [],
+        "after_add_dir": {
+          "agent_status": "idle",
+          "pane_agent_status": "idle",
+          "process": {
+            "name": "claude.exe",
+            "pid": 49744,
+            "cwd": "D:\\MyFiles\\ai-workflow\\dh-relay\\"
+          },
+          "filtered_text_lines": []
+        }
+      },
+      {
+        "probe": "F3-other-approval-dialog",
+        "product": "codex",
+        "pane_id": "w1:p3N",
+        "start_exit": 0,
+        "error_code": null,
+        "agent_status": "idle",
+        "pane_agent_status": "idle",
+        "process": {
+          "name": "cmd.exe",
+          "pid": 18824,
+          "cwd": "D:\\MyFiles\\ai-workflow\\dh-relay\\"
+        },
+        "filtered_text_lines": [
+          "│ directory:   D:\\MyFiles\\ai-workflow\\dh-relay │"
+        ],
+        "after_prompt": {
+          "agent_status": "done",
+          "pane_agent_status": "done",
+          "process": {
+            "name": "cmd.exe",
+            "pid": 18824,
+            "cwd": "D:\\MyFiles\\ai-workflow\\dh-relay\\"
+          },
+          "filtered_text_lines": [
+            "│ directory:   D:\\MyFiles\\ai-workflow\\dh-relay       │",
+            "› Run the shell command: cmd /c dir C:\\Windows"
+          ]
+        }
+      },
+      {
+        "probe": "F4-other-approval-dialog",
+        "product": "claude",
+        "pane_id": "w1:p3P",
+        "start_exit": 0,
+        "error_code": null,
+        "agent_status": "idle",
+        "pane_agent_status": "idle",
+        "process": {
+          "name": "claude.exe",
+          "pid": 684,
+          "cwd": "D:\\MyFiles\\ai-workflow\\dh-relay\\"
+        },
+        "filtered_text_lines": [],
+        "after_prompt": {
+          "agent_status": "working",
+          "pane_agent_status": "working",
+          "process": {
+            "name": "claude.exe",
+            "pid": 684,
+            "cwd": "D:\\MyFiles\\ai-workflow\\dh-relay\\"
+          },
+          "filtered_text_lines": [
+            "❯ Run the bash command: ls /c/Windows | head -3"
+          ]
+        }
+      }
+    ]
+  }
+}
