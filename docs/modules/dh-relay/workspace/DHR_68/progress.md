@@ -30,6 +30,7 @@
 | 2026-08-31 | 主控 | 整改复验派出 `dhr68rev3`（fresh，未参与施工、未继承任何前轮会话；codex `--sandbox read-only`，pane `w1:p31`），复验基线 `4b0eaa3`。结论：**F-68-R2-01 闭合**（`instructionPending` 在首次非 blocked 观测时清零并补发，blocked→working/idle/done 三条出边各恰好一次，`unknown` 仍走 observation-lost 分支不误发，未动 `waitForExecutorResult` 与 done/idle 判定）；**教训两条 P1 落实**；**无 P0/P1、无越界**。但抓到 **F-68-RV-01 (P2)**：我重跑绿测覆盖证据文件，尾随空白又回来了，轮 1 的卫生整改不能称为持续闭合。已修并重跑 `git diff --check d6358dc..HEAD` 取得 exit 0。 | E-6826 | 收 miner 结论。 |
 | 2026-08-31 | 主控 | 只读 miner `dhr68miner`（fresh，pane `w1:p32`）对候选区 58 条做去重：确认 **L-6801/6802/6803 均不重复**，并指出主控**漏了两条**——已补 **L-6804**（对已提交交付物做卫生验收必须显式指定基线到 HEAD 的范围，且凡会被重新生成的证据、检查要排在生成之后；本卡在这条上栽了两次）与 **L-6805**（「延后动作」的恢复条件语义是"离开某状态"就写排除式，别用有限白名单——正是 F-68-R2-01 的根因）。另判定 **F-6807 是 [候选-11] 的直接实例**、不新增候选，已回链；F-6804/F-6806 的"不新增"方向亦被确认（分别由候选-35、候选-31/48 覆盖）。 | E-6827 | E9/E10 备料收尾。 |
 | 2026-08-31 | 主控 | E7 as-built：`as-built/relay-core.md` **不在本卡允许路径**，故不改。其 L280 对 Herdr adapter 的描述在抽象层面仍成立、无错误，但本卡三条新行为未反映进快照——**显式登记为 F-6808（P3）留给后续卡**，不静默跳过该节点。 | E-6829 | 出 E9 交付汇报 + E10 证据包。 |
+| 2026-08-31 | 主控 | 用户对话明文「可以收口」（E11）。执行本地收口授权包：主干 index 干净、`git merge --squash wt/DHR_68` 范围核对**零越界**（19 个文件全在 5 条允许代码路径 + `workspace/DHR_68/**`）→ squash `a17cb3e` → **主干集成复验**：`herdr-adapter` 27 例 24 通过（失败 3 例仍为 master 既有同名同因），DHR_68 自有 **8/8**，`npm run audit` 八项违规计数**全 0**，`dh dh-relay` **0 失败**（squash 前的 8 条失败正是 DHR_68 D-start 时的空 review.md 占位，已随本次合入消除）→ verify 提交 → DevPlan §3.1 状态改「已完成」+ 刷新 `dh:status` 头部 → 删树删枝。 | E-6830 | DHR_35 已无技术阻塞。 |
 
 ## 证据账本
 
@@ -65,3 +66,4 @@
 | E-6827 | miner | `herdr agent start dhr68miner --kind codex --pane w1:p32 -- --sandbox read-only`；输入 `evidence/miner-brief.md` | pass | 独立 miner 去重：L-6801~L-6803 均不重复；补出主控漏掉的 L-6804、L-6805；判定 F-6807 属候选-11 实例、F-6804/F-6806 不新增。 |
 | E-6828 | hygiene | `git diff --check d6358dc..HEAD`（在证据文件最后一次生成之后） | pass | 全提交范围行尾空白干净，F-68-RV-01 闭合。 |
 | E-6829 | doc | `as-built/relay-core.md` L280 只读核对 | partial | 既有描述无错但未含本卡三条新行为；因不在允许路径不改，delta 登记为 F-6808。 |
+| E-6830 | check | `git merge --squash` 范围核对；`node --test relay-core/test/herdr-adapter.test.mjs`；`npm run audit`；`dh dh-relay`（均在**主干**上跑） | pass | 主干集成复验：定向 27/24 通过（3 例 master 既有）、DHR_68 8/8、contracts audit 全 0、模块体检 0 失败。squash `a17cb3e`，verify 见下一提交。 |
