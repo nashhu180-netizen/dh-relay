@@ -445,8 +445,36 @@ export async function startRuntimeService({
         return null;
       };
 
+      /**
+       * DHR_70：driver 的 gate 活得比它那一届 actor 长。`driveRun` 特意保留了带 open gate
+       * 的 driver（晚交不得绕过 gate），可 driver 在构造时就捕获了 actor 引用——那一届
+       * actor 失租或结束之后，这条 gate 就指着一具尸体，提交撞 `E_LEASE_HELD:actor-closed`。
+       *
+       * 保留 gate 的用意是「晚交必须经过 gate」，不是「晚交必须打给写 Receipt 的那一届」。
+       * 所以这里只把这一届摘掉，交给下面的 durable 路径重新取 lease、建 actor、重建 gate。
+       *
+       * **只认 `actor-closed`**：真正的 lease-lost 是 Store writeGuard 在落盘前的 fence，
+       * 是单写者本体，必须原样抛出去。摘 actor 前先 `await dead.done`——它此刻必然已 settle，
+       * 而 `ensureActor` 里那条 `actors.delete` 回调注册得更早，等一等就保证先它一步跑完，
+       * 否则 durable 路径会把同一个死 actor 再取回来。
+       */
+      const evictClosedActor = async (runId, driver) => {
+        if (drivers.get(runId) === driver) drivers.delete(runId);
+        const dead = actors.get(runId);
+        if (!dead) return;
+        await dead.done;
+        if (actors.get(runId) === dead) actors.delete(runId);
+      };
+
       for (const [runId, driver] of drivers) {
-        const response = await tryDriver(runId, driver);
+        let response;
+        try {
+          response = await tryDriver(runId, driver);
+        } catch (error) {
+          if (String(error?.message ?? error) !== 'E_LEASE_HELD:actor-closed') throw error;
+          await evictClosedActor(runId, driver);
+          continue;
+        }
         if (response) return response;
       }
 

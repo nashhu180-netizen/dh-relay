@@ -70,7 +70,9 @@ Result 必须复用 `relay.store-mutation/v1`：`results/<receipt_id>.json`、�
 
 ### Gate 生命周期
 
-service bootstrap 必须在 ready descriptor 前，对每个非 terminal、当前 Receipt 有 `result_submission_mode:"receipt-bound/v1"` 的 Run 取得 actor/lease、从 Receipt+Store state 重建 receiver driver gate。重建不得新签 Receipt、不得启动第二个 Agent，只恢复提交/推进权；无 lease、Store 待恢复、Receipt 非当前、Run terminal 或无 mode 时一律不接收。正常完成前，service 不得从 drivers map 删除该 receiver gate。
+service bootstrap 必须在 ready descriptor 前，对每个非 terminal、当前 Receipt 有 `result_submission_mode:"receipt-bound/v1"` 的 Run 取得 actor/lease、从 Receipt+Store state 重建 receiver driver gate。重建不得新签 Receipt、不得启动第二个 Agent，只恢复提交/推进权；无 lease、Store 待恢复、Receipt 非当前、Run terminal 或无 mode 时一律不接收。正常完成前，该 receiver gate 不得失去可达性：service 可摘除 actor 已关闭的陈旧 driver 条目，但必须按同一 Receipt 从 durable 事实重建 gate；晚交任何时候不得绕过 gate，也不得要求新签 Receipt。
+
+> **DHR_70 契约同步（2026-09-01，用户对话授权扩路径）**：本句原文为「正常完成前，service 不得从 drivers map 删除该 receiver gate」。该表述预设了「driver 条目还在 = gate 还能用」，但 DHR_70 实测出第三种形态——**driver 条目在、它那一届 actor 已失租关闭**，于是这条被特意保留的 gate 指着一具尸体，晚交撞 `E_LEASE_HELD:actor-closed`（DHR_35 的 E-3526）。修复是摘掉这一届 driver/actor 后按 durable 事实重建同一 Receipt 的 gate，这**兑现**了本句的用意（晚交必须有 gate 可落、且必须经过 gate），但与其字面冲突，故按 DHR_70 需求复核 F-70-REQ-01 与一致性复核裁决 1/2 同步措辞。**不变的部分**：gate 归属仍是 Receipt/Attempt 而非某一届 actor；重建仍走 `ensureActor` 重新取 lease，单写者与 `writeGuard` fencing 一律不放宽（`E_LEASE_HELD:lease-lost` 必须原样拒绝，只有精确的 `actor-closed` 才触发摘除重建）。
 
 ## 4. 验收
 

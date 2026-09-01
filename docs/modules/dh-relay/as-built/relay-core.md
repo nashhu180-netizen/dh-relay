@@ -390,3 +390,15 @@ DHR_52 的 RPC seam 与 DHR_51 的 host 之间原本没有装配人（F-001）�
 - **拒绝与恢复**：旧/未知/非当前 Receipt 为 `E_IDENTITY_MISMATCH`，canonical fallback fence 为 `E_ATTEMPT_FENCED`，lease 丢失、伪 Receipt、坏 Result/事件账均 fail-closed；terminal duplicate 仅同 digest 已提交账本幂等。service 在任何 actor/lease 前校验所有恢复 candidate，坏 Receipt 阻止前序 Run 改账。
 - **Herdr 与 CLI 边界**：done、idle、judge、capture、pane、host status、exit code 不生成 Result；缺 submission 写 `E_EXECUTOR_RESULT_MISSING` Attention。v2 CLI 不降级，socket close/error 会清 timer、拒绝全部在途 waiter 为 `E_TRANSPORT_CLOSED`。
 - **证据**：`dhr64-result-bridge.test.mjs` 分三组 6/6、1/1、3/3；`dhr64-store-reject-matrix.test.mjs` 2/2；`dhr64-driver-observation.test.mjs` 3/3。默认全量历史运行未得终态且含 DHR33/DHR34 旧语义差异，不能作为绿色或本卡范围扩张理由。
+
+## 12. DHR_70 增量 —— 提交权在 Attempt 非终态时的 gate/actor 生命周期
+
+- **修的是什么**：gate 活得比它那一届 actor 长，而提交只认 actor。`driveRun` 的 done 回调在 `hasOpenSubmissionGates` 为真时**故意保留** driver（`service.mjs:301`，意图是"晚交不得绕过 gate"），但 driver 构造时就捕获了 actor 引用（`workflow-driver.mjs:95`）；那一届 actor 一失租关闭，这条被特意保留的 gate 就指着一具尸体，`submitExecutorResult` 首轮 drivers 循环把 `E_LEASE_HELD:actor-closed` 直接抛出调用栈，**走不到**下面从 durable 事实重建 actor/driver 的兜底。这就是 DHR_35 实录 E-3526 的形态（Claude 启动与 Receipt 均成功、提交撞 `actor-closed`、节点停 running 无 Result）。
+- **现在的行为**：首轮循环捕获**精确**的 `E_LEASE_HELD:actor-closed` → `evictClosedActor` 摘掉这一届 driver 与已关闭的 actor（两处都带 `map.get(runId) === 实例` 的换届守卫，且先 `await dead.done` 让 `ensureActor` 注册在先的 `actors.delete` 回调跑完）→ `continue` 落进既有 durable 路径：`ensureActor` **重新取 lease** → `driveRun` → `registerSubmissionGate` 重建同一 Receipt 的 gate → 提交。
+- **单写者没有被放宽（红线）**：只认 `actor-closed` 这一个完整 message。真正的 `E_LEASE_HELD:lease-lost` 是 Store `writeGuard` 在落盘前的 fence，是单写者本体，**原样抛出**。`host.mjs` 的拒绝条件与 lease 合同一个字没动。另一进程活着持有 lease 时，重建路径会在 `acquireLease` 被裸 `E_LEASE_HELD` 挡住——拒绝这件事本身不依赖 actor 是否已关闭。
+- **契约同步**：design/12「Gate 生命周期」末句原文"不得从 drivers map 删除该 receiver gate"已同步为"gate 不得失去**可达性**"（DHR_70，用户对话授权扩路径；起因是需求复核 F-70-REQ-01 与一致性复核裁决 1/2 独立收敛到同一处）。gate 的归属仍是 **Receipt/Attempt，不是某一届 actor**——这是读这段代码时最容易读反的地方。
+- **已知边界与坑**：
+  - `actor-closed` 是按**完整 message 精确匹配**分流的，不是结构化字段——因为 `error.reason` 上两类错误都塌缩成 `E_LEASE_HELD`，光看 reason 分不出"陈旧 route 可重建"与"写入 fence 必须拒绝"。仓内既有 `host.mjs` 的 `isLostLease` 也是同款精确匹配，形态一致。**后续若有人把它泛化成 `startsWith('E_LEASE_HELD')`，等于把单写者闸门拆了**（一致性复核裁决 1）。
+  - `runHostSession` 的 lease TTL / tick 不可从 `createHostSessionActor` 外部注入，夹具只能等 5s tick，A2 单例耗时约 11.6s（F-7002，记录不修）。
+  - 本卡**不跑真实 Agent**：A4 的真实闭环仍归 DHR_35，机器证用受控夹具跑真实 service/driver。
+- **证据**：`dhr70-submission-gate.test.mjs` 6/6（A1 lease 有效晚交 / A2 失租后重建补交 / A3-1 真接管一直拒 / A3-2 非 current Receipt / A3-3+B 终态冲突与未知 Receipt / C `agent_get=idle ∧ pane_get=error` 不判死 Attempt）。A2 断言链覆盖口径两半：拒绝阶段逐次 `E_LEASE_HELD` + 事件账逐字节不变，成功后 `holder_pid`/`epoch+2`/`lease_acquired` 恰新增一条。

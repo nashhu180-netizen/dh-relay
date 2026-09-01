@@ -375,6 +375,11 @@
   - `relay-core/package.json`
   - `docs/modules/dh-relay/workspace/DHR_69/**`
 
+  **收口期路径变更登记（2026-09-01）**：上面后三条是本卡收口期加入的，各有出处，**不得据此扩到别处**——
+  ① `design/12`：用户在对话里点选「扩路径，本卡同步掉」，授权范围**仅限「Gate 生命周期」一节的措辞同步**；起因是需求复核 F-70-REQ-01 与一致性复核裁决 1/2 两路独立指到同一处字面冲突。**不得**借此改动 §4 验收清单、reason code 表或其它任何小节（轮 2b 已用 `git diff` 核过实际改动范围，确认未越）。
+  ② `as-built/relay-core.md`：**补登**，非扩范围——本卡 brief 的「触及子系统（收口时更新其 as-built）」早已声明它，且 E7 as-built 收敛是收口必做步骤，原清单漏列。
+  ③ 本文件：仅限 §3.2 DHR_70 的**允许路径登记与状态回填**（本段即属之；状态列回填属 E13 机械动作），不得借此改本卡以外任何卡的口径。
+
   **限定**：`workflow-driver.mjs` 只可改**观测→事件路径**与 **recovery 分支的发送时机**；「不动 Result 判定」的精确含义是**不得修改** Receipt-bound Result、等待超时与 `E_EXECUTOR_RESULT_MISSING` 的**语义**，但**允许**因受机器证支撑的派生 `blocked` 使该分支**不可达**（那正是机器证 B 要的结果）。`package.json` 只可向既有 test script 追加本卡新测试文件这一个 token。不得改 `herdr-cli.mjs`（现役 `paneGet()` 已够用）、`profile-registry.mjs`、`service.mjs`、Store、RPC、contracts、用户级 registry，或 DHR_35 / DHR_68 的工作区。
 - **档位**：标准（外部宿主组件接线 · 高危五类之一）。
 - **任务类型**：重核<!-- dh:task-type:v1 task=DHR_69 type=heavy -->
@@ -412,6 +417,10 @@
   - `relay-core/test/dhr64-result-bridge.test.mjs`
   - `relay-core/package.json`
   - `docs/modules/dh-relay/workspace/DHR_70/**`
+  - `docs/modules/dh-relay/design/12-Receipt绑定结果提交与P6真实闭环-契约调整.md`
+  - `docs/modules/dh-relay/as-built/relay-core.md`
+  - `docs/modules/dh-relay/dev_plan/P6-Herdr多账号执行底座-开发方案.md`
+
 
   **限定**：`workflow-driver.mjs` 只可改**提交权 / gate / actor 复用与 idle 等待收口**，不得改 Result mutation 语义；`host.mjs` 仅当 H1 证明 actor 过早 `done` 才动，且**不得改 lease 单写者合同**；`launcher.mjs` 仅当 H3 成立才动，且不得改 RPC schema；`dhr64-result-bridge.test.mjs` 仅当既有断言因合法 gate 复用必须最小更新时才改；`package.json` 只可向既有 test script 追加本卡新测试文件这一个 token。**不得改** `contracts/**`、`store/**`（mutation 语义）、`herdr-cli.mjs`、`herdr-executor.mjs`（除非机器证 C 的负例证明必须动观测，且须另走用户确认扩路径）、DHR_35 工作区、用户级配置。
 - **档位**：标准（外部宿主组件接线 · 高危五类之一）。
