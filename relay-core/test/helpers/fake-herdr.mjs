@@ -27,33 +27,46 @@ const paneRecord = ({ paneId = 'pane-1', agentStatus = 'unknown' } = {}) => ({
 // 真实 herdr 的错误串形态：wrapper 把 exit 1 + stderr JSON 折成 `exit:1:<stderr>`。
 export const herdrErrorDetail = (code, message) => `exit:1:{"error":{"code":"${code}","message":"${message}"},"id":"cli:fake"}`;
 
-export function makeFakeHerdr({ statuses = ['idle'], read = 'result', paneAlive = true, agentAlive = true, missing = false,
+export function makeFakeHerdr({ statuses = ['idle'], paneStatuses = ['unknown'], read = 'result', paneAlive = true, agentAlive = true, missing = false,
+  agentGetFailAfter = null,
   paneKillResult = { ok: true, value: { type: 'ok' } },
   paneRunResult = { ok: true, value: '' },
   agentStartResult = { ok: true, value: { agent: agentRecord(), argv: [], type: 'ok' } },
   agentRenameResult = { ok: true, value: { agent: agentRecord({ agent: 'claude' }), type: 'ok' } },
   listedAgents = [agentRecord({ agent: 'claude', paneId: 'pane-1' })], listedAgentSnapshots = null, onAgentStart = null } = {}) {
   let index = 0;
+  let paneIndex = 0;
+  let agentStatusSeq = statuses;
+  let paneStatusSeq = paneStatuses;
   const sent = [];
   let paneSplits = 0;
   let paneKills = 0;
+  let paneGets = 0;
   let agentReads = 0;
   let agentListReads = 0;
   let agentGets = 0;
   const calls = [];
-  const current = () => statuses[Math.min(index++, statuses.length - 1)] ?? 'unknown';
+  const current = () => agentStatusSeq[Math.min(index++, agentStatusSeq.length - 1)] ?? 'unknown';
+  const currentPane = () => paneStatusSeq[Math.min(paneIndex++, paneStatusSeq.length - 1)] ?? 'unknown';
   return {
     sent,
     get paneSplits() { return paneSplits; },
     get paneKills() { return paneKills; },
+    get paneGets() { return paneGets; },
     get agentReads() { return agentReads; },
     get agentGets() { return agentGets; },
+    setStatuses(next) { agentStatusSeq = next; index = 0; },
+    setPaneStatuses(next) { paneStatusSeq = next; paneIndex = 0; },
     calls,
     cli: {
       paneSplit: ({ cwd }) => { paneSplits += 1; calls.push(['paneSplit', cwd]); return { ok: true, value: { pane: paneRecord(), type: 'ok' } }; },
-      paneGet: () => paneAlive
-        ? { ok: true, value: { pane: paneRecord(), type: 'ok' } }
-        : { ok: false, reason: 'E_BAD_VALUE:HERDR_CLI', detail: herdrErrorDetail('pane_not_found', 'pane pane-1 not found'), missing },
+      paneGet: (paneId) => {
+        paneGets += 1;
+        calls.push(['paneGet', paneId]);
+        return paneAlive
+          ? { ok: true, value: { pane: paneRecord({ paneId: paneId ?? 'pane-1', agentStatus: currentPane() }), type: 'ok' } }
+          : { ok: false, reason: 'E_BAD_VALUE:HERDR_CLI', detail: herdrErrorDetail('pane_not_found', 'pane pane-1 not found'), missing };
+      },
       paneKill: (paneId) => { paneKills += 1; calls.push(['paneKill', paneId]); return paneKillResult; },
       paneRun: ({ paneId, command, args = [] }) => { calls.push(['paneRun', paneId, command, args]); return paneRunResult; },
       agentStart: ({ name, kind, paneId, args = [] }) => { calls.push(['agentStart', name, kind, paneId, args]); queueMicrotask(() => onAgentStart?.()); return agentStartResult; },
@@ -67,6 +80,9 @@ export function makeFakeHerdr({ statuses = ['idle'], read = 'result', paneAlive 
       agentRename: ({ target, name }) => { calls.push(['agentRename', target, name]); return agentRenameResult; },
       agentGet: () => {
         agentGets += 1;
+        if (typeof agentGetFailAfter === 'number' && agentGets > agentGetFailAfter) {
+          return { ok: false, reason: 'E_BAD_VALUE:HERDR_CLI', detail: herdrErrorDetail('agent_not_ready', 'agent get failed after probe') };
+        }
         return agentAlive
           ? { ok: true, value: { agent: agentRecord({ agentStatus: current(), seq: index }), type: 'ok' } }
           : { ok: false, reason: 'E_BAD_VALUE:HERDR_CLI', detail: herdrErrorDetail('agent_not_found', 'agent target herdr-x not found'), missing };

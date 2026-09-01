@@ -1,0 +1,159 @@
+{
+  "probed_at": "2026-08-31T14:05:52.858Z",
+  "herdr_bin": "herdr",
+  "purpose": "DHR_69 E-1：普通 shell pane 上 pane get / agent get 的形态（不启动产品 Agent）",
+  "notes": {
+    "blocked_value_source": "evidence/32 §2 F-6809；本 probe 不取 blocked 取值",
+    "wrapper_unwrap": "herdr-cli.mjs 拆掉 {id,result} 信封，fake.value 对齐 result"
+  },
+  "probes": [
+    {
+      "label": "version",
+      "argv": [
+        "--version"
+      ],
+      "elapsed_ms": 3747,
+      "exit_code": 0,
+      "spawn_error_code": null,
+      "signal": null,
+      "stdout_is_json": false,
+      "stdout_top_level_keys": null,
+      "has_result_envelope": false,
+      "result_keys": null,
+      "agent_status_field_path": null,
+      "agent_status_value": null,
+      "stderr_head": "",
+      "stdout_head": "herdr 0.8.2",
+      "note": "确认 herdr 在 PATH；json:false"
+    },
+    {
+      "label": "pane-split",
+      "argv": [
+        "pane",
+        "split",
+        "--current",
+        "--no-focus",
+        "--direction",
+        "right",
+        "--cwd",
+        "C:\\Users\\nash\\AppData\\Local\\Temp\\DHR69-probe-uUHUrJ"
+      ],
+      "elapsed_ms": 4030,
+      "exit_code": 0,
+      "spawn_error_code": null,
+      "signal": null,
+      "stdout_is_json": true,
+      "stdout_top_level_keys": [
+        "id",
+        "result"
+      ],
+      "has_result_envelope": true,
+      "result_keys": [
+        "pane",
+        "type"
+      ],
+      "agent_status_field_path": "result.pane.agent_status",
+      "agent_status_value": "unknown",
+      "stderr_head": "",
+      "stdout_head": "{\"id\":\"cli:pane:split\",\"result\":{\"pane\":{\"agent_status\":\"unknown\",\"cwd\":\"C:\\\\Users\\\\nash\\\\AppData\\\\Local\\\\Temp\\\\DHR69-probe-uUHUrJ\\\\\",\"focused\":false,\"pane_id\":\"w1:p45\",\"revision\":0,\"scroll\":{\"max_off",
+      "note": "普通 shell pane，不启动产品 Agent"
+    },
+    {
+      "label": "pane-get",
+      "argv": [
+        "pane",
+        "get",
+        "w1:p45"
+      ],
+      "elapsed_ms": 3751,
+      "exit_code": 0,
+      "spawn_error_code": null,
+      "signal": null,
+      "stdout_is_json": true,
+      "stdout_top_level_keys": [
+        "id",
+        "result"
+      ],
+      "has_result_envelope": true,
+      "result_keys": [
+        "pane",
+        "type"
+      ],
+      "agent_status_field_path": "result.pane.agent_status",
+      "agent_status_value": "unknown",
+      "stderr_head": "",
+      "stdout_head": "{\"id\":\"cli:pane:get\",\"result\":{\"pane\":{\"agent_status\":\"unknown\",\"cwd\":\"C:\\\\Users\\\\nash\\\\AppData\\\\Local\\\\Temp\\\\DHR69-probe-uUHUrJ\",\"focused\":false,\"pane_id\":\"w1:p45\",\"revision\":0,\"scroll\":{\"max_offset_",
+      "note": "E-1 主对象：空壳 pane 的 agent_status 字段路径"
+    },
+    {
+      "label": "pane-get-missing",
+      "argv": [
+        "pane",
+        "get",
+        "pane-does-not-exist-dhr69"
+      ],
+      "elapsed_ms": 3434,
+      "exit_code": 1,
+      "spawn_error_code": null,
+      "signal": null,
+      "stdout_is_json": false,
+      "stdout_top_level_keys": null,
+      "has_result_envelope": false,
+      "result_keys": null,
+      "agent_status_field_path": null,
+      "agent_status_value": null,
+      "stderr_head": "{\"error\":{\"code\":\"pane_not_found\",\"message\":\"pane pane-does-not-exist-dhr69 not found\"},\"id\":\"cli:pane:get\"}",
+      "stdout_head": "",
+      "note": "错误形态：JSON 在 stderr，exit 1"
+    },
+    {
+      "label": "agent-get-missing",
+      "argv": [
+        "agent",
+        "get",
+        "agent-does-not-exist-dhr69"
+      ],
+      "elapsed_ms": 3778,
+      "exit_code": 1,
+      "spawn_error_code": null,
+      "signal": null,
+      "stdout_is_json": false,
+      "stdout_top_level_keys": null,
+      "has_result_envelope": false,
+      "result_keys": null,
+      "agent_status_field_path": null,
+      "agent_status_value": null,
+      "stderr_head": "{\"error\":{\"code\":\"agent_not_found\",\"message\":\"agent target agent-does-not-exist-dhr69 not found\"},\"id\":\"cli:agent:get\"}",
+      "stdout_head": "",
+      "note": "空壳 pane 没有 agent；用缺失名采 agent get 错误形态，不启动产品 Agent"
+    },
+    {
+      "label": "pane-close",
+      "argv": [
+        "pane",
+        "close",
+        "w1:p45"
+      ],
+      "elapsed_ms": 3642,
+      "exit_code": 0,
+      "spawn_error_code": null,
+      "signal": null,
+      "stdout_is_json": true,
+      "stdout_top_level_keys": [
+        "id",
+        "result"
+      ],
+      "has_result_envelope": true,
+      "result_keys": [
+        "type"
+      ],
+      "agent_status_field_path": null,
+      "agent_status_value": null,
+      "stderr_head": "",
+      "stdout_head": "{\"id\":\"cli:pane:close\",\"result\":{\"type\":\"ok\"}}",
+      "note": "清理本脚本自建 pane"
+    }
+  ],
+  "assertions": "pass",
+  "failures": []
+}

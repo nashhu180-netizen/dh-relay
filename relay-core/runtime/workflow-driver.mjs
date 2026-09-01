@@ -31,7 +31,8 @@ import { freezeProfileIdentity, loadExecutorProfiles, resolveProfile } from './e
  */
 export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = false, clock = () => Date.now(),
   herdrCli = makeHerdrCli(), herdrRegistryPath, herdrPollMs = 1_000, observationLostMs = 60_000,
-  doneTimeoutMs = 60_000, herdrReadyTimeoutMs = 10_000, profileEnvironment = process.env } = {}) {
+  doneTimeoutMs = 60_000, herdrReadyTimeoutMs = 10_000, signalConflictMs = 60_000,
+  profileEnvironment = process.env } = {}) {
   const runRoot = runRootOf({ repoRoot, runId });
   const nowIso = () => new Date(clock()).toISOString();
 
@@ -193,9 +194,12 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
     return { attemptId, receiptId, attemptReceipt };
   }
 
-  const herdrDetail = (handle, herdrStatus, seq) => observationDetail({
+  const herdrDetail = (handle, herdrStatus, seq, observation = null, extras = {}) => observationDetail({
     herdrStatus, agentName: handle.agent_name, paneId: handle.pane_id, seq,
     workDirRoot: handle.work_dir_root, profileId: handle.executor_profile_id,
+    agentGet: extras.agentGet ?? observation?.agent_get,
+    paneGet: extras.paneGet ?? observation?.pane_get,
+    conflictEscalation: extras.conflictEscalation,
   });
 
   async function driveHerdrNode({ node, profile, firstAttempt, recovery = null,
@@ -256,7 +260,7 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
       await actor.submitControl(store => store.appendEvent({
         kind: 'host_observation_changed', at: nowIso(), node_id: node.node_id, attempt_id: attemptId,
         executor_ref: handle.agent_name, observation_status: readyObservation ? 'alive' : 'observation_lost',
-        detail: herdrDetail(handle, readyObservation?.herdr_status ?? 'unknown', launch.ready_state_change_seq),
+        detail: herdrDetail(handle, readyObservation?.herdr_status ?? 'unknown', launch.ready_state_change_seq, readyObservation),
       }));
       if (receiptBound && launchBlocked) {
         instructionPending = true;
@@ -271,27 +275,55 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
     }
     stopHandle ??= { result: null, async kill() { this.result = await stopHerdrAgent({ cli: herdrCli, handle }); return this.result; } };
     current = stopHandle;
+    let recoveredObservation = null;
     if (receiptBound && recovery) {
-      const instruction = await sendToHerdrAgent({ cli: herdrCli, handle, text: receiptSubmissionInstruction(receiptId) });
-      if (!instruction?.ok) {
-        await actor.submitControl(store => store.appendEvent({ kind: 'human_input_requested', at: nowIso(), node_id: node.node_id,
-          attempt_id: attemptId, reason: 'E_EXECUTOR_HOST_LOST', executor_ref: handle.agent_name,
-          detail: `completion-instruction-failed:${instruction?.detail ?? instruction?.reason ?? 'unknown'}` }));
+      // DHR_69/C · F-6807：恢复届发提交指令之前先观测；派生 blocked 则扣住。
+      recoveredObservation = await observeHerdrAgent({ cli: herdrCli, handle });
+      if (recoveredObservation.ok) {
+        await actor.submitControl(store => store.appendEvent({
+          kind: 'host_observation_changed', at: nowIso(), node_id: node.node_id, attempt_id: attemptId,
+          executor_ref: handle.agent_name, observation_status: 'alive',
+          detail: herdrDetail(handle, recoveredObservation.observation.herdr_status,
+            recoveredObservation.observation.state_change_seq, recoveredObservation.observation),
+        }));
+      }
+      if (!recoveredObservation.ok) {
+        // F-69-R2-01：观测失败不能当作“非 blocked”去发指令——可能仍卡在产品对话框。
+        instructionPending = true;
+      } else if (recoveredObservation.observation.herdr_status === 'blocked') {
+        instructionPending = true;
+        launchBlocked = true;
+      } else {
+        const instruction = await sendToHerdrAgent({ cli: herdrCli, handle, text: receiptSubmissionInstruction(receiptId) });
+        if (!instruction?.ok) {
+          await actor.submitControl(store => store.appendEvent({ kind: 'human_input_requested', at: nowIso(), node_id: node.node_id,
+            attempt_id: attemptId, reason: 'E_EXECUTOR_HOST_LOST', executor_ref: handle.agent_name,
+            detail: `completion-instruction-failed:${instruction?.detail ?? instruction?.reason ?? 'unknown'}` }));
+        }
       }
     }
     let checkpoint = 0;
     let lostAt = null;
     let lostAttention = false;
-    let lastStatus = recovery ? null : launch?.ready_observation?.herdr_status ?? null;
-    let lastSeq = recovery ? null : launch?.ready_state_change_seq ?? null;
-    let lastObservationStatus = recovery ? null : launch?.ready_observation ? 'alive' : 'observation_lost';
+    let mismatchAt = null;
+    let mismatchEscalated = false;
+    let lastStatus = recovery
+      ? (recoveredObservation?.ok ? recoveredObservation.observation.herdr_status : null)
+      : launch?.ready_observation?.herdr_status ?? null;
+    let lastSeq = recovery
+      ? (recoveredObservation?.ok ? recoveredObservation.observation.state_change_seq : null)
+      : launch?.ready_state_change_seq ?? null;
+    let lastObservationStatus = recovery
+      ? (recoveredObservation?.ok ? 'alive' : null)
+      : launch?.ready_observation ? 'alive' : 'observation_lost';
     if (blind || launchBlocked) {
       // 启动即 blocked 时 lastStatus 已是 'blocked'，轮询段的 blocked 分支因此不会重复写——
       // 这一条就是 design/06 要求的那**一次**持久 Attention。
+      const initialObs = recovery ? recoveredObservation?.observation : launch?.ready_observation;
       await actor.submitControl(store => store.appendEvent({
         kind: 'human_input_requested', at: nowIso(), node_id: node.node_id, attempt_id: attemptId,
         executor_ref: handle.agent_name,
-        detail: herdrDetail(handle, lastStatus ?? (launchBlocked ? 'blocked' : 'unknown'), lastSeq),
+        detail: herdrDetail(handle, lastStatus ?? (launchBlocked ? 'blocked' : 'unknown'), lastSeq, initialObs),
       }));
     }
     try {
@@ -302,6 +334,9 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
         if (submissionResults.has(receiptId)) return;
         const observed = await observeHerdrAgent({ cli: herdrCli, handle });
         if (!observed.ok || observed.observation.herdr_status === 'unknown') {
+          // F：unknown / 观测失败已经离开 idle∧blocked 连续区间，必须重计时。
+          mismatchAt = null;
+          mismatchEscalated = false;
           const reconciled = await reconcileHerdrAgent({ cli: herdrCli, handle });
           if (reconciled.kind === 'host_lost') {
             await actor.submitControl(store => store.appendEvent({ kind: 'human_input_requested', at: nowIso(), node_id: node.node_id,
@@ -324,9 +359,26 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
           if (lastObservationStatus === 'observation_lost') lostAttention = false;
           if (lastObservationStatus !== 'alive' || lastStatus !== observation.herdr_status) {
             await actor.submitControl(store => store.appendEvent({ kind: 'host_observation_changed', at: nowIso(), node_id: node.node_id, attempt_id: attemptId,
-              executor_ref: handle.agent_name, observation_status: 'alive', detail: herdrDetail(handle, observation.herdr_status, observation.state_change_seq) }));
+              executor_ref: handle.agent_name, observation_status: 'alive',
+              detail: herdrDetail(handle, observation.herdr_status, observation.state_change_seq, observation) }));
           }
           lastObservationStatus = 'alive';
+          const mismatch = observation.agent_get === 'idle' && observation.pane_get === 'blocked';
+          if (mismatch) {
+            mismatchAt ??= clock();
+            if (!mismatchEscalated && clock() - mismatchAt >= signalConflictMs) {
+              mismatchEscalated = true;
+              await actor.submitControl(store => store.appendEvent({
+                kind: 'human_input_requested', at: nowIso(), node_id: node.node_id, attempt_id: attemptId,
+                executor_ref: handle.agent_name,
+                detail: herdrDetail(handle, 'blocked', observation.state_change_seq, observation,
+                  { conflictEscalation: 'idle_blocked' }),
+              }));
+            }
+          } else {
+            mismatchAt = null;
+            mismatchEscalated = false;
+          }
           // 人处理完信任框、agent 首次离开 blocked：把启动期扣住的提交指令补发恰好一次。
           // 判据是「不再是 blocked」而不是白名单 working/idle——blocked 直接跳到 done 时
           // 白名单会漏发，随后 done 分支去等 Result，最终误落 E_EXECUTOR_RESULT_MISSING。
@@ -346,13 +398,14 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
           } else if (observation.herdr_status === 'blocked') {
             if (lastStatus !== 'blocked') {
               await actor.submitControl(store => store.appendEvent({ kind: 'human_input_requested', at: nowIso(), node_id: node.node_id, attempt_id: attemptId,
-                executor_ref: handle.agent_name, detail: herdrDetail(handle, 'blocked', observation.state_change_seq) }));
+                executor_ref: handle.agent_name,
+                detail: herdrDetail(handle, 'blocked', observation.state_change_seq, observation) }));
             }
           } else if (observation.herdr_status === 'done' || observation.herdr_status === 'idle') {
             if (!receiptBound) {
               await actor.submitControl(store => store.appendEvent({ kind: 'human_input_requested', at: nowIso(), node_id: node.node_id,
                 attempt_id: attemptId, executor_ref: handle.agent_name, reason: 'E_EXECUTOR_RESULT_MISSING',
-                detail: herdrDetail(handle, observation.herdr_status, observation.state_change_seq) }));
+                detail: herdrDetail(handle, observation.herdr_status, observation.state_change_seq, observation) }));
               return;
             }
             const submitted = await waitForExecutorResult(receiptId);
@@ -360,7 +413,7 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
             if (stopping) return;
             await actor.submitControl(store => store.appendEvent({ kind: 'human_input_requested', at: nowIso(), node_id: node.node_id,
               attempt_id: attemptId, executor_ref: handle.agent_name, reason: 'E_EXECUTOR_RESULT_MISSING',
-              detail: herdrDetail(handle, observation.herdr_status, observation.state_change_seq) }));
+              detail: herdrDetail(handle, observation.herdr_status, observation.state_change_seq, observation) }));
             return;
           }
           lastStatus = observation.herdr_status;

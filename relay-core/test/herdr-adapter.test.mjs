@@ -30,7 +30,7 @@ test('DHR_33 adapter：状态映射、句柄、附着与输入均不触碰 Store
   assert.equal(launched.blind, false);
   assert.deepEqual(HERDR_STATUS_MAPPING.blocked, { status: 'waiting_human', event: 'human_input_requested' });
   assert.equal(observationDetail({ herdrStatus: 'working', agentName: 'a', paneId: 'p', seq: 2, workDirRoot: 'C:/work', profileId: 'herdr.codex.main' }),
-    'herdr_status=working;agent=a;pane=p;seq=2;work_dir_root=C:/work;profile=herdr.codex.main');
+    'herdr_status=working;agent=a;pane=p;seq=2;work_dir_root=C:/work;profile=herdr.codex.main;agent_get=-;pane_get=-');
   assert.match(observationDetail({ herdrStatus: 'unknown', agentName: '-', paneId: '-', seq: null, workDirRoot: 'C:/work', profileId: 'herdr.codex.main' }), /;seq=-;/);
   assert.equal((await observeHerdrAgent({ cli: fake.cli, handle: launched.handle })).observation.herdr_status, 'working');
   assert.equal((await observeHerdrAgent({ cli: fake.cli, handle: launched.handle })).observation.herdr_status, 'blocked');
@@ -318,7 +318,7 @@ test('DHR_33 driver #4/#7/#9：观测断单次升级、恢复后再升级；SSH 
   await runtimeUntil(() => store.events.filter(event => event.kind === 'human_input_requested').length >= 2, 'loss attention twice');
   const lost = store.events.filter(event => event.kind === 'host_observation_changed' && event.observation_status === 'observation_lost');
   assert.equal(lost.length, 2);
-  assert.match(lost[0].detail, /;profile=herdr\.codex\.test$/);
+  assert.match(lost[0].detail, /;profile=herdr\.codex\.test;/);
   assert.equal(HEADLESS_SSH_SCENARIO.note, 'Linux 真实 SSH 证据延后（B-22①），桩不冒充');
 });
 

@@ -41,8 +41,10 @@ async function renameClaudeAgent({ cli, paneId, agentName, readyTimeoutMs, ready
   }
 }
 
-export function observationDetail({ herdrStatus, agentName, paneId, seq, workDirRoot, profileId }) {
-  return `herdr_status=${herdrStatus};agent=${agentName};pane=${paneId};seq=${seq ?? '-'};work_dir_root=${workDirRoot};profile=${profileId}`;
+export function observationDetail({ herdrStatus, agentName, paneId, seq, workDirRoot, profileId,
+  agentGet = '-', paneGet = '-', conflictEscalation = null }) {
+  const base = `herdr_status=${herdrStatus};agent=${agentName};pane=${paneId};seq=${seq ?? '-'};work_dir_root=${workDirRoot};profile=${profileId};agent_get=${agentGet};pane_get=${paneGet}`;
+  return conflictEscalation ? `${base};conflict_escalation=${conflictEscalation}` : base;
 }
 
 export async function launchHerdrAgent({ cli, registryProfile, runId, nodeId, attemptId, workDirRoot, args = [], readyTimeoutMs = 10_000, readyPollMs = 100 }) {
@@ -113,8 +115,27 @@ export async function observeHerdrAgent({ cli, handle }) {
   if (!found.ok) return found;
   const status = field(entity(found.value), 'agent_status', 'status');
   if (typeof status !== 'string') return { ok: false, reason: 'E_BAD_VALUE:HERDR_CLI', detail: 'agent-status-missing' };
+  // DHR_69：仅当 agent get 报 idle 时才读 pane get。覆盖规则唯一：idle ∧ pane blocked → 派生 blocked。
+  // pane 的其它取值不覆盖——evidence/32 已记录正常工作时两个信号会短暂不一致。
+  let paneGet = '-';
+  let paneGetCalled = false;
+  let herdrStatus = status;
+  if (status === 'idle') {
+    paneGetCalled = true;
+    const pane = typeof cli.paneGet === 'function' ? cli.paneGet(handle.pane_id) : { ok: false };
+    if (!pane?.ok) {
+      paneGet = 'error';
+    } else {
+      const paneStatus = field(entity(pane.value), 'agent_status', 'status');
+      paneGet = typeof paneStatus === 'string' ? paneStatus : 'error';
+      if (paneGet === 'blocked') herdrStatus = 'blocked';
+    }
+  }
   return { ok: true, observation: {
-    herdr_status: status,
+    herdr_status: herdrStatus,
+    agent_get: status,
+    pane_get: paneGet,
+    pane_get_called: paneGetCalled,
     state_change_seq: field(entity(found.value), 'state_change_seq', 'seq') ?? 0,
     observed_at: new Date().toISOString(),
   } };
