@@ -19,6 +19,7 @@
 | 2026-09-01 | 主控 | `dh mine dh-relay DHR_69` 只读备料。正式候选区不在允许路径，两则草稿落 `lesson_candidates.md`。as-built 未更新登记 F-69-E7。允许路径 `git diff --name-only 3b147d7..HEAD` 未越界；`git diff --check` 通过。 | E-6915、E-6916 | E10 人验展示；不代签 verify。 |
 | 2026-09-01 | 主控 | 阶段汇报@E10 | E-6914 | 等用户确认本地收口授权包。 |
 | 2026-09-01 | 主控 | E11：用户对话点选「已查看证据，认可执行本地收口」；尾巴「整批留给后续卡」（F-69-E7 as-built + miner 草稿挂起）。进入 squash / 合入复验 / verify。 | E-6917 | 工作区提交后 `dh wt done`。 |
+| 2026-09-01 | 主控 | `dh wt done DHR_69` squash 合入 master `28b9a7d`。主干 `dhr69-false-ready` **10/10**。分支 `wt/DHR_69` 已删；工作树目录被 Herdr pane cwd 占用未能删，verify 后补删。 | E-6918 | verify 提交。 |
 
 ## 证据账本
 
@@ -42,3 +43,4 @@
 | E-6915 | miner | `dh mine dh-relay DHR_69` | observed | 只读备料完成；两则草稿在工作区 `lesson_candidates.md`，未写正式候选区 |
 | E-6916 | hygiene | `git diff --name-only 3b147d7..HEAD`；`git diff --check 3b147d7..HEAD` | pass | 生产 diff 仅允许路径；whitespace check 空输出 |
 | E-6917 | e11 | 对话点选「已查看证据，认可执行本地收口」；尾巴「整批留给后续卡」 | pass | 本地收口授权包生效；F-69-E7 / miner 草稿挂起 |
+| E-6918 | squash | `dh wt done DHR_69`；`node --test --test-concurrency=1 test/dhr69-false-ready.test.mjs` on master | pass | squash `28b9a7d`；主干 10/10 exit 0 duration 10252ms |

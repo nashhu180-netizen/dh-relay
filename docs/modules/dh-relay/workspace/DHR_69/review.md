@@ -98,7 +98,7 @@
 **材料齐没齐**：brief / task_plan / progress(证据) / 独立复核记录 / review 都有了？ [x]
 **as-built 更新了没**：本批触及的子系统，其 `as-built/<子系统>.md` 已覆盖更新到最新现状？（没动子系统现状可 N/A） [N/A · F-69-E7：允许路径不含 as-built，现役 §6.4a 未写 idle∧blocked overlay；不静默跳过]
 
-→ 当前状态：**E11 已确认，待 squash / 合入复验 / verify**
+→ 当前状态：**已完成（E13；release_mode=full）**
 
 ---
 
@@ -115,7 +115,7 @@
 | （无人判项）查看机器证包 | 看 E10 展示的定向测试与事件序列 | 六条机器证均有等价 pass | [x] |
 
 - 确认记录：2026-09-01 对话点选「已查看证据，认可执行本地收口」；尾巴「整批留给后续卡」。
-- verify 提交 SHA：（squash 后打在 master）
+- verify 提交 SHA：本提交（squash `28b9a7d`）
 - 签名：hyf（chat-confirm 代签）　　时间：2026-09-01
 
 ### 确认记录（append-only）
