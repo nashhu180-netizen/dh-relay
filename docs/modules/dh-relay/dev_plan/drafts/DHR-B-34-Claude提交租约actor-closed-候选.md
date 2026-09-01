@@ -1,7 +1,7 @@
 <!-- dh:v1 · dev_plan/drafts/DHR-B-34-Claude提交租约actor-closed-候选.md -->
 # DHR-B-34 候选 · Claude Receipt 提交撞上已关闭的执行器（草案）
 
-> 状态：**未生效候选 v2**。第一轮 fresh 审核（`b34rev1`/`b34rev2`）不通过，P1 全部采纳后修订。未进 `designInputs[]`。
+> 状态：**已落盘**。第一轮 fresh 审核（`b34rev1`/`b34rev2`）不通过、P1 全部采纳后修订为 v2，第二轮定向复审（`b34ver1`）PASS；用户 2026-09-01 点选「确认落盘（含 DHR_35 改为 blocked-by:DHR_70）」，本草案 v2 已写进 [P6 正式 DevPlan](../P6-Herdr多账号执行底座-开发方案.md)（§0.2 `B-34` 事件段、§3.1 任务表 `DHR_70` 行、§3.2 `DHR_70` 任务卡、§6 查漏、§7 完工清单），审核账见 [evidence/34](../../design/evidence/34-DHR70-Claude提交租约actor-closed-B调整交叉审核记录.md)。**落盘后本草案只作历史留痕，不再是权威。**
 > 触发：DHR_35 2026-09-01 真实 Claude 闭环 E-3526 / F-3514；用户对话明文「另外开」。
 > 上游设计：[design/12](../../design/12-Receipt绑定结果提交与P6真实闭环-契约调整.md)（`DHR-A-26`）P6-RI-A1/A3/A4。**不触发 A-full**。
 
