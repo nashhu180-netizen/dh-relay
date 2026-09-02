@@ -444,7 +444,7 @@
 
 #### DHR_71
 
-- **目标**：让 `herdr-adapter` + `agent-node` + `dhr64-driver-observation` + `dhr69-false-ready` + `dhr70-submission-gate` 这组定向回归在本机成为**可重复、可解释**的绿闸：除冻结隔离清单内的 2 条 skip 外全部 pass、零 fail、零挂死，为 DHR_72 开工提供可依赖的前置。承接 DHR_35 F-3520 的时序部分与 652s 挂死。
+- **目标**：让 `herdr-adapter` + `agent-node` + `dhr64-driver-observation` + `dhr69-false-ready` + `dhr70-submission-gate` 这组定向回归在本机成为**可重复、可解释**的绿闸：除冻结隔离清单内的 4 条 skip（B-36，原 2 条）外全部 pass、零 fail、零挂死，为 DHR_72 开工提供可依赖的前置。承接 DHR_35 F-3520 的时序部分与 652s 挂死。
 - **非目标**：不改生产代码（`relay-core/runtime/**`、`store/**`、`contracts/**`）；不重写两条语义陈旧用例（归 DHR_72）；不处理 `%TEMP%` EPERM（归 [DHR-BL-17](../backlog.md)）；不动共享夹具。
 - **做什么**：把 1s–10s 固定小预算的等待改为**事件驱动等待**，每个等待冻结「目标事件/状态 + 有界失败条件」，超上限即 fail 并打印当时状态；每条用例/每个文件加进程级上限，挂死表现为 fail 而不是不收口；定位 652s 挂死；`skip` 隔离**恰 4 条**语义红（用例内标注 `F-3520 → DHR_72`；B-36 冻结，定位锚 = 文件 + 完整用例名 + `master@81f5a53` 行号，合入后按用例名定位）：S1 `herdr-adapter.test.mjs:242`「DHR_33 driver #3/#5：done 有界、判定成功与双亡 HOST_LOST」、S2 `:279`「DHR_33 driver：stop 撞 launch 窗口仍杀 pane，失败写 killed Result 且不造 Attention」、S3 `:354`「DHR_33 driver #10：恢复届按账上 ref 判 orphaned 或接管同一 attempt」、S4 `agent-node.test.mjs:198`「DHR_33 窄路径：driver 托管 herdr-agent，开 Attempt、记心跳并按 stop 落 killed」——S3/S4 只加 skip 不重写，其用例体内 DHR_71 已落的有界等待与 `try/finally stop` 保留。
 - **验收口径**：
