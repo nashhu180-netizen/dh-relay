@@ -284,6 +284,7 @@
 - **为什么值得单独立卡**：现在每张卡收口都要花额外精力区分「真回归」与「EPERM 假红」，且判据只能靠隔离复跑——而那正是候选-48 警告的形态。定位到成因后应能一次性消除。
 - **建议起点（未验证，留给开工时自己钉）**：实时扫描 / 索引服务占用临时文件句柄是典型成因；可先试把测试夹具根从 `%TEMP%` 挪到仓内 ignored 目录或排除目录，或给重命名加有界重试。**注意**：加重试会改 Store 的原子性语义，属契约面，需先评估再动。
 - **边界**：不在任何在飞卡的允许路径内；DHR_70 未碰它，只做了定位与留痕。
+- **DHR_71 实测的另一形态（2026-09-02，B-36 补录）**：`rm(<fixture root>, {recursive, force})` 撞上 driver 正在写的 `state.json.<uuid>.tmp` 时**不报 EPERM 而是永不返回**（活跃句柄仅一个 `FSReqPromise`，无 Timeout / ChildProcess），表现为 `node --test` 整进程不收口——DHR_35 记的 652s 挂死即此。`node:test` 的 `after` 钩子按登记顺序执行，rm 登记在用例体第一行时后补的 `t.after(stop)` 救不了。测试侧规避 = `driver.stop()` 放进用例体 `try/finally`、先 stop 再 rm（同一负例 5 轮 0 挂），见 `workspace/DHR_71/evidence/hang-repro-20260902T0338Z.txt`。这修的是测试收尾顺序，不是 `%TEMP%` 原子文件竞争本身，本条**保持 open**。
 - **档位建议**：标准档（触及 Store 落盘路径则升高危）。
 
 ### DHR-BL-18 master 历史证据里的原 Receipt UUID（DHR_30 / DHR_31，只登记不重写）

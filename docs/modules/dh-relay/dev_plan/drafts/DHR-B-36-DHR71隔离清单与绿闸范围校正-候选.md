@@ -1,7 +1,7 @@
 <!-- dh:v1 · dev_plan/drafts/DHR-B-36-DHR71隔离清单与绿闸范围校正-候选.md -->
 # DHR-B-36 候选 · DHR_71 隔离清单 2→4 与绿闸范围校正（DHR_71 / DHR_72 两卡的小调整）
 
-> 状态：**草案 v3，三轮审核闭合（§6），待用户讲解 / 理解问答 / 确认落盘**。v1 → 第一轮 fresh 只读审核（`b36rev1`）不通过（4×P1），四条全部采纳后修为 v2；v2 → 第二轮定向复审（`b36ver1`）判 R1-01/02/03 到位、R1-04 未闭合（1×P1：两条用例走的不是同一条启动路径，统一公式不成立），采纳后修为 v3（§6 审核账）。触发：DHR_71 施工 worker 按 task_plan 的 blocked 判据停手（`wt/DHR_71@b268456`，`construction.DONE status: blocked`），用户 2026-09-02 点选「走小 B-adjust」。
+> 状态：**已落盘**。用户 2026-09-02 点选「确认落盘」，本草案 v3 已写进 [P6 正式 DevPlan](../P6-Herdr多账号执行底座-开发方案.md)（§0.2 `B-36` 事件段与 B-35 段校正句、§3.1 DHR_71 行、§3.2 DHR_71/DHR_72 卡），backlog `DHR-BL-17` 补录，审核账见 [evidence/36](../../design/evidence/36-DHR71隔离清单与绿闸范围校正-B调整交叉审核记录.md)。**落盘后本草案只作历史留痕，不再是权威。**v1 → 第一轮 fresh 只读审核（`b36rev1`）不通过（4×P1），四条全部采纳后修为 v2；v2 → 第二轮定向复审（`b36ver1`）判 R1-01/02/03 到位、R1-04 未闭合（1×P1：两条用例走的不是同一条启动路径，统一公式不成立），采纳后修为 v3（§6 审核账）。触发：DHR_71 施工 worker 按 task_plan 的 blocked 判据停手（`wt/DHR_71@b268456`，`construction.DONE status: blocked`），用户 2026-09-02 点选「走小 B-adjust」。
 > 上游：[`DHR-B-35`](./DHR-B-35-driver持续观测与定向回归复绿-候选.md)（已落盘）§3.1/§3.2 与其审核 X-03 冻结的用例行级互斥。**不触发 A-full**：不改 design/12 任何验收 ID、不改 Receipt/Result/事件合同、不改 DHR_72 的运行契约（D-B35-6/7）、不改卡序与依赖。
 > 施工现场（独立可打开，均在分支 `wt/DHR_71`，未合入 master）：`workspace/DHR_71/construction.DONE`、`progress.md`、`findings.md`、`evidence/gate-round{1,2,3}-20260902T0405Z.txt`、`evidence/hang-repro-20260902T0338Z.txt`、`evidence/baseline-20260902T0316Z.txt`、`evidence/isolated-*-20260902T0322Z.txt`。
 
