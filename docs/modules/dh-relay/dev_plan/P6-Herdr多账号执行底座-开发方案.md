@@ -4,15 +4,15 @@
 <!-- dh:status
 汇报: DHR_32（normal）已于 2026-08-30 经用户对话确认收口，verify `2f80fa1`；主干复验定向 profiles 14/14、contracts 审计 0 违规、模块体检 0 failure。DHR_33（heavy）已于 2026-08-30 经用户接受 E-3303 现场、E-3304 受限、E-3307/3308 Oracle 差异与 P6-M6 延后后收口，verify `5d662b6`；候选-40 依用户裁决 B 冻结为“fresh 实例 + 独立会话”，模型身份仅作诊断记录。DHR_34（heavy）已于 2026-08-30 经用户接受 P6-M4 受限结论，verify `0b72cb6`；quota 定向 12/12、Store/Attempt 组合 30/30、contracts 审计 0 违规、模块体检 0 failure。DHR_64（heavy）已于 2026-08-30 经用户本地收口授权完成，verify `8376e02`；稳定定向 15/15、contracts audit 0 违规、validator 57/57、capability 20/20。
 汇报补充: DHR_65（normal）已经用户 E11 明文认可；主干复验专项五项均 1/1、profiles 14/14、contracts audit 0、模块体检 0 failure。DHR_67（heavy）已于 2026-08-31 经用户明文授权本地收口；主干定向 6/6、contracts audit 0 failure、模块体检 0 failure。DHR_66（light）已于 2026-08-31 经用户 E11 认可收口；主干复验 registry validator PASS、strict config exit 0、定向 23/23、模块体检 0 failure。DHR_69（heavy）已于 2026-09-01 经用户点选认可本地收口；主干定向 10/10，假就绪会停下来等人，DHR_35 还差真实 Agent 授权才能跑闭环。**DHR_70（heavy）已于 2026-09-01 经用户点选认可本地收口；主干定向 6/6 exit=0，交不回去的结果现在能交回去了，锁没动，只差真实环境实录那一步。**
-现状: DHR_32、DHR_33、DHR_61、DHR_34、DHR_63、DHR_64、DHR_65、DHR_66、DHR_67、DHR_68、DHR_69、**DHR_70** 已完成；DHR_35 进行中，DHR_70 已闭合其阻塞，重跑真实实录仍需用户单独放行真实 Agent
-进行到: P6 ▸ DHR_70 已于 2026-09-01 经用户点选「认可，执行本地收口」完成收口（squash `64a7950`）；五路复核 + miner 共派 7 个 fresh 只读实例，八条发现全部采纳闭合
-下一步: DHR_35 的 Windows 真实闭环实录——**须用户单独放行真实 Agent**，不在 DHR_70 授权内；范围外跟踪 F-6808 + F-69-E7（as-built 留给后续卡）、F-7003/F-7004（已入 backlog：`%TEMP%` 原子重命名 EPERM 污染整仓测试可信度）、F-7002（明确挂起）
+现状: DHR_32、DHR_33、DHR_61、DHR_34、DHR_63、DHR_64、DHR_65、DHR_66、DHR_67、DHR_68、DHR_69、DHR_70 已完成；**`DHR-B-35`（2026-09-02 已确认）新增 DHR_71（定向回归复绿，light）、DHR_72（driver 持续观测，heavy）、DHR_73（启动链静默停摆调查，normal）；DHR_35 进行中，改 blocked-by:DHR_72**——2026-09-01 两条真实实录均 succeeded 但 checkpoint 一环因 driver 单次 idle 采样即退出观测而不可得（F-3517），P6-M1 未达成
+进行到: P6 ▸ `DHR-B-35` 已于 2026-09-02 经用户点选「确认落盘」生效：四个 fresh 只读实例三轮审核，10 个议题采纳 10 驳回 0；DHR_35 三轮独立复核已闭合施工侧问题、转为等待 DHR_72
+下一步: 按序 D-start DHR_71（绿闸）→ DHR_72（driver）→ DHR_73（调查）；DHR_35 在 DHR_72 收口后**由用户重新放行**重开，自跑两条新基线实录 + P6-X 补录 + P6-H 人判（DHR_35 不等 DHR_73）。原范围外跟踪：范围外跟踪 F-6808 + F-69-E7（as-built 留给后续卡）、F-7003/F-7004（已入 backlog：`%TEMP%` 原子重命名 EPERM 污染整仓测试可信度）、F-7002（明确挂起）
 待用户: P6 阶段闸仍等待 DHR_35 的真实闭环机器证与 P6-H 人判；DHR_34 的 P6-M4 已按用户裁决记为 constrained。**2026-08-31 用户在 DHR_68 收口后提出「不是等人处理，直接信任」——即把新项目目录信任从「安全暂停+人工确认」改为受控自动信任，这与 B-32 冻结的产品语义相反，须先走 A-full（授权范围/路径白名单/审计/撤销四项安全语义），待用户确认后立项。**
 看什么: workspace/DHR_33/review.md（验收表+签名区）→ review-consistency-opus.md §六/§八；workspace/DHR_32/review.md 签名区
-阻塞: DHR_35 的三条宿主缺陷已由 DHR_68 闭合；Claude 假就绪盲区已由 DHR_69 闭合（idle∧blocked 派生 blocked，三时点人工暂停）。**2026-09-01 首次真实 Claude 闭环暴露新阻塞（F-3514/E-3526）：Receipt 提交撞 `E_LEASE_HELD:actor-closed`，节点停在 running 无 Result；已由 `DHR-B-34` 拆成 DHR_70，DHR_35 改为 blocked-by:DHR_70。** Codex 侧 E-3525 已通但只是一半，不得写成 P6-RI-A4 已满足；DHR_70 闭合后重跑真实实录仍需用户重新授权真实 Agent。DHR34、63、64、65 已完成范围保留且不重开。Linux SSH 真实 smoke 按 B-22 延后，P6-M6 只能在阶段闸记延后/受限；DHR_34 的真实 quota 样本、detector/judge 与 retry 后执行闭环不得被 Result bridge 自动重启或误表述为完整自动切号可用。
+阻塞: **DHR_35 现 `blocked-by:DHR_72`（B-35，2026-09-02）**：真实 checkpoint 在现役 driver 下不可得（F-3517）、基线定向回归 5 红（F-3520）、四次真实启动两次静默停摆未定位（F-3516/F-3519）——分别由 DHR_72 / DHR_71+DHR_72 / DHR_73 承接。历史：DHR_35 的三条宿主缺陷已由 DHR_68 闭合；Claude 假就绪盲区已由 DHR_69 闭合（idle∧blocked 派生 blocked，三时点人工暂停）。**2026-09-01 首次真实 Claude 闭环暴露新阻塞（F-3514/E-3526）：Receipt 提交撞 `E_LEASE_HELD:actor-closed`，节点停在 running 无 Result；已由 `DHR-B-34` 拆成 DHR_70，DHR_35 改为 blocked-by:DHR_70。** Codex 侧 E-3525 已通但只是一半，不得写成 P6-RI-A4 已满足；DHR_70 闭合后重跑真实实录仍需用户重新授权真实 Agent。DHR34、63、64、65 已完成范围保留且不重开。Linux SSH 真实 smoke 按 B-22 延后，P6-M6 只能在阶段闸记延后/受限；DHR_34 的真实 quota 样本、detector/judge 与 retry 后执行闭环不得被 Result bridge 自动重启或误表述为完整自动切号可用。
 -->
 
-<!-- dh:planning-event:v1 id=DHR-B-34 stage=B-adjust artifact=dev_plan/P6-Herdr多账号执行底座-开发方案.md review=../design/evidence/34-DHR70-Claude提交租约actor-closed-B调整交叉审核记录.md#review-b34 understanding=../design/evidence/34-DHR70-Claude提交租约actor-closed-B调整交叉审核记录.md#understanding-b34 -->
+<!-- dh:planning-event:v1 id=DHR-B-35 stage=B-adjust artifact=dev_plan/P6-Herdr多账号执行底座-开发方案.md review=../design/evidence/35-DHR71-73-driver持续观测与定向回归复绿-B调整交叉审核记录.md#review-b35 understanding=../design/evidence/35-DHR71-73-driver持续观测与定向回归复绿-B调整交叉审核记录.md#understanding-b35 -->
 
 ## 0. B 方案审核与理解确认
 
@@ -27,6 +27,9 @@
 | DHR_61 | 先冻结 Attempt 身份、暂停/重试、Store 恢复与 RPC 兼容契约 | 让 fallback 的状态、身份和恢复有唯一可重放真相，不能靠页面文案或自由文本猜 |
 | DHR_34 | 再做账号与额度治理：只有确认额度真用光才选择已冻结的合格 fallback，普通报错不乱切 | 避免账号乱切和额度误判；协议债不再由本卡越界承担 |
 | DHR_35 | Windows 上用真实 Codex 和 Claude Code 各跑一遍完整闭环，Linux 笔记本用 SSH 跑一遍；全程 DSH 关闭 | 端到端证明多账号、多平台派活真的能闭环 |
+| DHR_71 | 先把那组 Herdr 相关的定向测试修到「每次跑都一个结果」：等具体事件而不是等固定秒数，挂死要变成失败而不是没完没了 | 没有一套可信的绿闸，后面改 driver 就没法判断有没有改坏 |
+| DHR_72 | 修 driver「看一眼见 Agent 闲着就永远不再看」的毛病：Agent 启动后闲一下很正常，driver 要接着盯，等它真干活时记心跳、真丢了时报丢失；等超了只提醒人、不判结束 | 这是 DHR_35 真实实录里心跳缺失的根因，也是 Relay 对产品「启动后做了什么」全盲的根因 |
+| DHR_73 | 调查四次真实启动里两次「启动到一半悄悄停住」的现象：定根因，或者给出复现率和现场、提一个启动看门狗方案；本卡不修代码 | 启动可靠性一半靠运气，必须先弄清楚是什么，再决定怎么修 |
 
 - **完成后你手里有什么**：
   1. 一份查证过、脱敏的执行者名册（哪些 AI 入口可用、各自能干啥）。
@@ -89,6 +92,11 @@
   - **用户裁决（对话点选，均与主控推荐一致）**：①`D-B34-1` **DHR_35 等本卡**——Claude 半截实录不能当 P6-RI-A4；②`D-B34-2` **由当前持 lease 的 actor 补交成功**——旧 actor 已关或失租时先合法新取 lease 再建 gate，**不是**要求旧进程还活着，**也不是**绕过单写者。理解问题「按 A2，那条晚交会怎么收场」用户答**「service 重新取一次 lease、开新 actor 重建 gate，然后写入唯一 Result」**（正确，且排除了"保活旧 actor"与"放宽 host.mjs 拒绝条件"两条错解）。
   - **承诺边界（如实登记）**：DHR_70 **自己不跑真实 Agent**，只用夹具恢复提交链的机器证；`pane_get=error` 只作伴随信号，未经负例不当根因；A3 明确禁止为修 `actor-closed` 放宽单写者。DHR_35 依赖变更是**本次落盘的计划回填**，不是 DHR_70 的施工允许路径。
   - **不变项**：`design/12` 的 `P6-RI-A1~A5` 定义与稳定 ID、Receipt/Result/RPC/contracts 合同与 reason code 表、Store mutation 语义、Linux `B-22`① 延后语义、`P6-M1~M7` 均不变；本卡是"修实现以兑现既有语义"，**不触发 A-full**。本确认只授权本次 DevPlan、审核工件与草案状态同步落盘；**不授权** DHR_70 D-start、生产代码改动、真实 Agent、DHR_35 重跑实录、用户级 registry/凭据读写、verify、合并、推送、部署或环境操作。
+- **B-35 driver 持续观测 / 定向回归复绿 / 启动链静默停摆（2026-09-02，`DHR-B-35`，已确认并生效）**：DHR_35 在 DHR_70 闭合后于新基线 `43e4af9` 重跑，Codex（E-3532）/ Claude（E-3533）两条真实实录均 `succeeded`、身份链完整，**但 `checkpoints/` 全空**。三轮独立复核核出根因不是运气：`workflow-driver.mjs:404-417` 的 `done`/`idle` 分支带 `return`，轮询「先 observe 再 sleep」且第一次 observe 紧跟发提交指令之后——刚 `agent start` 的产品必然 `idle`，**这一次采样永久决定不再观测**（F-3517）。连带：`E_EXECUTOR_RESULT_MISSING` 写完即退出、迟到提交仍推进终态却留下一条误导 Attention；观测停止后 `host_lost` 对账永不再执行；基线定向回归 55 条 5 红（F-3520：2 条 DHR_64 前语义陈旧、3 条时序脆弱，另一次 652s 挂死）；四次真实启动两次静默停摆未定位（F-3516/F-3519）。用户 2026-09-01 两次裁决「**先修 driver 再收 DHR_35**」「**另开卡修回归**」，2026-09-02 对主控五条建议明文「**那就按你的建议走**」。
+  - **审核**：四名 fresh 只读实例、三轮（`b35rev1`/`b35rev2` 互不可见 + `b35ver1` 定向复审 + `b35ver2` 对 X-03 定向复核），**10 个独立议题：采纳 10 · 驳回 0**，第三轮 PASS 且无新增 P0/P1。全部为机器强制只读（codex `gpt-5.6-terra` · high · `sandbox=read-only` · `approval=never`），三轮各以 git 基线比对证零写入（`HEAD=43e4af9`）。记录见 [evidence/35](../design/evidence/35-DHR71-73-driver持续观测与定向回归复绿-B调整交叉审核记录.md)，草案见 [drafts/DHR-B-35](drafts/DHR-B-35-driver持续观测与定向回归复绿-候选.md)。**其中两条是主控自己说过头**：`W-01` 把「无墙钟上限」写成「有界出口」（宿主长期 idle 时 driver 与租约随 service 一直活着，那不叫有界）；`W-02` 把「折叠状态回 running」说成「看板 Attention 被覆盖」（历史事件不会消失）。另 `X-03` 两轮才闭合：v2 按用例行切分仍共享 `runtimeFixture` 与 `fake-herdr.mjs`，v3 把共享夹具唯一归属 DHR_72。
+  - **用户裁决**：①`D-B35-1` 卡序 **DHR_71 → DHR_72 → DHR_73**，DHR_35 重开在 DHR_72 后、不等 DHR_73；②`D-B35-2` DHR_72 的真实实录**不可**被 DHR_35 消费，DHR_35 自跑两条（与 F-3502/F-3503/F-3505「不能将前置完成冒充实录」及 DHR_70 后归档重跑的先例一致）；③`D-B35-3` F-3516/F-3519 **拆为 DHR_73 纯调查卡**（定时间盒、双出口、修复另开卡）；④`D-B35-4` DHR_30/31 历史证据里的原 Receipt UUID **只登记（`DHR-BL-18`）不重写 master**；⑤`D-B35-5` P6-X 补录挂 DHR_35 重开；⑥`D-B35-6` **不设墙钟上限、不自动放弃**——宿主长期 idle 是允许人工持有的运行态，节点停在 `waiting_human` 带可见 Attention，人工 `stop` 是唯一业务出口，driver 机器出口冻结为五个（含 actor 失租/结束 fail-closed）；⑦`D-B35-7` 宿主**真实** `working` + 实际 `checkpoint_recorded` 使折叠状态回 `running`，**不与 B-33「不自动收敛」冲突**（不清除历史 Attention、不把 idle∧blocked 推断为 working，机器证 G 负例守住）。理解问题「Agent 一直闲着不提交、没人 stop，节点会怎样」用户答**「停在『等人』上，直到我 stop」**（正确，排除了「自动判失败」与「Attention 自动清掉」两条错解）。
+  - **一条被现有事实收窄的假设**：`store/state.mjs` 折叠规则已写 `checkpoint_recorded → running`，且读模型没有为 `human_input_requested` 建独立 open Attention 对象（`openAttentions` 只装 fallback pause）、CLI 分堆由 `group` 派生——所以「继续观测」就够，**不加事件类型、不改合同**。
+  - **不变项**：`design/12` P6-RI-A1~A5 定义与稳定 ID、Receipt/Result/事件合同与 reason code 表、Store 折叠规则、lease 单写者与 DHR_70 gate 重建条款、Linux `B-22`① 延后语义、B-33 观测层派生规则、`P6-M1~M7` 均不变；**不触发 A-full**。本确认只授权本次 DevPlan、backlog、审核工件与草案状态落盘；**不授权** DHR_71/72/73 任一 D-start、生产代码改动、真实 Agent、DHR_35 重跑实录、用户级 registry/凭据读写、verify、合并、推送、部署或环境操作。
 - **B-30 DHR_67 Attempt 边界澄清（2026-08-30，已确认）**：DHR67 需求复核发现既有 driver 先开 Attempt/Receipt、再调 adapter；因此将 DHR67 的失败验收收窄为“adapter 不额外创建 Attempt/Result，已创建 pane 时只关闭同一 pane；既有 Attempt 仍由 driver 进入既有人工处理”。[fresh 审核记录](../design/evidence/28-DHR67-Attempt边界-B调整审核记录.md) P0=0；不改 driver、Store、Receipt/Result 合同、任务类型、允许路径、依赖或 DHR35 真实闭环责任。用户在解释后明文“按你推荐的来”。
 - **B-31 DHR_66 Codex projection 漂移修复（2026-08-31，已确认并生效）**：DHR66 E-6602 证明现役 Codex 配置已无旧 `/profiles` 顶层键；本机 Codex CLI 0.151.0 的 `--profile` 使用 `$CODEX_HOME/<name>.config.toml` overlay，当前 main 入口又未选择 overlay。向基础 `config.toml` 伪造 `profiles` 标量既不代表现役入口身份，也可能破坏 strict config。最终方案为删除 registry 中已漂移的 `/profiles` projection 声明、保留现役且已声明 nonsecret 的 `/model`，由既有 reader 生成 Receipt 四字段；不得修改 Codex 产品配置、读取/落盘 projection 值或扩大生产代码。正式设计的 P6-RI-A5 仍是“坏 registry 拒绝 + 两个指定 Profile 修复后通过 + 零配置正文/凭据”，不变。fresh 审核初轮 P0=0/P1=3，整改后定向复审 P0/P1=0；用户 2026-08-31 明文授权主控完成 P6 剩余任务并按需求自行裁决，审核与理解记录见 [evidence/29](../design/evidence/29-DHR66-Codex-projection漂移-B调整审核记录.md)。
 - **B-32 Herdr 宿主真实接线缺陷（2026-08-31，已确认并生效）**：DHR_35 首次真实实录（DSH-off Windows，真实 Codex + 真实 Claude Code）证明 fixture 侧可用后，剩余失败全部落在其禁改的生产路径，且都是 fake CLI 无法暴露的：**A** `makeHerdrCli` 写死的 10 秒超时被所有 CLI 命令共用，而真实 Codex `agent start` 实测 min 6850 / 中位 10934 / max 29482 ms、主机侧 6/6 成功但 3/6 超限——超限时 agent 已建成却被 adapter 当失败关掉同一 pane 并报 `E_EXECUTOR_HOST_LOST`，且泄漏活 agent；**B** 真实 `herdr pane run` 成功时 exit 0、stdout 为空，adapter 却以 `json:true` 调用，Claude 路径 100% `json-parse` 失败（DHR_67 的 fake 返回 `{ok:true,value:{}}`，故其 Claude 路径从未在真实宿主跑通）；**C** 启动期 `blocked`（产品目录信任框）被 `agent start` 报成 `agent_not_ready` 失败，且**即使 adapter 返回 handle，现役 driver 也写不出 blocked Attention**——启动即 blocked 时 `lastStatus` 已被初始化为 `blocked`，轮询分支仅在 `lastStatus !== 'blocked'` 时才写 `human_input_requested`（此条由第一轮 fresh 审核实读 `workflow-driver.mjs` 核出）。新增 **DHR_68（standard/heavy）**承接三条，允许路径含 `herdr-cli.mjs`、`herdr-executor.mjs`、`workflow-driver.mjs`（仅启动期 blocked 事件路径，不动 Result 判定）、`herdr-adapter.test.mjs`、`fake-herdr.mjs` 与其工作区；并把「fake 夹具返回形态必须对齐真实 CLI」升级为验收项 D。DHR_35 新增依赖 DHR_68；DHR_67 保持“已完成”但任务表备注补记 fake 覆盖局限。第一轮 fresh 只读审核（codex `--sandbox read-only`）出 2×P1、3×P2，主控**全部采纳、无驳回**；定向复审确认 R-01~R-05 均已落实、无新增问题，记录见 [evidence/30](../design/evidence/30-DHR68-Herdr宿主真实接线缺陷-B调整交叉审核记录.md)、草案见 [drafts/DHR-B-32](drafts/DHR-B-32-Herdr宿主真实接线缺陷-候选.md)。**用户裁决（对话明文）**：①新项目信任语义 = 安全暂停 + 人工确认，**不做受控自动信任**（后者须先走 A-full），故本调整不触发 A-full；②启动专用超时 = **60 秒且不暴露配置面**；③DHR_67 保持已完成 + 表内备注限定。用户最终明文「直接同意」。design/12 的 P6-RI-A1~A5 定义与稳定 ID、Receipt/Result/Store/RPC/contracts 合同、Linux B-22 延后语义、P6-M1~M7 与 DHR_35 的真实闭环责任均不变；DHR_68 只是 P6-RI-A4 的启动前置，不承接 A4 本身。本确认只授权本次 DevPlan、审核工件与 DHR_35 合同同步落盘；**不授权** DHR_68 D-start、生产代码改动、真实 Agent、verify、合并、推送、部署或环境操作。
@@ -171,7 +179,10 @@
 | DHR_68 | 修 Herdr adapter/driver 的真实宿主接线缺陷 | 标准 | 已完成 | DHR_64、DHR_67 | [workspace/DHR_68/](../workspace/DHR_68/) | squash 本提交；verify 见下一提交（2026-08-31）；release_mode=full | 任务类型=heavy；用户明文「可以收口」；五路复核+一次整改复验全闭合、发现全采纳无驳回；变异点由第二轮复核实例选点并验红绿；定向 27 例 24 通过（3 例与未改代码的 master 同名同因）、`dh dh-relay` 0 失败；范围外跟踪 F-6807（recovery 届同类缺陷）与 F-6808（as-built delta）；B-32 新增，承接 DHR_35 实测的三缺陷（启动超时上限 / `pane run` 期待 JSON / 启动期 blocked 报成失败）；启动专用超时冻结为 60s 且不暴露配置面；不代产品做信任决定。**B-33 限定**：其启动期 blocked 检测对 Claude 的**假就绪**形态（`agent get`=idle ∧ `pane get`=blocked）失效（`F-6809`），反例与修复由 DHR_69 承接 |
 | DHR_69 | 修 Claude 假就绪导致的 blocked 盲区（启动/轮询/recovery 三时点） | 标准 | 已完成 | DHR_67、DHR_68（均已完成） | [workspace/DHR_69/](../workspace/DHR_69/) | squash `28b9a7d`（2026-09-01）；verify 本提交 | 任务类型=heavy；E11 用户点选认可本地收口；release_mode=full；主干定向 10/10；五路复核 + 轮 1 两轮复验 + 轮 2 整改复验闭合；变异点由轮 2 实例选点并验红绿。尾巴 F-69-E7 as-built 与 miner 草稿用户裁决留给后续卡。不承诺自动收敛、不跑真实 Agent。 |
 | DHR_70 | 修 Receipt-bound 提交权在 Attempt 非终态时被丢失（`E_LEASE_HELD:actor-closed`） | 标准 | 已完成 | DHR_64、DHR_68、DHR_69（均已完成） | [workspace/DHR_70/](../workspace/DHR_70/) | squash `64a7950`（2026-09-01）；verify 本提交 | 任务类型=heavy；B-34 新增，承接 DHR_35 实测的 E-3526/F-3514（Claude 启动与 Receipt 均通、提交撞 actor-closed）；口径 = 由**当前持 lease 的 actor** 补交，旧 actor 已关/失租时先合法新取 lease 再建 gate，**不放宽单写者**、不要求旧进程存活；自己不跑真实 Agent；须另行 D-start |
-| DHR_35 | 用 Codex、Claude Code 跑 Windows 真实执行闭环 | 标准 | 进行中 | DHR_34、DHR_63、DHR_64、DHR_65、DHR_66、DHR_67、DHR_68、DHR_69（均已完成）、**DHR_70（未开始）** | [workspace/DHR_35/](../workspace/DHR_35/) | | **`blocked-by:DHR_70`**（B-34，2026-09-01 用户点选确认）：2026-09-01 实录 Codex 通（E-3525）、Claude 提交撞 `actor-closed`（E-3526），**一条产品通了不等于 P6-RI-A4 满足**。B-33 假就绪阻塞已由 DHR_69 闭合。原 D-start（2026-09-01 用户点选「沿用现有树 rebase + 本会话自干 + 允许真实 Agent」，授权至 E10）**已暂停**：DHR_70 闭合后须用户**重新放行**才继续。DSH 关闭；不改生产代码/用户级 registry；不跑 Linux/SSH；不含 push/部署。Linux SSH 按 B-22 ① 延后，P6 阶段闸再裁决 |
+| DHR_35 | 用 Codex、Claude Code 跑 Windows 真实执行闭环 | 标准 | 进行中 | DHR_34、DHR_63、DHR_64、DHR_65、DHR_66、DHR_67、DHR_68、DHR_69、DHR_70（均已完成）、**DHR_72（未开始，经 DHR_71 链式）** | [workspace/DHR_35/](../workspace/DHR_35/) | | **`blocked-by:DHR_72`**（B-35，2026-09-02 用户点选确认）：2026-09-01 新基线 `43e4af9` 两条真实实录 Codex（E-3532）/ Claude（E-3533）均 `succeeded`、身份链完整、Result 为 `receipt-bound-submission/v1`，**但 `checkpoints/` 全空（F-3517，根因 = driver 单次 idle 采样即退出观测），P6-M1 判未达成**；三轮独立复核（含需求/教训/一致性）已闭合全部施工侧问题，证据已脱敏（F-3521）、未推送历史已重写清除（F-3522）。现场在 `wt/DHR_35@3836fd3`，未合入 master。**重开合同**（B-35 §4）：DHR_72 收口后由用户重新放行；自跑两条新基线实录（DHR_72 的实录不可消费）、如实登记启动成功率；P6-X 补录挂本卡重开（DSH-off 两条跑完后最后一步开 DSH 附着同一 Run）；P6-H 用新数据判。不等 DHR_73。DSH 关闭；不改生产代码/用户级 registry；不跑 Linux/SSH；不含 push/部署。Linux SSH 按 B-22 ① 延后 |
+| DHR_71 | 修 Herdr 定向回归的时序脆弱与挂死，交付可重复绿闸 | 标准 | 未开始 | 无（基线 master） | [workspace/DHR_71/](../workspace/DHR_71/) | | 任务类型=light；B-35 新增，承接 F-3520 的时序部分与 652s 挂死；只改 `relay-core/test/**`（用例行级冻结，见 §3.2）；隔离 `herdr-adapter.test.mjs:242/:279` 两条语义红（skip，冻结恰 2 条）；验收只能写「隔离 2 条 skip、其余全 pass」不得写「全绿」；EPERM 成因归 BL-17；须另行 D-start |
+| DHR_72 | 修 driver 单次 idle 采样即永久退出观测 | 标准 | 未开始 | DHR_71 | [workspace/DHR_72/](../workspace/DHR_72/) | | 任务类型=heavy；B-35 新增，承接 F-3517（P6-M1 缺 checkpoint 的根因）与 F-3520 的语义部分；运行契约 = 长期 idle 是允许人工持有的运行态、人工 stop 是唯一业务出口（D-B35-6）；五出口 fail-closed；`workflow-driver.mjs` 轮询段唯一归属本卡；自跑一条带真实 checkpoint 的 Codex 实录作 verify 证据，**不计入 DHR_35 P6-M1**；须另行 D-start |
+| DHR_73 | 调查启动链静默停摆（F-3516 / F-3519） | 标准 | 未开始 | DHR_72 | [workspace/DHR_73/](../workspace/DHR_73/) | | 任务类型=normal；B-35 新增；**纯调查卡，不改 `relay-core/**`**；时间盒 ≤12 次真实启动或两个工作时段；出口 (a) 根因钉死 + 修复卡 B-adjust 候选 / (b) 复现率 + 现场 + 看门狗候选；两种出口下 F-3516/F-3519 保持 open；DHR_35 重开不等本卡；须另行 D-start |
 
 > 状态列只填五枚举，阶段闸阻塞写「备注」列。P5 未通过时 DHR_32~35 均不得开工。
 
@@ -427,9 +438,78 @@
 - **任务类型**：重核<!-- dh:task-type:v1 task=DHR_70 type=heavy -->
 - **实施提示**：必须另行 D-start。起点线索（**不是结论，须自行用夹具钉死**）：`service.mjs` 的 `submitExecutorResult` 先遍历 `drivers` map 试老 driver，老 driver 抛的 `actor-closed` 被直接 `throw` 出调用栈，走不到下面"从 durable 事实重建 actor/driver"的兜底循环。修复方向是**让提交找到活的持 lease actor**，不是让旧 actor 活得更久，也不是让 `host.mjs` 少拒绝。
 
+#### DHR_71
+
+- **目标**：让 `herdr-adapter` + `agent-node` + `dhr64-driver-observation` + `dhr69-false-ready` + `dhr70-submission-gate` 这组定向回归在本机成为**可重复、可解释**的绿闸：除冻结隔离清单内的 2 条 skip 外全部 pass、零 fail、零挂死，为 DHR_72 开工提供可依赖的前置。承接 DHR_35 F-3520 的时序部分与 652s 挂死。
+- **非目标**：不改生产代码（`relay-core/runtime/**`、`store/**`、`contracts/**`）；不重写两条语义陈旧用例（归 DHR_72）；不处理 `%TEMP%` EPERM（归 [DHR-BL-17](../backlog.md)）；不动共享夹具。
+- **做什么**：把 1s–10s 固定小预算的等待改为**事件驱动等待**，每个等待冻结「目标事件/状态 + 有界失败条件」，超上限即 fail 并打印当时状态；每条用例/每个文件加进程级上限，挂死表现为 fail 而不是不收口；定位 652s 挂死；`skip` 隔离 `herdr-adapter.test.mjs:242`、`:279`（用例内标注 `F-3520 → DHR_72`，清单冻结恰 2 条）。
+- **验收口径**：
+  - **机器证 A（绿闸）**：五文件 `node --test --test-concurrency=1` 连续 3 轮，每轮记录 pass / skip / fail、每文件时长、总时长：**skip 恰为 2、fail 为 0**，无一轮不收口；每轮总时长 ≤ 隔离单跑之和的 2 倍；三轮原始输出入 `workspace/DHR_71/evidence/`。只能写「隔离 2 条 skip、其余全 pass」，**不得写「全绿」**。
+  - **机器证 B（等待有界）**：每个被改的等待能列出「目标事件 + 上限 + 超限失败输出」；人为让目标事件不发生，用例在上限内 fail 而不是挂住（至少对 652s 那条做此负例）。
+  - **机器证 C（652s）**：已定位（附复现步骤）并修；若指向生产，登记 finding 并注明去向。
+  - **机器证 D（路径）**：`git diff --name-only master...HEAD` 仅含 `relay-core/test/**` 与 `workspace/DHR_71/**`。
+- **变更范围**：
+  <!-- dh:allowed-paths:v1 task=DHR_71 -->
+  - `relay-core/test/herdr-adapter.test.mjs`
+  - `relay-core/test/agent-node.test.mjs`
+  - `relay-core/test/helpers/**`
+  - `docs/modules/dh-relay/workspace/DHR_71/**`
+  - `docs/modules/dh-relay/dev_plan/P6-Herdr多账号执行底座-开发方案.md`
+
+  **限定（用例行级，B-35 审核 X-03 冻结）**：`herdr-adapter.test.mjs` 仅 `:354`、`:510` **用例体内**的等待逻辑及对 `:242`、`:279` 加 skip 标记，**不得动共享夹具 `runtimeFixture`（`:203-230`）与 `recoveryFixture`（`:335-352`）**——若 `:510` 的修复必须改夹具，只登记并移交 DHR_72；`agent-node.test.mjs` 仅 `:198`、`:231`/`:265` 的等待逻辑及文件级超时配置；`helpers/**` **不含 `fake-herdr.mjs`**（归 DHR_72），只可新增/修改等待工具。若某条红的成因落到生产代码或 EPERM，只登记不修。
+- **档位**：标准。
+- **任务类型**：轻核<!-- dh:task-type:v1 task=DHR_71 type=light -->
+- **依赖**：无（基线 master）。须另行 D-start。
+
+#### DHR_72
+
+- **目标**：`receiptBound` 时 driver **不因一次 `idle`/`done` 采样退出观测**；等 Result 与继续观测并行；`E_EXECUTOR_RESULT_MISSING` 成为「等超了」的可见提示而非 Attempt 终点；让真实产品路径上的 `checkpoint_recorded`、`observation_lost`、`host_lost` 重新可得。承接 DHR_35 F-3517（P6-M1 缺 checkpoint 的根因）与 F-3520 的语义部分；是 P6-RI-A4 checkpoint 一环的**实现前置**，不承接 A4 本身。
+- **运行契约（D-B35-6）**：宿主长期 `idle`、无提交、无人 `stop`，是**允许人工长期持有的运行态**——节点停在 `waiting_human`/`needs_you`，一条可见的 `E_EXECUTOR_RESULT_MISSING` 是给人的信号，**人工 `stop` 是唯一业务出口**；driver 与 actor 续租随 service 存活。不是「有界超时」，本卡不引入任何自动放弃/自动失败。
+- **非目标**：不改 Receipt/Result/事件合同与 reason code 表；不改 Store 折叠规则；不改 lease 单写者与 gate（DHR_70 范围）；不改启动段与 adapter（`runtime/executors/herdr/**`）；不动 DHR_69 的 idle∧blocked 派生规则；不跑 Linux；**不替 DHR_35 出 P6-M1 证据**。
+- **验收口径**：
+  - **机器证 A（不退出）**：fake 宿主序列 `idle → idle → working → working → done`：首次 `idle` 后继续轮询，`working` 期间记 ≥2 条 `checkpoint_recorded`，节点折叠状态 `running`；对照现役基线该序列零 checkpoint。
+  - **机器证 B（等超提示可被事实覆盖）**：宿主 `idle` 超过 `doneTimeoutMs` 且无提交 → 恰写一次 `E_EXECUTOR_RESULT_MISSING`、节点 `waiting_human`；之后 (i) 宿主转 `working` → 记 checkpoint、折叠回 `running`，不重复写该 Attention（同一 Attempt 内该 reason 至多一次，除非中间经历过 `working`）；(ii) 迟到 Receipt-bound 提交 → `attempt_succeeded`，此后零观测事件；(iii) **CLI 投影实证**：`relay status --json` / `inspect --json` 在 (i) 之后 `run_status=running`、`group=running`，历史事件账仍含那条 `human_input_requested`（不主张清除）。
+  - **机器证 C（对账重新可达）**：首次 `idle` 之后宿主消失 → 走 `reconcileHerdrAgent` 到 `host_lost`，写 `E_EXECUTOR_HOST_LOST` 并退出。
+  - **机器证 D（五出口，各一条用例，退出后零事件追加）**：① committed 提交；② `stop`（`E_EXECUTOR_KILLED` 语义按现役）；③ 对账 `host_lost`；④ Attempt 已终态；⑤ **actor 结束或失租** → driver fail-closed 退出、不再以旧 actor 写事件；用例须**分别**覆盖并断言差异：`actor-closed`（DHR_70 gate 重建路径接住迟到提交）与真实 `E_LEASE_HELD:lease-lost`（`host.mjs` 写闸原样拒绝、无重建）。循环内每轮检查出口，不得在 `waitForExecutorResult` 里阻塞整轮。
+  - **机器证 E（语义用例归位）**：解除 DHR_71 隔离的 `:242`、`:279` 并按 Receipt-bound 语义重写；`:305` 重写为「单次 Attention 后**继续**轮询」。收口时定向套件 **0 skip、55/55**（含 DHR_69、DHR_70 用例）。
+  - **机器证 F（真实产品实录 · 本卡自己的 verify 证据）**：DSH-off Windows、一个已冻结 Profile（Codex 优先），跑出至少一条带真实 `checkpoint_recorded` 的实录；按 design/12 §2 脱敏（`rcpt~<摘要>`，零原 Receipt ID、零凭据）。**只证明本卡改动在真实产品上生效，不计入 DHR_35 P6-M1。** 撞 F-3516 形态停摆时重试（≤3 次）并把现场留给 DHR_73。
+  - **机器证 G（守住 B-33）**：负例 `agent_get=idle ∧ pane_get=blocked` 持续期间零 `checkpoint_recorded`、节点不回 `running`、提交指令不补发；只有宿主真实 `working` 才产生 checkpoint。
+  - **有效单测（重核卡必做）**：变异点由第二轮复核实例选点（候选：首次 idle 改回 return / Attention 去重判据改坏 / 去掉出口⑤），指定用例必须变红。
+- **变更范围**：
+  <!-- dh:allowed-paths:v1 task=DHR_72 -->
+  - `relay-core/runtime/workflow-driver.mjs`
+  - `relay-core/test/herdr-adapter.test.mjs`
+  - `relay-core/test/dhr72-continuous-observation.test.mjs`
+  - `relay-core/test/helpers/fake-herdr.mjs`
+  - `relay-core/package.json`
+  - `docs/modules/dh-relay/workspace/DHR_72/**`
+  - `docs/modules/dh-relay/as-built/relay-core.md`
+  - `docs/modules/dh-relay/dev_plan/P6-Herdr多账号执行底座-开发方案.md`
+
+  **限定**：`workflow-driver.mjs` 仅 `driveHerdrNode` 轮询循环（`:330-422`）的 `done`/`idle` 处理、等待与出口结构、Attention 去重，**不得**动 `:205-275` 启动段与 recovery 段语义；`herdr-adapter.test.mjs` 仅 `:242`、`:279`、`:305` 及共享夹具 `runtimeFixture`（**唯一归属本卡**，改后 `:510` 等既有用例须保持绿）；`fake-herdr.mjs` 唯一归属本卡；`package.json` 只可向 test script 追加本卡测试文件名；DHR_35 实录脚本只可复制到 `workspace/DHR_72/` 并登记来源 commit，不得反向修改 DHR_35 工作区。**不得改** `contracts/**`、`store/**`、`host.mjs`、`service.mjs`、`launcher.mjs`、`runtime/executors/herdr/**`、用户级配置。
+- **档位**：标准（组件接线 · 高危五类之一）。
+- **任务类型**：重核<!-- dh:task-type:v1 task=DHR_72 type=heavy -->
+- **依赖**：DHR_71（绿闸）。须另行 D-start。
+
+#### DHR_73
+
+- **目标**：对 F-3516（`attempt_started` 后 service 活着却零子进程、pane 未建成）与 F-3519（Claude 全程零 `host_observation_changed`、租约未续期即过期）做**可复核的调查收口**：钉死根因，或交付可复核的未决登记。**本卡不修生产代码**；修复另开卡。
+- **出口（二选一）**：**(a)** 根因钉死——触发条件 + fake/探针负例可稳定复现 + 落点文件/函数，产出立**修复卡**的 B-adjust 候选（预计 heavy）；**(b)** 时间盒内未钉死——复现率（≥8 次真实启动统计）+ 停摆时进程/pane/租约现场取证 + 「启动链有界看门狗」B-adjust 候选。**两种出口下 F-3516 / F-3519 都保持 open**，DHR_35 / P6-H 不得据本卡宣称启动可靠性已恢复。
+- **时间盒**：真实启动 ≤12 次或两个工作时段，先到为准；超盒即走 (b)。
+- **非目标**：不改任何 `relay-core/**`；不改 lease 合同；不改 Herdr 产品；不跑 Linux。
+- **变更范围**：
+  <!-- dh:allowed-paths:v1 task=DHR_73 -->
+  - `docs/modules/dh-relay/workspace/DHR_73/**`
+  - `docs/modules/dh-relay/dev_plan/P6-Herdr多账号执行底座-开发方案.md`
+
+  **限定**：探针脚本须带 `HERDR_ENV=1` fail-closed 闸与 DSH-off 预检（DHR_35 F-3523 教训）；证据按 design/12 §2 脱敏。
+- **档位**：标准。
+- **任务类型**：常规<!-- dh:task-type:v1 task=DHR_73 type=normal -->（启动时冻结，不中途升档）
+- **依赖**：DHR_72。DHR_35 重开不等本卡。须另行 D-start。
+
 #### DHR_35
 
-- **目标**：在 DHR_34/DHR_63/DHR_64/DHR_65/DHR_66/DHR_67/DHR_68/**DHR_69**/**DHR_70** 闭合后，Windows 分别跑 Herdr + 一个 Codex Profile、Herdr + 一个 Claude Code Profile 的完整闭环（Receipt → Herdr 观测 → checkpoint → `submit-executor-result` → committed Ack → Result → CLI）；DSH 关闭是必测路径。Linux SSH 保持延后。
+- **目标**：在 DHR_34/DHR_63/DHR_64/DHR_65/DHR_66/DHR_67/DHR_68/DHR_69/DHR_70/**DHR_72**（经 DHR_71 链式）闭合后，Windows 分别跑 Herdr + 一个 Codex Profile、Herdr + 一个 Claude Code Profile 的完整闭环（Receipt → Herdr 观测 → checkpoint → `submit-executor-result` → committed Ack → Result → CLI）；DSH 关闭是必测路径。Linux SSH 保持延后。
 - **非目标**：不改 Relay 生产代码或用户级 registry；不进 DevHarness 全收口；不做多卡；不跑 Linux/SSH；DSH 可用时只作附加客户端对证，不另跑第二份流程。
 - **验收口径**：
   - **机器证**：[design/12 P6-RI-A4](../design/12-Receipt绑定结果提交与P6真实闭环-契约调整.md#4-验收清单) · P6-M1：至少一个 Codex 与一个 Claude Profile 完成 Receipt→checkpoint→submission→Result 真实节点，Receipt 身份链可证、零凭据；Herdr/judge 不得直写 Result。
@@ -439,7 +519,7 @@
   - **人判**：[design/05 §8.2](../design/05-DeepSeek-Harness插件化与专属工作台-可行性评估.md#82-实际-codex-和-claude-code-产品) · P6-H：向用户展示 Windows 两条闭环实录 + Linux SSH 实录 + pane 交互延迟；用户判断 Herdr + Codex/Claude Code 是否适合作施工主力、多账号选择与 fallback 是否清楚、Windows pane 交互延迟是否可接受、Linux SSH detach/重连/附着是否适合日常、DSH→Herdr 跳转（若可用）是否自然。
 - **变更范围**：e2e 脚本、临时仓 fixture、`workspace/DHR_35/evidence/`；不改 Relay 生产代码、用户级 registry 或 DevHarness 以外工件。
 - **档位**：标准（真实产品 Agent + 真实 SSH + 人判）。
-- **实施提示**：在 DHR_34/DHR_63/DHR_64/DHR_65/DHR_66/DHR_67/**DHR_69**/**DHR_70** 完成且用户重新放行后才运行（2026-09-01 那次已跑出 Codex 通 / Claude 提交撞 `actor-closed` 的半截实录，**该半截不计入 P6-RI-A4**）；P6-RI-A5 必须同时具备 DHR_63 的实际 registry 证据、DHR_65 的 runtime/mutation 证据与 DHR_66 的 Codex projection 复验；DHR_67 必须先证明 Claude 受支持启动路径。使用临时仓或用户批准的低风险真实卡；DSH 关闭路径先测、附加客户端后测；Linux 真实 smoke 不在本卡收口范围，仍由 P6 阶段闸裁决。
+- **实施提示**：**B-35 重开合同（2026-09-02）**：DHR_72 收口后由用户重新放行；P6-M1 证据由本卡自己在新基线重跑两条完整实录取得（DHR_72 的实录不可消费）；重开实录若撞 F-3516 形态的启动停摆，重试（≤3 次）并把现场留给 DHR_73，review 须如实登记本轮启动成功率、不得把 F-3516/F-3519 写成已消除；P6-X 补录挂本卡重开——两条 DSH-off 实录跑完后另起一步开 DSH 附着其中一条 Run（runner 加「保留 Run」开关，DSH 放最后一步开），Pi 记「环境不具备」；P6-H 用新基线数据判（旧数字 Codex 150s 含 60s 空等、Claude 393s 含 3m14s 停摆，不可用）。在 DHR_34/DHR_63/DHR_64/DHR_65/DHR_66/DHR_67/DHR_69/DHR_70/**DHR_72** 完成且用户重新放行后才运行（2026-09-01 那次已跑出 Codex 通 / Claude 提交撞 `actor-closed` 的半截实录，**该半截不计入 P6-RI-A4**）；P6-RI-A5 必须同时具备 DHR_63 的实际 registry 证据、DHR_65 的 runtime/mutation 证据与 DHR_66 的 Codex projection 复验；DHR_67 必须先证明 Claude 受支持启动路径。使用临时仓或用户批准的低风险真实卡；DSH 关闭路径先测、附加客户端后测；Linux 真实 smoke 不在本卡收口范围，仍由 P6 阶段闸裁决。
 
 ### 3.3 标准档共同收口条件
 
@@ -476,13 +556,13 @@ P6-M1、M2、M3、M5、M6、M7 必须通过；P6-M4 可以是通过或用户明�
 
 | 检查 | 结论 |
 |---|---|
-| 覆盖 | design/06 H4/H5/H9/H12 由 DHR_33/34/64/35 承接（H7「DSH-only Executor 丢失只影响 Attempt」不在 P6 关闭，归 P5-X / P7）；design/05 §7/§8 由 DHR_32/35 承接；design/02 B4/B5/B15⑤ 作 Oracle 由 DHR_32/34/35 承接；design/11 P6-IQ-A1/A3/A5 由 DHR_61 承接，A2/A4 由 DHR_34 承接；design/12 P6-RI-A1~A3 由 DHR_64，A5 由 DHR_63（registry）+DHR_65（runtime/mutation）+DHR_66（Codex projection）共同复验，A4 由 DHR_67+DHR_68+DHR_69（Claude/Codex **启动**前置）+DHR_70（Receipt-bound **提交**前置，且与 DHR_64 共同复验 A1/A3）+DHR_35（真实闭环）承接，**四张前置卡都只是前置、不承接 A4 本身**；`design/13` 的 `A27-*` **不由 P6 承接**（A-27 主卡未拆，DHR_69 只是其硬前置）；P6-M1~M7 每条至少一张卡 |
-| 颗粒度 | DHR_32=审计 + 注册表验收单元；DHR_33=Adapter + SSH 路径验收单元；DHR_61=协议/Store/RPC 契约基线；DHR_34=quota/fallback 编排；DHR_63=受限 registry 维护；DHR_64=Receipt Result bridge；DHR_65=runtime registry loader fail-closed；DHR_66=Codex 非敏感 projection 复验；DHR_67=Windows Claude 启动接线（fake 覆盖）；DHR_68=真实宿主 adapter/driver 接线缺陷；DHR_69=Claude 假就绪 blocked 盲区（三时点观测判定）；DHR_70=Receipt-bound 提交权在非终态保持（一个验收单元）；DHR_35=Windows 真实闭环 + 人判备料 |
-| 依赖 | `DHR_32 → DHR_33 → DHR_61 → DHR_34` 后分叉：`DHR_32,DHR_61 → DHR_63`，`DHR_61,DHR_34 → DHR_64`，`DHR_32,DHR_61 → DHR_65`，`DHR_63,DHR_65 → DHR_66`，`DHR_33,DHR_64,DHR_65 → DHR_67`，`DHR_64,DHR_67 → DHR_68`，`DHR_67,DHR_68 → DHR_69`，`DHR_64,DHR_68,DHR_69 → DHR_70`，`DHR_34,DHR_63,DHR_64,DHR_65,DHR_66,DHR_67,DHR_68,DHR_69,DHR_70 → DHR_35`；无环。P6-RI-A5 仅在 DHR63/65 的既有机器证与 DHR66 projection 复验均通过后保持闭合；DHR67 只满足 Claude 启动前置，不替代 DHR35 的 Receipt-bound Result 实录。DHR70 只满足 Receipt-bound 提交前置，不替代 DHR35 的真实闭环实录。DHR66、DHR67、DHR68、DHR69、DHR70 均须独立 D-start。 |
+| 覆盖 | design/06 H4/H5/H9/H12 由 DHR_33/34/64/35 承接（H7「DSH-only Executor 丢失只影响 Attempt」不在 P6 关闭，归 P5-X / P7）；design/05 §7/§8 由 DHR_32/35 承接；design/02 B4/B5/B15⑤ 作 Oracle 由 DHR_32/34/35 承接；design/11 P6-IQ-A1/A3/A5 由 DHR_61 承接，A2/A4 由 DHR_34 承接；design/12 P6-RI-A1~A3 由 DHR_64，A5 由 DHR_63（registry）+DHR_65（runtime/mutation）+DHR_66（Codex projection）共同复验，A4 由 DHR_67+DHR_68+DHR_69（Claude/Codex **启动**前置）+DHR_70（Receipt-bound **提交**前置，且与 DHR_64 共同复验 A1/A3）+DHR_72（**checkpoint 可达**前置，经 DHR_71 绿闸）+DHR_35（真实闭环）承接，**五张前置卡都只是前置、不承接 A4 本身**；F-3516/F-3519 由 DHR_73 调查、修复卡待其出口后立；F-3520 由 DHR_71（时序）+DHR_72（语义）分担；F-3518（`host_ref` 未冻结）摆给 P6 阶段闸；`design/13` 的 `A27-*` **不由 P6 承接**（A-27 主卡未拆，DHR_69 只是其硬前置）；P6-M1~M7 每条至少一张卡 |
+| 颗粒度 | DHR_32=审计 + 注册表验收单元；DHR_33=Adapter + SSH 路径验收单元；DHR_61=协议/Store/RPC 契约基线；DHR_34=quota/fallback 编排；DHR_63=受限 registry 维护；DHR_64=Receipt Result bridge；DHR_65=runtime registry loader fail-closed；DHR_66=Codex 非敏感 projection 复验；DHR_67=Windows Claude 启动接线（fake 覆盖）；DHR_68=真实宿主 adapter/driver 接线缺陷；DHR_69=Claude 假就绪 blocked 盲区（三时点观测判定）；DHR_70=Receipt-bound 提交权在非终态保持（一个验收单元）；DHR_71=定向回归绿闸（测试单元）；DHR_72=driver 轮询段持续观测（一个验收单元）；DHR_73=启动段调查（不含修复）；三者允许路径互斥（共享夹具与 `fake-herdr.mjs` 唯一归属 DHR_72，`workflow-driver.mjs` 只有 DHR_72 可改）；DHR_35=Windows 真实闭环 + 人判备料 |
+| 依赖 | `DHR_32 → DHR_33 → DHR_61 → DHR_34` 后分叉：`DHR_32,DHR_61 → DHR_63`，`DHR_61,DHR_34 → DHR_64`，`DHR_32,DHR_61 → DHR_65`，`DHR_63,DHR_65 → DHR_66`，`DHR_33,DHR_64,DHR_65 → DHR_67`，`DHR_64,DHR_67 → DHR_68`，`DHR_67,DHR_68 → DHR_69`，`DHR_64,DHR_68,DHR_69 → DHR_70`，`DHR_71 → DHR_72 → DHR_73`，`DHR_34,DHR_63,DHR_64,DHR_65,DHR_66,DHR_67,DHR_68,DHR_69,DHR_70,DHR_72 → DHR_35`（DHR_73 不阻塞 DHR_35）；无环。P6-RI-A5 仅在 DHR63/65 的既有机器证与 DHR66 projection 复验均通过后保持闭合；DHR67 只满足 Claude 启动前置，不替代 DHR35 的 Receipt-bound Result 实录。DHR70 只满足 Receipt-bound 提交前置，不替代 DHR35 的真实闭环实录。DHR70 只满足 Receipt-bound 提交前置、DHR72 只满足 checkpoint 可达前置，均不替代 DHR35 的真实闭环实录。DHR66、DHR67、DHR68、DHR69、DHR70、DHR71、DHR72、DHR73 均须独立 D-start。 |
 
 ## 7. 计划完工
 
-- [ ] DHR_32~35、DHR_61、DHR_63、DHR_64、DHR_65、DHR_66、DHR_67、DHR_68、DHR_69、DHR_70 全部销户。
+- [ ] DHR_32~35、DHR_61、DHR_63、DHR_64、DHR_65、DHR_66、DHR_67、DHR_68、DHR_69、DHR_70、DHR_71、DHR_72、DHR_73 全部销户。
 - [ ] P6-M1~M7 全部有等价 pass 证据（M4 允许用户接受的受限；M6 因 B-22 ① 延后，允许记延后/受限并由用户裁决）；P6-X 三态已登记。
 - [ ] 端到端证据：Windows Codex + Claude Code 闭环实录、Linux 真实 SSH smoke 可复查；全部工件零凭据扫描通过。
 - [ ] P6-H 已向用户展示并由用户判断；P7 是否解锁由用户明确表态。

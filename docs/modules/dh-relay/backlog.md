@@ -286,3 +286,10 @@
 - **边界**：不在任何在飞卡的允许路径内；DHR_70 未碰它，只做了定位与留痕。
 - **档位建议**：标准档（触及 Store 落盘路径则升高危）。
 
+### DHR-BL-18 master 历史证据里的原 Receipt UUID（DHR_30 / DHR_31，只登记不重写）
+
+- **来源**：`DHR-B-35`（2026-09-02，用户裁决 `D-B35-4`「只登记」）。DHR_35 第 4 路需求复核发现自己证据含原 Receipt ID（F-3521，已全树脱敏；F-3522 未推送历史已重写清除）后，主控顺手扫了 master。
+- **事实**：master 上 3 个文件共 23 处原 Receipt UUID——`workspace/DHR_30/evidence/cli-smoke-20260828.txt`（4）、`workspace/DHR_31/evidence/e2e-disconnect-20260828.txt`（7）、`workspace/DHR_31/evidence/e2e-disconnect-20260828-events.jsonl.txt`（12）。
+- **为什么不处理**：①规则晚于证据——「公开证据只保留截断/摘要关联符」是 2026-08-30 `33219fe`（design/12 §2）才立的，这些证据 08-28/29 进仓；②ID 无可利用性——receipt_id 成为提交入口能力是 DHR_64（08-31）之后的事，且对应 Run 随临时夹具早已销毁；③master 本地领先 origin 100+ 笔，重写历史的代价与收益完全不对等。
+- **处置**：登记为已知状态，不改文件、不重写历史。design/12 §2 / P6-RI-A4 的约束自 2026-08-30 起对新证据生效，DHR_35 及之后各卡按 `rcpt~<sha256 前 12>` 关联符记证。
+- **附带建议（未立卡）**：给 `docs/**` 加裸 Receipt UUID 形态的 pre-commit 扫描，让这条纪律不靠人记；另立条目，不并入 B-35 任何卡。
