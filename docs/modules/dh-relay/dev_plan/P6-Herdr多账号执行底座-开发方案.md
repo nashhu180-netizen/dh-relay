@@ -528,7 +528,7 @@
 - **变更范围**：
   <!-- dh:allowed-paths:v1 task=DHR_74 -->
   - `relay-core/test/helpers/**`（新增探针/等待工具；**不含** `fake-herdr.mjs`）
-  - `relay-core/test/*.test.mjs` 仅限「夹具临时目录根、收尾清理顺序、import 探针」类**非断言行**；共享夹具 `runtimeFixture` / `recoveryFixture` 至多动 `mkdtemp` 根一行（B-35 X-03 归属冻结的**用户授权例外**，复核必须逐字核对仅此一行）
+  - `relay-core/test/*.test.mjs` 仅限「夹具临时目录根、收尾清理顺序、import 探针、**夹具时间参数等比放大**」类**非断言行**——时间参数 = `herdrPollMs` 与同一 driver options 里配对的 `doneTimeoutMs` / `observationLostMs` 按同一倍率（×10）调整，依据 E-7403 放大取证（单文件 2.8 万事件 / 5.7 万次 fs 写 = 停顿与 `%TEMP%` 污染的根因；列表型 fake 逐 poll 推进，事件计数与倍率无关，断言零改动）；共享夹具 `runtimeFixture` / `recoveryFixture` 的 `mkdtemp` 根一行与上述时间参数行可动（B-35 X-03 归属冻结的**用户授权例外**，复核必须逐字核对仅限这些行、断言零改动）
   - `docs/modules/dh-relay/workspace/DHR_74/**`
   - `docs/modules/dh-relay/backlog.md`（仅 DHR-BL-17 条目进度补录）
   - `docs/modules/dh-relay/dev_plan/P6-Herdr多账号执行底座-开发方案.md`（仅状态列与状态行）
