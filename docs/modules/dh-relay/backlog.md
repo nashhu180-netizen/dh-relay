@@ -285,6 +285,8 @@
 - **建议起点（未验证，留给开工时自己钉）**：实时扫描 / 索引服务占用临时文件句柄是典型成因；可先试把测试夹具根从 `%TEMP%` 挪到仓内 ignored 目录或排除目录，或给重命名加有界重试。**注意**：加重试会改 Store 的原子性语义，属契约面，需先评估再动。
 - **边界**：不在任何在飞卡的允许路径内；DHR_70 未碰它，只做了定位与留痕。
 - **DHR_71 实测的另一形态（2026-09-02，B-36 补录）**：`rm(<fixture root>, {recursive, force})` 撞上 driver 正在写的 `state.json.<uuid>.tmp` 时**不报 EPERM 而是永不返回**（活跃句柄仅一个 `FSReqPromise`，无 Timeout / ChildProcess），表现为 `node --test` 整进程不收口——DHR_35 记的 652s 挂死即此。`node:test` 的 `after` 钩子按登记顺序执行，rm 登记在用例体第一行时后补的 `t.after(stop)` 救不了。测试侧规避 = `driver.stop()` 放进用例体 `try/finally`、先 stop 再 rm（同一负例 5 轮 0 挂），见 `workspace/DHR_71/evidence/hang-repro-20260902T0338Z.txt`。这修的是测试收尾顺序，不是 `%TEMP%` 原子文件竞争本身，本条**保持 open**。
+- **DHR_71 隔离子进程 TEMP 实验（2026-09-03 补录，F-7109 登记）**：只把 Node 子进程的 `TEMP`/`TMP` 指到 worktree 内目录、其余不动：第 1 轮合格（51 pass / 4 skip / 0 fail，333.403s），第 2 轮仍红（50/4/1，572.898s）——`dhr69-false-ready:180` 停在**首次 `host_observation_changed(alive)` 之后、启动期 Attention（`human_input_requested`）落账之前**，fake 计数非零（`agentGets=1/paneGets=1/paneSplits=1`），**不符合 F-7108「止于 attempt_started 且 fake 全 0」签名**，登记为独立 F-7109（证据 `workspace/DHR_71/evidence/gate-isolated-temp-round{1,2}-20260902T23*.txt`）。⇒ 上面「建议起点」里「把夹具根挪出 `%TEMP%`」被实测否定为**充分**修复——换目录后停顿依旧（排除的只是 `%TEMP%` 目录自身的堆积/争用因素）；EPERM 与停顿两形态的根因钉死移交 DHR_74 专卡。
+- **2026-09-03 立卡**：用户对话确认按**标准档**立 **DHR_74** 专卡（P6 §3.2，范围原文「诊断并修复 Store 持久化/测试临时目录争用，再重跑 DHR_71 门禁」）；`store/**` 只读诊断，触及写路径语义（重试/超时/批量化）即停手升高危并重新请用户确认——与本条「档位建议」升级条款一致。F-7108 / F-7109 由该卡承接，本条在其收口前**保持 open**。
 - **档位建议**：标准档（触及 Store 落盘路径则升高危）。
 
 ### DHR-BL-18 master 历史证据里的原 Receipt UUID（DHR_30 / DHR_31，只登记不重写）

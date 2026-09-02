@@ -4,9 +4,9 @@
 <!-- dh:status
 汇报: DHR_32（normal）已于 2026-08-30 经用户对话确认收口，verify `2f80fa1`；主干复验定向 profiles 14/14、contracts 审计 0 违规、模块体检 0 failure。DHR_33（heavy）已于 2026-08-30 经用户接受 E-3303 现场、E-3304 受限、E-3307/3308 Oracle 差异与 P6-M6 延后后收口，verify `5d662b6`；候选-40 依用户裁决 B 冻结为“fresh 实例 + 独立会话”，模型身份仅作诊断记录。DHR_34（heavy）已于 2026-08-30 经用户接受 P6-M4 受限结论，verify `0b72cb6`；quota 定向 12/12、Store/Attempt 组合 30/30、contracts 审计 0 违规、模块体检 0 failure。DHR_64（heavy）已于 2026-08-30 经用户本地收口授权完成，verify `8376e02`；稳定定向 15/15、contracts audit 0 违规、validator 57/57、capability 20/20。
 汇报补充: DHR_65（normal）已经用户 E11 明文认可；主干复验专项五项均 1/1、profiles 14/14、contracts audit 0、模块体检 0 failure。DHR_67（heavy）已于 2026-08-31 经用户明文授权本地收口；主干定向 6/6、contracts audit 0 failure、模块体检 0 failure。DHR_66（light）已于 2026-08-31 经用户 E11 认可收口；主干复验 registry validator PASS、strict config exit 0、定向 23/23、模块体检 0 failure。DHR_69（heavy）已于 2026-09-01 经用户点选认可本地收口；主干定向 10/10，假就绪会停下来等人，DHR_35 还差真实 Agent 授权才能跑闭环。**DHR_70（heavy）已于 2026-09-01 经用户点选认可本地收口；主干定向 6/6 exit=0，交不回去的结果现在能交回去了，锁没动，只差真实环境实录那一步。**
-现状: DHR_32、DHR_33、DHR_61、DHR_34、DHR_63、DHR_64、DHR_65、DHR_66、DHR_67、DHR_68、DHR_69、DHR_70 已完成；**`DHR-B-35`（2026-09-02 已确认）新增 DHR_71（定向回归复绿，light，**2026-09-02 已 D-start 进行中**）、DHR_72（driver 持续观测，heavy）、DHR_73（启动链静默停摆调查，normal）；DHR_35 进行中，改 blocked-by:DHR_72**——2026-09-01 两条真实实录均 succeeded 但 checkpoint 一环因 driver 单次 idle 采样即退出观测而不可得（F-3517），P6-M1 未达成
-进行到: P6 ▸ `DHR-B-36` 已于 2026-09-02 经用户点选「确认落盘」生效（三名 fresh 只读实例三轮，5 议题采纳 5 驳回 0）：DHR_71 隔离清单 2→4、`dhr69:179` 等待归 DHR_71、DHR_72 机器证 E 扩到 4 条。DHR_71 同日已 D-start（开树 `wt/DHR_71`；施工派 Opus Herdr 交互式 pane；light 配方两路复核；授权至 E10），worker 首轮施工 `wt/DHR_71@b268456` 按 blocked 判据停手、待按 B-36 续做增量。`DHR-B-35` 同日已落盘（四个 fresh 只读实例三轮审核，10 个议题采纳 10 驳回 0）；DHR_35 三轮独立复核已闭合施工侧问题、转为等待 DHR_72
-下一步: DHR_71 worker 按 B-36 续做增量（S3/S4 加 skip、`:510` 两处与 `dhr69:179` 上限按真实链改正、负例、重跑三轮绿闸）→ E10；随后按序 D-start DHR_72（driver）→ DHR_73（调查）；DHR_35 在 DHR_72 收口后**由用户重新放行**重开，自跑两条新基线实录 + P6-X 补录 + P6-H 人判（DHR_35 不等 DHR_73）。原范围外跟踪：范围外跟踪 F-6808 + F-69-E7（as-built 留给后续卡）、F-7003/F-7004（已入 backlog：`%TEMP%` 原子重命名 EPERM 污染整仓测试可信度）、F-7002（明确挂起）
+现状: DHR_32、DHR_33、DHR_61、DHR_34、DHR_63、DHR_64、DHR_65、DHR_66、DHR_67、DHR_68、DHR_69、DHR_70 已完成；**`DHR-B-35`（2026-09-02 已确认）新增 DHR_71（定向回归复绿，light，**2026-09-02 已 D-start 进行中**）、DHR_72（driver 持续观测，heavy）、DHR_73（启动链静默停摆调查，normal）、DHR_74（BL-17 停顿诊断与修复，normal，2026-09-03 用户对话确认新增）；DHR_35 进行中，改 blocked-by:DHR_72**——2026-09-01 两条真实实录均 succeeded 但 checkpoint 一环因 driver 单次 idle 采样即退出观测而不可得（F-3517），P6-M1 未达成
+进行到: P6 ▸ `DHR-B-36` 已于 2026-09-02 经用户点选「确认落盘」生效（三名 fresh 只读实例三轮，5 议题采纳 5 驳回 0）：DHR_71 隔离清单 2→4、`dhr69:179` 等待归 DHR_71、DHR_72 机器证 E 扩到 4 条。DHR_71 同日已 D-start（开树 `wt/DHR_71`；施工派 Opus Herdr 交互式 pane；light 配方两路复核；授权至 E10），worker 首轮施工 `wt/DHR_71@b268456` 按 blocked 判据停手、待按 B-36 续做增量。`DHR-B-35` 同日已落盘（四个 fresh 只读实例三轮审核，10 个议题采纳 10 驳回 0）；DHR_35 三轮独立复核已闭合施工侧问题、转为等待 DHR_72。**2026-09-03**：DHR_71 施工与两届复核整改均已落盘（隔离恰 4 条 skip 的代码面完成），但门禁连续三轮被 BL-17 一族停顿打红——F-7108（停于 `attempt_started` 后、fake 全 0）与 F-7109（停于首次 `host_observation_changed(alive)` 后、fake 非零；清理 `%TEMP%`、隔离子进程 TEMP 均不能根除）；DHR_71 转 blocked-等专卡。用户当日对话确认按标准档立 **DHR_74** 承接诊断与修复（授权原文见该卡 brief）；本会话不在 Herdr pane 内、无法按派活手册拉交互 worker，施工由主会话按 brief 边界承担（偏差如实登记 progress），复核仍须 fresh 换人
+下一步: **DHR_74 诊断修复 BL-17 停顿（F-7108/F-7109）→ 重跑 DHR_71 门禁（连续三轮 skip=4 ∧ fail=0 ∧ ≤370s）→ DHR_71 E10 收口**；随后按序 D-start DHR_72（driver）→ DHR_73（调查）；DHR_35 在 DHR_72 收口后**由用户重新放行**重开，自跑两条新基线实录 + P6-X 补录 + P6-H 人判（DHR_35 不等 DHR_73）。原范围外跟踪：范围外跟踪 F-6808 + F-69-E7（as-built 留给后续卡）、F-7003/F-7004（已入 backlog：`%TEMP%` 原子重命名 EPERM 污染整仓测试可信度）、F-7002（明确挂起）
 待用户: P6 阶段闸仍等待 DHR_35 的真实闭环机器证与 P6-H 人判；DHR_34 的 P6-M4 已按用户裁决记为 constrained。**2026-08-31 用户在 DHR_68 收口后提出「不是等人处理，直接信任」——即把新项目目录信任从「安全暂停+人工确认」改为受控自动信任，这与 B-32 冻结的产品语义相反，须先走 A-full（授权范围/路径白名单/审计/撤销四项安全语义），待用户确认后立项。**
 看什么: workspace/DHR_33/review.md（验收表+签名区）→ review-consistency-opus.md §六/§八；workspace/DHR_32/review.md 签名区
 阻塞: **DHR_35 现 `blocked-by:DHR_72`（B-35，2026-09-02）**：真实 checkpoint 在现役 driver 下不可得（F-3517）、基线定向回归 5 红（F-3520）、四次真实启动两次静默停摆未定位（F-3516/F-3519）——分别由 DHR_72 / DHR_71+DHR_72 / DHR_73 承接。历史：DHR_35 的三条宿主缺陷已由 DHR_68 闭合；Claude 假就绪盲区已由 DHR_69 闭合（idle∧blocked 派生 blocked，三时点人工暂停）。**2026-09-01 首次真实 Claude 闭环暴露新阻塞（F-3514/E-3526）：Receipt 提交撞 `E_LEASE_HELD:actor-closed`，节点停在 running 无 Result；已由 `DHR-B-34` 拆成 DHR_70，DHR_35 改为 blocked-by:DHR_70。** Codex 侧 E-3525 已通但只是一半，不得写成 P6-RI-A4 已满足；DHR_70 闭合后重跑真实实录仍需用户重新授权真实 Agent。DHR34、63、64、65 已完成范围保留且不重开。Linux SSH 真实 smoke 按 B-22 延后，P6-M6 只能在阶段闸记延后/受限；DHR_34 的真实 quota 样本、detector/judge 与 retry 后执行闭环不得被 Result bridge 自动重启或误表述为完整自动切号可用。
@@ -187,6 +187,7 @@
 | DHR_71 | 修 Herdr 定向回归的时序脆弱与挂死，交付可重复绿闸 | 标准 | 进行中 | 无（基线 master） | [workspace/DHR_71/](../workspace/DHR_71/) | | 任务类型=light；B-35 新增，承接 F-3520 的时序部分与 652s 挂死；只改 `relay-core/test/**`（用例行级冻结，见 §3.2）；隔离 4 条语义红（skip，**B-36 冻结恰 4 条**：`herdr-adapter.test.mjs:242/:279/:354` + `agent-node.test.mjs:198`，按用例名核销）；验收只能写「隔离 4 条 skip、其余全 pass」不得写「全绿」；首轮施工 `wt/DHR_71@b268456` blocked 后按 B-36 续做增量；EPERM 成因归 BL-17；须另行 D-start |
 | DHR_72 | 修 driver 单次 idle 采样即永久退出观测 | 标准 | 未开始 | DHR_71 | [workspace/DHR_72/](../workspace/DHR_72/) | | 任务类型=heavy；B-35 新增，承接 F-3517（P6-M1 缺 checkpoint 的根因）与 F-3520 的语义部分；运行契约 = 长期 idle 是允许人工持有的运行态、人工 stop 是唯一业务出口（D-B35-6）；五出口 fail-closed；`workflow-driver.mjs` 轮询段唯一归属本卡；自跑一条带真实 checkpoint 的 Codex 实录作 verify 证据，**不计入 DHR_35 P6-M1**；须另行 D-start |
 | DHR_73 | 调查启动链静默停摆（F-3516 / F-3519） | 标准 | 未开始 | DHR_72 | [workspace/DHR_73/](../workspace/DHR_73/) | | 任务类型=normal；B-35 新增；**纯调查卡，不改 `relay-core/**`**；时间盒 ≤12 次真实启动或两个工作时段；出口 (a) 根因钉死 + 修复卡 B-adjust 候选 / (b) 复现率 + 现场 + 看门狗候选；两种出口下 F-3516/F-3519 保持 open；DHR_35 重开不等本卡；须另行 D-start |
+| DHR_74 | 钉死 BL-17 一族停顿（F-7108/F-7109）的精确落点并按证据修复，解阻塞 DHR_71 绿闸 | 标准 | 进行中 | 无前置（DHR_71 门禁依赖本卡） | [workspace/DHR_74/](../workspace/DHR_74/) | | 任务类型=normal；2026-09-03 用户对话确认立项（范围=诊断并修复 Store 持久化/测试临时目录争用，修后重跑 DHR_71 门禁）；`store/**` 只读诊断，触及写路径语义即停手升高危重新请确认；不改变 D-B35-1 卡序 71→72→73；findings 喂 DHR_73 但不替代其真实启动调查；施工=主会话（非 Herdr 环境偏差已登记），复核 fresh 换人 |
 
 > 状态列只填五枚举，阶段闸阻塞写「备注」列。P5 未通过时 DHR_32~35 均不得开工。
 
@@ -513,6 +514,29 @@
 - **档位**：标准。
 - **任务类型**：常规<!-- dh:task-type:v1 task=DHR_73 type=normal -->（启动时冻结，不中途升档）
 - **依赖**：DHR_72。DHR_35 重开不等本卡。须另行 D-start。
+
+#### DHR_74
+
+- **目标**：DHR_71 绿闸（冻结五文件命令）反复被 BL-17 一族停顿打红：F-7108（driver 停于 `attempt_started` 之后、fake 全 0）与 F-7109（停于首次 `host_observation_changed(alive)` 之后、启动期 Attention 落账之前，fake 非零；清理 `%TEMP%` 与隔离子进程 TEMP 均不能根除）。本卡用**测试侧探针**把停顿钉到精确 op（fs 调用 / Store 写队列 / actor 队列），并按证据落地**标准档内**的修复，使 DHR_71 门禁可重跑。承接 backlog `DHR-BL-17` 的 F-7108/F-7109 两种形态；诊断结论喂 DHR_73，但**不替代**其真实启动停摆调查。
+- **用户授权（2026-09-03 对话原文）**：「要继续解除阻塞，需要按标准档为 DHR-BL-17 立/调专卡，允许诊断并修复 Store 持久化/测试临时目录争用，再重跑 DHR_71 门禁。……继续解决」——即本卡的立项 + D-start 授权。
+- **升级条款（硬）**：`relay-core/store/**` 只读诊断；诊断若证明必须改 Store 写路径**语义**（rename 有界重试 / 持久化超时 / 批量持久化——均属契约面），**立即停手**，把证据与 B-adjust 候选写入 progress/findings，转主控升高危并重新请用户确认（backlog 档位建议原文「触及 Store 落盘路径则升高危」）。
+- **验收口径**：
+  - **机器证 A（停点钉死）**：测试侧探针在复现轮打出停住的精确 op / 路径 / 耗时 / 现场（活跃句柄类型计数 + 事件账 + fake 计数）；F-7108 或 F-7109 至少一种形态被探针捕获并定位到函数级落点；若时间盒内未复现，交付 ≥10 轮 × 2 种负载条件的复现率与负载对照数据，如实登记未钉死。
+  - **机器证 B（修复落地，按证据走决策树）**：测试侧修复须有红→绿对照（修复前复现 / 修复后同条件消失）；环境侧修复（如 Defender 排除目录）只产出证据 + 操作指引交用户执行，不代码化；Store 语义修复 = 停手走升级条款。
+  - **机器证 C（DHR_71 门禁重跑）**：冻结五文件命令（`node --test --test-concurrency=1 --test-timeout=300000` + 双 reporter，cwd=`relay-core/`）**连续 3 轮** skip=4（S1~S4 按完整用例名核销）∧ fail=0 ∧ 每轮 ≤370s；结论带负载条件措辞（F-71-LES-02）；三轮期间零 BL-17 签名（无 EPERM rename、无停顿形态红）；撞签名轮次作废留证并如实登记。机器证 C 同时记入 DHR_71 的证据账（E-编号续编）。
+- **非目标**：不改 Store 落盘语义（见升级条款）；不动 DHR_72 专属物（`workflow-driver.mjs` 轮询段、`fake-herdr.mjs`、S1~S4 断言重写、共享夹具的结构与断言）；不重写任何语义陈旧用例；不跑真实 Agent；不重跑 DHR_35；不 push、不部署。
+- **变更范围**：
+  <!-- dh:allowed-paths:v1 task=DHR_74 -->
+  - `relay-core/test/helpers/**`（新增探针/等待工具；**不含** `fake-herdr.mjs`）
+  - `relay-core/test/*.test.mjs` 仅限「夹具临时目录根、收尾清理顺序、import 探针」类**非断言行**；共享夹具 `runtimeFixture` / `recoveryFixture` 至多动 `mkdtemp` 根一行（B-35 X-03 归属冻结的**用户授权例外**，复核必须逐字核对仅此一行）
+  - `docs/modules/dh-relay/workspace/DHR_74/**`
+  - `docs/modules/dh-relay/backlog.md`（仅 DHR-BL-17 条目进度补录）
+  - `docs/modules/dh-relay/dev_plan/P6-Herdr多账号执行底座-开发方案.md`（仅状态列与状态行）
+
+  **限定**：不得改 `relay-core/store/**`、`relay-core/runtime/**`、`relay-core/contracts/**`、`package.json`；不得改任何断言与用例语义；探针必须可一键卸载（不污染 `node --test` 常规运行，优先 `NODE_OPTIONS=--import` / `--import` 预加载注入，零测试文件改动）；证据按 design/12 §2 脱敏（零原 Receipt ID、零凭据）。
+- **档位**：标准（触及 Store 落盘语义则升高危，见升级条款）。
+- **任务类型**：常规<!-- dh:task-type:v1 task=DHR_74 type=normal -->（启动时冻结，不中途升档；若触发升级条款则整卡重新分流）
+- **依赖**：无前置；DHR_71 门禁依赖本卡；D-B35-1 卡序 71→72→73 不变。须另行 D-start（已于 2026-09-03 经用户对话确认完成）。
 
 #### DHR_35
 
