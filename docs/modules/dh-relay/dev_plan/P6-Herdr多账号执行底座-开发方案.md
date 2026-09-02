@@ -458,7 +458,7 @@
 
   **限定（用例行级，B-35 审核 X-03 冻结）**：`herdr-adapter.test.mjs` 仅 `:354`、`:510` **用例体内**的等待逻辑及对 `:242`、`:279` 加 skip 标记，**不得动共享夹具 `runtimeFixture`（`:203-230`）与 `recoveryFixture`（`:335-352`）**——若 `:510` 的修复必须改夹具，只登记并移交 DHR_72；`agent-node.test.mjs` 仅 `:198`、`:231`/`:265` 的等待逻辑及文件级超时配置；`helpers/**` **不含 `fake-herdr.mjs`**（归 DHR_72），只可新增/修改等待工具。若某条红的成因落到生产代码或 EPERM，只登记不修。
 - **档位**：标准。
-- **任务类型**：轻核<!-- dh:task-type:v1 task=DHR_71 type=light -->
+- **任务类型**：轻量<!-- dh:task-type:v1 task=DHR_71 type=light -->
 - **依赖**：无（基线 master）。须另行 D-start。
 
 #### DHR_72
