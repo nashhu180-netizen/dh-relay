@@ -524,11 +524,16 @@
   - **机器证 A（停点钉死）**：测试侧探针在复现轮打出停住的精确 op / 路径 / 耗时 / 现场（活跃句柄类型计数 + 事件账 + fake 计数）；F-7108 或 F-7109 至少一种形态被探针捕获并定位到函数级落点；若时间盒内未复现，交付 ≥10 轮 × 2 种负载条件的复现率与负载对照数据，如实登记未钉死。
   - **机器证 B（修复落地，按证据走决策树）**：测试侧修复须有红→绿对照（修复前复现 / 修复后同条件消失）；环境侧修复（如 Defender 排除目录）只产出证据 + 操作指引交用户执行，不代码化；Store 语义修复 = 停手走升级条款。
   - **机器证 C（DHR_71 门禁重跑）**：冻结五文件命令（`node --test --test-concurrency=1 --test-timeout=300000` + 双 reporter，cwd=`relay-core/`）**连续 3 轮** skip=4（S1~S4 按完整用例名核销）∧ fail=0 ∧ 每轮 ≤370s；结论带负载条件措辞（F-71-LES-02）；三轮期间零 BL-17 签名（无 EPERM rename、无停顿形态红）；撞签名轮次作废留证并如实登记。机器证 C 同时记入 DHR_71 的证据账（E-编号续编）。
+    **基线口径（2026-09-03 用户对话确认补充）**：合格三轮必须跑在**本卡自己的基线**上 = `master`（已含 DHR_71 收口后的隔离改动）+ 本卡改动，**不接受**「在 wt/DHR_74 里合并 wt/DHR_71 得到的组合分支」上的轮次（那种轮次只能证明组合版本，无法把绿单独归因给任一张卡——见 `workspace/DHR_74/review.md` F-74-REQ-03 / F-74-R1-02）。既有 6 轮（`22dc16c` 上取得）降级为**过程证据**保留，不计入机器证 C。「零 BL-17 签名」必须给出可复核的扫描命令与签名定义，不接受只有转述。
 - **非目标**：不改 Store 落盘语义（见升级条款）；不动 DHR_72 专属物（`workflow-driver.mjs` 轮询段、`fake-herdr.mjs`、S1~S4 断言重写、共享夹具的结构与断言）；不重写任何语义陈旧用例；不跑真实 Agent；不重跑 DHR_35；不 push、不部署。
 - **变更范围**：
   <!-- dh:allowed-paths:v1 task=DHR_74 -->
   - `relay-core/test/helpers/**`（新增探针/等待工具；**不含** `fake-herdr.mjs`）
-  - `relay-core/test/*.test.mjs` 仅限「夹具临时目录根、收尾清理顺序、import 探针、**夹具时间参数等比放大**」类**非断言行**——时间参数 = `herdrPollMs` 与同一 driver options 里配对的 `doneTimeoutMs` / `observationLostMs` 按同一倍率（×10）调整，依据 E-7403 放大取证（单文件 2.8 万事件 / 5.7 万次 fs 写 = 停顿与 `%TEMP%` 污染的根因；列表型 fake 逐 poll 推进，事件计数与倍率无关，断言零改动）；共享夹具 `runtimeFixture` / `recoveryFixture` 的 `mkdtemp` 根一行与上述时间参数行可动（B-35 X-03 归属冻结的**用户授权例外**，复核必须逐字核对仅限这些行、断言零改动）
+  - `relay-core/test/*.test.mjs` 仅限「夹具临时目录根、收尾清理顺序、import 探针、**夹具时间参数降放大**」类**非断言行**——时间参数口径（**2026-09-03 用户对话确认修订**，原文写「`herdrPollMs` 与同一 options 配对的 `doneTimeoutMs` / `observationLostMs` 按同一倍率 ×10」，与实际实施不符，按实际做法校正如下；修订依据见 `workspace/DHR_74/review.md` 整改 A 与三路复核 F-74-R1-01 / F-74-REQ-04 / F-74-LES-02）：
+    1. `herdrPollMs` **统一抬到 20ms**（原值 1~5ms 不等，故各文件倍率不同：2→20 为 ×10、5→20 为 ×4——**倍率一致不是要求，绝对值一致才是**）；
+    2. 同一 driver options 里的 `doneTimeoutMs` / `observationLostMs` **只在其语义是「等满 N 次 poll」时**随 poll 同比例放大（如 `8/4 → 80/40`、`20 → 200`）；其语义是**墙钟上限**时（如 dhr69 两个夹具的 `60_000`）**保持不变**——把失败等待预算再拉大只会让红轮更慢、无语义收益；
+    3. 依赖 poll 间隔推导的**注释与预算常量**（如 `herdr-adapter.test.mjs` 的 `BLOCKED_FIVE_POLLS_BUDGET_MS`）必须随之更新，属本条授权的同族非断言行；
+    4. 依据 E-7403 放大取证（单文件 2.8 万事件 / 5.7 万次 fs 写 = `%TEMP%` 污染与体外耗时的来源；列表型 fake 逐 poll 推进，事件计数与 poll 间隔无关，断言零改动）；共享夹具 `runtimeFixture` / `recoveryFixture` 的 `mkdtemp` 根一行与上述时间参数行可动（B-35 X-03 归属冻结的**用户授权例外**，复核必须逐字核对仅限这些行、断言零改动）
   - `docs/modules/dh-relay/workspace/DHR_74/**`
   - `docs/modules/dh-relay/backlog.md`（仅 DHR-BL-17 条目进度补录）
   - `docs/modules/dh-relay/dev_plan/P6-Herdr多账号执行底座-开发方案.md`（仅状态列与状态行）
