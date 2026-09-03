@@ -542,7 +542,8 @@
 
   **限定**：不得改 `relay-core/store/**`、`relay-core/runtime/**`、`relay-core/contracts/**`、`package.json`；不得改任何断言与用例语义；探针必须可一键卸载（不污染 `node --test` 常规运行，优先 `NODE_OPTIONS=--import` / `--import` 预加载注入，零测试文件改动）；证据按 design/12 §2 脱敏（零原 Receipt ID、零凭据）。
 - **档位**：标准（触及 Store 落盘语义则升高危，见升级条款）。
-- **任务类型**：常规<!-- dh:task-type:v1 task=DHR_74 type=normal -->（启动时冻结，不中途升档；若触发升级条款则整卡重新分流）
+- **任务类型**：常规<!-- dh:task-type:v1 task=DHR_74 type=normal -->
+  - 启动时冻结，不中途升档；若触发升级条款则整卡重新分流
 - **依赖**：无前置；DHR_71 门禁依赖本卡；D-B35-1 卡序 71→72→73 不变。须另行 D-start（已于 2026-09-03 经用户对话确认完成）。
 
 #### DHR_35
