@@ -530,17 +530,25 @@
 - **非目标**：不改 Store 落盘语义（见升级条款）；不动 DHR_72 专属物（`workflow-driver.mjs` 轮询段、`fake-herdr.mjs`、S1~S4 断言重写、共享夹具的结构与断言）；不重写任何语义陈旧用例；不跑真实 Agent；不重跑 DHR_35；不 push、不部署。
 - **变更范围**：
   <!-- dh:allowed-paths:v1 task=DHR_74 -->
-  - `relay-core/test/helpers/**`（新增探针/等待工具；**不含** `fake-herdr.mjs`）
-  - `relay-core/test/*.test.mjs` 仅限「夹具临时目录根、收尾清理顺序、import 探针、**夹具时间参数降放大**」类**非断言行**——时间参数口径（**2026-09-03 用户对话确认修订**，原文写「`herdrPollMs` 与同一 options 配对的 `doneTimeoutMs` / `observationLostMs` 按同一倍率 ×10」，与实际实施不符，按实际做法校正如下；修订依据见 `workspace/DHR_74/review.md` 整改 A 与三路复核 F-74-R1-01 / F-74-REQ-04 / F-74-LES-02）：
-    1. `herdrPollMs` **统一抬到 20ms**（原值 1~5ms 不等，故各文件倍率不同：2→20 为 ×10、5→20 为 ×4——**倍率一致不是要求，绝对值一致才是**）；
-    2. 同一 driver options 里的 `doneTimeoutMs` / `observationLostMs` **只在其语义是「等满 N 次 poll」时**随 poll 同比例放大（如 `8/4 → 80/40`、`20 → 200`）；其语义是**墙钟上限**时（如 dhr69 两个夹具的 `60_000`）**保持不变**——把失败等待预算再拉大只会让红轮更慢、无语义收益；
-    3. 依赖 poll 间隔推导的**注释与预算常量**（如 `herdr-adapter.test.mjs` 的 `BLOCKED_FIVE_POLLS_BUDGET_MS`）必须随之更新，属本条授权的同族非断言行；
-    4. 依据 E-7403 放大取证（单文件 2.8 万事件 / 5.7 万次 fs 写 = `%TEMP%` 污染与体外耗时的来源；列表型 fake 逐 poll 推进，事件计数与 poll 间隔无关，断言零改动）；共享夹具 `runtimeFixture` / `recoveryFixture` 的 `mkdtemp` 根一行与上述时间参数行可动（B-35 X-03 归属冻结的**用户授权例外**，复核必须逐字核对仅限这些行、断言零改动）
+  - `relay-core/test/helpers/**`
+  - `relay-core/test/*.test.mjs`
   - `docs/modules/dh-relay/workspace/DHR_74/**`
-  - `docs/modules/dh-relay/backlog.md`（仅 DHR-BL-17 条目进度补录）
-  - `docs/modules/dh-relay/dev_plan/P6-Herdr多账号执行底座-开发方案.md`（仅状态列与状态行）
+  - `docs/modules/dh-relay/backlog.md`
+  - `docs/modules/dh-relay/dev_plan/P6-Herdr多账号执行底座-开发方案.md`
 
-  **限定**：不得改 `relay-core/store/**`、`relay-core/runtime/**`、`relay-core/contracts/**`、`package.json`；不得改任何断言与用例语义；探针必须可一键卸载（不污染 `node --test` 常规运行，优先 `NODE_OPTIONS=--import` / `--import` 预加载注入，零测试文件改动）；证据按 design/12 §2 脱敏（零原 Receipt ID、零凭据）。
+  **逐条限定（只收窄上面的清单，不放宽）**：
+
+  - `relay-core/test/helpers/**` —— 新增探针 / 等待工具；**不含** `fake-herdr.mjs`。
+  - `relay-core/test/*.test.mjs` —— 仅限「夹具临时目录根、收尾清理顺序、import 探针、**夹具时间参数降放大**」类**非断言行**。时间参数口径（**2026-09-03 用户对话确认修订**；原文写「`herdrPollMs` 与同一 options 配对的 `doneTimeoutMs` / `observationLostMs` 按同一倍率 ×10」，与实际实施不符，按实际做法校正；依据见 `workspace/DHR_74/review.md` 整改 A 与三路复核 F-74-R1-01 / F-74-REQ-04 / F-74-LES-02）：
+    1. `herdrPollMs` **统一抬到 20ms**（原值 1~5ms 不等，故各文件倍率不同：2→20 为 ×10、5→20 为 ×4——**倍率一致不是要求，绝对值一致才是**）；
+    2. 同一 driver options 里的 `doneTimeoutMs` / `observationLostMs` **只在其语义是「等满 N 次 poll」时**随 poll 同比例放大（如 `8/4 → 80/40`、`20 → 200`）；语义是**墙钟上限**时（如 dhr69 两个夹具的 `60_000`）**保持不变**——把失败等待预算再拉大只会让红轮更慢、无语义收益；
+    3. 依赖 poll 间隔推导的**注释与预算常量**（如 `herdr-adapter.test.mjs` 的 `BLOCKED_FIVE_POLLS_BUDGET_MS`）必须随之更新，属本条授权的同族非断言行；
+    4. 依据 E-7403 放大取证（单文件 2.8 万事件 / 5.7 万次 fs 写 = `%TEMP%` 污染与体外耗时的来源；列表型 fake 逐 poll 推进，事件计数与 poll 间隔无关，断言零改动）；共享夹具 `runtimeFixture` / `recoveryFixture` 的 `mkdtemp` 根一行与上述时间参数行可动（B-35 X-03 归属冻结的**用户授权例外**，复核必须逐字核对仅限这些行、断言零改动）。
+  - `docs/modules/dh-relay/backlog.md` —— 仅 `DHR-BL-17` 条目进度补录。
+  - `docs/modules/dh-relay/dev_plan/P6-...md` —— 仅状态列与状态行（本卡口径修订由主控按用户确认执行，不由 worker 动）。
+
+  **禁改**：`relay-core/store/**`、`relay-core/runtime/**`、`relay-core/contracts/**`、`package.json`；不得改任何断言与用例语义；探针必须可一键卸载（不污染 `node --test` 常规运行，优先 `NODE_OPTIONS=--import` 预加载注入，零测试文件改动）；证据按 design/12 §2 脱敏（零原 Receipt ID、零凭据）。
+
 - **档位**：标准（触及 Store 落盘语义则升高危，见升级条款）。
 - **任务类型**：常规<!-- dh:task-type:v1 task=DHR_74 type=normal -->
   - 启动时冻结，不中途升档；若触发升级条款则整卡重新分流
