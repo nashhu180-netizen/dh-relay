@@ -1,0 +1,40 @@
+✔ 批4 边界钉：driver 不托管 agent 节点——不开 Attempt、不写任何事件 (6615.5592ms)
+✖ DHR_33 窄路径：driver 托管 herdr-agent，开 Attempt、记心跳并按 stop 落 killed (1600.2594ms)
+✔ DHR_61 D1: Herdr Attempt freezes source and ordered fallback identities before launch (977.3174ms)
+✔ DHR_61 D1: a Herdr profile without a projection rule leaves only that node pending (1382.5552ms)
+✔ DHR_33 分叉顺序：同一节点同时声明 process 与 herdr-agent 时必须先走 process (695.8514ms)
+✔ 批4 ①：外部代持的 Attempt 其 Adapter 消失 → 仅该 Attempt failed(E_EXECUTOR_ADAPTER_LOST) (77.5916ms)
+✔ 批4 ①bis：dsh-agent 同形——宿主消失 → 仅该 Attempt orphaned(E_EXECUTOR_HOST_LOST) + fresh retry (154.3618ms)
+✔ 批4 ②：恢复后探活失败 → orphaned(E_EXECUTOR_ORPHANED)，retry 产生 fresh Attempt (416.9031ms)
+✔ 批4 ③：Agent 失败不推翻 Process 结论（真实 driver 跑完闭环后外部代持补记账） (13109.4544ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 8
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 25675.9931
+
+✖ failing tests:
+
+test at test\agent-node.test.mjs:198:1
+✖ DHR_33 窄路径：driver 托管 herdr-agent，开 Attempt、记心跳并按 stop 落 killed (1600.2594ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + undefined
+  - 'E_EXECUTOR_KILLED'
+  
+      at TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_71/relay-core/test/agent-node.test.mjs:228:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: 'E_EXECUTOR_KILLED',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+### runner: file=agent-node exit=1 elapsed_s=27 started_utc=2026-09-02T03:26:35Z ended_utc=2026-09-02T03:27:02Z

@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+	<testcase name="批4 边界钉：driver 不托管 agent 节点——不开 Attempt、不写任何事件" time="46.581848" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\agent-node.test.mjs" failure="timeout waiting for start response">
+		<failure type="testCodeFailure" message="timeout waiting for start response">
+[Error [ERR_TEST_FAILURE]: timeout waiting for start response] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: Error: timeout waiting for start response
+      at untilAsync (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_71/relay-core/test/agent-node.test.mjs:44:33)
+      at async call (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_71/relay-core/test/agent-node.test.mjs:179:5)
+      at async TestContext.&lt;anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_71/relay-core/test/agent-node.test.mjs:188:19)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3)
+}
+		</failure>
+	</testcase>
+	<testcase name="DHR_33 窄路径：driver 托管 herdr-agent，开 Attempt、记心跳并按 stop 落 killed" time="0.014828" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\agent-node.test.mjs">
+		<skipped type="skipped" message="F-3520 → DHR_72：现役 driver 在 stop 时写 human_input_requested(E_EXECUTOR_KILLED) 而非 attempt_failed(E_EXECUTOR_KILLED)，用例待按 Receipt-bound 语义重写"/>
+	</testcase>
+	<testcase name="DHR_61 D1: Herdr Attempt freezes source and ordered fallback identities before launch" time="18.122219" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\agent-node.test.mjs"/>
+	<testcase name="DHR_61 D1: a Herdr profile without a projection rule leaves only that node pending" time="12.725665" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\agent-node.test.mjs"/>
+	<testcase name="DHR_33 分叉顺序：同一节点同时声明 process 与 herdr-agent 时必须先走 process" time="8.575686" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\agent-node.test.mjs"/>
+	<testcase name="批4 ①：外部代持的 Attempt 其 Adapter 消失 → 仅该 Attempt failed(E_EXECUTOR_ADAPTER_LOST)" time="0.435054" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\agent-node.test.mjs"/>
+	<testcase name="批4 ①bis：dsh-agent 同形——宿主消失 → 仅该 Attempt orphaned(E_EXECUTOR_HOST_LOST) + fresh retry" time="2.216104" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\agent-node.test.mjs"/>
+	<testcase name="批4 ②：恢复后探活失败 → orphaned(E_EXECUTOR_ORPHANED)，retry 产生 fresh Attempt" time="2.261881" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\agent-node.test.mjs"/>
+	<testcase name="批4 ③：Agent 失败不推翻 Process 结论（真实 driver 跑完闭环后外部代持补记账）" time="44.467646" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\agent-node.test.mjs"/>
+	<testcase name="DHR64 driver: done without Receipt submission raises attention and creates no Result" time="14.654626" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\dhr64-driver-observation.test.mjs"/>
+	<testcase name="DHR64 driver: idle without Receipt submission raises attention and creates no Result" time="5.423185" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\dhr64-driver-observation.test.mjs"/>
+	<testcase name="DHR64 driver: host loss creates attention and never a Result" time="3.993150" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\dhr64-driver-observation.test.mjs"/>
+	<testcase name="DHR_69/E-2：fake paneGet 形态对齐 E-1 普通 shell pane" time="0.030621" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\dhr69-false-ready.test.mjs"/>
+	<testcase name="DHR_69/A adapter：假就绪 idle+pane blocked → launch_blocked，保留 handle，不关 pane" time="0.003762" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\dhr69-false-ready.test.mjs"/>
+	<testcase name="DHR_69/A 负例：Codex agent_not_ready 不读 pane get，argv/行为不变" time="0.000370" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\dhr69-false-ready.test.mjs"/>
+	<testcase name="DHR_69/D：非 idle 三态 paneGet 次数为 0；idle 才读 pane" time="0.000290" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\dhr69-false-ready.test.mjs"/>
+	<testcase name="DHR_69/A driver：假就绪恰写一次 blocked Attention，扣住指令，不写 HOST_LOST" time="3.574847" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\dhr69-false-ready.test.mjs"/>
+	<testcase name="DHR_69/B：中途假 idle 不得写 RESULT_MISSING，不得结束 Attempt" time="4.215034" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\dhr69-false-ready.test.mjs"/>
+	<testcase name="DHR_69/C recovery：假就绪先观测再扣住，离开 blocked 后届内恰补发一次" time="4.102764" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\dhr69-false-ready.test.mjs"/>
+	<testcase name="DHR_69/C recovery：观测失败不得把提交指令发出去（F-69-R2-01）" time="3.840823" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\dhr69-false-ready.test.mjs"/>
+	<testcase name="DHR_69/F：持续 idle∧blocked 升级一条可区分 Attention，不放行、不判失败，恢复后恰补发一次" time="50.390068" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\dhr69-false-ready.test.mjs" failure="timeout:send after signals agree">
+		<failure type="testCodeFailure" message="timeout:send after signals agree">
+[Error [ERR_TEST_FAILURE]: timeout:send after signals agree] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: Error: timeout:send after signals agree
+      at until (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_71/relay-core/test/dhr69-false-ready.test.mjs:19:33)
+      at async TestContext.&lt;anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_71/relay-core/test/dhr69-false-ready.test.mjs:283:3)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)
+}
+		</failure>
+	</testcase>
+	<testcase name="DHR_69/F：mismatch 被 unknown 打断后必须重新计时，不得立即升级" time="4.453874" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\dhr69-false-ready.test.mjs"/>
+	<testcase name="DHR70 A1: lease 仍有效时，本届 herdr 等待结束后的晚交必须 committed 且只写一个 Result" time="18.733160" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\dhr70-submission-gate.test.mjs"/>
+	<testcase name="DHR70 A2: 旧 actor 失租关闭后，非终态 Run 的晚交必须由新持 lease 的 actor 写入唯一 Result" time="27.292297" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\dhr70-submission-gate.test.mjs"/>
+	<testcase name="DHR70 A3-1: 另一进程活着持有 lease 时，晚交必须一直被拒且零 mutation" time="22.290474" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\dhr70-submission-gate.test.mjs"/>
+	<testcase name="DHR70 A3-2: Receipt 已被更晚的 Attempt 取代时，即便 lease 有效也必须拒绝" time="16.094746" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\dhr70-submission-gate.test.mjs"/>
+	<testcase name="DHR70 A3-3 / B: 已终态冲突与未知 Receipt 保持现役拒绝语义" time="17.520441" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\dhr70-submission-gate.test.mjs"/>
+	<testcase name="DHR70 C: agent_get=idle ∧ pane_get=error 不得单独判死 Attempt，提交仍须走得通" time="5.015572" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\dhr70-submission-gate.test.mjs"/>
+	<testcase name="DHR_33 adapter：状态映射、句柄、附着与输入均不触碰 Store" time="0.004756" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\herdr-adapter.test.mjs"/>
+	<testcase name="DHR_67 adapter：Claude 固定 pane run→唯一识别→rename，Codex 保持 agent start" time="0.000529" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\herdr-adapter.test.mjs"/>
+	<testcase name="DHR_67 adapter：Claude 零/多个、识别超时或 rename 失败仅关闭同一新 pane" time="0.003823" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\herdr-adapter.test.mjs"/>
+	<testcase name="DHR_67 adapter：Claude 只接受同 pane 的唯一 Claude，且有界等待后续识别" time="0.001766" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\herdr-adapter.test.mjs"/>
+	<testcase name="DHR_33 adapter：unknown 经 pane 复核区分 observation_lost 与 host_lost，均不造 reason code" time="0.000486" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\herdr-adapter.test.mjs"/>
+	<testcase name="DHR_33 profile registry：只读校验、未命中 profile 保持 null" time="3.416985" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\herdr-adapter.test.mjs"/>
+	<testcase name="DHR_33 focus：只渲染事件既有字段，无观测降级" time="0.000424" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\herdr-adapter.test.mjs"/>
+	<testcase name="DHR_33 herdr-cli：文件状态可执行桩逐字接收六个动词参数并拆 result 信封" time="43.245577" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\herdr-adapter.test.mjs"/>
+	<testcase name="DHR_33 herdr-cli：超时与明确 not-found 分别保留 transient/missing 语义" time="6.407501" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\herdr-adapter.test.mjs"/>
+	<testcase name="DHR_33 driver #1/#2：心跳逐次落账，blocked 第二沿与重放持久" time="6.412004" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\herdr-adapter.test.mjs"/>
+	<testcase name="DHR_33 driver #3/#5：done 有界、判定成功与双亡 HOST_LOST" time="0.000199" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\herdr-adapter.test.mjs">
+		<skipped type="skipped" message="F-3520 → DHR_72：herdrJudge 直写 Result 通路已被 DHR_64 删除，用例待按 Receipt-bound 语义重写"/>
+	</testcase>
+	<testcase name="DHR_33 driver：blocked 后 send、恢复心跳；观测断不落 Result" time="9.147946" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\herdr-adapter.test.mjs"/>
+	<testcase name="DHR_33 driver：stop 撞 launch 窗口仍杀 pane，失败写 killed Result 且不造 Attention" time="0.000281" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\herdr-adapter.test.mjs">
+		<skipped type="skipped" message="F-3520 → DHR_72：现役 driver 在 stop 撞 launch 窗口时写 human_input_requested 而非 attempt_failed(E_EXECUTOR_KILLED)，用例待重写"/>
+	</testcase>
+	<testcase name="DHR_67 driver：Claude adapter 启动失败保留既有 Attempt，进入人工处理且不造 Result" time="33.677882" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\herdr-adapter.test.mjs" failure="settledState: C:\Users\nash\AppData\Local\Temp\dhr33-runtime-5ZUtIB\.dh-relay\R001-herdr-runtime-20260829 的 state.json 在 30000ms 内没有追上事件账">
+		<failure type="testCodeFailure" message="settledState: C:\Users\nash\AppData\Local\Temp\dhr33-runtime-5ZUtIB\.dh-relay\R001-herdr-runtime-20260829 的 state.json 在 30000ms 内没有追上事件账">
+[Error [ERR_TEST_FAILURE]: settledState: C:\Users\nash\AppData\Local\Temp\dhr33-runtime-5ZUtIB\.dh-relay\R001-herdr-runtime-20260829 的 state.json 在 30000ms 内没有追上事件账] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: Error: settledState: C:\Users\nash\AppData\Local\Temp\dhr33-runtime-5ZUtIB\.dh-relay\R001-herdr-runtime-20260829 的 state.json 在 30000ms 内没有追上事件账
+      at settledState (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_71/relay-core/test/helpers/settled-state.mjs:25:13)
+      at async TestContext.&lt;anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_71/relay-core/test/herdr-adapter.test.mjs:299:17)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)
+}
+		</failure>
+	</testcase>
+	<testcase name="DHR_33 driver：idle 超阈值单次 Attention 后停止轮询" time="3.593076" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\herdr-adapter.test.mjs"/>
+	<testcase name="DHR_33 driver #4/#7/#9：观测断单次升级、恢复后再升级；SSH 桩不冒充" time="3.450452" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\herdr-adapter.test.mjs"/>
+	<testcase name="DHR_33 driver #7/#8：成功观测的非 ready 是盲区；未知 profile 零事件" time="3.803796" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\herdr-adapter.test.mjs"/>
+	<testcase name="DHR_33 driver #10：恢复届按账上 ref 判 orphaned 或接管同一 attempt" time="0.000115" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\herdr-adapter.test.mjs">
+		<skipped type="skipped" message="F-3520 → DHR_72：DHR_64 起恢复届探活 missing 写 human_input_requested(E_EXECUTOR_HOST_LOST) 而非 attempt_orphaned(E_EXECUTOR_ORPHANED)，用例待按 Receipt-bound 语义重写"/>
+	</testcase>
+	<testcase name="DHR_33 driver：恢复届 transient 探测与无 ref 都只落 observation_lost" time="0.658980" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\herdr-adapter.test.mjs"/>
+	<testcase name="DHR_68/A adapter：启动超时先对账——agent 已建成沿用 handle，未建成才关同一 pane，且永不重发启动" time="0.001887" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\herdr-adapter.test.mjs"/>
+	<testcase name="DHR_68/A herdr-cli：启动专用超时与其余动词分离，超时带 timedOut 语义位" time="11.992900" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\herdr-adapter.test.mjs"/>
+	<testcase name="DHR_68/B：pane run 不解 JSON，Claude 在真实空 stdout 形态下仍完成识别与 rename" time="7.493299" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\herdr-adapter.test.mjs"/>
+	<testcase name="DHR_68/C adapter：启动期 blocked 保留 handle、不关 pane、不重试" time="0.000333" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\herdr-adapter.test.mjs"/>
+	<testcase name="DHR_68/C driver：启动即 blocked 恰写一次 waiting_human，不写 HOST_LOST，指令扣住不发" time="4.272831" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\herdr-adapter.test.mjs"/>
+	<testcase name="DHR_68/C driver：人处理完信任后离开 blocked，提交指令恰好补发一次" time="4.126689" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\herdr-adapter.test.mjs"/>
+	<testcase name="DHR_68/C driver：blocked 直接跳到 done 时提交指令仍补发一次（复核轮 2 · F-68-R2-01）" time="45.305151" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\herdr-adapter.test.mjs" failure="timeout:deferred instruction on blocked->done">
+		<failure type="testCodeFailure" message="timeout:deferred instruction on blocked->done">
+[Error [ERR_TEST_FAILURE]: timeout:deferred instruction on blocked->done] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: Error: timeout:deferred instruction on blocked->done
+      at runtimeUntil (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_71/relay-core/test/herdr-adapter.test.mjs:208:33)
+      at async TestContext.&lt;anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_71/relay-core/test/herdr-adapter.test.mjs:612:3)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)
+}
+		</failure>
+	</testcase>
+	<testcase name="DHR_68/D：fake-herdr 每个被触及命令的返回形态逐条对齐真实 herdr 的实测记录" time="0.011671" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\herdr-adapter.test.mjs"/>
+	<!-- tests 55 -->
+	<!-- suites 0 -->
+	<!-- pass 47 -->
+	<!-- fail 4 -->
+	<!-- cancelled 0 -->
+	<!-- skipped 4 -->
+	<!-- todo 0 -->
+	<!-- duration_ms 537314.5591 -->
+</testsuites>

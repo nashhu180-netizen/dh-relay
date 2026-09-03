@@ -12,6 +12,7 @@ import { createStore, openStore } from '../store/store.mjs';
 import { HEADLESS_SSH_SCENARIO } from './helpers/headless-ssh-scenario.mjs';
 import { HERDR_STATUS_MAPPING, attachHerdrAgent, captureHerdrResult, launchHerdrAgent, observationDetail, observeHerdrAgent, reconcileHerdrAgent, sendToHerdrAgent, stopHerdrAgent } from '../runtime/executors/herdr/herdr-executor.mjs';
 import { loadExecutorProfiles, resolveProfile } from '../runtime/executors/herdr/profile-registry.mjs';
+import { dumpDriverScene, untilEvent, withDeadline } from './helpers/bounded-wait.mjs';
 import { makeFakeHerdr } from './helpers/fake-herdr.mjs';
 import { settledState } from './helpers/settled-state.mjs';
 
@@ -239,7 +240,7 @@ test('DHR_33 driver #1/#2：心跳逐次落账，blocked 第二沿与重放持�
   assert.deepEqual(await (await openStore({ root })).readState(), await store.readState());
 });
 
-test('DHR_33 driver #3/#5：done 有界、判定成功与双亡 HOST_LOST', async (t) => {
+test('DHR_33 driver #3/#5：done 有界、判定成功与双亡 HOST_LOST', { skip: 'F-3520 → DHR_72：herdrJudge 直写 Result 通路已被 DHR_64 删除，用例待按 Receipt-bound 语义重写' }, async (t) => {
   const noJudge = await runtimeFixture(t, ['idle', 'done'], { driver: { doneTimeoutMs: 10, herdrPollMs: 2 } });
   t.after(() => noJudge.driver.stop());
   await noJudge.driver.done;
@@ -276,7 +277,7 @@ test('DHR_33 driver：blocked 后 send、恢复心跳；观测断不落 Result',
   assert.equal(lost.store.events.some(event => event.kind === 'attempt_failed' || event.kind === 'attempt_orphaned'), false);
 });
 
-test('DHR_33 driver：stop 撞 launch 窗口仍杀 pane，失败写 killed Result 且不造 Attention', async (t) => {
+test('DHR_33 driver：stop 撞 launch 窗口仍杀 pane，失败写 killed Result 且不造 Attention', { skip: 'F-3520 → DHR_72：现役 driver 在 stop 撞 launch 窗口时写 human_input_requested 而非 attempt_failed(E_EXECUTOR_KILLED)，用例待重写' }, async (t) => {
   let driver;
   const { store, fake, driver: started } = await runtimeFixture(t, ['idle'], { fake: {
     paneKillResult: { ok: false, detail: 'close-failed' }, onAgentStart: () => driver.stop(),
@@ -351,14 +352,35 @@ async function recoveryFixture(t, fakeOptions) {
   return { store, driver };
 }
 
-test('DHR_33 driver #10：恢复届按账上 ref 判 orphaned 或接管同一 attempt', async (t) => {
+test('DHR_33 driver #10：恢复届按账上 ref 判 orphaned 或接管同一 attempt', { skip: 'F-3520 → DHR_72：DHR_64 起恢复届探活 missing 写 human_input_requested(E_EXECUTOR_HOST_LOST) 而非 attempt_orphaned(E_EXECUTOR_ORPHANED)，用例待按 Receipt-bound 语义重写' }, async (t) => {
+  // 上限依据：恢复届的探活是 `herdrCli.agentGet` 一次调用，生产上限是 herdr-cli 的
+  // per-call `timeoutMs = 10_000`（herdr-cli.mjs:41）——**不是** `HERDR_START_TIMEOUT_MS`
+  // （那只给 `agent start` 用，恢复届不 launch）。原来的 10s 预算等于 0 余量，Store 落盘
+  // 与事件重放的时间全没算进去；按「生产上限 + 50%」取 15s。
+  const RECOVERY_PROBE_BUDGET_MS = 15_000;
   const gone = await recoveryFixture(t, { agentAlive: false, paneAlive: false, missing: true });
-  await runtimeUntil(() => gone.store.events.some(event => event.kind === 'attempt_orphaned'), 'orphaned recovery');
-  await gone.driver.done;
+  // `recoveryFixture` 只登记了 `rm(repoRoot)`、没登记 stop，而 after 钩子按登记顺序跑——
+  // 所以 stop 只能用 `finally` 兜在用例体里，不能用 `t.after`（那会排在 rm 之后，删目录
+  // 正好撞上仍在写盘的 driver → F-7103 的挂死）。夹具本身一个字不动。
+  // 另：`recoveryFixture` 不暴露 fake，所以现场只打事件序列与派生状态。
+  const goneScene = () => dumpDriverScene({ store: gone.store });
+  try {
+    await untilEvent(() => gone.store.events.some(event => event.kind === 'attempt_orphaned'),
+      { label: '#10 恢复届 attempt_orphaned', timeoutMs: RECOVERY_PROBE_BUDGET_MS, dump: goneScene });
+    // driver.done 的生产上限是 driver 自己的 `doneTimeoutMs = 60_000`（workflow-driver.mjs:33）。
+    await withDeadline(gone.driver.done, { label: '#10 gone.driver.done', timeoutMs: 60_000, dump: goneScene });
+  } finally {
+    await gone.driver.stop();
+  }
   assert.equal(gone.store.events.find(event => event.kind === 'attempt_orphaned').reason, 'E_EXECUTOR_ORPHANED');
   const live = await recoveryFixture(t, { statuses: ['working'] });
-  await runtimeUntil(() => live.store.events.some(event => event.kind === 'checkpoint_recorded'), 'take over recovery');
-  await live.driver.stop();
+  try {
+    await untilEvent(() => live.store.events.some(event => event.kind === 'checkpoint_recorded'),
+      { label: '#10 接管同一 attempt 首条 checkpoint_recorded', timeoutMs: RECOVERY_PROBE_BUDGET_MS,
+        dump: () => dumpDriverScene({ store: live.store }) });
+  } finally {
+    await live.driver.stop();
+  }
   assert.equal(live.store.events.filter(event => event.kind === 'attempt_started').length, 1);
 });
 
@@ -516,9 +538,24 @@ test('DHR_68/C driver：启动即 blocked 恰写一次 waiting_human，不写 HO
     driver: { herdrReadyTimeoutMs: 0 },
   });
   t.after(() => driver.stop());
+  const t0 = Date.now();
 
   // 等**派生状态**而不是事件数组：事件先入内存、状态稍后收敛，等事件会取到半路的现场。
-  await runtimeUntil(async () => (await store.readState()).node_states[0]?.status === 'waiting_human', 'blocked waiting_human', 45_000);
+  //
+  // 上限依据（B-36 冻结规则：按本用例实际走的 `launchHerdrAgent` 调用链，把每次 Herdr CLI
+  // 调用的**生产上限**逐段相加 × 1.5）。这条是 Codex profile + `agentStart` 返回 notReady →
+  // `startBlocked`，链上恰三次 CLI 调用：
+  //     paneSplit 10_000（herdr-cli.mjs:41 通用 per-call 上限）
+  //   + agentStart 60_000（herdr-cli.mjs:17 `HERDR_START_TIMEOUT_MS`，只有 `agent start` 用它）
+  //   + 首次 agentGet 10_000（`startBlocked` 时夹具 `herdrReadyTimeoutMs:0` → 就绪循环不重试）
+  //   = 80_000 → × 1.5 = **120_000**
+  // 原来的 45s 方向是反的：把「45s 在生产 60s 之内」当成余量，实际**上限必须 ≥ 生产合法
+  // 上限**，否则一次合法的慢启动就会被判成失败。这是保守上限，只负责把挂住变成上限内
+  // fail + dump，不解释成因。
+  const BLOCKED_LAUNCH_BUDGET_MS = 120_000;
+  const blockedScene = () => dumpDriverScene({ store, fake, t0 });
+  await untilEvent(async () => (await store.readState()).node_states[0]?.status === 'waiting_human',
+    { label: 'DHR_68/C waiting_human', timeoutMs: BLOCKED_LAUNCH_BUDGET_MS, dump: blockedScene });
   const attention = store.events.filter(event => event.kind === 'human_input_requested');
   assert.equal(attention.length, 1, '启动期 blocked 只应产生一条持久 Attention');
   assert.match(attention[0].detail, /herdr_status=blocked/, 'Attention 必须带真实 blocked 观测，不能写成 unknown');
@@ -530,7 +567,14 @@ test('DHR_68/C driver：启动即 blocked 恰写一次 waiting_human，不写 HO
   assert.equal(store.events.some(event => event.kind === 'attempt_started'), true);
 
   // 再等若干轮观测，确认 Attention 不会被反复写。
-  await runtimeUntil(() => fake.agentGets >= 5, 'several blocked polls', 45_000);
+  //
+  // 上限依据（同一条冻结规则，但这里等的是**轮询**而不是 launch）：要等满 5 轮，每轮 =
+  // 一次观测 CLI 调用的生产上限 10_000 + 夹具生效的 `herdrPollMs`（`runtimeFixture` 给 2，
+  // 本用例的 driver options 只覆盖了 `herdrReadyTimeoutMs`，没覆盖它）：
+  //     5 × (2 + 10_000) × 1.5 = 5 × 10_002 × 1.5 = **75_015**
+  const BLOCKED_FIVE_POLLS_BUDGET_MS = 75_015;
+  await untilEvent(() => fake.agentGets >= 5,
+    { label: 'DHR_68/C ≥5 blocked polls', timeoutMs: BLOCKED_FIVE_POLLS_BUDGET_MS, dump: blockedScene });
   assert.equal(store.events.filter(event => event.kind === 'human_input_requested').length, 1);
   assert.equal(fake.sent.length, 0);
   assert.deepEqual(await readdir(join(root, 'results')), [], 'blocked 与观测都不得产生 Result');

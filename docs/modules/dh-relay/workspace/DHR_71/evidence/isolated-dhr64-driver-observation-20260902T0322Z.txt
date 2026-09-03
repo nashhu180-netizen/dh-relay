@@ -1,0 +1,13 @@
+✔ DHR64 driver: done without Receipt submission raises attention and creates no Result (11186.4618ms)
+✔ DHR64 driver: idle without Receipt submission raises attention and creates no Result (884.1872ms)
+✔ DHR64 driver: host loss creates attention and never a Result (952.5111ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 13728.4869
+
+### runner: file=dhr64-driver-observation exit=0 elapsed_s=16 started_utc=2026-09-02T03:27:04Z ended_utc=2026-09-02T03:27:20Z

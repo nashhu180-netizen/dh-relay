@@ -1,0 +1,202 @@
+=== DHR_71 第 9 步 · 652s 挂死负例取证 ===
+复现步骤：把 agent-node.test.mjs 的 `DHR_33 窄路径` 用例（改前 :198）的等待目标临时换成永不发生的
+  `never_such_event`、上限 3s；A 组把兜底 `t.after(() => driver.stop())` 注释掉，B 组保留。
+  两组都跑 `node --test --test-concurrency=1 test/agent-node.test.mjs`（**故意不带 --test-timeout**，
+  好让「用例已 fail 但进程不退」暴露出来），外面套 `timeout 150`。
+判据：exit=124 = 被 150s 硬截断 = 进程在用例 fail 后仍不收口（挂死）；正常应在 fail 后随即退出。
+
+--- A 组：无兜底 stop ---
+✔ 批4 边界钉：driver 不托管 agent 节点——不开 Attempt、不写任何事件 (6168.5982ms)
+✖ DHR_33 窄路径：driver 托管 herdr-agent，开 Attempt、记心跳并按 stop 落 killed (3403.6924ms)
+✔ DHR_61 D1: Herdr Attempt freezes source and ordered fallback identities before launch (927.3808ms)
+✔ DHR_61 D1: a Herdr profile without a projection rule leaves only that node pending (831.7751ms)
+✔ DHR_33 分叉顺序：同一节点同时声明 process 与 herdr-agent 时必须先走 process (486.8308ms)
+✔ 批4 ①：外部代持的 Attempt 其 Adapter 消失 → 仅该 Attempt failed(E_EXECUTOR_ADAPTER_LOST) (89.3383ms)
+✔ 批4 ①bis：dsh-agent 同形——宿主消失 → 仅该 Attempt orphaned(E_EXECUTOR_HOST_LOST) + fresh retry (121.7846ms)
+✔ 批4 ②：恢复后探活失败 → orphaned(E_EXECUTOR_ORPHANED)，retry 产生 fresh Attempt (144.2953ms)
+✔ 批4 ③：Agent 失败不推翻 Process 结论（真实 driver 跑完闭环后外部代持补记账） (6538.0375ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 8
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 150216.9115
+
+✖ failing tests:
+
+test at test\agent-node.test.mjs:212:1
+✖ DHR_33 窄路径：driver 托管 herdr-agent，开 Attempt、记心跳并按 stop 落 killed (3403.6924ms)
+  Error: bounded-wait: DHR_33 窄路径 首条 checkpoint_recorded 在 3000ms 内未发生（实测等了 3034ms）
+    elapsed_ms=3032
+    events(81)=["run_created","node_started","attempt_started","host_observation_changed(alive)","host_observation_changed(alive)","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded"]
+    node_states=[{"node_id":"agent-herdr","status":"running","attempt_count":1}]
+    run_status=running
+    fake: agentGets=78 paneGets=1 agentReads=0 paneSplits=1 paneKills=0 sent=1
+    fake.sent[-1]={"name":"herdr-~fae22b6d3220","text":"任务完成后，仅提交 Receipt-bound 结果：\nrelay submit-result --receipt-id rcpt-~1fceb7b9cf69 --outcome succeeded\n或：relay submit-result --
+      at untilEvent (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_71/relay-core/test/helpers/bounded-wait.mjs:30:13)
+      at async TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_71/relay-core/test/agent-node.test.mjs:241:3)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)
+### A 组: exit=124 elapsed_s=150
+
+--- B 组：保留兜底 stop（假目标不变）---
+✔ 批4 边界钉：driver 不托管 agent 节点——不开 Attempt、不写任何事件 (6251.5321ms)
+✖ DHR_33 窄路径：driver 托管 herdr-agent，开 Attempt、记心跳并按 stop 落 killed (3354.1697ms)
+✔ DHR_61 D1: Herdr Attempt freezes source and ordered fallback identities before launch (935.0415ms)
+✔ DHR_61 D1: a Herdr profile without a projection rule leaves only that node pending (766.1039ms)
+✔ DHR_33 分叉顺序：同一节点同时声明 process 与 herdr-agent 时必须先走 process (751.3685ms)
+✔ 批4 ①：外部代持的 Attempt 其 Adapter 消失 → 仅该 Attempt failed(E_EXECUTOR_ADAPTER_LOST) (250.8741ms)
+✔ 批4 ①bis：dsh-agent 同形——宿主消失 → 仅该 Attempt orphaned(E_EXECUTOR_HOST_LOST) + fresh retry (170.436ms)
+✔ 批4 ②：恢复后探活失败 → orphaned(E_EXECUTOR_ORPHANED)，retry 产生 fresh Attempt (149.532ms)
+✔ 批4 ③：Agent 失败不推翻 Process 结论（真实 driver 跑完闭环后外部代持补记账） (7193.1192ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 8
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 150872.9148
+
+✖ failing tests:
+
+test at test\agent-node.test.mjs:212:1
+✖ DHR_33 窄路径：driver 托管 herdr-agent，开 Attempt、记心跳并按 stop 落 killed (3354.1697ms)
+  Error: bounded-wait: DHR_33 窄路径 首条 checkpoint_recorded 在 3000ms 内未发生（实测等了 3027ms）
+    elapsed_ms=3024
+    events(108)=["run_created","node_started","attempt_started","host_observation_changed(alive)","host_observation_changed(alive)","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded"]
+    node_states=[{"node_id":"agent-herdr","status":"running","attempt_count":1}]
+    run_status=running
+    fake: agentGets=105 paneGets=1 agentReads=0 paneSplits=1 paneKills=0 sent=1
+    fake.sent[-1]={"name":"herdr-~7a0b727a4ff8","text":"任务完成后，仅提交 Receipt-bound 结果：\nrelay submit-result --receipt-id rcpt-~bf97c7ce8dec --outcome succeeded\n或：relay submit-result --
+      at untilEvent (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_71/relay-core/test/helpers/bounded-wait.mjs:30:13)
+      at async TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_71/relay-core/test/agent-node.test.mjs:241:3)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)
+### B 组: exit=124 elapsed_s=152
+
+--- C 组：诊断变异（假目标 + 兜底 stop 加 10s race + 打活跃句柄）---
+✔ 批4 边界钉：driver 不托管 agent 节点——不开 Attempt、不写任何事件 (7024.0753ms)
+[diag] rm start
+herdr driver error: ENOENT: no such file or directory, mkdir 'C:\Users\nash\AppData\Local\Temp\dhr33-herdr-driver-HdZOur\.dh-relay\R001-herdr-driver-20260829\checkpoints\rcpt-~1f4393c5961d'
+[diag] rm FAILED ENOTEMPTY: directory not empty, rmdir 'C:\Users\nash\AppData\Local\Temp\dhr33-herdr-driver-HdZOur\.dh-relay\R001-herdr-driver-20260829'
+[diag] stop start
+[diag] stop -> stopped
+[diag] active resources: ["FSReqPromise","PipeWrap","PipeWrap","Timeout"]
+✖ DHR_33 窄路径：driver 托管 herdr-agent，开 Attempt、记心跳并按 stop 落 killed (3336.7934ms)
+✔ DHR_61 D1: Herdr Attempt freezes source and ordered fallback identities before launch (1108.1665ms)
+✔ DHR_61 D1: a Herdr profile without a projection rule leaves only that node pending (1042.5227ms)
+✔ DHR_33 分叉顺序：同一节点同时声明 process 与 herdr-agent 时必须先走 process (475.558ms)
+✔ 批4 ①：外部代持的 Attempt 其 Adapter 消失 → 仅该 Attempt failed(E_EXECUTOR_ADAPTER_LOST) (90.0897ms)
+✔ 批4 ①bis：dsh-agent 同形——宿主消失 → 仅该 Attempt orphaned(E_EXECUTOR_HOST_LOST) + fresh retry (115.2831ms)
+✔ 批4 ②：恢复后探活失败 → orphaned(E_EXECUTOR_ORPHANED)，retry 产生 fresh Attempt (148.2084ms)
+✔ 批4 ③：Agent 失败不推翻 Process 结论（真实 driver 跑完闭环后外部代持补记账） (6711.777ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 8
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 21023.7589
+
+✖ failing tests:
+
+test at test\agent-node.test.mjs:212:1
+✖ DHR_33 窄路径：driver 托管 herdr-agent，开 Attempt、记心跳并按 stop 落 killed (3336.7934ms)
+  Error: bounded-wait: DHR_33 窄路径 首条 checkpoint_recorded 在 3000ms 内未发生（实测等了 3012ms）
+    elapsed_ms=3010
+    events(82)=["run_created","node_started","attempt_started","host_observation_changed(alive)","host_observation_changed(alive)","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded"]
+    node_states=[{"node_id":"agent-herdr","status":"running","attempt_count":1}]
+    run_status=running
+    fake: agentGets=79 paneGets=1 agentReads=0 paneSplits=1 paneKills=0 sent=1
+    fake.sent[-1]={"name":"herdr-~4af65c48164c","text":"任务完成后，仅提交 Receipt-bound 结果：\nrelay submit-result --receipt-id rcpt-~1f4393c5961d --outcome succeeded\n或：relay submit-result --
+      at untilEvent (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_71/relay-core/test/helpers/bounded-wait.mjs:30:13)
+      at async TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_71/relay-core/test/agent-node.test.mjs:241:3)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)
+### C 组: exit=1 elapsed_s=23
+
+--- D 组：rm 还原（异常不吞）+ stop 诊断 ---
+✔ 批4 边界钉：driver 不托管 agent 节点——不开 Attempt、不写任何事件 (6405.9313ms)
+herdr driver error: EPERM: operation not permitted, rename 'C:\Users\nash\AppData\Local\Temp\dhr33-herdr-driver-w2TT0q\.dh-relay\R001-herdr-driver-20260829\state.json.~d038b617128b.tmp' -> 'C:\Users\nash\AppData\Local\Temp\dhr33-herdr-driver-w2TT0q\.dh-relay\R001-herdr-driver-20260829\state.json'
+[diag] stop start
+[diag] stop -> stopped
+[diag] active resources: ["FSReqCallback","PipeWrap","PipeWrap","Timeout"]
+✖ DHR_33 窄路径：driver 托管 herdr-agent，开 Attempt、记心跳并按 stop 落 killed (3833.9394ms)
+✔ DHR_61 D1: Herdr Attempt freezes source and ordered fallback identities before launch (2848.8598ms)
+✔ DHR_61 D1: a Herdr profile without a projection rule leaves only that node pending (852.1578ms)
+✔ DHR_33 分叉顺序：同一节点同时声明 process 与 herdr-agent 时必须先走 process (465.5604ms)
+✔ 批4 ①：外部代持的 Attempt 其 Adapter 消失 → 仅该 Attempt failed(E_EXECUTOR_ADAPTER_LOST) (94.6121ms)
+✔ 批4 ①bis：dsh-agent 同形——宿主消失 → 仅该 Attempt orphaned(E_EXECUTOR_HOST_LOST) + fresh retry (116.0629ms)
+✔ 批4 ②：恢复后探活失败 → orphaned(E_EXECUTOR_ORPHANED)，retry 产生 fresh Attempt (165.9712ms)
+✔ 批4 ③：Agent 失败不推翻 Process 结论（真实 driver 跑完闭环后外部代持补记账） (6572.2084ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 8
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 21772.5711
+
+✖ failing tests:
+
+test at test\agent-node.test.mjs:212:1
+✖ DHR_33 窄路径：driver 托管 herdr-agent，开 Attempt、记心跳并按 stop 落 killed (3833.9394ms)
+  Error: bounded-wait: DHR_33 窄路径 首条 checkpoint_recorded 在 3000ms 内未发生（实测等了 3030ms）
+    elapsed_ms=3030
+    events(9)=["run_created","node_started","attempt_started","host_observation_changed(alive)","host_observation_changed(alive)","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","human_input_requested:E_EXECUTOR_HOST_LOST"]
+    node_states=[{"node_id":"agent-herdr","status":"waiting_human","attempt_count":1}]
+    run_status=waiting_human
+    fake: agentGets=4 paneGets=1 agentReads=0 paneSplits=1 paneKills=0 sent=1
+    fake.sent[-1]={"name":"herdr-~99be44a5292d","text":"任务完成后，仅提交 Receipt-bound 结果：\nrelay submit-result --receipt-id rcpt-~c7a2843600fa --outcome succeeded\n或：relay submit-result --
+      at untilEvent (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_71/relay-core/test/helpers/bounded-wait.mjs:30:13)
+      at async TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_71/relay-core/test/agent-node.test.mjs:241:3)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)
+### D 组: exit=1 elapsed_s=22
+
+--- B 组复跑 ×3（纯形态，量化「挂死是不是确定性的」）---
+### B 复跑 #1: exit=1 elapsed_s=22
+### B 复跑 #1 EPERM/ENOTEMPTY 命中行数: 1
+### B 复跑 #2: exit=124 elapsed_s=151
+### B 复跑 #2 EPERM/ENOTEMPTY 命中行数: 0
+### B 复跑 #3: exit=1 elapsed_s=22
+### B 复跑 #3 EPERM/ENOTEMPTY 命中行数: 1
+
+--- E 组：B 形态 + unref 探针，抓一次挂死时的活跃句柄 ---
+### E 组 #1: exit=124 elapsed_s=123
+[diag-alive] 2026-09-02T03:52:42.980Z ["FSReqPromise","PipeWrap","PipeWrap"]
+[diag-alive] 2026-09-02T03:53:02.989Z ["FSReqPromise","PipeWrap","PipeWrap"]
+[diag-alive] 2026-09-02T03:53:22.997Z ["FSReqPromise","PipeWrap","PipeWrap"]
+[diag-alive] 2026-09-02T03:53:42.997Z ["FSReqPromise","PipeWrap","PipeWrap"]
+[diag-alive] 2026-09-02T03:54:02.998Z ["FSReqPromise","PipeWrap","PipeWrap"]
+[diag-alive] 2026-09-02T03:54:23.006Z ["FSReqPromise","PipeWrap","PipeWrap"]
+
+--- F 组：改成 try/finally 之后的同一负例 ×5（假目标 3s，无 --test-timeout）---
+### F 组 #1: exit=1 elapsed_s=20
+### F 组 #2: exit=1 elapsed_s=21
+### F 组 #3: exit=1 elapsed_s=21
+### F 组 #4: exit=1 elapsed_s=30
+### F 组 #5: exit=1 elapsed_s=30
+### F 组小结：5 轮里挂死 0 轮（exit=124 即挂）
+
+--- F 组 #1 的原始失败输出（机器证 B 的「超限失败输出样例」）---
+✖ failing tests:
+
+test at test\agent-node.test.mjs:212:1
+✖ DHR_33 窄路径：driver 托管 herdr-agent，开 Attempt、记心跳并按 stop 落 killed (3578.0803ms)
+  Error: bounded-wait: DHR_33 窄路径 首条 checkpoint_recorded 在 3000ms 内未发生（实测等了 3024ms）
+    elapsed_ms=3021
+    events(91)=["run_created","node_started","attempt_started","host_observation_changed(alive)","host_observation_changed(alive)","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded","checkpoint_recorded"]
+    node_states=[{"node_id":"agent-herdr","status":"running","attempt_count":1}]
+    run_status=running
+    fake: agentGets=88 paneGets=1 agentReads=0 paneSplits=1 paneKills=0 sent=1
+    fake.sent[-1]={"name":"herdr-~dbbe3ece41e0","text":"任务完成后，仅提交 Receipt-bound 结果：\nrelay submit-result --receipt-id rcpt-~c004d00142c8 --outcome succeeded\n或：relay submit-result --receipt-id rcpt-~c004d00142c8 --outcome failed --reason E_EXECUTOR_REPORTED_
+      at untilEvent (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_71/relay-core/test/helpers/bounded-wait.mjs:32:13)
+      at async TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_71/relay-core/test/agent-node.test.mjs:244:5)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)

@@ -1,0 +1,16 @@
+✔ DHR70 A1: lease 仍有效时，本届 herdr 等待结束后的晚交必须 committed 且只写一个 Result (5610.1298ms)
+✔ DHR70 A2: 旧 actor 失租关闭后，非终态 Run 的晚交必须由新持 lease 的 actor 写入唯一 Result (11023.843ms)
+✔ DHR70 A3-1: 另一进程活着持有 lease 时，晚交必须一直被拒且零 mutation (5977.6277ms)
+✔ DHR70 A3-2: Receipt 已被更晚的 Attempt 取代时，即便 lease 有效也必须拒绝 (5802.2093ms)
+✔ DHR70 A3-3 / B: 已终态冲突与未知 Receipt 保持现役拒绝语义 (6844.1212ms)
+✔ DHR70 C: agent_get=idle ∧ pane_get=error 不得单独判死 Attempt，提交仍须走得通 (513.4748ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 36185.2226
+
+### runner: file=dhr70-submission-gate exit=0 elapsed_s=37 started_utc=2026-09-02T03:28:15Z ended_utc=2026-09-02T03:28:52Z

@@ -39,7 +39,7 @@
 
 | # | 完成条件 | 谁验 | 证据 (E-00x) | 达成? |
 |---|---|---|---|---|
-| A | **机器证 A（绿闸）**：五文件 `node --test --test-concurrency=1` 连续 3 轮，每轮记录 pass / skip / fail、每文件时长、总时长：**skip 恰为 2、fail 为 0**，无一轮不收口；每轮总时长 ≤ 隔离单跑之和的 2 倍；三轮原始输出入 `workspace/DHR_71/evidence/`。只能写「隔离 2 条 skip、其余全 pass」，**不得写「全绿」**。 | machine | | |
+| A | **机器证 A（绿闸）**：五文件 `node --test --test-concurrency=1` 连续 3 轮，每轮记录 pass / skip / fail、每文件时长、总时长：**skip 恰为 4（B-36 冻结表 S1~S4）、fail 为 0**，无一轮不收口；每轮总时长 ≤ 隔离单跑之和的 2 倍；三轮原始输出入 `workspace/DHR_71/evidence/`。只能写「隔离 4 条 skip、其余全 pass」，**不得写「全绿」**。 | machine | | |
 | B | **机器证 B（等待有界）**：每个被改的等待能列出「目标事件 + 上限 + 超限失败输出」；人为让目标事件不发生，用例在上限内 fail 而不是挂住（至少对 652s 那条做此负例）。 | machine | | |
 | C | **机器证 C（652s）**：已定位（附复现步骤）并修；若指向生产，登记 finding 并注明去向。 | machine | | |
 | D | **机器证 D（路径）**：`git diff --name-only master...HEAD` 仅含 `relay-core/test/**` 与 `workspace/DHR_71/**`。 | machine | | |

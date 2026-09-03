@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+	<testcase name="test\dhr69-false-ready.test.mjs" time="0.002137" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_71\relay-core\test\dhr69-false-ready.test.mjs" failure="spawn EPERM">
+		<failure type="testCodeFailure" message="spawn EPERM">
+[Error [ERR_TEST_FAILURE]: spawn EPERM] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: Error: spawn EPERM
+      at ChildProcess.spawn (node:internal/child_process:421:11)
+      at spawn (node:child_process:796:9)
+      at TestContext.&lt;anonymous> (node:internal/test_runner/runner:398:19)
+      at FileTest.runInAsyncScope (node:async_hooks:214:14)
+      at FileTest.run (node:internal/test_runner/test:1106:25)
+      at FileTest.start (node:internal/test_runner/test:1003:17)
+      at runTestFile (node:internal/test_runner/runner:477:32)
+      at node:internal/test_runner/runner:769:25
+      at node:internal/per_context/primordials:561:37
+      at new Promise (&lt;anonymous>) {
+    errno: -4048,
+    code: 'EPERM',
+    syscall: 'spawn'
+  }
+}
+		</failure>
+	</testcase>
+	<!-- tests 1 -->
+	<!-- suites 0 -->
+	<!-- pass 0 -->
+	<!-- fail 1 -->
+	<!-- cancelled 0 -->
+	<!-- skipped 0 -->
+	<!-- todo 0 -->
+	<!-- duration_ms 14.1092 -->
+</testsuites>

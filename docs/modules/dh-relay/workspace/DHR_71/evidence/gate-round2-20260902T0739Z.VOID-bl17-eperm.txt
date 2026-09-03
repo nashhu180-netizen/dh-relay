@@ -1,0 +1,81 @@
+✔ 批4 边界钉：driver 不托管 agent 节点——不开 Attempt、不写任何事件 (7245.7527ms)
+﹣ DHR_33 窄路径：driver 托管 herdr-agent，开 Attempt、记心跳并按 stop 落 killed (0.4253ms) # F-3520 → DHR_72：现役 driver 在 stop 时写 human_input_requested(E_EXECUTOR_KILLED) 而非 attempt_failed(E_EXECUTOR_KILLED)，用例待按 Receipt-bound 语义重写
+✔ DHR_61 D1: Herdr Attempt freezes source and ordered fallback identities before launch (12207.8906ms)
+✔ DHR_61 D1: a Herdr profile without a projection rule leaves only that node pending (11859.9658ms)
+✔ DHR_33 分叉顺序：同一节点同时声明 process 与 herdr-agent 时必须先走 process (1104.7071ms)
+✔ 批4 ①：外部代持的 Attempt 其 Adapter 消失 → 仅该 Attempt failed(E_EXECUTOR_ADAPTER_LOST) (207.5597ms)
+✔ 批4 ①bis：dsh-agent 同形——宿主消失 → 仅该 Attempt orphaned(E_EXECUTOR_HOST_LOST) + fresh retry (249.3168ms)
+✔ 批4 ②：恢复后探活失败 → orphaned(E_EXECUTOR_ORPHANED)，retry 产生 fresh Attempt (227.8034ms)
+✔ 批4 ③：Agent 失败不推翻 Process 结论（真实 driver 跑完闭环后外部代持补记账） (8846.776ms)
+✔ DHR64 driver: done without Receipt submission raises attention and creates no Result (10758.0853ms)
+✔ DHR64 driver: idle without Receipt submission raises attention and creates no Result (558.3477ms)
+✔ DHR64 driver: host loss creates attention and never a Result (407.8516ms)
+✔ DHR_69/E-2：fake paneGet 形态对齐 E-1 普通 shell pane (5.9031ms)
+✔ DHR_69/A adapter：假就绪 idle+pane blocked → launch_blocked，保留 handle，不关 pane (4.492ms)
+✔ DHR_69/A 负例：Codex agent_not_ready 不读 pane get，argv/行为不变 (0.411ms)
+✔ DHR_69/D：非 idle 三态 paneGet 次数为 0；idle 才读 pane (0.2718ms)
+✔ DHR_69/A driver：假就绪恰写一次 blocked Attention，扣住指令，不写 HOST_LOST (425.6591ms)
+✖ DHR_69/B：中途假 idle 不得写 RESULT_MISSING，不得结束 Attempt (19.4933ms)
+✔ DHR_69/C recovery：假就绪先观测再扣住，离开 blocked 后届内恰补发一次 (297.8881ms)
+✔ DHR_69/C recovery：观测失败不得把提交指令发出去（F-69-R2-01） (389.4985ms)
+✔ DHR_69/F：持续 idle∧blocked 升级一条可区分 Attention，不放行、不判失败，恢复后恰补发一次 (490.7764ms)
+✔ DHR_69/F：mismatch 被 unknown 打断后必须重新计时，不得立即升级 (616.4526ms)
+✔ DHR70 A1: lease 仍有效时，本届 herdr 等待结束后的晚交必须 committed 且只写一个 Result (6980.7015ms)
+✔ DHR70 A2: 旧 actor 失租关闭后，非终态 Run 的晚交必须由新持 lease 的 actor 写入唯一 Result (15757.1695ms)
+✔ DHR70 A3-1: 另一进程活着持有 lease 时，晚交必须一直被拒且零 mutation (10238.1273ms)
+✔ DHR70 A3-2: Receipt 已被更晚的 Attempt 取代时，即便 lease 有效也必须拒绝 (6993.5456ms)
+✔ DHR70 A3-3 / B: 已终态冲突与未知 Receipt 保持现役拒绝语义 (6313.4578ms)
+✔ DHR70 C: agent_get=idle ∧ pane_get=error 不得单独判死 Attempt，提交仍须走得通 (1775.2782ms)
+✔ DHR_33 adapter：状态映射、句柄、附着与输入均不触碰 Store (8.2841ms)
+✔ DHR_67 adapter：Claude 固定 pane run→唯一识别→rename，Codex 保持 agent start (1.1544ms)
+✔ DHR_67 adapter：Claude 零/多个、识别超时或 rename 失败仅关闭同一新 pane (6.4241ms)
+✔ DHR_67 adapter：Claude 只接受同 pane 的唯一 Claude，且有界等待后续识别 (2.4621ms)
+✔ DHR_33 adapter：unknown 经 pane 复核区分 observation_lost 与 host_lost，均不造 reason code (0.8256ms)
+✔ DHR_33 profile registry：只读校验、未命中 profile 保持 null (360.9964ms)
+✔ DHR_33 focus：只渲染事件既有字段，无观测降级 (0.7187ms)
+✔ DHR_33 herdr-cli：文件状态可执行桩逐字接收六个动词参数并拆 result 信封 (3538.8499ms)
+✔ DHR_33 herdr-cli：超时与明确 not-found 分别保留 transient/missing 语义 (287.5318ms)
+✔ DHR_33 driver #1/#2：心跳逐次落账，blocked 第二沿与重放持久 (2285.7864ms)
+﹣ DHR_33 driver #3/#5：done 有界、判定成功与双亡 HOST_LOST (0.5821ms) # F-3520 → DHR_72：herdrJudge 直写 Result 通路已被 DHR_64 删除，用例待按 Receipt-bound 语义重写
+✔ DHR_33 driver：blocked 后 send、恢复心跳；观测断不落 Result (1926.2377ms)
+﹣ DHR_33 driver：stop 撞 launch 窗口仍杀 pane，失败写 killed Result 且不造 Attention (0.1123ms) # F-3520 → DHR_72：现役 driver 在 stop 撞 launch 窗口时写 human_input_requested 而非 attempt_failed(E_EXECUTOR_KILLED)，用例待重写
+✔ DHR_67 driver：Claude adapter 启动失败保留既有 Attempt，进入人工处理且不造 Result (449.2615ms)
+✔ DHR_33 driver：idle 超阈值单次 Attention 后停止轮询 (490.0762ms)
+✔ DHR_33 driver #4/#7/#9：观测断单次升级、恢复后再升级；SSH 桩不冒充 (1916.4815ms)
+✔ DHR_33 driver #7/#8：成功观测的非 ready 是盲区；未知 profile 零事件 (782.5778ms)
+﹣ DHR_33 driver #10：恢复届按账上 ref 判 orphaned 或接管同一 attempt (0.2829ms) # F-3520 → DHR_72：DHR_64 起恢复届探活 missing 写 human_input_requested(E_EXECUTOR_HOST_LOST) 而非 attempt_orphaned(E_EXECUTOR_ORPHANED)，用例待按 Receipt-bound 语义重写
+✔ DHR_33 driver：恢复届 transient 探测与无 ref 都只落 observation_lost (542.5954ms)
+✔ DHR_68/A adapter：启动超时先对账——agent 已建成沿用 handle，未建成才关同一 pane，且永不重发启动 (3.6392ms)
+✔ DHR_68/A herdr-cli：启动专用超时与其余动词分离，超时带 timedOut 语义位 (935.9484ms)
+✔ DHR_68/B：pane run 不解 JSON，Claude 在真实空 stdout 形态下仍完成识别与 rename (610.2239ms)
+✔ DHR_68/C adapter：启动期 blocked 保留 handle、不关 pane、不重试 (0.8288ms)
+✔ DHR_68/C driver：启动即 blocked 恰写一次 waiting_human，不写 HOST_LOST，指令扣住不发 (523.8582ms)
+✔ DHR_68/C driver：人处理完信任后离开 blocked，提交指令恰好补发一次 (565.7653ms)
+✔ DHR_68/C driver：blocked 直接跳到 done 时提交指令仍补发一次（复核轮 2 · F-68-R2-01） (708.5011ms)
+✔ DHR_68/D：fake-herdr 每个被触及命令的返回形态逐条对齐真实 herdr 的实测记录 (5.6636ms)
+ℹ tests 55
+ℹ suites 0
+ℹ pass 50
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 4
+ℹ todo 0
+ℹ duration_ms 122781.2251
+
+✖ failing tests:
+
+test at test\dhr69-false-ready.test.mjs:221:1
+✖ DHR_69/B：中途假 idle 不得写 RESULT_MISSING，不得结束 Attempt (19.4933ms)
+  Error: EPERM: operation not permitted, rename 'C:\Users\nash\AppData\Local\Temp\dhr69-runtime-BHch0w\.dh-relay\R001-dhr69\state.json.7b599802-2cff-4c13-ae30-9744dc782570.tmp' -> 'C:\Users\nash\AppData\Local\Temp\dhr69-runtime-BHch0w\.dh-relay\R001-dhr69\state.json'
+      at async rename (node:internal/fs/promises:787:10)
+      at async writeAtomic (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_71/relay-core/store/store.mjs:214:3)
+      at async persistState (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_71/relay-core/store/store.mjs:428:5)
+      at async file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_71/relay-core/store/store.mjs:554:9 {
+    errno: -4048,
+    code: 'EPERM',
+    syscall: 'rename',
+    path: 'C:\\Users\\nash\\AppData\\Local\\Temp\\dhr69-runtime-BHch0w\\.dh-relay\\R001-dhr69\\state.json.7b599802-2cff-4c13-ae30-9744dc782570.tmp',
+    dest: 'C:\\Users\\nash\\AppData\\Local\\Temp\\dhr69-runtime-BHch0w\\.dh-relay\\R001-dhr69\\state.json'
+  }
+
+### gate round 2: exit=1 elapsed_s=123 started_utc=2026-09-02T07:44:40Z ended_utc=2026-09-02T07:46:43Z

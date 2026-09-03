@@ -1,0 +1,98 @@
+status: blocked
+node: construction
+task: DHR_71
+branch: wt/DHR_71
+head: e1074d8
+code_head: e1074d8（F-71-CON-01/02 整改提交）
+base: master@1b4b1ce
+contract: DHR-B-36（隔离清单 2→4、dhr69:179 归本卡、上限规则「真实调用链逐段相加 × 1.5」、S3/S4 反向禁改）
+
+gate: rerun=round1 50p/4s/1f; round2 51p/4s/0f; round3 47p/4s/4f VOID-bl17-eperm; round4 50p/4s/1f; isolated-temp-round1 51p/4s/0f; isolated-temp-round2 50p/4s/1f F-7109
+gate_wall_s: 497/392/537/474/333/573
+gate_budget_s: 370
+gate_isolated_sum_s: 185
+gate_tests_total: 55
+skip_frozen: 4
+skip_roster_verified: S1,S2,S3,S4（各收口复跑均报告 skip=4；未取得合格三轮，不作验收声明）
+
+machine_proof_a: blocked（未取得连续三轮 skip=4、fail=0、每轮<=370s）
+machine_proof_b: pass
+machine_proof_c: pass
+machine_proof_d: pass
+
+open_findings: F-71-CON-01, F-71-CON-02, F-7108, F-7109
+resolved_findings: F-7103, F-7105, F-7106
+lesson_candidates: L-7101, L-7102, L-7103, L-7104, L-7105, L-7106, L-7107
+pushed: no
+devplan_touched: no
+review_entered: no
+
+wording: |
+  本届未达标，不能使用「在该五文件命令、--test-concurrency=1、本机负载下：隔离 4 条 skip、其余全 pass」。
+  **不写「全绿」**——那 4 条是转给 DHR_72 的债，不是豁免。
+
+increment_summary: |
+  首轮以 status: blocked 停手（绿闸 fail 2/3/2，隔离清单只有 2 条）。B-36 按 worker 的归类
+  校正把隔离清单扩到 4 条并把 dhr69:179 的等待划进本卡，本次增量据此续做，5 处改动：
+    1. S3（herdr-adapter「DHR_33 driver #10：恢复届…」）加 skip；
+    2. S4（agent-node「DHR_33 窄路径…」）加 skip（与已有 timeout 合并）；
+    3. herdr-adapter :510 第一处上限 45_000 → 120_000；
+    4. herdr-adapter :510 第二处上限 45_000 → 75_015；
+    5. dhr69-false-ready :179 等待换 untilEvent + dump，上限 90_000（另加一行 import）。
+  S3/S4 只动头行，用例体内首轮落的有界等待与 try/finally stop 原样保留，断言一个字未动。
+
+bound_derivations: |
+  规则（B-36 冻结）：按用例实际走的 launchHerdrAgent 调用链，把每次 Herdr CLI 调用的生产上限
+  逐段相加 × 1.5。生产上限只有两个值：herdr-cli.mjs:41 通用 per-call 10_000；herdr-cli.mjs:17
+  HERDR_START_TIMEOUT_MS=60_000，只有 agent start 用它。
+  - herdr-adapter :510 waiting_human = (paneSplit 10_000 + agentStart 60_000 + 首次 agentGet
+    10_000) × 1.5 = 80_000 × 1.5 = 120_000
+  - herdr-adapter :510 ≥5 blocked polls = 5 × (herdrPollMs 2 + 观测 CLI 10_000) × 1.5
+    = 5 × 10_002 × 1.5 = 75_015
+    （herdrPollMs 生效值 = runtimeFixture 的 2；本用例 driver options 只覆盖 herdrReadyTimeoutMs）
+  - dhr69-false-ready :179 = Claude paneRun 链六次调用、无 agent start：
+    (paneSplit + paneRun + agentList + agentRename + agentGet + paneGet) = 6 × 10_000 = 60_000
+    × 1.5 = 90_000（夹具 herdrReadyTimeoutMs:0 → rename 恰一轮、ready 循环不等）
+
+bound_direction_correction: |
+  首轮把 :510 保留 45s 的理由写成「45s 在生产 60s 之内、还有余量」——方向反了。等待上限的职责
+  是「把挂住变成上限内 fail」，所以必须 ≥ 生产合法上限；45s < 该链 80s 的合法上限，意味着一次
+  完全合法的慢启动会被判成失败。dhr69:179 时红时绿是同一个错（45s < 链路 60s）。已按 B-36 改正。
+
+negative_example: |
+  dhr69:179 上限临时改 1ms → 用例 525ms 内 fail（不是挂住，进程 6s 正常退出），失败输出带完整
+  dump（events / node_states / run_status / fake 计数器）。跑完还原 90_000 并 diff 逐字确认。
+  证据：evidence/negative-dhr69-179-20260902T0520Z.txt（E-7108）
+  首轮的 652s 挂死负例（A~F 六组）仍在 evidence/hang-repro-20260902T0338Z.txt（E-7104）。
+
+hang_root_cause: |
+  652s 挂死 = 用例 t.after 里的 rm(repoRoot,{recursive,force}) 在 Windows %TEMP% 上撞见仍在写
+  state.json.<uuid>.tmp 的 driver 时不返回也不报错；挂住时活跃句柄只剩一个 FSReqPromise
+  （无 Timeout、无 ChildProcess）。node:test 的 after 钩子按登记顺序执行，rm 在用例体第一行就
+  登记了，所以 t.after(stop) 排在它后面救不了场（4 轮 2 挂）。修法：driver.stop() 改到用例体
+  try/finally（同一负例 5 轮 0 挂）。生产代码零改动；%TEMP% 本身的脆弱性仍归 DHR-BL-17。
+  增量三轮零挂死。旁证：dhr69-false-ready 的两个夹具本来就是 stop 之后才 rm，顺序正确、无需改动。
+
+handover_to_dhr72: |
+  4 条 skip 全部按完整用例名冻结，逐条附现役语义（写在用例的 skip 理由里）：
+    S1 herdr-adapter「DHR_33 driver #3/#5：done 有界、判定成功与双亡 HOST_LOST」
+       —— herdrJudge 直写 Result 通路已被 DHR_64 删除
+    S2 herdr-adapter「DHR_33 driver：stop 撞 launch 窗口仍杀 pane，失败写 killed Result 且不造 Attention」
+       —— stop 撞 launch 窗口写 human_input_requested 而非 attempt_failed(E_EXECUTOR_KILLED)
+    S3 herdr-adapter「DHR_33 driver #10：恢复届按账上 ref 判 orphaned 或接管同一 attempt」
+       —— 恢复届探活 missing 写 human_input_requested(E_EXECUTOR_HOST_LOST) 而非 attempt_orphaned
+    S4 agent-node「DHR_33 窄路径：driver 托管 herdr-agent，开 Attempt、记心跳并按 stop 落 killed」
+       —— stop 时写 human_input_requested(E_EXECUTOR_KILLED) 而非 attempt_failed
+  S3/S4 用例体内本卡已落的有界等待（15s / 30s）与 try/finally stop 保留，DHR_72 重写断言时可直接用。
+
+flagged_for_orchestrator: |
+  1. 允许路径边缘（已在 progress 机器证 D 写明）：dhr69-false-ready.test.mjs 除 :179 用例体外，
+     还多了一行 import（untilEvent / dumpDriverScene）。它是调用等待工具的机械前提，不碰文件级
+     until 助手、不碰其余 9 条用例；参照 brief 对 herdr-adapter 的同类明文授权等价处理。若判越界，
+     替代做法是在用例体内用动态 await import(...)。请主控确认。
+  2. F-7107：B-36 同步后 brief.md（:18/:22/:45/:46）与 DevPlan §3.2「目标」段仍写「2 条 skip」、
+     仍把 dhr69-false-ready 列为「不在允许路径」，与同文件验收口径段（4 条）自相矛盾。worker 不改
+     主控文件，只登记，建议收口时统一措辞。
+
+evidence_dir: docs/modules/dh-relay/workspace/DHR_71/evidence/
+next_owner: 主控（DHR-BL-17 专卡的 B-adjust / 立项确认；DHR_71 不进 E10 或复核）

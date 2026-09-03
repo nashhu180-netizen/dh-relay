@@ -1,0 +1,37 @@
+=== DHR_71 增量 · dhr69-false-ready:179 等待有界化负例（机器证 B）===
+做法：把该用例的 FALSE_READY_LAUNCH_BUDGET_MS 从 90_000 临时改成 1（ms），其余一字不动。
+预期：用例在上限内 fail（不是挂住），且失败输出带 dump 现场；跑完恢复 90_000。
+
+✔ DHR_69/E-2：fake paneGet 形态对齐 E-1 普通 shell pane (7.0262ms)
+✔ DHR_69/A adapter：假就绪 idle+pane blocked → launch_blocked，保留 handle，不关 pane (7.0117ms)
+✔ DHR_69/A 负例：Codex agent_not_ready 不读 pane get，argv/行为不变 (0.8319ms)
+✔ DHR_69/D：非 idle 三态 paneGet 次数为 0；idle 才读 pane (0.6099ms)
+✖ DHR_69/A driver：假就绪恰写一次 blocked Attention，扣住指令，不写 HOST_LOST (525.7218ms)
+✔ DHR_69/B：中途假 idle 不得写 RESULT_MISSING，不得结束 Attempt (592.9202ms)
+✔ DHR_69/C recovery：假就绪先观测再扣住，离开 blocked 后届内恰补发一次 (347.8472ms)
+✔ DHR_69/C recovery：观测失败不得把提交指令发出去（F-69-R2-01） (369.089ms)
+✔ DHR_69/F：持续 idle∧blocked 升级一条可区分 Attention，不放行、不判失败，恢复后恰补发一次 (342.9211ms)
+✔ DHR_69/F：mismatch 被 unknown 打断后必须重新计时，不得立即升级 (1228.1534ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 9
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4859.5033
+
+✖ failing tests:
+
+test at test\dhr69-false-ready.test.mjs:180:1
+✖ DHR_69/A driver：假就绪恰写一次 blocked Attention，扣住指令，不写 HOST_LOST (525.7218ms)
+  Error: bounded-wait: DHR_69/A false-ready waiting_human 在 1ms 内未发生（实测等了 364ms）
+    events(1)=["run_created"]
+    node_states=[{"node_id":"herdr","status":"pending","attempt_count":null}]
+    run_status=pending
+    fake: agentGets=0 paneGets=0 agentReads=0 paneSplits=0 paneKills=0 sent=0
+      at untilEvent (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_71/relay-core/test/helpers/bounded-wait.mjs:32:13)
+      at async TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_71/relay-core/test/dhr69-false-ready.test.mjs:198:3)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)
+### 负例: exit=1 elapsed_s=6（exit=124 才是挂住）

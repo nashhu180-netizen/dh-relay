@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { launchHerdrAgent, observationDetail, observeHerdrAgent } from '../runtime/executors/herdr/herdr-executor.mjs';
 import { startWorkflowDriver } from '../runtime/workflow-driver.mjs';
 import { createStore } from '../store/store.mjs';
+import { dumpDriverScene, untilEvent } from './helpers/bounded-wait.mjs';
 import { makeFakeHerdr } from './helpers/fake-herdr.mjs';
 
 const HASH = 'a'.repeat(64);
@@ -181,7 +182,22 @@ test('DHR_69/A driver：假就绪恰写一次 blocked Attention，扣住指令�
     statuses: ['idle'], paneStatuses: ['blocked'],
   });
   t.after(() => driver.stop());
-  await until(async () => (await store.readState()).node_states[0]?.status === 'waiting_human', 'false-ready waiting_human');
+  // DHR_71（B-36）：这条等待原来用文件级 `until` 的 45s 默认预算，超时只说得出一句
+  // `timeout:false-ready waiting_human`——说不出 45s 时节点停在哪。换成有界等待，
+  // 目标事件不变（**等派生状态**，不是等断言值），只把上限按真实调用链算准、把超限现场打出来。
+  //
+  // 上限依据（B-36 冻结规则：按本用例实际走的 `launchHerdrAgent` 调用链，把每次 Herdr CLI
+  // 调用的生产上限逐段相加 × 1.5）。夹具默认 `claudeProfile` → 走 Claude 的 `pane run` 链，
+  // 恰六次 CLI 调用，每次的生产上限都是 herdr-cli.mjs:41 的通用 per-call `timeoutMs = 10_000`
+  // （**没有** `agent start`，所以 60_000 那条不适用）：
+  //     paneSplit + paneRun + agentList + agentRename + agentGet + paneGet
+  //   = 6 × 10_000 = 60_000 → × 1.5 = **90_000**
+  // 夹具 `herdrReadyTimeoutMs: 0`，所以 rename 恰一轮、就绪循环不等——链上没有重试项。
+  // 保守上限，只负责把挂住变成上限内 fail + dump，不解释成因。
+  const FALSE_READY_LAUNCH_BUDGET_MS = 90_000;
+  await untilEvent(async () => (await store.readState()).node_states[0]?.status === 'waiting_human',
+    { label: 'DHR_69/A false-ready waiting_human', timeoutMs: FALSE_READY_LAUNCH_BUDGET_MS,
+      dump: () => dumpDriverScene({ store, fake }) });
   const attention = store.events.filter(event => event.kind === 'human_input_requested');
   assert.equal(attention.length, 1);
   const fields = parseDetail(attention[0].detail);

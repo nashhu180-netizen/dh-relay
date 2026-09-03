@@ -30,6 +30,7 @@ import { startRuntimeService } from '../runtime/service.mjs';
 import { startWorkflowDriver } from '../runtime/workflow-driver.mjs';
 import { createStore, openStore } from '../store/store.mjs';
 import { digest } from '../tools/canonical.mjs';
+import { dumpDriverScene, untilEvent, withDeadline } from './helpers/bounded-wait.mjs';
 import { makeFakeHerdr } from './helpers/fake-herdr.mjs';
 import { settledState } from './helpers/settled-state.mjs';
 
@@ -45,6 +46,26 @@ const untilAsync = async (check, timeout = 30_000, what = 'condition') => {
   }
 };
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// DHR_71：文件级硬上限——三条 herdr driver 用例（`:200` / `:236` / `:272`）自带这个 timeout，
+// 于是不带 `--test-timeout` 直接单跑本文件时，挂住的用例也会**在上限内 fail 而不是挂死**。
+// 180s 的依据：单条用例里最长的生产上限是 `doneTimeoutMs = 60_000`（workflow-driver.mjs:33），
+// 三倍余量覆盖 Windows 上 Store 落盘的抖动；它是安全网，不是正常路径该用满的预算。
+const FILE_TEST_TIMEOUT_MS = 180_000;
+
+// 等待上限的共同依据（两条 Codex 启动用例都在等 driver 走完 launch → 首次观测 → 落账这一串）：
+// 按 B-36 冻结的规则——沿该用例实际走的 `launchHerdrAgent` 调用链，把每次 Herdr CLI 调用的
+// 生产上限逐段相加，再乘 1.5 的余量（Windows 上 createStore / registerReceipt / appendEvent
+// 的落盘抖动）：
+//   `paneSplit`  per-call `timeoutMs = 10_000`（herdr-cli.mjs:41）
+// + `agentStart` 专用 `HERDR_START_TIMEOUT_MS = 60_000`（herdr-cli.mjs:17）
+// + 首次 `agentGet` per-call `timeoutMs = 10_000`（herdr-cli.mjs:41）
+// = 80_000 × 1.5 = 120_000。
+// F-71-CON-01：原先的 30s 只按 `herdrReadyTimeoutMs` 推，漏算了 paneSplit 与 agentStart，
+// 小于这条链 80s 的合法上限——一次完全合法的慢启动会被判成失败；且与同为 Codex 启动链、
+// 已取 120s 的 `herdr-adapter:510` 横向矛盾。上限的职责是把挂住变成上限内 fail，必须 ≥ 合法上限。
+// 与 `FILE_TEST_TIMEOUT_MS = 180_000` 的关系：文件级安全网仍 > 本预算，不动。
+const HERDR_FIRST_CHECKPOINT_BUDGET_MS = 120_000;
 
 async function makeRepo(prefix) {
   const repoRoot = await mkdtemp(join(tmpdir(), prefix));
@@ -195,7 +216,7 @@ test('批4 边界钉：driver 不托管 agent 节点——不开 Attempt、不�
   }
 });
 
-test('DHR_33 窄路径：driver 托管 herdr-agent，开 Attempt、记心跳并按 stop 落 killed', async (t) => {
+test('DHR_33 窄路径：driver 托管 herdr-agent，开 Attempt、记心跳并按 stop 落 killed', { timeout: FILE_TEST_TIMEOUT_MS, skip: 'F-3520 → DHR_72：现役 driver 在 stop 时写 human_input_requested(E_EXECUTOR_KILLED) 而非 attempt_failed(E_EXECUTOR_KILLED)，用例待按 Receipt-bound 语义重写' }, async (t) => {
   const repoRoot = await makeRepo('dhr33-herdr-driver-');
   t.after(() => rm(repoRoot, { recursive: true, force: true }));
   const runId = 'R001-herdr-driver-20260829';
@@ -220,15 +241,26 @@ test('DHR_33 窄路径：driver 托管 herdr-agent，开 Attempt、记心跳并�
   const fake = makeFakeHerdr({ statuses: ['idle', 'working', 'working'] });
   const driver = startWorkflowDriver({ repoRoot, runId, actor: { submitControl: fn => fn(store) },
     herdrCli: fake.cli, herdrRegistryPath: registryPath, profileEnvironment: { DHR33_AGENT_CONFIG: configHome }, herdrPollMs: 5 });
-  await untilAsync(async () => store.events.some(event => event.kind === 'checkpoint_recorded'), 1_000, 'herdr heartbeat');
-  await driver.stop();
+  // 用 `finally` 而不是 `t.after`：等待抛错时下面那行 `driver.stop()` 永远轮不到，而
+  // `t.after` 兜底也来不及——node:test 按登记顺序跑 after 钩子，用例体第一行登记的
+  // `rm(repoRoot)` 会**先于** stop 执行，于是递归删目录撞上仍在写 `state.json.<uuid>.tmp`
+  // 的 driver。F-7103 实测：挂住时活跃句柄只剩一个 `FSReqPromise`（既无 timer 也无子进程）
+  // ——挂的是那次 rm，不是轮询定时器。finally 保证 driver 在任何 after 钩子之前已经收口。
+  const t0 = Date.now();
+  try {
+    await untilEvent(() => store.events.some(event => event.kind === 'checkpoint_recorded'),
+      { label: 'DHR_33 窄路径 首条 checkpoint_recorded', timeoutMs: HERDR_FIRST_CHECKPOINT_BUDGET_MS,
+        dump: () => dumpDriverScene({ store, fake, t0 }) });
+  } finally {
+    await driver.stop();
+  }
   const events = store.events;
   assert.ok(events.some(event => event.kind === 'attempt_started' && event.node_id === 'agent-herdr'));
   assert.ok(events.some(event => event.kind === 'checkpoint_recorded' && event.node_id === 'agent-herdr'));
   assert.equal(events.find(event => event.kind === 'attempt_failed' && event.node_id === 'agent-herdr')?.reason, 'E_EXECUTOR_KILLED');
 });
 
-test('DHR_61 D1: Herdr Attempt freezes source and ordered fallback identities before launch', async (t) => {
+test('DHR_61 D1: Herdr Attempt freezes source and ordered fallback identities before launch', { timeout: FILE_TEST_TIMEOUT_MS }, async (t) => {
   const repoRoot = await makeRepo('dhr61-herdr-receipt-');
   t.after(() => rm(repoRoot, { recursive: true, force: true }));
   const runId = 'R001-dhr61-herdr-receipt-20260829';
@@ -252,8 +284,14 @@ test('DHR_61 D1: Herdr Attempt freezes source and ordered fallback identities be
   const fake = makeFakeHerdr({ statuses: ['working', 'working'] });
   const driver = startWorkflowDriver({ repoRoot, runId, actor: { submitControl: fn => fn(store) }, herdrCli: fake.cli,
     herdrRegistryPath: registryPath, profileEnvironment: { DHR61_AGENT_CONFIG: configHome }, herdrPollMs: 5 });
-  await untilAsync(async () => store.events.some(event => event.kind === 'checkpoint_recorded'), 1_000, 'DHR61 receipt heartbeat');
-  await driver.stop();
+  const t0 = Date.now();
+  try { // 同上（F-7103）：driver 必须在 `rm(repoRoot)` 那个 after 钩子之前收口。
+    await untilEvent(() => store.events.some(event => event.kind === 'checkpoint_recorded'),
+      { label: 'DHR_61 D1 首条 checkpoint_recorded', timeoutMs: HERDR_FIRST_CHECKPOINT_BUDGET_MS,
+        dump: () => dumpDriverScene({ store, fake, t0 }) });
+  } finally {
+    await driver.stop();
+  }
   const receiptId = store.events.find(event => event.kind === 'attempt_started')?.detail.replace(/^receipt:/, '');
   const receipt = JSON.parse(await readFile(join(root, 'receipts', `${receiptId}.json`), 'utf8'));
   assert.equal(receipt.protocol, 'relay.attempt-receipt/v1');
@@ -262,7 +300,7 @@ test('DHR_61 D1: Herdr Attempt freezes source and ordered fallback identities be
   assert.equal(JSON.stringify(receipt).includes('test-model'), false, 'receipt must only keep hashes, never projected values');
 });
 
-test('DHR_61 D1: a Herdr profile without a projection rule leaves only that node pending', async (t) => {
+test('DHR_61 D1: a Herdr profile without a projection rule leaves only that node pending', { timeout: FILE_TEST_TIMEOUT_MS }, async (t) => {
   const repoRoot = await makeRepo('dhr61-herdr-projection-missing-');
   t.after(() => rm(repoRoot, { recursive: true, force: true }));
   const runId = 'R001-dhr61-projection-missing-20260830';
@@ -284,8 +322,19 @@ test('DHR_61 D1: a Herdr profile without a projection rule leaves only that node
   await store.appendEvent({ kind: 'run_created', at: run.created_at });
   const fake = makeFakeHerdr();
   const driver = startWorkflowDriver({ repoRoot, runId, actor: { submitControl: fn => fn(store) }, herdrCli: fake.cli, herdrRegistryPath: registryPath });
+  const t0 = Date.now();
 
-  assert.deepEqual(await driver.done, { ok: true });
+  // 上限依据：这条只跑一个 process 节点 + 一个停在 pending 的 herdr 节点，`driver.done`
+  // 自己的生产上限就是 driver 的 `doneTimeoutMs = 60_000`（workflow-driver.mjs:33）。
+  // finally 同上（F-7103）：超限时也要让 driver 先收口，再轮到 `rm(repoRoot)`。
+  let doneOutcome;
+  try {
+    doneOutcome = await withDeadline(driver.done, { label: 'DHR_61 projection-missing driver.done',
+      timeoutMs: 60_000, dump: () => dumpDriverScene({ store, fake, t0 }) });
+  } finally {
+    await driver.stop();
+  }
+  assert.deepEqual(doneOutcome, { ok: true });
   assert.equal(fake.paneSplits, 0);
   const state = await store.readState();
   assert.equal(state.node_states.find(node => node.node_id === 'agent-herdr').status, 'pending');
