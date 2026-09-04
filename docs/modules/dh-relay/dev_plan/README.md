@@ -63,7 +63,7 @@ P9 仍冻结暂缓
 |---|---|---|---|
 | [P4-DSH工作台最小Pilot](./P4-DSH工作台最小Pilot-开发方案.md) | 先证明 Windows/SSH CLI 必备控制面独立成立，再评估 DSH 树外桌面控制面（可判否，与 P5 并行） | DHR_25 已完成（2026-08-18）；`DHR-B-11`（2026-08-20）拆 DHR_27 为 CLI 收口 + DHR_50 补录、解锁 P5 不等 DSH 三态 | DHR_25、DHR_26、DHR_49、DHR_27、DHR_50 |
 | [P5-Relay-v2持久内核与DSH桥接](./P5-Relay-v2持久内核与DSH桥接-开发方案.md) | 建立客户端中立协议、Detached Runtime、参考 CLI、恢复和 basic-agent-task | **G01-P5 阶段闸已过（2026-08-29 用户对话放行）**；六卡全部完成有 verify | DHR_28~31、DHR_51、DHR_52 |
-| [P6-Herdr多账号执行底座](./P6-Herdr多账号执行底座-开发方案.md) | 接入多账号 Codex/Claude Code，验证 DSH-off 和 Linux SSH Herdr 路径 | 已解锁（2026-08-29）；DHR_32/33/34/61/63~71 已完成；DHR_74 待验收；`DHR-B-40`（2026-09-04 已确认）新增 DHR_75（Herdr 异步调用/lease 续租，heavy，未开始），DHR_72 已按此前 D-start 进行中且 blocked-by:DHR_75；DHR_35 进行中，blocked-by:DHR_72；DHR_73 未开始 | DHR_32~35、DHR_61、DHR_63~75（DHR_62 不属任务卡；DHR_74/75 单列） |
+| [P6-Herdr多账号执行底座](./P6-Herdr多账号执行底座-开发方案.md) | 接入多账号 Codex/Claude Code，验证 DSH-off 和 Linux SSH Herdr 路径 | 已解锁（2026-08-29）；DHR_32/33/34/61/63~71 已完成；DHR_74 待验收；DHR_75（Herdr 异步调用/lease 续租，heavy）已于 2026-09-04 D-start、进行中；DHR_72 进行中且 blocked-by:DHR_75；DHR_35 进行中，blocked-by:DHR_72；DHR_73 未开始 | DHR_32~35、DHR_61、DHR_63~75（DHR_62 不属任务卡；DHR_74/75 单列） |
 | [P7-DevHarness单卡完整流水](./P7-DevHarness单卡完整流水-开发方案.md) | 建立 PlanHome/TaskRef/通用节点与 Result 基础，并用一张真实外部任务验通 | `DHR-B-21` 已确认；DHR_53 旧实现已归档并删除 worktree/branch，当前暂停待前置 Gate 与新施工授权；DHR_54~60 未开始；blocked-by-phase-gate:P6，并等待 DHR_30 稳定接口 | DHR_53~60 |
 | [P8-多卡编排与运行治理](./P8-多卡编排与运行治理-开发方案.md) | 实现真实跨项目多 TaskRef 调度、Decision/B-adjust 后 Plan change、PlanHome archive 与独立 Oracle | `DHR-B-21` 已确认；DHR_41/42/43/45 未开始且 blocked-by-phase-gate:P7；DHR_44 已取消；未授权开工 | DHR_41~45 |
 
