@@ -225,7 +225,7 @@ async function runtimeFixture(t, statuses, options = {}) {
   const store = await createStore({ root, run });
   await store.appendEvent({ kind: 'run_created', at: run.created_at });
   const fake = makeFakeHerdr({ statuses, ...options.fake });
-  const driver = startWorkflowDriver({ repoRoot, runId, actor: { submitControl: fn => fn(store) }, herdrCli: fake.cli, herdrRegistryPath: registryPath, profileEnvironment: { DHR33_PROFILE_HOME: repoRoot }, herdrPollMs: 2, observationLostMs: 5, doneTimeoutMs: 5, ...options.driver });
+  const driver = startWorkflowDriver({ repoRoot, runId, actor: { submitControl: fn => fn(store) }, herdrCli: fake.cli, herdrRegistryPath: registryPath, profileEnvironment: { DHR33_PROFILE_HOME: repoRoot }, herdrPollMs: 20, observationLostMs: 50, doneTimeoutMs: 50, ...options.driver });
   t.after(async () => { await driver.stop(); await rm(repoRoot, { recursive: true, force: true }); });
   return { store, root, driver, fake };
 }
@@ -241,7 +241,7 @@ test('DHR_33 driver #1/#2：心跳逐次落账，blocked 第二沿与重放持�
 });
 
 test('DHR_33 driver #3/#5：done 有界、判定成功与双亡 HOST_LOST', { skip: 'F-3520 → DHR_72：herdrJudge 直写 Result 通路已被 DHR_64 删除，用例待按 Receipt-bound 语义重写' }, async (t) => {
-  const noJudge = await runtimeFixture(t, ['idle', 'done'], { driver: { doneTimeoutMs: 10, herdrPollMs: 2 } });
+  const noJudge = await runtimeFixture(t, ['idle', 'done'], { driver: { doneTimeoutMs: 100, herdrPollMs: 20 } });
   t.after(() => noJudge.driver.stop());
   await noJudge.driver.done;
   assert.equal((await settledState(noJudge.root)).node_states[0].status, 'waiting_human');
@@ -271,7 +271,7 @@ test('DHR_33 driver：blocked 后 send、恢复心跳；观测断不落 Result',
   await runtimeUntil(() => store.events.some(event => event.kind === 'checkpoint_recorded'), 'working after send');
   assert.equal(fake.sent.at(-1).text, 'continue');
   assert.match(store.events.filter(event => event.kind === 'host_observation_changed').at(-1).detail, /herdr_status=working/);
-  const lost = await runtimeFixture(t, ['idle', 'unknown', 'unknown'], { driver: { observationLostMs: 100 } });
+  const lost = await runtimeFixture(t, ['idle', 'unknown', 'unknown'], { driver: { observationLostMs: 1000 } });
   t.after(() => lost.driver.stop());
   await runtimeUntil(() => lost.store.events.some(event => event.observation_status === 'observation_lost'), 'observation lost');
   assert.equal(lost.store.events.some(event => event.kind === 'attempt_failed' || event.kind === 'attempt_orphaned'), false);
@@ -304,7 +304,7 @@ test('DHR_67 driver：Claude adapter 启动失败保留既有 Attempt，进入�
 });
 
 test('DHR_33 driver：idle 超阈值单次 Attention 后停止轮询', async (t) => {
-  const { store, driver, fake } = await runtimeFixture(t, ['idle'], { driver: { doneTimeoutMs: 10, herdrPollMs: 2 } });
+  const { store, driver, fake } = await runtimeFixture(t, ['idle'], { driver: { doneTimeoutMs: 100, herdrPollMs: 20 } });
   t.after(() => driver.stop());
   await runtimeUntil(() => store.events.some(event => event.kind === 'human_input_requested'), 'idle attention');
   await driver.done;
@@ -348,7 +348,7 @@ async function recoveryFixture(t, fakeOptions) {
   await store.registerReceipt({ receipt_id: 'rcpt-recover', attempt_id: 'attempt-recover', node_id: 'herdr', at: run.created_at });
   if (!fakeOptions.withoutRef) await store.appendEvent({ kind: 'host_observation_changed', at: run.created_at, node_id: 'herdr', attempt_id: 'attempt-recover', executor_ref: 'recover-agent', observation_status: 'alive', detail: observationDetail({ herdrStatus: 'working', agentName: 'recover-agent', paneId: 'recover-pane', seq: 3, workDirRoot: repoRoot, profileId: profile.executor_profile_id }) });
   const fake = makeFakeHerdr(fakeOptions);
-  const driver = startWorkflowDriver({ repoRoot, runId, actor: { submitControl: fn => fn(store) }, herdrCli: fake.cli, herdrRegistryPath: registryPath, herdrPollMs: 2 });
+  const driver = startWorkflowDriver({ repoRoot, runId, actor: { submitControl: fn => fn(store) }, herdrCli: fake.cli, herdrRegistryPath: registryPath, herdrPollMs: 20 });
   return { store, driver };
 }
 
@@ -569,10 +569,9 @@ test('DHR_68/C driver：启动即 blocked 恰写一次 waiting_human，不写 HO
   // 再等若干轮观测，确认 Attention 不会被反复写。
   //
   // 上限依据（同一条冻结规则，但这里等的是**轮询**而不是 launch）：要等满 5 轮，每轮 =
-  // 一次观测 CLI 调用的生产上限 10_000 + 夹具生效的 `herdrPollMs`（`runtimeFixture` 给 2，
-  // 本用例的 driver options 只覆盖了 `herdrReadyTimeoutMs`，没覆盖它）：
-  //     5 × (2 + 10_000) × 1.5 = 5 × 10_002 × 1.5 = **75_015**
-  const BLOCKED_FIVE_POLLS_BUDGET_MS = 75_015;
+  // 一次观测 CLI 调用的生产上限 10_000 + 夹具生效的 `herdrPollMs`（实际值 20）：
+  //     5 × (10_000 + 20) × 1.5 = **75_150**
+  const BLOCKED_FIVE_POLLS_BUDGET_MS = 75_150;
   await untilEvent(() => fake.agentGets >= 5,
     { label: 'DHR_68/C ≥5 blocked polls', timeoutMs: BLOCKED_FIVE_POLLS_BUDGET_MS, dump: blockedScene });
   assert.equal(store.events.filter(event => event.kind === 'human_input_requested').length, 1);
@@ -605,7 +604,7 @@ test('DHR_68/C driver：blocked 直接跳到 done 时提交指令仍补发一次
   const notReady = { ok: false, reason: 'E_BAD_VALUE:HERDR_CLI', detail: 'exit:1:{"error":{"code":"agent_not_ready"}}', notReady: true };
   const { store, driver, fake } = await runtimeFixture(t, ['blocked', 'blocked', 'done'], {
     fake: { agentStartResult: notReady },
-    driver: { herdrReadyTimeoutMs: 0, doneTimeoutMs: 40 },
+    driver: { herdrReadyTimeoutMs: 0, doneTimeoutMs: 400 },
   });
   t.after(() => driver.stop());
 

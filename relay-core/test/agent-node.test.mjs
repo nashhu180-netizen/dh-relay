@@ -240,7 +240,7 @@ test('DHR_33 窄路径：driver 托管 herdr-agent，开 Attempt、记心跳并�
   await store.appendEvent({ kind: 'run_created', at: '2026-08-29T00:00:00Z' });
   const fake = makeFakeHerdr({ statuses: ['idle', 'working', 'working'] });
   const driver = startWorkflowDriver({ repoRoot, runId, actor: { submitControl: fn => fn(store) },
-    herdrCli: fake.cli, herdrRegistryPath: registryPath, profileEnvironment: { DHR33_AGENT_CONFIG: configHome }, herdrPollMs: 5 });
+    herdrCli: fake.cli, herdrRegistryPath: registryPath, profileEnvironment: { DHR33_AGENT_CONFIG: configHome }, herdrPollMs: 20 });
   // 用 `finally` 而不是 `t.after`：等待抛错时下面那行 `driver.stop()` 永远轮不到，而
   // `t.after` 兜底也来不及——node:test 按登记顺序跑 after 钩子，用例体第一行登记的
   // `rm(repoRoot)` 会**先于** stop 执行，于是递归删目录撞上仍在写 `state.json.<uuid>.tmp`
@@ -283,7 +283,7 @@ test('DHR_61 D1: Herdr Attempt freezes source and ordered fallback identities be
   await store.appendEvent({ kind: 'run_created', at: '2026-08-29T00:00:00Z' });
   const fake = makeFakeHerdr({ statuses: ['working', 'working'] });
   const driver = startWorkflowDriver({ repoRoot, runId, actor: { submitControl: fn => fn(store) }, herdrCli: fake.cli,
-    herdrRegistryPath: registryPath, profileEnvironment: { DHR61_AGENT_CONFIG: configHome }, herdrPollMs: 5 });
+    herdrRegistryPath: registryPath, profileEnvironment: { DHR61_AGENT_CONFIG: configHome }, herdrPollMs: 20 });
   const t0 = Date.now();
   try { // 同上（F-7103）：driver 必须在 `rm(repoRoot)` 那个 after 钩子之前收口。
     await untilEvent(() => store.events.some(event => event.kind === 'checkpoint_recorded'),

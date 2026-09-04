@@ -189,7 +189,7 @@
 | DHR_71 | 修 Herdr 定向回归的时序脆弱与挂死，交付可重复绿闸 | 标准 | 已完成 | 无（基线 master） | [workspace/DHR_71/](../workspace/DHR_71/) | | 任务类型=light；B-35 新增，承接 F-3520 的时序部分与 652s 挂死；只改 `relay-core/test/**`（用例行级冻结，见 §3.2）；隔离 4 条语义红（skip，**B-36 冻结恰 4 条**：`herdr-adapter.test.mjs:242/:279/:354` + `agent-node.test.mjs:198`，按用例名核销）；验收只能写「隔离 4 条 skip、其余全 pass」不得写「全绿」；首轮施工 `wt/DHR_71@b268456` blocked 后按 B-36 续做增量；EPERM 成因归 BL-17；须另行 D-start |
 | DHR_72 | 修 driver 单次 idle 采样即永久退出观测 | 标准 | 未开始 | DHR_71 | [workspace/DHR_72/](../workspace/DHR_72/) | | 任务类型=heavy；B-35 新增，承接 F-3517（P6-M1 缺 checkpoint 的根因）与 F-3520 的语义部分；运行契约 = 长期 idle 是允许人工持有的运行态、人工 stop 是唯一业务出口（D-B35-6）；五出口 fail-closed；`workflow-driver.mjs` 轮询段唯一归属本卡；自跑一条带真实 checkpoint 的 Codex 实录作 verify 证据，**不计入 DHR_35 P6-M1**；须另行 D-start |
 | DHR_73 | 调查启动链静默停摆（F-3516 / F-3519） | 标准 | 未开始 | DHR_72 | [workspace/DHR_73/](../workspace/DHR_73/) | | 任务类型=normal；B-35 新增；**纯调查卡，不改 `relay-core/**`**；时间盒 ≤12 次真实启动或两个工作时段；出口 (a) 根因钉死 + 修复卡 B-adjust 候选 / (b) 复现率 + 现场 + 看门狗候选；两种出口下 F-3516/F-3519 保持 open；DHR_35 重开不等本卡；须另行 D-start |
-| DHR_74 | 钉死 BL-17 一族停顿（F-7108/F-7109）的精确落点并按证据修复，解阻塞 DHR_71 绿闸 | 标准 | 进行中 | 无前置（DHR_71 门禁依赖本卡） | [workspace/DHR_74/](../workspace/DHR_74/) | | 任务类型=常规；2026-09-03 用户对话确认立项（范围=诊断并修复 Store 持久化/测试临时目录争用，修后重跑 DHR_71 门禁）；`store/**` 只读诊断，触及写路径语义即停手升高危重新请确认；不改变 D-B35-1 卡序 71→72→73；findings 喂 DHR_73 但不替代其真实启动调查；施工=主会话（非 Herdr 环境偏差已登记），复核 fresh 换人 |
+| DHR_74 | 钉死 BL-17 一族停顿（F-7108/F-7109）的精确落点并按证据修复，解阻塞 DHR_71 绿闸 | 标准 | 待验收 | 无前置（DHR_71 门禁依赖本卡） | [workspace/DHR_74/](../workspace/DHR_74/) | | 任务类型=常规；2026-09-03 用户对话确认立项（范围=诊断并修复 Store 持久化/测试临时目录争用，修后重跑 DHR_71 门禁）；`store/**` 只读诊断，触及写路径语义即停手升高危重新请确认；不改变 D-B35-1 卡序 71→72→73；findings 喂 DHR_73 但不替代其真实启动调查；施工=主会话（非 Herdr 环境偏差已登记），复核 fresh 换人 |
 
 > 状态列只填五枚举，阶段闸阻塞写「备注」列。P5 未通过时 DHR_32~35 均不得开工。
 
@@ -534,10 +534,12 @@
   - `relay-core/test/*.test.mjs`
   - `docs/modules/dh-relay/workspace/DHR_74/**`
   - `docs/modules/dh-relay/backlog.md`
+  - `docs/modules/dh-relay/knowledge/教训库-候选.md`
   - `docs/modules/dh-relay/dev_plan/P6-Herdr多账号执行底座-开发方案.md`
 
   **逐条限定（只收窄上面的清单，不放宽）**：
 
+  - `docs/modules/dh-relay/knowledge/教训库-候选.md` —— **2026-09-04 补登记（原为登记遗漏，非范围扩张）**：E6 教训回流是标准档收口的固定动作，落点只能是本文件；DHR_71 同款遗漏已由 dh R30 报出。本卡实际写入＝候选-75~81 追加，无既有条目改写。
   - `relay-core/test/helpers/**` —— 新增探针 / 等待工具；**不含** `fake-herdr.mjs`。
   - `relay-core/test/*.test.mjs` —— 仅限「夹具临时目录根、收尾清理顺序、import 探针、**夹具时间参数降放大**」类**非断言行**。时间参数口径（**2026-09-03 用户对话确认修订**；原文写「`herdrPollMs` 与同一 options 配对的 `doneTimeoutMs` / `observationLostMs` 按同一倍率 ×10」，与实际实施不符，按实际做法校正；依据见 `workspace/DHR_74/review.md` 整改 A 与三路复核 F-74-R1-01 / F-74-REQ-04 / F-74-LES-02）：
     1. `herdrPollMs` **统一抬到 20ms**（原值 1~5ms 不等，故各文件倍率不同：2→20 为 ×10、5→20 为 ×4——**倍率一致不是要求，绝对值一致才是**）；

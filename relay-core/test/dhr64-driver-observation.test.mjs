@@ -35,7 +35,7 @@ async function fixture(t, fake) {
   const driver = startWorkflowDriver({
     repoRoot, runId: run.run_id, actor: { submitControl: job => job(store) }, herdrCli: fake.cli,
     herdrRegistryPath: registryPath, profileEnvironment: { DHR64_PROFILE_HOME: repoRoot },
-    herdrPollMs: 2, doneTimeoutMs: 8, observationLostMs: 4,
+    herdrPollMs: 20, doneTimeoutMs: 80, observationLostMs: 40,
     herdrJudge: () => { throw new Error('judge must not infer a Result'); },
   });
   t.after(() => driver.stop());

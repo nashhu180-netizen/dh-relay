@@ -350,7 +350,7 @@ test('DHR70 C: agent_get=idle ∧ pane_get=error 不得单独判死 Attempt，�
   const driver = startWorkflowDriver({
     repoRoot, runId, actor: { submitControl: job => job(store) }, herdrCli: fake.cli,
     herdrRegistryPath: registryPath, profileEnvironment: { DHR70_PROFILE_HOME: repoRoot },
-    herdrPollMs: 2, doneTimeoutMs: 20,
+    herdrPollMs: 20, doneTimeoutMs: 200,
   });
   t.after(() => driver.stop());
   await driver.done;

@@ -1,0 +1,12 @@
+<!-- remediation1.DONE — DHR_74 R1 construction close signal -->
+status: done
+
+R1-A: updated the 20ms absolute poll wording, semantic timeout rule, brief scope, and 75,150ms budget comment/constant.
+R1-B: downgraded A/B/C, fs, CPU, queue, and exact-op claims to the evidence boundary; added F-74-REQ-05 human acceptance item.
+R1-C: filled E-7408 as six-round combination-branch process evidence; corrected CPU sampling to 18–19s; added reproducible signature scan evidence.
+R1-E: documented fs-probe blind spots (FileHandle, CJS/sync APIs, queues, LOOP-LAG).
+R1-F: rewrote lesson candidates 1–3 and added candidates 4–5 plus LES-06 minimum reproduction package.
+
+Not done: no gate rerun; no DHR_71, DevPlan, Store/runtime/contracts, assertions, or test semantics changed. Rebase/merge sequencing remains with the controller after DHR_71 lands in master.
+
+`git diff --stat` (before staging): 8 files changed, 56 insertions(+), 26 deletions(-); two new files were additionally staged (`e7408-bl17-signature-scan.txt`, `remediation1.DONE`). Allowed-path audit passed; `git diff --check` passed and no assertion hunks were changed.

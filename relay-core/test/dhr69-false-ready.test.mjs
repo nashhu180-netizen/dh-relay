@@ -53,7 +53,7 @@ async function runtimeFixture(t, { statuses, paneStatuses, registryProfile = cla
   const started = startWorkflowDriver({
     repoRoot, runId, actor: { submitControl: fn => fn(store) }, herdrCli: herdr.cli,
     herdrRegistryPath: registryPath, profileEnvironment: { DHR69_PROFILE_HOME: repoRoot },
-    herdrPollMs: 2, observationLostMs: 60_000, doneTimeoutMs: 60_000, herdrReadyTimeoutMs: 0,
+    herdrPollMs: 20, observationLostMs: 60_000, doneTimeoutMs: 60_000, herdrReadyTimeoutMs: 0,
     ...driver,
   });
   t.after(async () => {
@@ -102,7 +102,7 @@ async function recoveryFixture(t, { statuses, paneStatuses, ...fakeExtras }) {
   const driver = startWorkflowDriver({
     repoRoot, runId, actor: { submitControl: fn => fn(store) }, herdrCli: fake.cli,
     herdrRegistryPath: registryPath, profileEnvironment: { DHR69_PROFILE_HOME: repoRoot },
-    herdrPollMs: 2, doneTimeoutMs: 60_000, herdrReadyTimeoutMs: 0,
+    herdrPollMs: 20, doneTimeoutMs: 60_000, herdrReadyTimeoutMs: 0,
   });
   t.after(async () => {
     await driver.stop();

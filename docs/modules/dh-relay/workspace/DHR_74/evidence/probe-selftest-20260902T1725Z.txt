@@ -1,0 +1,4 @@
+[fs-probe] ACTIVE mode=loader-hook pid=53192 node=v24.12.0
+redact: receipt-~666ff6ccaa5b.json
+ops-done
+[fs-probe] EXIT-SUMMARY calls={"writeFile":1,"rename":1,"unlink":1} slow=0 max_elapsed=2ms pending=0

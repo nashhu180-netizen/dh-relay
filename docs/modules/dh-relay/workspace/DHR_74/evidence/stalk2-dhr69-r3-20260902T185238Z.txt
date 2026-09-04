@@ -1,0 +1,26 @@
+[fs-probe 18:52:43.212] ACTIVE mode=loader-hook pid=48236 node=v24.12.0
+✔ DHR_69/E-2：fake paneGet 形态对齐 E-1 普通 shell pane (4.3887ms)
+✔ DHR_69/A adapter：假就绪 idle+pane blocked → launch_blocked，保留 handle，不关 pane (0.8155ms)
+✔ DHR_69/A 负例：Codex agent_not_ready 不读 pane get，argv/行为不变 (0.289ms)
+✔ DHR_69/D：非 idle 三态 paneGet 次数为 0；idle 才读 pane (0.2501ms)
+[fs-probe 18:52:46.670] LOOP-LAG drift=2955ms
+✔ DHR_69/A driver：假就绪恰写一次 blocked Attention，扣住指令，不写 HOST_LOST (3366.6687ms)
+[fs-probe 18:52:49.987] LOOP-LAG drift=2817ms
+✔ DHR_69/B：中途假 idle 不得写 RESULT_MISSING，不得结束 Attempt (3473.5641ms)
+[fs-probe 18:52:53.483] LOOP-LAG drift=2996ms
+✔ DHR_69/C recovery：假就绪先观测再扣住，离开 blocked 后届内恰补发一次 (3342.4594ms)
+[fs-probe 18:52:56.820] LOOP-LAG drift=2837ms
+✔ DHR_69/C recovery：观测失败不得把提交指令发出去（F-69-R2-01） (3417.1123ms)
+[fs-probe 18:53:00.220] LOOP-LAG drift=2901ms
+✔ DHR_69/F：持续 idle∧blocked 升级一条可区分 Attention，不放行、不判失败，恢复后恰补发一次 (3428.1524ms)
+[fs-probe 18:53:03.657] LOOP-LAG drift=2936ms
+✔ DHR_69/F：mismatch 被 unknown 打断后必须重新计时，不得立即升级 (3650.081ms)
+[fs-probe 18:53:04.055] EXIT-SUMMARY calls={"readFile":39,"mkdtemp":6,"mkdir":63,"writeFile":80,"rename":53,"appendFile":47,"readdir":1,"rm":6} slow=0 max_elapsed=17ms pending=0
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 23082.3707

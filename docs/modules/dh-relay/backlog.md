@@ -288,6 +288,8 @@
 - **DHR_71 隔离子进程 TEMP 实验（2026-09-03 补录，F-7109 登记）**：只把 Node 子进程的 `TEMP`/`TMP` 指到 worktree 内目录、其余不动：第 1 轮合格（51 pass / 4 skip / 0 fail，333.403s），第 2 轮仍红（50/4/1，572.898s）——`dhr69-false-ready:180` 停在**首次 `host_observation_changed(alive)` 之后、启动期 Attention（`human_input_requested`）落账之前**，fake 计数非零（`agentGets=1/paneGets=1/paneSplits=1`），**不符合 F-7108「止于 attempt_started 且 fake 全 0」签名**，登记为独立 F-7109（证据 `workspace/DHR_71/evidence/gate-isolated-temp-round{1,2}-20260902T23*.txt`）。⇒ 上面「建议起点」里「把夹具根挪出 `%TEMP%`」被实测否定为**充分**修复——换目录后停顿依旧（排除的只是 `%TEMP%` 目录自身的堆积/争用因素）；EPERM 与停顿两形态的根因钉死移交 DHR_74 专卡。
 - **2026-09-03 立卡**：用户对话确认按**标准档**立 **DHR_74** 专卡（P6 §3.2，范围原文「诊断并修复 Store 持久化/测试临时目录争用，再重跑 DHR_71 门禁」）；`store/**` 只读诊断，触及写路径语义（重试/超时/批量化）即停手升高危并重新请用户确认——与本条「档位建议」升级条款一致。F-7108 / F-7109 由该卡承接，本条在其收口前**保持 open**。
 - **档位建议**：标准档（触及 Store 落盘路径则升高危）。
+- **2026-09-03 独立基线补录（E-7119）**：`wt/DHR_71@73c43eb` 不含 DHR_74 探针与时间参数改动，按同一冻结五文件命令连续三轮 `51 pass / 4 skip / 0 fail`、285–289s 全部达标。因此 DHR_74 时间参数调整对绿闸的必要性未证，是否解除阻塞待主控按独立基线裁决。
+- **DHR_74 收口备注（2026-09-03，范围外观察登记，不立卡）**：门禁冻结五文件之外仍有测试文件使用 `herdrPollMs: 1~2`（`dhr64-result-bridge.test.mjs:191,227`、`identity-quota.test.mjs`、`dhr65-registry-loader.test.mjs:135`）。均不在 DHR_74 冻结命令与授权面内、本次未被碰；若未来把这些文件纳入门禁，F-7401 同一放大问题会再现（DHR_74 轮 2 代码路范围外观察）。
 
 ### DHR-BL-18 master 历史证据里的原 Receipt UUID（DHR_30 / DHR_31，只登记不重写）
 

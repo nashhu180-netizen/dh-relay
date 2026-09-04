@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+	<testcase name="DHR_69/E-2：fake paneGet 形态对齐 E-1 普通 shell pane" time="0.007668" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_74\relay-core\test\dhr69-false-ready.test.mjs"/>
+	<testcase name="DHR_69/A adapter：假就绪 idle+pane blocked → launch_blocked，保留 handle，不关 pane" time="0.004092" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_74\relay-core\test\dhr69-false-ready.test.mjs"/>
+	<testcase name="DHR_69/A 负例：Codex agent_not_ready 不读 pane get，argv/行为不变" time="0.000457" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_74\relay-core\test\dhr69-false-ready.test.mjs"/>
+	<testcase name="DHR_69/D：非 idle 三态 paneGet 次数为 0；idle 才读 pane" time="0.000372" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_74\relay-core\test\dhr69-false-ready.test.mjs"/>
+	<testcase name="DHR_69/A driver：假就绪恰写一次 blocked Attention，扣住指令，不写 HOST_LOST" time="45.119702" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_74\relay-core\test\dhr69-false-ready.test.mjs" failure="timeout:false-ready waiting_human">
+		<failure type="testCodeFailure" message="timeout:false-ready waiting_human">
+[Error [ERR_TEST_FAILURE]: timeout:false-ready waiting_human] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: Error: timeout:false-ready waiting_human
+      at until (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_74/relay-core/test/dhr69-false-ready.test.mjs:18:33)
+      at async TestContext.&lt;anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_74/relay-core/test/dhr69-false-ready.test.mjs:184:3)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)
+}
+		</failure>
+	</testcase>
+	<testcase name="DHR_69/B：中途假 idle 不得写 RESULT_MISSING，不得结束 Attempt" time="3.493522" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_74\relay-core\test\dhr69-false-ready.test.mjs"/>
+	<testcase name="DHR_69/C recovery：假就绪先观测再扣住，离开 blocked 后届内恰补发一次" time="3.346993" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_74\relay-core\test\dhr69-false-ready.test.mjs"/>
+	<testcase name="DHR_69/C recovery：观测失败不得把提交指令发出去（F-69-R2-01）" time="3.361821" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_74\relay-core\test\dhr69-false-ready.test.mjs"/>
+	<testcase name="DHR_69/F：持续 idle∧blocked 升级一条可区分 Attention，不放行、不判失败，恢复后恰补发一次" time="3.361320" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_74\relay-core\test\dhr69-false-ready.test.mjs"/>
+	<testcase name="DHR_69/F：mismatch 被 unknown 打断后必须重新计时，不得立即升级" time="3.594604" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_74\relay-core\test\dhr69-false-ready.test.mjs"/>
+	<!-- tests 10 -->
+	<!-- suites 0 -->
+	<!-- pass 9 -->
+	<!-- fail 1 -->
+	<!-- cancelled 0 -->
+	<!-- skipped 0 -->
+	<!-- todo 0 -->
+	<!-- duration_ms 64658.1412 -->
+</testsuites>

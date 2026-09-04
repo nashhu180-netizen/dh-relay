@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+	<testcase name="DHR_69/E-2：fake paneGet 形态对齐 E-1 普通 shell pane" time="0.004899" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_74\relay-core\test\dhr69-false-ready.test.mjs"/>
+	<testcase name="DHR_69/A adapter：假就绪 idle+pane blocked → launch_blocked，保留 handle，不关 pane" time="0.004628" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_74\relay-core\test\dhr69-false-ready.test.mjs"/>
+	<testcase name="DHR_69/A 负例：Codex agent_not_ready 不读 pane get，argv/行为不变" time="0.000360" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_74\relay-core\test\dhr69-false-ready.test.mjs"/>
+	<testcase name="DHR_69/D：非 idle 三态 paneGet 次数为 0；idle 才读 pane" time="0.000296" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_74\relay-core\test\dhr69-false-ready.test.mjs"/>
+	<testcase name="DHR_69/A driver：假就绪恰写一次 blocked Attention，扣住指令，不写 HOST_LOST" time="3.379201" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_74\relay-core\test\dhr69-false-ready.test.mjs"/>
+	<testcase name="DHR_69/B：中途假 idle 不得写 RESULT_MISSING，不得结束 Attempt" time="3.467342" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_74\relay-core\test\dhr69-false-ready.test.mjs"/>
+	<testcase name="DHR_69/C recovery：假就绪先观测再扣住，离开 blocked 后届内恰补发一次" time="3.334903" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_74\relay-core\test\dhr69-false-ready.test.mjs"/>
+	<testcase name="DHR_69/C recovery：观测失败不得把提交指令发出去（F-69-R2-01）" time="3.443297" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_74\relay-core\test\dhr69-false-ready.test.mjs"/>
+	<testcase name="DHR_69/F：持续 idle∧blocked 升级一条可区分 Attention，不放行、不判失败，恢复后恰补发一次" time="3.423692" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_74\relay-core\test\dhr69-false-ready.test.mjs"/>
+	<testcase name="DHR_69/F：mismatch 被 unknown 打断后必须重新计时，不得立即升级" time="3.605988" classname="test" file="D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\DHR_74\relay-core\test\dhr69-false-ready.test.mjs"/>
+	<!-- tests 10 -->
+	<!-- suites 0 -->
+	<!-- pass 10 -->
+	<!-- fail 0 -->
+	<!-- cancelled 0 -->
+	<!-- skipped 0 -->
+	<!-- todo 0 -->
+	<!-- duration_ms 22967.5678 -->
+</testsuites>

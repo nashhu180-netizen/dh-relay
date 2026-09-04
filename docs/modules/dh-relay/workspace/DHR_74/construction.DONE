@@ -1,0 +1,41 @@
+<!-- construction.DONE — DHR_74 施工 Node 收口信号。主控读此文件裁决下一步（复核派发 / 合并 / 阻塞处理）；worker 已停止。 -->
+# construction.DONE — DHR_74
+
+status: done
+
+## 结论
+
+- **机器证 A：未达成「精确 op」，按兜底条款登记**：交付 = 函数级落点（`workflow-driver.mjs:319-326` 启动期 Attention 写入不完成）+ 机制候选（LOOP-LAG）+ 复现率数据；**未捕获停住的精确 op**。
+- **机器证 B：放大侧红→绿对照成立，停顿侧无对照**：fs 写 56,775→17,650、事件 28,404→8,841；修后 E-7404 仍 11 红含停顿红。实际改动为 poll 统一抬到 20ms（原值 2 或 5，倍率不一），配对超时按语义处理；DHR_71 独立基线三轮已达标，故该改动对绿闸的必要性未证。
+- **机器证 C：组合分支过程证据，阻塞解除必要性未证**：`22dc16c` 冻结命令连续 6 轮 `51 pass / 4 skip / 0 fail`、279.6–280.3s；独立基线 `wt/DHR_71@b7f894f` 同命令连续 3 轮 `51 pass / 4 skip / 0 fail`、285–289s，说明本卡时间参数改动不是已证必要条件。
+
+## 证据
+
+- 账本：`progress.md` E-7401~E-7408（探针自证、放大现场、追猎、CPU 采样、优先级对照、门禁 6 轮）。
+- 发现：`findings.md` F-7401（放大，resolved-部分）、F-7402（停顿，函数级闭合 / 内核级移交）。
+- 探针（可一键卸载）：`relay-core/test/helpers/fs-probe-{shim,hooks,register}.mjs` + README——仅经 `NODE_OPTIONS=--import` 注入，常规 `node --test` 零影响。
+
+## 移交与待办（主控裁决项）
+
+1. **复核**：本卡 task_type=normal（代码轮 1 / 需求方向 / 教训 + 有效单测）。施工=主会话（本会话不在 Herdr pane，派工偏差已登记 DevPlan），**复核必须 fresh 换人另派**；复核范围 = `git diff 4742b97..12b4654` + `b9619c3` + 合并提交 `22dc16c` 的冲突解决选择（允许路径行级核对：12 行时间参数、探针三件套、断言零改动）。
+2. **DHR_71**：独立基线 E-7119 已三轮达标；本卡不裁定“阻塞解除”，合并序与后续 rebase 由主控执行。
+3. **DHR_72 移交**：driver 心跳逐 poll 落账（`workflow-driver.mjs:394-398`）在本机夹具负载下是放大主源；DHR_72 重写轮询段时建议一并评估心跳节流/去重（机器证 F 实录会更稳）。
+4. **升级候选（须用户确认才立）**：Store `persistState` 每 event 全量 replay + 原子重写（`store.mjs:426-428`）随事件数二次增长——批量/增量持久化属契约面（高危），本轮只登记证据（E-7403b EXIT-SUMMARY），未动代码。
+5. **环境侧建议（须用户执行）**：F-7402 内核级归因可由用户在空闲时段做 Defender 排除目录 A/B 与内存压力排查；本卡无权做环境变更。
+6. **backlog DHR-BL-17**：F-7108/F-7109 的函数级落点已钉、门禁已复绿，建议本卡复核收口后将该条目标 partially-resolved（放大已修、内核级冻结登记在案），是否关闭由主控裁决。
+
+## 条件措辞（F-71-LES-02，必带）
+
+门禁 6 连绿结论仅在「该五文件冻结命令、`--test-concurrency=1`、本机 2026-09-02 晚间负载」下成立；F-7402 冻结为随机环境事件，复现时按 `.VOID-*` 作废留证重跑。
+
+## remediation1 收口（R1-A/B/C/E/F）
+
+- R1-A：更新 `BLOCKED_FIVE_POLLS_BUDGET_MS` 注释与常量为 75,150；brief 同步 20ms 绝对值及按语义缩放授权；历史自述改为事实描述。
+- R1-B：A/B/C 结论、CPU/队列/fs 覆盖面与精确 op措辞全部降级；progress 补 F-74-REQ-05 人验项。
+- R1-C：E-7408 填入六轮组合分支过程证据，CPU 间隔改为 18–19s，签名定义与零命中命令落在 `evidence/e7408-bl17-signature-scan.txt`。
+- R1-E：README 增加 FileHandle、CJS、队列与 LOOP-LAG 覆盖边界。
+- R1-F：lesson_candidates 重写候选 1/2/3，新增复现粒度、单位解析及 LES-06 最小复现包。
+
+未做项：未重跑门禁（派单纪律明确本轮不跑）；未改 DHR_71、DevPlan、Store/runtime/contracts、断言或用例语义；rebase/合并序由主控在 DHR_71 合入 master 后执行。
+
+收口自查：允许路径仅含本 brief 指定 README、`herdr-adapter.test.mjs` 单处常量/注释、DHR_74 workspace 与 backlog DHR-BL-17 补录；`git diff -U0` 未改断言；`git diff --check` 通过。提交前 `git diff --stat` 记录于主控交接。

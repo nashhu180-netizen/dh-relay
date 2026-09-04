@@ -1,0 +1,205 @@
+[fs-probe] ACTIVE mode=loader-hook pid=14572 node=v24.12.0
+✖ 批4 边界钉：driver 不托管 agent 节点——不开 Attempt、不写任何事件 (42038.3646ms)
+✖ DHR_33 窄路径：driver 托管 herdr-agent，开 Attempt、记心跳并按 stop 落 killed (5379.4923ms)
+✖ DHR_61 D1: Herdr Attempt freezes source and ordered fallback identities before launch (8577.9706ms)
+[fs-probe] SLOW op=writeFile elapsed=1035ms path=C:\Users\nash\AppData\Local\Temp\dhr61-herdr-receipt-CIxT4c\.dh-relay\R001-dhr61-herdr-receipt-20260829\state.json.~914e922ab26c.tmp
+[fs-probe] SLOW-RESOLVE op=writeFile elapsed=1045ms path=C:\Users\nash\AppData\Local\Temp\dhr61-herdr-receipt-CIxT4c\.dh-relay\R001-dhr61-herdr-receipt-20260829\state.json.~914e922ab26c.tmp
+✖ DHR_61 D1: a Herdr profile without a projection rule leaves only that node pending (8688.1832ms)
+[fs-probe] SLOW op=appendFile elapsed=1021ms path=C:\Users\nash\AppData\Local\Temp\dhr61-herdr-receipt-CIxT4c\.dh-relay\R001-dhr61-herdr-receipt-20260829\events.jsonl
+[fs-probe] SLOW-RESOLVE op=appendFile elapsed=1022ms path=C:\Users\nash\AppData\Local\Temp\dhr61-herdr-receipt-CIxT4c\.dh-relay\R001-dhr61-herdr-receipt-20260829\events.jsonl
+✖ DHR_33 分叉顺序：同一节点同时声明 process 与 herdr-agent 时必须先走 process (5367.2189ms)
+✔ 批4 ①：外部代持的 Attempt 其 Adapter 消失 → 仅该 Attempt failed(E_EXECUTOR_ADAPTER_LOST) (44.7114ms)
+✔ 批4 ①bis：dsh-agent 同形——宿主消失 → 仅该 Attempt orphaned(E_EXECUTOR_HOST_LOST) + fresh retry (36.9472ms)
+✔ 批4 ②：恢复后探活失败 → orphaned(E_EXECUTOR_ORPHANED)，retry 产生 fresh Attempt (44.5146ms)
+[fs-probe] SLOW op=writeFile elapsed=1024ms path=C:\Users\nash\AppData\Local\Temp\dhr61-herdr-receipt-CIxT4c\.dh-relay\R001-dhr61-herdr-receipt-20260829\state.json.~82e6a900e75f.tmp
+[fs-probe] SLOW-RESOLVE op=writeFile elapsed=1024ms path=C:\Users\nash\AppData\Local\Temp\dhr61-herdr-receipt-CIxT4c\.dh-relay\R001-dhr61-herdr-receipt-20260829\state.json.~82e6a900e75f.tmp
+✖ 批4 ③：Agent 失败不推翻 Process 结论（真实 driver 跑完闭环后外部代持补记账） (71926.7617ms)
+herdr driver error: EPERM: operation not permitted, rename 'C:\Users\nash\AppData\Local\Temp\dhr61-herdr-receipt-CIxT4c\.dh-relay\R001-dhr61-herdr-receipt-20260829\state.json.372a5ea7-4f7d-4491-823b-3bc9b65484bd.tmp' -> 'C:\Users\nash\AppData\Local\Temp\dhr61-herdr-receipt-CIxT4c\.dh-relay\R001-dhr61-herdr-receipt-20260829\state.json'
+[fs-probe] EXIT-SUMMARY calls={"mkdtemp":9,"writeFile":17650,"readFile":2914,"readdir":40,"mkdir":8876,"open":41,"rename":8841,"unlink":20,"cp":2,"appendFile":8814,"stat":4,"rm":9} slow=3 max_elapsed=1045ms pending=0
+[fs-probe] ACTIVE mode=loader-hook pid=7288 node=v24.12.0
+✔ DHR64 driver: done without Receipt submission raises attention and creates no Result (13489.8299ms)
+✔ DHR64 driver: idle without Receipt submission raises attention and creates no Result (3361.1348ms)
+✔ DHR64 driver: host loss creates attention and never a Result (3245.8825ms)
+[fs-probe] EXIT-SUMMARY calls={"mkdtemp":3,"mkdir":27,"writeFile":28,"rename":16,"readFile":21,"appendFile":13,"readdir":3,"rm":3} slow=0 max_elapsed=17ms pending=0
+[fs-probe] ACTIVE mode=loader-hook pid=36028 node=v24.12.0
+✔ DHR_69/E-2：fake paneGet 形态对齐 E-1 普通 shell pane (4.6187ms)
+✔ DHR_69/A adapter：假就绪 idle+pane blocked → launch_blocked，保留 handle，不关 pane (2.8413ms)
+✔ DHR_69/A 负例：Codex agent_not_ready 不读 pane get，argv/行为不变 (0.3114ms)
+✔ DHR_69/D：非 idle 三态 paneGet 次数为 0；idle 才读 pane (0.2783ms)
+✖ DHR_69/A driver：假就绪恰写一次 blocked Attention，扣住指令，不写 HOST_LOST (45104.5245ms)
+✔ DHR_69/B：中途假 idle 不得写 RESULT_MISSING，不得结束 Attempt (3458.1418ms)
+✔ DHR_69/C recovery：假就绪先观测再扣住，离开 blocked 后届内恰补发一次 (3275.7794ms)
+✔ DHR_69/C recovery：观测失败不得把提交指令发出去（F-69-R2-01） (3391.4922ms)
+✔ DHR_69/F：持续 idle∧blocked 升级一条可区分 Attention，不放行、不判失败，恢复后恰补发一次 (3380.941ms)
+✔ DHR_69/F：mismatch 被 unknown 打断后必须重新计时，不得立即升级 (3721.4263ms)
+[fs-probe] EXIT-SUMMARY calls={"readFile":2697,"mkdtemp":6,"mkdir":63,"writeFile":79,"rename":52,"appendFile":46,"rm":6} slow=0 max_elapsed=98ms pending=0
+[fs-probe] ACTIVE mode=loader-hook pid=44356 node=v24.12.0
+✔ DHR70 A1: lease 仍有效时，本届 herdr 等待结束后的晚交必须 committed 且只写一个 Result (10534.1957ms)
+✔ DHR70 A2: 旧 actor 失租关闭后，非终态 Run 的晚交必须由新持 lease 的 actor 写入唯一 Result (18634.9436ms)
+✔ DHR70 A3-1: 另一进程活着持有 lease 时，晚交必须一直被拒且零 mutation (13715.4543ms)
+✔ DHR70 A3-2: Receipt 已被更晚的 Attempt 取代时，即便 lease 有效也必须拒绝 (10433.3151ms)
+✔ DHR70 A3-3 / B: 已终态冲突与未知 Receipt 保持现役拒绝语义 (10398.6446ms)
+✔ DHR70 C: agent_get=idle ∧ pane_get=error 不得单独判死 Attempt，提交仍须走得通 (3562.0251ms)
+[fs-probe] EXIT-SUMMARY calls={"mkdtemp":6,"writeFile":69,"mkdir":115,"rename":84,"appendFile":25,"open":85,"readFile":509,"readdir":142,"unlink":6,"rm":6} slow=0 max_elapsed=100ms pending=0
+[fs-probe] ACTIVE mode=loader-hook pid=22664 node=v24.12.0
+✔ DHR_33 adapter：状态映射、句柄、附着与输入均不触碰 Store (8.9012ms)
+✔ DHR_67 adapter：Claude 固定 pane run→唯一识别→rename，Codex 保持 agent start (0.7917ms)
+✔ DHR_67 adapter：Claude 零/多个、识别超时或 rename 失败仅关闭同一新 pane (5.9643ms)
+✔ DHR_67 adapter：Claude 只接受同 pane 的唯一 Claude，且有界等待后续识别 (5.3073ms)
+✔ DHR_33 adapter：unknown 经 pane 复核区分 observation_lost 与 host_lost，均不造 reason code (0.4835ms)
+✔ DHR_33 profile registry：只读校验、未命中 profile 保持 null (3273.685ms)
+✔ DHR_33 focus：只渲染事件既有字段，无观测降级 (0.3251ms)
+✔ DHR_33 herdr-cli：文件状态可执行桩逐字接收六个动词参数并拆 result 信封 (39165.8644ms)
+✔ DHR_33 herdr-cli：超时与明确 not-found 分别保留 transient/missing 语义 (5294.9802ms)
+✔ DHR_33 driver #1/#2：心跳逐次落账，blocked 第二沿与重放持久 (3537.0137ms)
+✖ DHR_33 driver #3/#5：done 有界、判定成功与双亡 HOST_LOST (13417.3601ms)
+✔ DHR_33 driver：blocked 后 send、恢复心跳；观测断不落 Result (6615.2549ms)
+✖ DHR_33 driver：stop 撞 launch 窗口仍杀 pane，失败写 killed Result 且不造 Attention (3274.2668ms)
+✔ DHR_67 driver：Claude adapter 启动失败保留既有 Attempt，进入人工处理且不造 Result (3269.4925ms)
+✔ DHR_33 driver：idle 超阈值单次 Attention 后停止轮询 (3389.3824ms)
+✔ DHR_33 driver #4/#7/#9：观测断单次升级、恢复后再升级；SSH 桩不冒充 (3478.3178ms)
+✔ DHR_33 driver #7/#8：成功观测的非 ready 是盲区；未知 profile 零事件 (3245.0461ms)
+✖ DHR_33 driver #10：恢复届按账上 ref 判 orphaned 或接管同一 attempt (10064.3164ms)
+✔ DHR_33 driver：恢复届 transient 探测与无 ref 都只落 observation_lost (82.947ms)
+✔ DHR_68/A adapter：启动超时先对账——agent 已建成沿用 handle，未建成才关同一 pane，且永不重发启动 (0.5145ms)
+✔ DHR_68/A herdr-cli：启动专用超时与其余动词分离，超时带 timedOut 语义位 (10724.9303ms)
+✔ DHR_68/B：pane run 不解 JSON，Claude 在真实空 stdout 形态下仍完成识别与 rename (6529.9619ms)
+✔ DHR_68/C adapter：启动期 blocked 保留 handle、不关 pane、不重试 (0.6141ms)
+✖ DHR_68/C driver：启动即 blocked 恰写一次 waiting_human，不写 HOST_LOST，指令扣住不发 (45036.8653ms)
+✔ DHR_68/C driver：人处理完信任后离开 blocked，提交指令恰好补发一次 (3505.9257ms)
+✔ DHR_68/C driver：blocked 直接跳到 done 时提交指令仍补发一次（复核轮 2 · F-68-R2-01） (3720.6832ms)
+✔ DHR_68/D：fake-herdr 每个被触及命令的返回形态逐条对齐真实 herdr 的实测记录 (2.9803ms)
+[fs-probe] EXIT-SUMMARY calls={"mkdtemp":21,"writeFile":201,"readFile":2717,"rm":21,"mkdir":172,"rename":122,"appendFile":105,"readdir":9} slow=0 max_elapsed=117ms pending=0
+ℹ tests 55
+ℹ suites 0
+ℹ pass 44
+ℹ fail 11
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 699275.1579
+
+✖ failing tests:
+
+test at test\agent-node.test.mjs:129:1
+✖ 批4 边界钉：driver 不托管 agent 节点——不开 Attempt、不写任何事件 (42038.3646ms)
+  Error: timeout waiting for prepare succeeded
+      at untilAsync (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_74/relay-core/test/agent-node.test.mjs:43:33)
+      at async TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_74/relay-core/test/agent-node.test.mjs:177:3)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3)
+
+test at test\agent-node.test.mjs:198:1
+✖ DHR_33 窄路径：driver 托管 herdr-agent，开 Attempt、记心跳并按 stop 落 killed (5379.4923ms)
+  Error: timeout waiting for herdr heartbeat
+      at untilAsync (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_74/relay-core/test/agent-node.test.mjs:43:33)
+      at runNextTicks (node:internal/process/task_queues:64:5)
+      at process.processTimers (node:internal/timers:538:9)
+      at async TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_74/relay-core/test/agent-node.test.mjs:223:3)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)
+
+test at test\agent-node.test.mjs:231:1
+✖ DHR_61 D1: Herdr Attempt freezes source and ordered fallback identities before launch (8577.9706ms)
+  Error: timeout waiting for DHR61 receipt heartbeat
+      at untilAsync (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_74/relay-core/test/agent-node.test.mjs:43:33)
+      at runNextTicks (node:internal/process/task_queues:64:5)
+      at process.processTimers (node:internal/timers:538:9)
+      at async TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_74/relay-core/test/agent-node.test.mjs:255:3)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)
+
+test at test\agent-node.test.mjs:265:1
+✖ DHR_61 D1: a Herdr profile without a projection rule leaves only that node pending (8688.1832ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'failed'
+  - 'succeeded'
+  
+      at TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_74/relay-core/test/agent-node.test.mjs:292:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'failed',
+    expected: 'succeeded',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test\agent-node.test.mjs:295:1
+✖ DHR_33 分叉顺序：同一节点同时声明 process 与 herdr-agent 时必须先走 process (5367.2189ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(store.events.some(event => event.kind === 'attempt_succeeded' && event.node_id === 'dual'))
+  
+      at TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_74/relay-core/test/agent-node.test.mjs:319:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at test\agent-node.test.mjs:490:1
+✖ 批4 ③：Agent 失败不推翻 Process 结论（真实 driver 跑完闭环后外部代持补记账） (71926.7617ms)
+  Error: timeout waiting for run_finished
+      at untilAsync (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_74/relay-core/test/agent-node.test.mjs:43:33)
+      at async TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_74/relay-core/test/agent-node.test.mjs:546:3)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)
+
+test at test\dhr69-false-ready.test.mjs:179:1
+✖ DHR_69/A driver：假就绪恰写一次 blocked Attention，扣住指令，不写 HOST_LOST (45104.5245ms)
+  Error: timeout:false-ready waiting_human
+      at until (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_74/relay-core/test/dhr69-false-ready.test.mjs:18:33)
+      at async TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_74/relay-core/test/dhr69-false-ready.test.mjs:184:3)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)
+
+test at test\herdr-adapter.test.mjs:242:1
+✖ DHR_33 driver #3/#5：done 有界、判定成功与双亡 HOST_LOST (13417.3601ms)
+  Error: timeout:judge result
+      at runtimeUntil (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_74/relay-core/test/herdr-adapter.test.mjs:207:33)
+      at async TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_74/relay-core/test/herdr-adapter.test.mjs:249:3)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)
+
+test at test\herdr-adapter.test.mjs:279:1
+✖ DHR_33 driver：stop 撞 launch 窗口仍杀 pane，失败写 killed Result 且不造 Attention (3274.2668ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + undefined
+  - 'E_EXECUTOR_KILLED'
+  
+      at TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_74/relay-core/test/herdr-adapter.test.mjs:288:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: 'E_EXECUTOR_KILLED',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test\herdr-adapter.test.mjs:354:1
+✖ DHR_33 driver #10：恢复届按账上 ref 判 orphaned 或接管同一 attempt (10064.3164ms)
+  Error: timeout:orphaned recovery
+      at runtimeUntil (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_74/relay-core/test/herdr-adapter.test.mjs:207:33)
+      at async TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_74/relay-core/test/herdr-adapter.test.mjs:356:3)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)
+
+test at test\herdr-adapter.test.mjs:510:1
+✖ DHR_68/C driver：启动即 blocked 恰写一次 waiting_human，不写 HOST_LOST，指令扣住不发 (45036.8653ms)
+  Error: timeout:blocked waiting_human
+      at runtimeUntil (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_74/relay-core/test/herdr-adapter.test.mjs:207:33)
+      at async TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_74/relay-core/test/herdr-adapter.test.mjs:521:3)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)

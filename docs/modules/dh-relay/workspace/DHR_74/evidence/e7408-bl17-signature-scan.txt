@@ -1,0 +1,15 @@
+E-7408 signature scan (read-only; six gate stdout/JUnit pairs)
+
+Command (PowerShell, cwd=relay-core):
+rg -n -i --glob 'gate-round*.txt' --glob 'gate-round*.junit.xml' '(EPERM|LOOP-LAG|EXIT-PENDING|DHR_69/A driver.*(timeout|451[0-9]{2}|waiting_human))' ..\docs\modules\dh-relay\workspace\DHR_74\evidence
+
+Signature definition:
+- EPERM: filesystem permission/rename failure text.
+- LOOP-LAG: probe stall marker.
+- EXIT-PENDING: probe reports an unfinished filesystem operation at process exit.
+- DHR_69/A driver + timeout/451xx/waiting_human: known BL-17 startup-attention stall forms.
+
+Output:
+(no matches; exit code 1)
+
+Scope: gate-round1..6 `.txt` and `.junit.xml` only. This scan does not inspect credentials and does not prove an unobserved short stall absent.

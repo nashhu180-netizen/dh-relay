@@ -1,16 +1,17 @@
-<!-- findings.md — DHR_74 问题清单。边做边记。F-7108 / F-7109 的权威登记在 DHR_71 findings，本卡只引用不复制。 -->
+<!-- findings.md — DHR_74 问题清单。整改 R1-B/C 结论按证据边界收窄。 -->
 # findings — DHR_74
 
 ## 引用（不在本卡重复登记）
 
 | ID | 权威登记处 | 与本卡的关系 |
 |---|---|---|
-| F-7108 | `workspace/DHR_71/findings.md`（open → DHR-BL-17） | 停顿形态一：止于 `attempt_started`、fake 全 0；本卡钉落点 |
-| F-7109 | `workspace/DHR_71/findings.md`（open → DHR-BL-17 专卡） | 停顿形态二：止于首次 `host_observation_changed(alive)`、fake 非零；本卡主攻 |
-| F-7103 | `workspace/DHR_71/findings.md`（resolved·测试侧） | 652s 挂死 = rm 撞在途写；本卡核查 stop() 是否真等队列排空（同族新形态候选） |
+| F-7108 | `workspace/DHR_71/findings.md` | 停顿形态一；本卡钉函数级观察落点 |
+| F-7109 | `workspace/DHR_71/findings.md` | 停顿形态二；本卡主攻 |
+| F-7103 | `workspace/DHR_71/findings.md` | 收尾竞态同族；本卡核查 stop 顺序 |
 
 ## 问题
 
 | ID | 级别 | 问题 | 证据 | 处理 | 状态 |
 |---|---|---|---|---|---|
-| — | — | （步骤 3 起填） | — | — | — |
+| F-7401 | P1 | **fs/事件放大**：1–5ms poll 下每 poll 心跳落盘、每 event 全量 replay；单文件约 2.8 万事件 / 5.7 万次 fs 写。放大侧红→绿对照成立（56,775→17,650；事件 28,404→8,841），但实际是 poll 统一 20ms（原值 2 或 5，倍率不一），配对超时按语义处理；DHR_71 独立基线三轮达标，本卡时间参数改动对绿闸的必要性未证 | `evidence/probe-gate-r1-20260902T173754Z.txt` / `postfix-gate-r1-20260902T181905Z.txt` | Store 批量持久化属升级候选，未实施 | resolved（放大侧部分）·必要性未证 |
+| F-7402 | P1 | **停顿函数级落点已定位但精确 op 未捕获**：`workflow-driver.mjs:319-326` 启动期 Attention 写入不完成。LOOP-LAG 仅是机制候选。已排除调度优先级单因子（High 2/6 仍红）；未观测 actor/Store 写队列入出队与深度、`FileHandle.writeFile/sync/close`、18–19s 采样间隔以下短时 CPU 争用。已覆盖 fs 路径未见慢调用，不能称“fs 全程健康” | `evidence/stalk-dhr69-r{9,12,15}-*.txt` / `stalk2-cpu-sampler.log` / `hprio-dhr69-r{1..6}-*.txt` | **移交（整改 R1 补回，压缩时曾丢失）**：① 门禁复现本形态时按 `.VOID-*` 作废留证重跑 + 条件措辞（F-71-LES-02）；② 内核级归因（Defender 排除目录 A/B、内存压力、硬件）属环境操作，须用户在空闲时段执行，本卡无权做环境变更；③ **DHR_73 的真实启动停摆调查应消费本卡 LOOP-LAG 证据与最小复现包**——其 F-3516/F-3519 与本形态是否同族由 DHR_73 自行判定，本卡只提供输入、不预断结论 | 遗留→DHR_73（LOOP-LAG 证据与最小复现包）＋环境侧 A/B（用户执行）＋DHR-BL-17（已确认：用户 2026-09-04 在对话里接受「机器证 A 未捕获精确 op、F-7402 内核级未钉死」的诚实结论并授权按诊断口径收口；未修复 ≠ 已修复） |

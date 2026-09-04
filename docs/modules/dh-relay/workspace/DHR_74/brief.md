@@ -6,6 +6,26 @@
 
 用测试侧探针把 DHR_71 绿闸反复打红的「BL-17 一族」停顿（F-7108 / F-7109）钉到精确 op，按证据落地标准档内修复，使 DHR_71 门禁可重跑出连续三轮合格。
 
+## 覆盖任务
+
+DHR_74（P6 · 标准档 · 任务类型=常规）。承接 backlog `DHR-BL-17` 的 F-7108 / F-7109 两种停顿形态；诊断结论喂 DHR_73，**不替代**其真实启动停摆调查。不改变 D-B35-1 的卡序 71→72→73。
+
+## 完成条件 ★必写
+
+以 DevPlan §3.2 `DHR_74` 为唯一权威口径，本卡三条机器证：
+
+| # | 条件 | 判据 |
+|---|---|---|
+| A | 停点钉死 | 测试侧探针在复现轮打出停住的**精确 op / 路径 / 耗时 / 现场**，F-7108 或 F-7109 至少一种定位到函数级落点；时间盒内未复现则交付 ≥10 轮 × 2 种负载条件的复现率与对照数据，并**如实登记未钉死** |
+| B | 修复落地 | 按证据走决策树：测试侧修复须有**红→绿对照**（修复前复现 / 修复后同条件消失）；环境侧修复只产证据 + 操作指引交用户；Store 语义修复 = 停手走升级条款 |
+| C | 门禁重跑 | 冻结五文件命令连续 3 轮 `skip=4（S1~S4 按完整用例名核销）∧ fail=0 ∧ 每轮 ≤370s`，零 BL-17 签名，带条件措辞（F-71-LES-02）；**必须跑在本卡自己的基线**（master 已含 DHR_71 收口 + 本卡改动），组合分支轮次只算过程证据（2026-09-03 用户确认补充） |
+
+## 边界 (Boundaries)
+
+- **不做**：不改 Store 落盘语义（见升级条款）；不动 DHR_72 专属物（`workflow-driver.mjs` 轮询段、`fake-herdr.mjs`、S1~S4 断言重写、共享夹具的结构与断言）；不重写任何语义陈旧用例；不跑真实 Agent；不重跑 DHR_35；不 push、不部署。
+- **禁改**：`relay-core/store/**`、`relay-core/runtime/**`、`relay-core/contracts/**`、`package.json`、任何断言与用例语义。
+- **停手条件**：诊断若证明必须改 Store 写路径语义（rename 有界重试 / 持久化超时 / 批量持久化），立即停手转主控升高危重新请用户确认。
+
 ## 背景（只读输入，权威在引用处）
 
 - `DHR_71` 的 `progress.md` / `findings.md`：F-7108（停于 `attempt_started` 后、fake 全 0，`store.mjs` `registerReceipt` → `persistState` 推断）与 F-7109（停于首次 `host_observation_changed(alive)` 后、启动期 Attention 落账前，fake 非零 `agentGets=1/paneGets=1/paneSplits=1`，driver `workflow-driver.mjs:366` idle∧blocked 判定 → `:372` `appendEvent(human_input_requested)`）。
@@ -20,6 +40,8 @@
 - **升级条款（硬）**：诊断若证明必须改 `relay-core/store/**` 写路径**语义**（rename 有界重试 / 持久化超时 / 批量持久化——均属契约面），**立即停手**：证据与 B-adjust 候选写 progress/findings，转主控升高危并重新请用户确认。
 
 ## 变更范围（允许路径）
+
+本卡范围同步 DevPlan 后补授权：`herdrPollMs` 统一抬到 **20ms 绝对值**（原值 2 或 5，倍率不一）；配对超时仅在语义为「等满 N 次 poll」时同比例放大，墙钟上限（如 `60_000`）保持不变；依赖 poll 推导的注释与预算常量随之更新。此前「12 行 ×10 等比」不是本卡口径。
 
 - `relay-core/test/helpers/**`：新增探针/等待工具；**不含** `fake-herdr.mjs`。
 - `relay-core/test/*.test.mjs`：仅「夹具临时目录根、收尾清理顺序、import 探针」类**非断言行**；共享夹具 `runtimeFixture` / `recoveryFixture` 至多动 `mkdtemp` 根一行（B-35 X-03 归属冻结的用户授权例外，复核逐字核对仅此一行）。
