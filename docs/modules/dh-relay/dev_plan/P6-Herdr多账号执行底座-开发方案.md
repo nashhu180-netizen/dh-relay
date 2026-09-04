@@ -484,6 +484,7 @@
   - **机器证 F（真实产品实录 · 本卡自己的 verify 证据）**：DSH-off Windows、一个已冻结 Profile（Codex 优先），跑出至少一条带真实 `checkpoint_recorded` 的实录；按 design/12 §2 脱敏（`rcpt~<摘要>`，零原 Receipt ID、零凭据）。**只证明本卡改动在真实产品上生效，不计入 DHR_35 P6-M1。** 撞 F-3516 形态停摆时重试（≤3 次）并把现场留给 DHR_73。
   - **机器证 G（守住 B-33）**：负例 `agent_get=idle ∧ pane_get=blocked` 持续期间零 `checkpoint_recorded`、节点不回 `running`、提交指令不补发；只有宿主真实 `working` 才产生 checkpoint。
   - **有效单测（重核卡必做）**：变异点由第二轮复核实例选点（候选：首次 idle 改回 return / Attention 去重判据改坏 / 去掉出口⑤），指定用例必须变红。
+  - **机器证 H（承接 DHR_74 · 2026-09-04 用户裁决「出口 1」）**：补 normal 配方要求的**有效单测机械守卫**——对同一 driver options 里 `herdrPollMs` 与其配对超时（`doneTimeoutMs` / `observationLostMs`）的**比例一致性**加断言，使「poll 被改回 1~5ms」或「配对超时漏缩」这类参数违规能被测试拦住（DHR_74 轮 1 F-74-R1-01 实证：当前参数违规也全绿，没有任何断言可拦）。守卫入库后须对该守卫**做一次变异得到「断言失败」**并登记进本卡变异点表，然后**回签 DHR_74 的 `verify(dh-relay)`**——DHR_74 因无生产代码可变异而卡在 R31，工件已合入 master、状态停在「待验收」，其 worktree `wt/DHR_74` 与分支保留至补签完成。回签判据＝master 体检 R31 清零。
 - **变更范围**：
   <!-- dh:allowed-paths:v1 task=DHR_72 -->
   - `relay-core/runtime/workflow-driver.mjs`
@@ -493,10 +494,11 @@
   - `relay-core/test/helpers/fake-herdr.mjs`
   - `relay-core/package.json`
   - `docs/modules/dh-relay/workspace/DHR_72/**`
+  - `docs/modules/dh-relay/workspace/DHR_74/review.md`
   - `docs/modules/dh-relay/as-built/relay-core.md`
   - `docs/modules/dh-relay/dev_plan/P6-Herdr多账号执行底座-开发方案.md`
 
-  **限定**：`workflow-driver.mjs` 仅 `driveHerdrNode` 轮询循环（`:330-422`）的 `done`/`idle` 处理、等待与出口结构、Attention 去重，**不得**动 `:205-275` 启动段与 recovery 段语义；`herdr-adapter.test.mjs` 仅 `:242`、`:279`、`:305`、`:354`（B-36）及共享夹具 `runtimeFixture`（**唯一归属本卡**，改后 `:510` 等既有用例须保持绿）；`agent-node.test.mjs` 仅 S4「DHR_33 窄路径」一条用例（B-36，按用例名定位）；**反向禁改（B-36）**：S3/S4 用例体内本卡只拥有移除 skip 与按 Receipt-bound 语义改写终态断言两样，**不得回改** DHR_71 落下的等待逻辑与 `try/finally stop`；`fake-herdr.mjs` 唯一归属本卡；`package.json` 只可向 test script 追加本卡测试文件名；DHR_35 实录脚本只可复制到 `workspace/DHR_72/` 并登记来源 commit，不得反向修改 DHR_35 工作区。**不得改** `contracts/**`、`store/**`、`host.mjs`、`service.mjs`、`launcher.mjs`、`runtime/executors/herdr/**`、用户级配置。
+  **限定**：`workflow-driver.mjs` 仅 `driveHerdrNode` 轮询循环（`:330-422`）的 `done`/`idle` 处理、等待与出口结构、Attention 去重，**不得**动 `:205-275` 启动段与 recovery 段语义；`herdr-adapter.test.mjs` 仅 `:242`、`:279`、`:305`、`:354`（B-36）及共享夹具 `runtimeFixture`（**唯一归属本卡**，改后 `:510` 等既有用例须保持绿）；`agent-node.test.mjs` 仅 S4「DHR_33 窄路径」一条用例（B-36，按用例名定位）；**反向禁改（B-36）**：S3/S4 用例体内本卡只拥有移除 skip 与按 Receipt-bound 语义改写终态断言两样，**不得回改** DHR_71 落下的等待逻辑与 `try/finally stop`；`fake-herdr.mjs` 唯一归属本卡；`package.json` 只可向 test script 追加本卡测试文件名；DHR_35 实录脚本只可复制到 `workspace/DHR_72/` 并登记来源 commit，不得反向修改 DHR_35 工作区。**不得改** `contracts/**`、`store/**`、`host.mjs`、`service.mjs`、`launcher.mjs`、`runtime/executors/herdr/**`、用户级配置。`workspace/DHR_74/review.md` **只为机器证 H 的回签而开**（填 verify SHA、把状态由「待验收」改「已收口」），不得改写 DHR_74 的四条诚实结论、机器证 A/B 达成度或任何复核结论；DevPlan 侧同理，只可动 DHR_74 的状态格与 verify SHA 列。
 - **档位**：标准（组件接线 · 高危五类之一）。
 - **任务类型**：重核<!-- dh:task-type:v1 task=DHR_72 type=heavy -->
 - **依赖**：DHR_71（绿闸）。须另行 D-start。
