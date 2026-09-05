@@ -161,6 +161,9 @@
 | 本卡 own-baseline 三轮达标 | 冻结命令在本卡基线连跑三轮 + 签名扫描 | machine | DHR_74-C | 等价覆盖 | skip 恰 4 ∧ fail=0 ∧ 每轮 ≤370s ∧ 四类签名零命中 | 达成：三轮 `51/4/0`，284.548 / 284.225 / 285.453s，签名零命中（空扫自证 21 命中 / 6 文件） | 本地 Node · Windows 11 · `--test-concurrency=1` · 无探针 | `node --test` reporter 原始输出 + junit + 窄复核独立复扫 | 仅本机、仅 2026-09-03 白天零并发 worker 负载；与 E-7119 非同时段，不能断言同负载因果 | DevPlan DHR_74 | 脚本 | 自动化 |
 | 改动面不越允许路径且零断言改动 | `git diff 84f2514..HEAD` 逐 hunk 核对 | machine | DHR_74-D | 等价覆盖 | 文件集 ⊆ 允许路径 ∧ 断言零改动 ∧ 零 `store/**` · `runtime/**` · `contracts/**` | 达成：三路复核独立确认越界零命中 | git | DevPlan `dh:allowed-paths:v1 task=DHR_74` | 无 | DevPlan | 脚本 | 自动化 |
 | 时间参数改动是绿闸达标的必要条件 | 与 DHR_71 独立基线横比 | machine | DHR_74-E | 否 | 不含本卡改动的基线无法达标 | **证伪**：DHR_71 独立基线（E-7119，不含本卡 12 行）三轮 285–289s 全绿，本卡基线 284–285s，差异 ≈1% | 两次非同时段运行 | 两卡各自 junit | 非同时段，同负载下的因果未证 | DevPlan DHR_74 | 脚本 | 自动化 |
+| R31 跨卡变异承接 | source squash 的双向单跳 transfer | machine | DHR_74-R31 | 等价覆盖 | producer/consumer 双向 marker 与 source Git 重建均通过 | 待本轮 `dh dh-relay` 复跑回填 | `master@13c072d` | `dh-check` R31 | 不承接其它 source 或链式 transfer | v1 | test | user-E11 |
+
+<!-- dh:mutation-transfer:v1 direction=in producer=DHR_72 consumer=DHR_74 producer-acceptance=DHR72-H consumer-acceptance=DHR_74-R31 source=13c072db4bcc8f7b5d575fc7b0bb0e648fbcdd8a parent=084a00d9d673844e71d09e205a96a1c9b744f006 diff-sha256=0ec7f5a8db2f4cb11d709bad880b239b305821db79b7787eb766bf09c5f34393 source-review=docs/modules/dh-relay/workspace/DHR_72/review.md source-format=legacy-v1 mutation-sha256=fca3640849aa5ecfb637ec159f5477caa55d5166b3501c576519e4d10fee728b anchor=relay-core/runtime/workflow-driver.mjs:389 depth=1 -->
 
 **风险放行账表**
 

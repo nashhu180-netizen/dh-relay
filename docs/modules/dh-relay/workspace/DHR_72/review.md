@@ -72,6 +72,8 @@
 | 五出口/语义回归 | 定向五文件套件 | machine | DHR72-BE | 等价覆盖 | 见 brief #2-#4 | E-7219：55/55、0 skip/0 fail | wt/DHR_72@eb89e61 | fixtures | 启动停摆归 DHR_73 | v1 | test | user-D-start-E10 |
 | 比例守卫与 DHR_74 回签 | 守卫变异断言失败 + master R31 | machine | DHR72-H | 部分 | 见 brief #6 | 守卫已在 `master@13c072d` 红→绿；清洁 master 仍报 DHR_72 `anchor-outside-diff` 与 DHR_74 `mutation-table-missing` | `master@64fd712` | dh check | scanner 在主干无任务分叉时只对账未提交 diff，且未实现 H 跨卡传递；不补表伪造、不改状态绕闸 | v1 | test | user-E11 |
 
+<!-- dh:mutation-transfer:v1 direction=out producer=DHR_72 consumer=DHR_74 producer-acceptance=DHR72-H consumer-acceptance=DHR_74-R31 source=13c072db4bcc8f7b5d575fc7b0bb0e648fbcdd8a parent=084a00d9d673844e71d09e205a96a1c9b744f006 diff-sha256=0ec7f5a8db2f4cb11d709bad880b239b305821db79b7787eb766bf09c5f34393 source-review=docs/modules/dh-relay/workspace/DHR_72/review.md source-format=legacy-v1 mutation-sha256=fca3640849aa5ecfb637ec159f5477caa55d5166b3501c576519e4d10fee728b anchor=relay-core/runtime/workflow-driver.mjs:389 depth=1 -->
+
 → 当前状态：**待验收。E11 已认可，squash `13c072d` 已入 master，主干回归全绿；机器证 H 的守卫/变异已入主干，但清洁 master 上 scanner 仍报 DHR_72 `anchor-outside-diff` 与 DHR_74 `mutation-table-missing`，故未生成 verify，任务树保留。**
 
 ### E10 放行证据包（releasePacket-DHR72-v1）
