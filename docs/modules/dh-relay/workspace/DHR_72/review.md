@@ -70,9 +70,9 @@
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 持续观测与 checkpoint | 定向 fake 测试 + 真实脱敏实录 | machine | DHR72-AF | 等价覆盖 | 见 brief #1/#5 | E-7219、E-7221 pass | wt/DHR_72@eb89e61 + 收口整改 | fake + Herdr | DHR_35 P6-M1 不覆盖 | v1 | test | user-D-start-E10 |
 | 五出口/语义回归 | 定向五文件套件 | machine | DHR72-BE | 等价覆盖 | 见 brief #2-#4 | E-7219：55/55、0 skip/0 fail | wt/DHR_72@eb89e61 | fixtures | 启动停摆归 DHR_73 | v1 | test | user-D-start-E10 |
-| 比例守卫与 DHR_74 回签 | 守卫变异断言失败 + master R31 | machine | DHR72-H | 部分 | 见 brief #6 | 守卫已在 `master@13c072d` 红→绿；当前 scanner 仍报 DHR_74 R31 | `master@13c072d` | dh check | scanner 仍按 DHR_74 单卡查表；不补表伪造、不改状态绕闸 | v1 | test | user-E11 |
+| 比例守卫与 DHR_74 回签 | 守卫变异断言失败 + master R31 | machine | DHR72-H | 部分 | 见 brief #6 | 守卫已在 `master@13c072d` 红→绿；清洁 master 仍报 DHR_72 `anchor-outside-diff` 与 DHR_74 `mutation-table-missing` | `master@64fd712` | dh check | scanner 在主干无任务分叉时只对账未提交 diff，且未实现 H 跨卡传递；不补表伪造、不改状态绕闸 | v1 | test | user-E11 |
 
-→ 当前状态：**待验收。E11 已认可，squash `13c072d` 已入 master，主干回归全绿；机器证 H 的守卫/变异已入主干，但当前 scanner 仍报 DHR_74 R31，故未生成 verify，任务树保留。**
+→ 当前状态：**待验收。E11 已认可，squash `13c072d` 已入 master，主干回归全绿；机器证 H 的守卫/变异已入主干，但清洁 master 上 scanner 仍报 DHR_72 `anchor-outside-diff` 与 DHR_74 `mutation-table-missing`，故未生成 verify，任务树保留。**
 
 ### E10 放行证据包（releasePacket-DHR72-v1）
 
@@ -80,7 +80,7 @@
 - **机器证据摘要**：专属 8/8、poll 守卫 1/1、冻结五文件 55/55（0 skip/0 fail）；真实 run6 保存 4 条 `checkpoint_recorded`、2 条 alive observation、0 Result，DSH=0。生产提前 return 变异 exit=1（`timeout:working checkpoint`），还原后 1/1、exit=0、Git blob 一致。
 - **复核摘要**：代码二轮 P0/P1=0、P2=1；需求初审 P1=2，其中生产变异已闭合，H 保留到 master；教训 P0/P1=0、P2=2，E6 回流候选-82/83；一致性两项 P1 均整改，Receipt/Attempt 原复核者 RECHECK PASS。
 - **证据卫生**：全卡 redactor dry-run files_changed=0/files_renamed=0；结构化原 Receipt/Attempt UUID 与 `receipt_id:att~` 均零命中。这里只证明最终证据根已脱敏，不反推原值从未短暂落盘。
-- **未满足项 / 硬停点**：`master@13c072d` 已包含 H 守卫与可反查变异证据，但当前 `dh` scanner 仍对 DHR_74 报 `mutation-table-missing`，未将 DHR_72 H 证据传递给 DHR_74。实时体检在本卡自身 R18/R31 清零后仍为 5 failure：DHR_75 R18/R30/R31、DHR_74 R30/R31（R30 由当时未提交的 DHR_72 工件回填触发）。不给 DHR_74 补造变异表，不改状态绕闸。
+- **未满足项 / 硬停点**：`master@13c072d` 已包含 H 守卫与可反查变异证据。未提交工件回填在场时，DHR_72 R18/R31 曾清零；提交后的清洁 `master@64fd712` 上，scanner 因“主干无任务分叉时只对账未提交变化”对 DHR_72 报 `anchor-outside-diff`，同时对 DHR_74 仍报 `mutation-table-missing`。清洁主干实时体检为 4 failure：DHR_75 R18/R31、DHR_72 R31、DHR_74 R31。不给 DHR_74 补造变异表，不把 DHR_72/DHR_74 状态改为已完成绕过 R31。
 - **E11 确认范围**：若用户明确认可，下一步只授权本地 squash/合入 master、合入后重跑 DHR_72 相关回归与 `dh`、按真实 H 结果机械回填 DHR_74，并在全仓强闸允许时生成对应 verify；若强闸仍拒绝则如实保留任务树与未签状态。不含 push、deploy、环境/生产写入、DHR_73、DHR_35 或范围外 R18/R30/R31 整改。
 
 ## 人类签名区
