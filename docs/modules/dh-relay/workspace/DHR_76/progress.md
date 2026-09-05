@@ -79,6 +79,9 @@
 | E-7685 | integration-test | evidence/E-7674-master-epoch-stop.* | pass | master@23de8cf；epoch接管与stop等待后四零2/2，exit0 |
 | E-7686 | check | evidence/E-7675-master-dh-check.txt | fail | master@23de8cf；全仓exit1、15失败/94警告；DHR76无failure、仅R14计划卡解析warning，其余失败属DHR75/74及既有R29，不冒充全仓通过 |
 | E-7687 | report | E10证据展示区已发出 | pass | releasePacket-DHR76-v1已在对话完整展示，用户于2026-09-05 13:44 +08:00明文“认可” |
+| E-7688 | snapshot | E7 as-built已更新 | pass | as-built/relay-core.md已记录DHR76现役实现、B-42异常边界及跨卡证据边界 |
+| E-7689 | report | E9交付汇报已发出 | pass | 七段结论与releasePacket-DHR76-v1已在对话展示并获用户认可 |
+| E-7690 | closeout | squash=23de8cf；verify=6adb54e；release_mode=full | pass | DHR76已完成；DevPlan/workspace/as-built机械回填，随后只清理本任务worktree/branch；不push、不部署、不启动下一卡 |
 
 ## S1 校核裁决与执行澄清（2026-09-05）
 
@@ -91,4 +94,4 @@
 
 ## 本轮停止点
 
-用户已认可releasePacket-DHR76-v1；任务分支已精确squash到master@23de8cf，合入后相关复验见E-7682~E-7686。下一步按同一授权创建verify、机械回填状态并清理本任务树/分支；不push、不部署、不启动下一卡。
+DHR76已按用户认可完成本地收口：squash=`23de8cf`，verify=`6adb54e`，release_mode=full；合入后相关复验见E-7682~E-7686。仅余机械提交本页/DevPlan状态并清理本任务树与分支；不push、不部署、不启动下一卡。

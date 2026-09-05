@@ -104,7 +104,7 @@ TTL-only 是测试输入负对照，不属于生产变异登记：E-7644-ttl-con
 - **证据摘要**：cleanup专项JSON SHA256=`73EE9F45BDF21245F156696EA78275A85110927BAC0AB5ABA294FC5E3E2E6A15`；真实F summary SHA256=`537EDDE59166E0AEE9B31292F3E2BFBA72BE3657115D38D7F7DFE9B4A4D1EB95`；真实registry前后SHA256=`CA6916EF791747836F2C76BA4B049056601E522E9EA0497758319254174E5C77`。
 - **E11确认范围**：确认后连续执行精确本地squash合入master、合入后相关复验、`verify(dh-relay)`、DevPlan/workspace回填与本任务worktree/branch清理；不含push、deploy/发布/重启、测试或生产环境操作、生产数据/权限操作、下一卡或无关清理。
 
-当前状态：E11已由用户明文“认可”；任务分支已精确squash到`master@23de8cf`，合入后相关专项全部通过。全仓体检仍有范围外既有失败，边界见下方；待创建verify并机械回填销户。
+当前状态：已完成。E11由用户明文“认可”；任务分支精确squash到`master@23de8cf`，合入后相关专项全部通过；verify=`6adb54e`，`release_mode=full`。全仓体检仍有范围外既有失败，边界见下方；不含push/deploy/下一卡。
 
 ## 人类签名区
 
