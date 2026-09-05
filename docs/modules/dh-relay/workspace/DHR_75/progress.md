@@ -18,6 +18,7 @@
 | 2026-09-05 | 主控 | 在 `HERDR_ENV=1`、DSH-off 受管 pane 对 rebase 后候选跑冻结 Codex Profile。`attempt_started=06:15:53.096Z` 后首条 `host_observation_changed(alive)=06:16:00.057Z`，lease 到期为 `06:16:14.974Z`；F 的时序谓词成立。agent 随后在 `agent-ready` 显示 blocked，未发送无害命令，故无 checkpoint；该项仅为 F 的可选佐证。已脱敏并核验零原 Receipt/Attempt 字段与文件名。 | E-7535 | 等待 fresh 需求复核裁定该新实录后才可进入 E10；不把 blocked 或无 checkpoint 写成 DHR_72/DHR_35 通过。 |
 | 2026-09-05 | 主控 | E11 授权后在主干暂存 squash 候选复验：DHR_75 整套在 A/B/C 后未取得终态，adapter 整套在 13 项通过后未取得终态，均无遗留测试进程；不记全套通过。分别重跑 D 两项，Windows timeout/子孙清理与 spawn/signal/空 stdout 均 1/1 exit=0。 | E-7537 | 提交 squash；主干体检如实保留 DHR_74 的独立 R31。 |
 | 2026-09-05 | 用户 + 主控 | 用户在对话中明文确认 E11；DHR_75 已 squash 入 master `24ba064`。主干 `dh dh-relay` 仅余 DHR_74 R31，DHR_75 无 failure；verify 强闸因该独立失败拒绝，未代签、未销户。 | E-7538 | 不推送、不部署、不启动 DHR_72；DHR_74 R31 仍等 DHR_72 的 H。 |
+| 2026-09-06 | 主控 | 按既有 E-7535/E-7536 与 E10 展示材料回填机器可读收口记录：E9 交付汇报已发出；E10 放行证据包与人验证据展示区已发出。 | E-7535/E-7536/E-7538 | 解除 R18 的材料缺口；不改变 F 的事实边界，也不代签 DHR_75 verify。 |
 
 ## 证据账本 (Evidence Ledger)
 
@@ -58,3 +59,4 @@
 | E-7535 | DSH-off real run | 任务自有 `scripts/run-windows-checkpoint.ps1 -ProfileId herdr.codex.main -RelayRoot wt/DHR_75 -TimeoutSeconds 150`；`HERDR_ENV=1`、DSH process=0、独立 `DHR75-fixture-*` | observed | `attempt_started=06:15:53.096Z` 后首条 `host_observation_changed(alive)=06:16:00.057Z`，早于 lease expiry `06:16:14.974Z`，满足 DHR_75 F 的首观测/新鲜 lease 谓词。agent-ready=blocked，未发送无害命令，未见 checkpoint；checkpoint 非 F 必要条件。redactor 首跑 2 IDs/7 文件/2 文件名，dry-run=0，原 Receipt/Attempt 字段与文件名扫描均为 0。 |
 | E-7536 | review-dispatch | collaboration read-only F evidence review | observed | 复核派出：/root/dhr75_f_review2｜fresh requirement re-review: E-7535 F PASS, P0/P1=0 |
 | E-7537 | integration test | 主干暂存 squash 候选：DHR_75 全套与 adapter 整套均无终态（前者已输出 A/B/C 通过，后者已输出 13 项通过，均无残留 node）；分别运行 D timeout/子孙清理与 D 错误形状 | observed + pass | 两个 D 定向均 1/1、exit=0；无终态整套不算通过，保留 E-7533/E-7517 的已终态回归事实，不把本轮无终态归因于 DHR_75。 |
+| E-7539 | closeout-record | `progress.md` E9/E10 machine-readable closeout records；`review.md` mutation row normalized and re-run in `wt/DHR_75` | pass | E9/E10 已发出；变异施加后指定测试 exit=1，施加 blob=`20bcdba1d12b04de8e77ba9fa70ed3ee52aecacb`，工作树已还原干净。 |

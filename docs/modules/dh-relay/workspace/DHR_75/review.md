@@ -19,7 +19,7 @@
 
 | 变异点锚点(生产代码 path:line) | 原值→变异值 | 语义类别 | 对应测试 ID | 运行命令 | 施加 hash | 还原 hash | 登记人(重核须=轮2实例) | 施加后结果 |
 |---|---|---|---|---|---|---|---|---|
-| `relay-core/runtime/executors/herdr/herdr-cli.mjs:103` | `callTimeoutMs` → `0` | 改超时条件 | DHR_75/A 真实慢 Herdr 子进程 | `node --test --test-name-pattern "真实慢 Herdr 子进程不阻塞同一事件循环的续租节拍" test/dhr75-host-lease-during-herdr.test.mjs` | `20bcdba1d12b04de8e77ba9fa70ed3ee52aecacb` | `b69d4d2f464ec2795ffe08817ce5bb277cd2777b` | `/root/dhr75_code_review2` | 红 exit=1，`:69 false !== true`；还原绿 exit=0 |
+| relay-core/runtime/executors/herdr/herdr-cli.mjs:103 | callTimeoutMs → 0 | 改条件 | DHR_75/A 真实慢 Herdr 子进程 | `node --test --test-name-pattern "真实慢 Herdr 子进程不阻塞同一事件循环的续租节拍" relay-core/test/dhr75-host-lease-during-herdr.test.mjs` | 20bcdba1d12b04de8e77ba9fa70ed3ee52aecacb | b69d4d2f464ec2795ffe08817ce5bb277cd2777b | /root/dhr75_code_review2 | 断言失败 |
 
 **返工收敛**
 
