@@ -63,3 +63,9 @@
 | E-7231 | final-regression | 收口整改后串行重跑专属测试、poll 守卫与冻结五文件；复跑全卡 redactor dry-run 与结构化 ID 扫描 | 专属 8/8、守卫 1/1、冻结 55/55（0 skip/0 fail，exit=0）；dry-run files_changed=0/files_renamed=0；原 Receipt/Attempt 字段与 `receipt_id:att~` 均零命中 | 最终候选机器证保持绿；未执行真实 F 第二遍，E-7221 的已保存实录仍为本卡 F。 |
 | E-7232 | report | `review.md#E10-放行证据包releasepacket-dhr72-v1` | ready | 阶段汇报@E9 与 releasePacket-DHR72-v1 已备料，将在本轮对话展示；shownVersion=`428f21e`；H 尚待 merge 后执行，当前全仓 5 failure 如实列出；等待 E11 明确裁决。 |
 | E-7233 | human-gate | 用户对 releasePacket-DHR72-v1 明文“认可”（2026-09-05） | accepted | E11 仅放行本地 squash/主干回归/H 回填；强闸不绿时保留任务树与未 verify 状态，不含 push/deploy/DHR_73/DHR_35。 |
+| E-7234 | mutation | `master@13c072d`：按轮 2 选点在 missing-Result Attention 后插入 `return`，运行指定用例后精确还原 | 变异 exit=1，`timeout:working checkpoint`，apply blob=`fba0ac031801c1636d29a1fb16d851fe8eb33e84`；还原后 1/1、exit=0，revert blob=`505ff9454863bd319429b33c27e5ca2d3cf7ae69`，生产 diff=0 | 对照原 E-7227 补齐 scanner 要求的可反查 Git 对象；没有提交变异代码。 |
+| E-7235 | integration-test | `master@13c072d`：专属、poll 守卫、冻结五文件 | pass | 专属 8/8、poll 1/1、冻结 55/55（0 skip/0 fail），全部 exit=0。 |
+| E-7236 | docs | E7 as-built 已更新并覆盖现状快照 | pass | `docs/modules/dh-relay/as-built/relay-core.md`第 13 节已记录持续观测与五出口。 |
+| E-7237 | report | E9 交付汇报已发出 | pass | releasePacket-DHR72-v1 已在对话展示，用户随后明文“认可”。 |
+| E-7238 | human | E10 人验证据展示区已发出 | pass | 用户认可真实 F 只证明 DHR_72，不替代 DHR_35。 |
+| E-7239 | check | `master@13c072d` 上 `dh dh-relay`，并按 scanner 合法格式补齐 DHR_72 变异登记后复跑 | fail | DHR_72 自身 R18/R31 已清；全仓仍 5 failure，其中 DHR_74 R31 仍为 `mutation-table-missing`，说明当前 scanner 未实现 DHR_72 H 跨卡传递。本轮不补造 DHR_74 表、不改状态绕闸、不生成 verify；保留 DHR_72/DHR_74 任务树。 |
