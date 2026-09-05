@@ -161,7 +161,7 @@
 | 本卡 own-baseline 三轮达标 | 冻结命令在本卡基线连跑三轮 + 签名扫描 | machine | DHR_74-C | 等价覆盖 | skip 恰 4 ∧ fail=0 ∧ 每轮 ≤370s ∧ 四类签名零命中 | 达成：三轮 `51/4/0`，284.548 / 284.225 / 285.453s，签名零命中（空扫自证 21 命中 / 6 文件） | 本地 Node · Windows 11 · `--test-concurrency=1` · 无探针 | `node --test` reporter 原始输出 + junit + 窄复核独立复扫 | 仅本机、仅 2026-09-03 白天零并发 worker 负载；与 E-7119 非同时段，不能断言同负载因果 | DevPlan DHR_74 | 脚本 | 自动化 |
 | 改动面不越允许路径且零断言改动 | `git diff 84f2514..HEAD` 逐 hunk 核对 | machine | DHR_74-D | 等价覆盖 | 文件集 ⊆ 允许路径 ∧ 断言零改动 ∧ 零 `store/**` · `runtime/**` · `contracts/**` | 达成：三路复核独立确认越界零命中 | git | DevPlan `dh:allowed-paths:v1 task=DHR_74` | 无 | DevPlan | 脚本 | 自动化 |
 | 时间参数改动是绿闸达标的必要条件 | 与 DHR_71 独立基线横比 | machine | DHR_74-E | 否 | 不含本卡改动的基线无法达标 | **证伪**：DHR_71 独立基线（E-7119，不含本卡 12 行）三轮 285–289s 全绿，本卡基线 284–285s，差异 ≈1% | 两次非同时段运行 | 两卡各自 junit | 非同时段，同负载下的因果未证 | DevPlan DHR_74 | 脚本 | 自动化 |
-| R31 跨卡变异承接 | source squash 的双向单跳 transfer | machine | DHR_74-R31 | 等价覆盖 | producer/consumer 双向 marker 与 source Git 重建均通过 | 待本轮 `dh dh-relay` 复跑回填 | `master@13c072d` | `dh-check` R31 | 不承接其它 source 或链式 transfer | v1 | test | user-E11 |
+| R31 跨卡变异承接 | source squash 的双向单跳 transfer | machine | DHR_74-R31 | 等价覆盖 | producer/consumer 双向 marker 与 source Git 重建均通过 | E-7241：clean master `dh dh-relay` exit=0，DHR_74 R31 清零 | `master@b956e04`；source=`13c072d` | `dh-check` R31 | 不承接其它 source 或链式 transfer | v1 | test | user-E11 |
 
 <!-- dh:mutation-transfer:v1 direction=in producer=DHR_72 consumer=DHR_74 producer-acceptance=DHR72-H consumer-acceptance=DHR_74-R31 source=13c072db4bcc8f7b5d575fc7b0bb0e648fbcdd8a parent=084a00d9d673844e71d09e205a96a1c9b744f006 diff-sha256=0ec7f5a8db2f4cb11d709bad880b239b305821db79b7787eb766bf09c5f34393 source-review=docs/modules/dh-relay/workspace/DHR_72/review.md source-format=legacy-v1 mutation-sha256=fca3640849aa5ecfb637ec159f5477caa55d5166b3501c576519e4d10fee728b anchor=relay-core/runtime/workflow-driver.mjs:389 depth=1 -->
 
@@ -184,7 +184,9 @@
 3. 本卡时间参数改动对绿闸达标的必要性未证：DHR_71 独立基线不含它也三轮达标，差约 1%。
 4. F-7402 停顿机制内核级未钉死，移交环境侧 A/B 与 DHR_73。
 
-→ 当前状态：**待验收（用户 2026-09-04 已对话确认收口口径并授权本地收口包，工件已 squash 合入 master `14c0fef`；但 `verify(dh-relay)` 未签——机器闸 R31 未过，见下）**
+→ 当前状态：**待验收（用户 2026-09-04 已对话确认收口口径并授权本地收口包，工件已 squash 合入 master `14c0fef`；E-7241 已使 R31 清零，`verify(dh-relay)` 现可签）**
+
+**verify 前置已满足（E-7241）**：DHR_72 已承接并正式落账 poll/配对超时比例守卫的双向、单跳 `mutation-transfer:v1`；source squash、parent、双 digest、`legacy-v1`、anchor、depth=1 与 stable acceptance ID 均通过，clean master `dh dh-relay` exit=0，DHR_74 R31 清零。保留本卡 A/B 未达成与 F-7402 的诚实边界，不伪造本卡生产变异。
 
 **verify 闸未过的唯一原因（2026-09-04 如实登记，不绕闸）**：`dh` R31 要求常规卡登记至少一个合法「有效单测·变异点登记」，且变异锚点必须是**本卡 diff 内的非测试文件生产代码**、施加后结果必须是「断言失败」。本卡 diff 100% 是 `relay-core/test/**` 与 `test/helpers/**`，**没有可供变异的生产代码**；且轮 1 复核 F-74-R1-01 已实证「时间参数违规也全绿」——即便对改动行做变异也只会得到「未变红」，该结果按 R31 判据同样不通过。这与轮 2 裁决表 `code1 P2-1`「normal 有效单测按配方字面仍未满足，登记为遗留、移交 DHR_72 或单独轻量卡」是同一件事。**处置：不伪造变异点、不改状态绕闸。用户 2026-09-04 裁决＝出口 1**——由 **DHR_72 承接**这条机械守卫（poll 与配对超时比例一致性断言，登记为 DHR_72 机器证 H），守卫入库并对其做一次变异得到「断言失败」后，**回来补签 DHR_74 的 `verify(dh-relay)`**。在补签完成前：DHR_74 状态保持「待验收」，worktree `wt/DHR_74` 与分支 `wt/DHR_74` **保留不删**。补签判据＝master 体检 R31 清零。
 
@@ -211,7 +213,7 @@
 7. **诚实边界申报**：六名复核者全部为只读沙盒 fresh 实例、一律静态审，**测试全部由主控跑**；本卡未做任何环境变更。
 
 - 确认记录：用户 2026-09-04 在对话里作出三条决定——① 接受四条诚实结论与「必要性未证」措辞，原文不许弱化也不许变强；② 7 条挂起项只改 REQB-04，其余 6 条保持原样带入收口后处理；③ 执行 verify + squash 合入 master + 删 worktree。
-- verify 提交 SHA：**未签 · 延后补签**——R31 机器闸未过（原因见上方 AI 提交区末段）。工件已 squash 合入 master `14c0fef`，DevPlan 状态＝待验收。**用户 2026-09-04 裁决出口 1**：verify 延后至 **DHR_72 交付 poll / 配对超时比例一致性机械守卫（DHR_72 机器证 H）**后补签；在补签完成前 worktree `wt/DHR_74` 与分支**保留不删**。
+- verify 提交 SHA：**待本轮 E12 生成**。工件已 squash 合入 master `14c0fef`，DevPlan 状态＝待验收；E-7241 已满足用户 2026-09-04 裁决的补签条件。verify 后按既有 E11 授权清理本卡 worktree/branch。
 - 签名：hyf（chat-confirm 代签，仅覆盖上表三条人判项与收口口径，**不代表 verify 已签**）　　时间：2026-09-04
 
 ### 确认记录（append-only）

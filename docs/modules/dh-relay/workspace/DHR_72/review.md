@@ -25,9 +25,9 @@
 
 | 轮次 | open P0/P1 数 | 处理 / 证据 | 是否收敛 |
 |---|---|---|---|
-| 1 | 2（需求 #6/#7）+ 2（一致性 Receipt/review 脱节） | #7 已由 E-7223 选点与主会话红→绿闭合；Receipt 角色脱敏整改 21 文件/10 文件名，复跑 dry-run 0/0；review 脱节由本次落账闭合。#6 仍须候选入 master 后以 H 回填 DHR_74。 | 部分收敛；剩余 1 个跨 merge 的 H 闸，不在 E10 前伪清零。 |
+| 1 | 2（需求 #6/#7）+ 2（一致性 Receipt/review 脱节） | #7 已由 E-7223 选点与主会话红→绿闭合；Receipt 角色脱敏整改 21 文件/10 文件名，复跑 dry-run 0/0；review 脱节由本次落账闭合。#6 已由 E-7241 完成双向单跳 transfer 回填并清零 DHR_74 R31。 | 收敛；保留 P2 边界，不把 DHR_35 的真实闭环提前算入。 |
 
-**需求复核结论**：`dhr72_req_0905`｜派出=e:E-7224｜P0=0、P1=2；#7 已闭合，#6 的 DHR_74 R31 必须等 DHR_72 候选入 master 后回填，当前仍未满足。
+**需求复核结论**：`dhr72_req_0905`｜派出=e:E-7224｜P0=0、P1=0；#7 已闭合，#6 已由 E-7241 的双向单跳 transfer 回填并清零 DHR_74 R31。
 **教训复核结论**：`dhr72_lessons_0905`｜派出=e:E-7225｜P0/P1=0、P2=2；L-7201 保留，另由 E6 miner 去重并回流 prompt 提交/native-exit 候选；Receipt 只主张“最终证据根已脱敏”，不反推“原值从未短暂落盘”。
 
 ## 第 4 路·一致性复核
@@ -61,7 +61,7 @@
 | 3 | committed、stop、host_lost、Attempt 已终态、actor-closed/lease-lost 五出口各有独立用例，退出后无追加事件。 | AI | E-7219（五出口与写入失败边界） | 是 |
 | 4 | 冻结四条语义 skip 全部解除并按现役 Receipt-bound 语义改写；定向套件 55/55、0 skip。 | AI | E-7231：55/55、0 skip/0 fail | 是 |
 | 5 | DSH-off、冻结 Codex Profile 的真实实录含脱敏 `checkpoint_recorded`；撞启动停摆最多重试三次并留给 DHR_73。 | AI | E-7221：run6 checkpoint=4、Result=0、DSH=0；最终证据根 dry-run=0 | 是 |
-| 6 | poll 与配对超时的比例守卫能拦截参数违规；变异该守卫得到断言失败；master R31 对 DHR_74 清零。 | AI | E-7207 守卫 20→5 exit 非零；E-7222 当前 master 仍有 DHR_74 R31 | 部分；须 DHR_72 入 master 后回填 H |
+| 6 | poll 与配对超时的比例守卫能拦截参数违规；变异该守卫得到断言失败；master R31 对 DHR_74 清零。 | AI | E-7207 守卫 20→5 exit 非零；E-7241 双向单跳 transfer 与 clean-master gate | 是 |
 | 7 | 第二轮 fresh 复核者登记生产代码变异点，施加后指定测试断言失败。 | AI | E-7223：fresh 选点；主会话变异 exit=1、还原 1/1 exit=0、Git blob 一致 | 是 |
 
 **验收项元数据表**
@@ -70,11 +70,11 @@
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 持续观测与 checkpoint | 定向 fake 测试 + 真实脱敏实录 | machine | DHR72-AF | 等价覆盖 | 见 brief #1/#5 | E-7219、E-7221 pass | wt/DHR_72@eb89e61 + 收口整改 | fake + Herdr | DHR_35 P6-M1 不覆盖 | v1 | test | user-D-start-E10 |
 | 五出口/语义回归 | 定向五文件套件 | machine | DHR72-BE | 等价覆盖 | 见 brief #2-#4 | E-7219：55/55、0 skip/0 fail | wt/DHR_72@eb89e61 | fixtures | 启动停摆归 DHR_73 | v1 | test | user-D-start-E10 |
-| 比例守卫与 DHR_74 回签 | 守卫变异断言失败 + master R31 | machine | DHR72-H | 部分 | 见 brief #6 | 守卫已在 `master@13c072d` 红→绿；清洁 master 仍报 DHR_72 `anchor-outside-diff` 与 DHR_74 `mutation-table-missing` | `master@64fd712` | dh check | scanner 在主干无任务分叉时只对账未提交 diff，且未实现 H 跨卡传递；不补表伪造、不改状态绕闸 | v1 | test | user-E11 |
+| 比例守卫与 DHR_74 回签 | 守卫变异断言失败 + master R31 | machine | DHR72-H | 等价覆盖 | 见 brief #6 | E-7207 守卫红→绿；E-7241 双向单跳 transfer 字段一致，clean master `dh dh-relay` exit=0、DHR_72/DHR_74 R31 清零 | `master@b956e04` | dh check + mutation-transfer:v1 | 不承接其它 source 或链式 transfer；DHR_35 仍须自己的真实闭环 | v1 | test | user-E11 |
 
 <!-- dh:mutation-transfer:v1 direction=out producer=DHR_72 consumer=DHR_74 producer-acceptance=DHR72-H consumer-acceptance=DHR_74-R31 source=13c072db4bcc8f7b5d575fc7b0bb0e648fbcdd8a parent=084a00d9d673844e71d09e205a96a1c9b744f006 diff-sha256=0ec7f5a8db2f4cb11d709bad880b239b305821db79b7787eb766bf09c5f34393 source-review=docs/modules/dh-relay/workspace/DHR_72/review.md source-format=legacy-v1 mutation-sha256=fca3640849aa5ecfb637ec159f5477caa55d5166b3501c576519e4d10fee728b anchor=relay-core/runtime/workflow-driver.mjs:389 depth=1 -->
 
-→ 当前状态：**待验收。E11 已认可，squash `13c072d` 已入 master，主干回归全绿；机器证 H 的守卫/变异已入主干，但清洁 master 上 scanner 仍报 DHR_72 `anchor-outside-diff` 与 DHR_74 `mutation-table-missing`，故未生成 verify，任务树保留。**
+→ 当前状态：**待验收。E11 已认可，squash `13c072d` 已入 master；E-7241 已完成双向、单跳 `mutation-transfer:v1` 正式落账，clean-master `dh dh-relay` exit=0、DHR_72/DHR_74 R31 清零，已具备生成 verify 的条件。**
 
 ### E10 放行证据包（releasePacket-DHR72-v1）
 
@@ -82,7 +82,7 @@
 - **机器证据摘要**：专属 8/8、poll 守卫 1/1、冻结五文件 55/55（0 skip/0 fail）；真实 run6 保存 4 条 `checkpoint_recorded`、2 条 alive observation、0 Result，DSH=0。生产提前 return 变异 exit=1（`timeout:working checkpoint`），还原后 1/1、exit=0、Git blob 一致。
 - **复核摘要**：代码二轮 P0/P1=0、P2=1；需求初审 P1=2，其中生产变异已闭合，H 保留到 master；教训 P0/P1=0、P2=2，E6 回流候选-82/83；一致性两项 P1 均整改，Receipt/Attempt 原复核者 RECHECK PASS。
 - **证据卫生**：全卡 redactor dry-run files_changed=0/files_renamed=0；结构化原 Receipt/Attempt UUID 与 `receipt_id:att~` 均零命中。这里只证明最终证据根已脱敏，不反推原值从未短暂落盘。
-- **未满足项 / 硬停点**：`master@13c072d` 已包含 H 守卫与可反查变异证据。未提交工件回填在场时，DHR_72 R18/R31 曾清零；提交后的清洁 `master@64fd712` 上，scanner 因“主干无任务分叉时只对账未提交变化”对 DHR_72 报 `anchor-outside-diff`，同时对 DHR_74 仍报 `mutation-table-missing`。清洁主干实时体检为 4 failure：DHR_75 R18/R31、DHR_72 R31、DHR_74 R31。不给 DHR_74 补造变异表，不把 DHR_72/DHR_74 状态改为已完成绕过 R31。
+- **未满足项 / 硬停点**：本卡没有新的 P0/P1 硬停点；E-7241 已按 source squash、parent、双 digest、legacy-v1、anchor 与 depth=1 完成双向单跳校验。DHR_35 的真实闭环、DHR_73 的调查与本卡 P2/教训尾项仍不在本卡机器证 H 的覆盖范围。
 - **E11 确认范围**：若用户明确认可，下一步只授权本地 squash/合入 master、合入后重跑 DHR_72 相关回归与 `dh`、按真实 H 结果机械回填 DHR_74，并在全仓强闸允许时生成对应 verify；若强闸仍拒绝则如实保留任务树与未签状态。不含 push、deploy、环境/生产写入、DHR_73、DHR_35 或范围外 R18/R30/R31 整改。
 
 ## 人类签名区

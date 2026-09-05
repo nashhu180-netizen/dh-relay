@@ -70,3 +70,4 @@
 | E-7238 | human | E10 人验证据展示区已发出 | pass | 用户认可真实 F 只证明 DHR_72，不替代 DHR_35。 |
 | E-7239 | check | `master@13c072d` 上 `dh dh-relay`，并按 scanner 合法格式补齐 DHR_72 变异登记后复跑 | fail | DHR_72 自身 R18/R31 已清；全仓仍 5 failure，其中 DHR_74 R31 仍为 `mutation-table-missing`，说明当前 scanner 未实现 DHR_72 H 跨卡传递。本轮不补造 DHR_74 表、不改状态绕闸、不生成 verify；保留 DHR_72/DHR_74 任务树。 |
 | E-7240 | check | 上述工件以 `64fd712` 提交后，在清洁 master 重跑 `dh dh-relay` | fail | 4 failure / 93 warning：DHR_75 R18/R31、DHR_72 R31 `anchor-outside-diff`、DHR_74 R31 `mutation-table-missing`。E-7239 的“DHR_72 R31 已清”仅是未提交回填在场时的瞬时结果，不能作为清洁主干结论；verify 不生成，任务树保留。 |
+| E-7241 | check | clean master `b956e04` 上 `dh dh-relay`；核对 DHR_72/DHR_74 双向 `mutation-transfer:v1` marker | pass：exit=0；0 failure；DHR_72/DHR_74 R31 清零；93 warnings | 正式 transfer 已按 source `13c072d`、parent、双 digest、`legacy-v1`、anchor、depth=1 完成单跳对账；DHR_75 R18/R31 也已解除，不代签其 verify。 |
