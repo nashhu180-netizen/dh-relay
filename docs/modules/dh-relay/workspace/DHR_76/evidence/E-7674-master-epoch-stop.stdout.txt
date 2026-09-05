@@ -1,0 +1,12 @@
+✔ DHR_76/D: epoch takeover during validation fences the late driver start and all late writes (12392.3091ms)
+ℹ DHR76-D takeover_during_validation old_epoch=1 replacement_epoch=2 events=2 driver={"ok":false,"error":{"reason":"E_LEASE_HELD"}}
+✔ DHR_76/D: driver stop after a confirmed loader wait leaves Attempt, Agent, pane, and Result at zero (27623.1221ms)
+ℹ DHR76-D stop outcome={"ok":true} events=2 host_calls={"agents":0,"panes":0} loader_wait_ms=26411
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 40355.8876

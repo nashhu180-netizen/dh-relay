@@ -1,0 +1,15 @@
+{
+  "arguments": [
+    "--test",
+    "--test-concurrency=1",
+    "--test-name-pattern",
+    "bad config",
+    "test/dhr65-registry-loader.test.mjs"
+  ],
+  "candidate": "23de8cfbdbd2ab9883e4168b5b03f36ee28fff50",
+  "exit_code": 0,
+  "outer_timeout": false,
+  "elapsed_ms": 3057,
+  "stdout": "E-7671-master-loader-config.stdout.txt",
+  "stderr": "E-7671-master-loader-config.stderr.txt"
+}

@@ -1,0 +1,22 @@
+✔ DHR_32 golden registry resolves every audited Windows profile (1628.4114ms)
+✔ DHR_32 negative-credential-field is rejected with its frozen code (1.7292ms)
+✔ DHR_32 negative-credential-value is rejected with its frozen code (31.0841ms)
+✔ DHR_32 negative-dangling-fallback is rejected with its frozen code (21.0131ms)
+✔ DHR_32 negative-unknown-field is rejected with its frozen code (20.8771ms)
+✔ DHR_32 negative-unresolved-alias is rejected with its frozen code (1055.2139ms)
+✔ DHR_32 negative-unresolved-config is rejected with its frozen code (25.908ms)
+✔ DHR_32 negative-username-path is rejected with its frozen code (27.4486ms)
+✔ DHR_32 golden registry contains neither credential-shaped keys nor values (1.358ms)
+✔ DHR_32 capability states are anchored in their own audit-evidence lines (6.0871ms)
+✔ DHR_32 profiles without expected identity are explicitly marked unproven in evidence (1.7855ms)
+✔ DHR_32 headless_supported agrees with the headless capability (37.6155ms)
+✔ DHR_61 D2: registry rejects fallback sets whose maximum legal pause detail exceeds 4096 bytes (37.9976ms)
+✔ DHR_61 D2: registry freezes profile and account identity bounds before Attempt signing (102.873ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3389.3042

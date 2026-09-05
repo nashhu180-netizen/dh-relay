@@ -104,11 +104,11 @@ TTL-only 是测试输入负对照，不属于生产变异登记：E-7644-ttl-con
 - **证据摘要**：cleanup专项JSON SHA256=`73EE9F45BDF21245F156696EA78275A85110927BAC0AB5ABA294FC5E3E2E6A15`；真实F summary SHA256=`537EDDE59166E0AEE9B31292F3E2BFBA72BE3657115D38D7F7DFE9B4A4D1EB95`；真实registry前后SHA256=`CA6916EF791747836F2C76BA4B049056601E522E9EA0497758319254174E5C77`。
 - **E11确认范围**：确认后连续执行精确本地squash合入master、合入后相关复验、`verify(dh-relay)`、DevPlan/workspace回填与本任务worktree/branch清理；不含push、deploy/发布/重启、测试或生产环境操作、生产数据/权限操作、下一卡或无关清理。
 
-当前状态：待E11用户确认；E10 releasePacket-DHR76-v1已备料并在对话展示。未签E11、风险接受、verify或合入。
+当前状态：E11已由用户明文“认可”；任务分支已精确squash到`master@23de8cf`，合入后相关专项全部通过。全仓体检仍有范围外既有失败，边界见下方；待创建verify并机械回填销户。
 
 ## 人类签名区
 
-本卡六项为机器证；本地收口需最终展示完整证据后由用户对话确认，当前未确认。
+本卡六项为机器证；用户已在最终展示完整证据后明文确认本地收口。
 
 | 确认时间 | 确认人 | 确认对象=releasePacket | 展示版本(shownVersion) | 证据摘要或哈希(evidenceDigest) | 关联稳定ID列表 | 确认结论(通过\|带风险放行\|否) |
 |---|---|---|---|---|---|---|
@@ -117,3 +117,5 @@ TTL-only 是测试输入负对照，不属于生产变异登记：E-7644-ttl-con
 最终证据补记：E-7669（evidence/E-7659-config-start-cleanup.*）在3d55ca7上2项通过、exit0，覆盖完整config下双候选只启所选及正式Windows超时清理。旧记录保留原执行SHA；源码等价依据E-7668。需求路早先两项补证请求已有原始证据；DHR-B-42确认后，一致性最终P0=0/P1=0/P2=0，异常分支及driver四零专项见E-7677（raw E-7667）。
 
 体检边界：最终 E-7680（raw E-7668-dh-check-e10.txt）为exit1、15失败/91警告。DHR76 的R8/R21/R27/R31均已清零，仅R14称找不到DevPlan验收口径；主控逐字核对P6 DHR76卡与brief相同，不改写合同规避解析残留。其余14项属DHR75/74及既有R29，保留原输出，不冒充全仓通过。
+
+合入后复验：`master@23de8cf` 上 profiles 14/14、loader 3/3+2/2、Host/清理 3/3、Windows清理 1/1、先全表校验后选择启动 1/1、epoch/stop 2/2，全部exit0（E-7682~E-7685）。E-7686全仓体检exit1、15失败/94警告；DHR76仍无failure、仅R14 warning，未把范围外失败改写成通过。

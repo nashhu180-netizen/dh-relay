@@ -1,0 +1,15 @@
+{
+  "arguments": [
+    "--test",
+    "--test-concurrency=1",
+    "--test-name-pattern",
+    "accepts|bad alias",
+    "test/dhr65-registry-loader.test.mjs"
+  ],
+  "candidate": "23de8cfbdbd2ab9883e4168b5b03f36ee28fff50",
+  "exit_code": 0,
+  "outer_timeout": false,
+  "elapsed_ms": 8874,
+  "stdout": "E-7670-master-loader-alias.stdout.txt",
+  "stderr": "E-7670-master-loader-alias.stderr.txt"
+}

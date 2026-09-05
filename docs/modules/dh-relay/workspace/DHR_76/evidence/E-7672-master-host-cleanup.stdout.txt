@@ -1,0 +1,14 @@
+✔ DHR_76/D: cleanup grace exhaustion fails explicitly without claiming close (94.4095ms)
+ℹ DHR76-D cleanup_unconfirmed=true close_observed=false kill_calls=2
+✔ DHR_76/D: cleanup grace exhaustion leaves driver side effects at zero (25162.4854ms)
+ℹ DHR76-D cleanup_unconfirmed=true driver_side_effects=0 kill_calls=2
+✔ DHR_76/B: the real Host actor renews its default 15s lease during the five-probe async window (17950.7775ms)
+ℹ DHR76-B elapsed_ms=17075 renewals=17 before_expiry=1788587252767 after_expiry=1788587269036 samples=[{"sampled_at":1788587237804,"expires_at_epoch_ms":1788587252767},{"sampled_at":1788587239332,"expires_at_epoch_ms":1788587253820},{"sampled_at":1788587240340,"expires_at_epoch_ms":1788587254827},{"sampled_at":1788587241345,"expires_at_epoch_ms":1788587255836},{"sampled_at":1788587242356,"expires_at_epoch_ms":1788587256844},{"sampled_at":1788587243365,"expires_at_epoch_ms":1788587257852},{"sampled_at":1788587244378,"expires_at_epoch_ms":1788587258872},{"sampled_at":1788587245402,"expires_at_epoch_ms":1788587259888},{"sampled_at":1788587246411,"expires_at_epoch_ms":1788587260903},{"sampled_at":1788587247436,"expires_at_epoch_ms":1788587261923},{"sampled_at":1788587248443,"expires_at_epoch_ms":1788587262939},{"sampled_at":1788587249471,"expires_at_epoch_ms":1788587263955},{"sampled_at":1788587249971,"expires_at_epoch_ms":1788587264966},{"sampled_at":1788587251516,"expires_at_epoch_ms":1788587265977},{"sampled_at":1788587252021,"expires_at_epoch_ms":1788587266999},{"sampled_at":1788587253040,"expires_at_epoch_ms":1788587268020},{"sampled_at":1788587254544,"expires_at_epoch_ms":1788587269036}] contenders=["E_LEASE_HELD","E_LEASE_HELD","E_LEASE_HELD","E_LEASE_HELD","E_LEASE_HELD","E_LEASE_HELD","E_LEASE_HELD","E_LEASE_HELD","E_LEASE_HELD","E_LEASE_HELD","E_LEASE_HELD","E_LEASE_HELD","E_LEASE_HELD","E_LEASE_HELD","E_LEASE_HELD","E_LEASE_HELD"] calls=[{"command":"where.exe","alias":"dhr76-a"},{"command":"where.exe","alias":"dhr76-b"},{"command":"where.exe","alias":"dhr76-c"},{"command":"where.exe","alias":"dhr76-d"},{"command":"where.exe","alias":"dhr76-e"}]
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 43511.8672

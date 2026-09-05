@@ -1,0 +1,10 @@
+✔ DHR_76/D: Windows validation timeout waits for close and kills the child process tree (3682.355ms)
+ℹ DHR76-D timeout elapsed_ms=3667 child_calls=1 descendant_pid=69268 alive=false
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3974.8182

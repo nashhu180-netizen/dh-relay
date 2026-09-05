@@ -1,0 +1,15 @@
+{
+  "arguments": [
+    "--test",
+    "--test-concurrency=1",
+    "--test-name-pattern",
+    "cleanup grace exhaustion|real Host actor renews",
+    "test/dhr76-profile-validation-lease.test.mjs"
+  ],
+  "candidate": "23de8cfbdbd2ab9883e4168b5b03f36ee28fff50",
+  "exit_code": 0,
+  "outer_timeout": false,
+  "elapsed_ms": 43698,
+  "stdout": "E-7672-master-host-cleanup.stdout.txt",
+  "stderr": "E-7672-master-host-cleanup.stderr.txt"
+}

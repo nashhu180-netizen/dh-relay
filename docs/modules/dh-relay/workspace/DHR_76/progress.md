@@ -73,6 +73,12 @@
 | E-7679 | report | review.md#E10放行证据包 | ready | 阶段汇报@E9与releasePacket-DHR76-v1已备料，将在本轮对话展示；shownVersion=8028cc7；H=0、Risk-Count=0；等待E11一次性本地收口确认 |
 | E-7680 | check | evidence/E-7668-dh-check-e10.txt | fail | E10包后终态：exit1，15失败/91警告；DHR76仍无failure、仅R14计划卡解析warning；其余14个failure属DHR75/74及既有R29，完整raw保留 |
 | E-7681 | acceptance | review.md人类签名区 | pass | 2026-09-05 13:44 +08:00用户对releasePacket-DHR76-v1明文“认可”；授权精确本地squash、合入复验、verify、DevPlan/workspace回填及本任务worktree/branch清理；不含push/deploy/环境操作/下一卡 |
+| E-7682 | integration-test | evidence/E-7669-master-profiles.*；E-7670-master-loader-alias.*；E-7671-master-loader-config.* | pass | master@23de8cf；profiles 14/14、loader alias 3/3、loader config 2/2，均exit0 |
+| E-7683 | integration-test | evidence/E-7672-master-host-cleanup.* | pass | master@23de8cf；3/3，exit0；真实Host默认15s租约期间续租17次、contender均E_LEASE_HELD；异常清理未确认时明确失败且driver四类副作用全0 |
+| E-7684 | integration-test | evidence/E-7673-master-selection-cleanup.*；E-7676-master-selection.* | pass | master@23de8cf；正式Windows超时清理与后代死亡1/1；完整校验先于选择启动且等待期四零1/1，均exit0 |
+| E-7685 | integration-test | evidence/E-7674-master-epoch-stop.* | pass | master@23de8cf；epoch接管与stop等待后四零2/2，exit0 |
+| E-7686 | check | evidence/E-7675-master-dh-check.txt | fail | master@23de8cf；全仓exit1、15失败/94警告；DHR76无failure、仅R14计划卡解析warning，其余失败属DHR75/74及既有R29，不冒充全仓通过 |
+| E-7687 | report | E10证据展示区已发出 | pass | releasePacket-DHR76-v1已在对话完整展示，用户于2026-09-05 13:44 +08:00明文“认可” |
 
 ## S1 校核裁决与执行澄清（2026-09-05）
 
@@ -85,4 +91,4 @@
 
 ## 本轮停止点
 
-施工与最终专项已提交af5653f；生产实现自5e04dd8不变。DHR-B-42已确认并关闭P1-CONS-01，A~F与五路复核实质收敛；正在完成最终体检与E10展示。不做E11、merge、verify、push或工作树清理。
+用户已认可releasePacket-DHR76-v1；任务分支已精确squash到master@23de8cf，合入后相关复验见E-7682~E-7686。下一步按同一授权创建verify、机械回填状态并清理本任务树/分支；不push、不部署、不启动下一卡。
