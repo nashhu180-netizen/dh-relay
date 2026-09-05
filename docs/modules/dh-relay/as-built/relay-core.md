@@ -278,6 +278,7 @@ DHR_52 的 RPC seam 与 DHR_51 的 host 之间原本没有装配人（F-001）�
 
 - `relay-core/profiles/` 是闭字段 Executor Profile 注册表、校验器与 fixtures；用户级候选只保存路径模板、别名、能力位、掩码身份和 fallback 引用，不保存凭据值。注册表机读层目前不表达「当前可派/停用」；`codex-ninth` 未登录、当前不可派只由 DHR_32 evidence/findings 记录，下游不得仅凭六项 CLI 能力位推导它可派。
 - `relay-core/runtime/executors/herdr/` 通过 Herdr CLI 实现 launch/observe/capture/reconcile/stop，Runtime 的 `herdr-agent` 分支负责 Attempt 与事件账。`done` 不直接等于 succeeded；无 judge 时只形成有界 Attention，判定器语义留 DHR_35。
+- **DHR_75**：Herdr CLI wrapper 已改为 `spawn` + Promise，所有 adapter 调用点等待 Promise；通用 10s、启动 60s 与生产 Host lease 15s 均未改变。超时在 Windows 先用 `taskkill /T /F` 清进程树（清理工具自身上限 5s）并等 child `close` 后返回既有 `spawn:ETIMEDOUT` 形状；spawn/stream/signal/非零/空 stdout 的既有失败映射保持。正常 taskkill 路径已有真实父子进程零残留证据；若 taskkill 工具自身失败，Node fallback 只能保证父进程有界终止，要求异常路径也绝对清零须另建 Windows Job Object/专用清理能力，不能在 wrapper 内假装已保证。
 - 当前只证明 Windows/DSH-off 慢路与安全 focus；真实 Linux SSH、事件快路和 capability hash 仍是 DHR_35 的受限项。fixture 不替代真实 SSH 证据。
 
 - **DHR_76（已合入）**：runtime loader `await validateProfilesAsync()` 对完整 registry 校验；结构/fallback 先验，每 Profile 保持 config→alias 原首错顺序。同步 CLI `validateProfiles()` 兼容保留，runtime alias 使用异步子进程。默认单探针/整轮/清理宽限为 15s/60s/10s，Host lease TTL 不变；Windows 正常超时通过 taskkill /T /F 并等待 root close。DHR-B-42 明确：若 10 秒宽限耗尽仍无法确认，允许以 `E_UNRESOLVED_ALIAS:probe-cleanup-incomplete` 或 `probe-close-timeout` 异常拒绝，必须标记清理未确认、不得声称无残留、不得继续启动，该异常不计清理验收通过；loader 仍包装 `E_BAD_VALUE:PROFILE_REGISTRY`。driver 仅在 loader 返回后复查 stopping，停止期间不新开 Attempt；不新增探针取消协议。A~F 和独立复核终态见 `workspace/DHR_76/review.md`，不得替代 DHR_75/72/35 实录。

@@ -161,18 +161,18 @@ test('DHR_33 herdr-cli：文件状态可执行桩逐字接收六个动词参数�
   } }), 'utf8');
   const bin = fileURLToPath(new URL('./helpers/fake-herdr-bin.mjs', import.meta.url));
   const cli = makeHerdrCli({ herdrBin: process.execPath, herdrArgs: [bin, statePath] });
-  assert.equal(cli.paneSplit({ cwd: 'C:/work' }).value.pane.pane_id, 'p1');
-  assert.equal(cli.agentStart({ name: 'a', kind: 'codex', paneId: 'p1', args: ['--x'] }).value.agent.terminal_id, 't1');
-  assert.equal(cli.agentGet('a').value.agent.agent_status, 'working');
-  assert.ok(cli.agentRead('a').ok);
-  assert.ok(cli.agentSendKeys('a', ['enter']).ok);
-  assert.ok(cli.agentPrompt('a', 'hello').ok);
-  assert.ok(cli.paneGet('p1').ok);
-  assert.ok(cli.paneKill('p1').ok);
-  assert.ok(cli.version().ok);
-  assert.ok(cli.paneRun({ paneId: 'p1', command: 'claude', args: ['--x'] }).ok);
-  assert.equal(cli.agentList().value.agents[0].pane_id, 'p1');
-  assert.ok(cli.agentRename({ target: 'p1', name: 'renamed' }).ok);
+  assert.equal((await cli.paneSplit({ cwd: 'C:/work' })).value.pane.pane_id, 'p1');
+  assert.equal((await cli.agentStart({ name: 'a', kind: 'codex', paneId: 'p1', args: ['--x'] })).value.agent.terminal_id, 't1');
+  assert.equal((await cli.agentGet('a')).value.agent.agent_status, 'working');
+  assert.ok((await cli.agentRead('a')).ok);
+  assert.ok((await cli.agentSendKeys('a', ['enter'])).ok);
+  assert.ok((await cli.agentPrompt('a', 'hello')).ok);
+  assert.ok((await cli.paneGet('p1')).ok);
+  assert.ok((await cli.paneKill('p1')).ok);
+  assert.ok((await cli.version()).ok);
+  assert.ok((await cli.paneRun({ paneId: 'p1', command: 'claude', args: ['--x'] })).ok);
+  assert.equal((await cli.agentList()).value.agents[0].pane_id, 'p1');
+  assert.ok((await cli.agentRename({ target: 'p1', name: 'renamed' })).ok);
   const calls = JSON.parse(await readFile(statePath, 'utf8')).calls;
   assert.deepEqual(calls[0], ['pane', 'split', '--current', '--no-focus', '--direction', 'right', '--cwd', 'C:/work']);
   assert.deepEqual(calls[1], ['agent', 'start', 'a', '--kind', 'codex', '--pane', 'p1', '--', '--x']);
@@ -194,9 +194,9 @@ test('DHR_33 herdr-cli：超时与明确 not-found 分别保留 transient/missin
   const statePath = join(root, 'state.json');
   const bin = fileURLToPath(new URL('./helpers/fake-herdr-bin.mjs', import.meta.url));
   await writeFile(statePath, JSON.stringify({ exit_code: 1, stderr: 'agent not found' }), 'utf8');
-  assert.equal(makeHerdrCli({ herdrBin: process.execPath, herdrArgs: [bin, statePath] }).agentGet('gone').missing, true);
+  assert.equal((await makeHerdrCli({ herdrBin: process.execPath, herdrArgs: [bin, statePath] }).agentGet('gone')).missing, true);
   await writeFile(statePath, JSON.stringify({ delay_ms: 50 }), 'utf8');
-  const timeout = makeHerdrCli({ herdrBin: process.execPath, herdrArgs: [bin, statePath], timeoutMs: 1 }).agentGet('slow');
+  const timeout = await makeHerdrCli({ herdrBin: process.execPath, herdrArgs: [bin, statePath], timeoutMs: 1 }).agentGet('slow');
   assert.equal(timeout.ok, false);
   assert.equal(timeout.missing, false);
 });
@@ -449,22 +449,22 @@ test('DHR_68/A herdr-cli：启动专用超时与其余动词分离，超时带 t
 
   // 通用上限 30ms：agent get 超时；agent start 因为用启动专用上限（默认 60s）而通过。
   const cli = makeHerdrCli({ herdrBin: process.execPath, herdrArgs: [bin, statePath], timeoutMs: 30 });
-  const slowGet = cli.agentGet('slow');
+  const slowGet = await cli.agentGet('slow');
   assert.equal(slowGet.ok, false);
   assert.equal(slowGet.timedOut, true, 'Windows 上超时命中 child.error.code=ETIMEDOUT，也必须标 timedOut');
   assert.equal(slowGet.missing, false);
-  assert.equal(cli.agentStart({ name: 'a', kind: 'codex', paneId: 'p1' }).ok, true, 'agent start 不受通用 10s 上限约束');
+  assert.equal((await cli.agentStart({ name: 'a', kind: 'codex', paneId: 'p1' })).ok, true, 'agent start 不受通用 10s 上限约束');
 
   // 启动专用上限本身可被压低，证明它确实被 agent start 使用。
   const tight = makeHerdrCli({ herdrBin: process.execPath, herdrArgs: [bin, statePath], startTimeoutMs: 20 });
-  const startTimeout = tight.agentStart({ name: 'a', kind: 'codex', paneId: 'p1' });
+  const startTimeout = await tight.agentStart({ name: 'a', kind: 'codex', paneId: 'p1' });
   assert.equal(startTimeout.ok, false);
   assert.equal(startTimeout.timedOut, true);
 
   // agent_not_ready 是启动期 blocked，不是 missing。
   await writeFile(statePath, JSON.stringify({ exit_code: 1,
     stderr: '{"error":{"code":"agent_not_ready","message":"agent a is not ready"},"id":"cli:agent:start"}' }), 'utf8');
-  const notReady = makeHerdrCli({ herdrBin: process.execPath, herdrArgs: [bin, statePath] })
+  const notReady = await makeHerdrCli({ herdrBin: process.execPath, herdrArgs: [bin, statePath] })
     .agentStart({ name: 'a', kind: 'codex', paneId: 'p1' });
   assert.equal(notReady.ok, false);
   assert.equal(notReady.notReady, true);
@@ -496,11 +496,11 @@ test('DHR_68/B：pane run 不解 JSON，Claude 在真实空 stdout 形态下仍�
   const bin = fileURLToPath(new URL('./helpers/fake-herdr-bin.mjs', import.meta.url));
   await writeFile(statePath, JSON.stringify({ responses: { 'pane run': {}, 'agent start': { agent: { terminal_id: 't1' } } } }), 'utf8');
   const cli = makeHerdrCli({ herdrBin: process.execPath, herdrArgs: [bin, statePath] });
-  const ran = cli.paneRun({ paneId: 'p1', command: 'claude', args: ['--x'] });
+  const ran = await cli.paneRun({ paneId: 'p1', command: 'claude', args: ['--x'] });
   assert.equal(ran.ok, true);
   assert.equal(typeof ran.value, 'string', 'pane run 不得被当成 JSON 解析');
   // Codex 的 agent start 返回处理不变：仍拆信封、仍读 agent.terminal_id。
-  assert.equal(cli.agentStart({ name: 'a', kind: 'codex', paneId: 'p1', args: ['--x'] }).value.agent.terminal_id, 't1');
+  assert.equal((await cli.agentStart({ name: 'a', kind: 'codex', paneId: 'p1', args: ['--x'] })).value.agent.terminal_id, 't1');
   const calls = JSON.parse(await readFile(statePath, 'utf8')).calls;
   assert.deepEqual(calls[0], ['pane', 'run', 'p1', 'claude', '--x']);
   assert.deepEqual(calls[1], ['agent', 'start', 'a', '--kind', 'codex', '--pane', 'p1', '--', '--x']);

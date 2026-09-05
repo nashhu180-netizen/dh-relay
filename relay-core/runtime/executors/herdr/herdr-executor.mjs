@@ -26,11 +26,11 @@ function paneCandidates(value, paneId) {
 async function renameClaudeAgent({ cli, paneId, agentName, readyTimeoutMs, readyPollMs }) {
   const deadline = Date.now() + readyTimeoutMs;
   while (true) {
-    const listed = cli.agentList();
+    const listed = await cli.agentList();
     if (!listed.ok) return listed;
     const candidates = paneCandidates(listed.value, paneId);
     if (candidates.length === 1 && candidates[0]?.agent === 'claude') {
-      const renamed = cli.agentRename({ target: paneId, name: agentName });
+      const renamed = await cli.agentRename({ target: paneId, name: agentName });
       if (!renamed.ok) return renamed;
       return { ok: true, terminalId: field(candidates[0], 'terminal_id', 'pane_id') ?? paneId };
     }
@@ -49,43 +49,43 @@ export function observationDetail({ herdrStatus, agentName, paneId, seq, workDir
 
 export async function launchHerdrAgent({ cli, registryProfile, runId, nodeId, attemptId, workDirRoot, args = [], readyTimeoutMs = 10_000, readyPollMs = 100 }) {
   if (!workDirRoot) return { ok: false, reason: 'E_BAD_VALUE:WORK_DIR_ROOT', detail: 'work_dir_root-required' };
-  const split = cli.paneSplit({ cwd: workDirRoot });
+  const split = await cli.paneSplit({ cwd: workDirRoot });
   if (!split.ok) return split;
   const paneId = field(entity(split.value), 'pane_id', 'id');
-  const closeFailedPane = (failure) => {
-    const killed = cli.paneKill(paneId);
+  const closeFailedPane = async (failure) => {
+    const killed = await cli.paneKill(paneId);
     const killDetail = killed?.ok ? 'pane-kill=ok' : `pane-kill=${killed?.detail ?? killed?.reason ?? 'failed'}`;
     return { ...failure, detail: [failure.detail, killDetail].filter(Boolean).join(';') };
   };
-  if (!paneId) return closeFailedPane({ ok: false, reason: 'E_BAD_VALUE:HERDR_CLI', detail: 'pane-id-missing' });
+  if (!paneId) return await closeFailedPane({ ok: false, reason: 'E_BAD_VALUE:HERDR_CLI', detail: 'pane-id-missing' });
   // Herdr agent names are lowercase and at most 32 chars; attempt_id supplies the unique suffix.
   const agentName = agentNameOf(attemptId);
   const start = isClaudeProfile(registryProfile)
-    ? (() => {
+    ? await (async () => {
       if (typeof registryProfile.command_alias !== 'string' || registryProfile.command_alias.length === 0) {
         return { ok: false, reason: 'E_BAD_VALUE:HERDR_CLI', detail: 'claude-command-alias-missing' };
       }
-      return cli.paneRun({ paneId, command: registryProfile.command_alias, args });
+      return await cli.paneRun({ paneId, command: registryProfile.command_alias, args });
     })()
-    : cli.agentStart({ name: agentName, kind: agentKind(registryProfile), paneId, args });
+    : await cli.agentStart({ name: agentName, kind: agentKind(registryProfile), paneId, args });
   // DHR_68/A：启动调用**超时**不等于启动失败——真实 herdr 自己的 `agent start` 等待窗口
   // 默认就有 30 秒，超时时 agent 往往已经建成。先只读对账一次，再决定是否回滚。
   // DHR_68/C：启动期 `agent_not_ready`（产品自己的目录信任框之类）是要人处理的暂停，
   // 不是启动失败——保留 handle、不关 pane，由 driver 写一条 Attention。
   const startBlocked = start.notReady === true;
   if (!start.ok && !startBlocked) {
-    if (start.timedOut !== true) return closeFailedPane(start);
+    if (start.timedOut !== true) return await closeFailedPane(start);
     // 对账**只读**。绝不重发启动调用：那会在真实宿主上拉起第二个 Agent 进程。
-    const listed = isClaudeProfile(registryProfile) ? cli.agentList() : null;
+    const listed = isClaudeProfile(registryProfile) ? await cli.agentList() : null;
     const reconciled = isClaudeProfile(registryProfile)
       ? listed.ok === true && paneCandidates(listed.value, paneId).length > 0
-      : cli.agentGet(agentName).ok === true;
-    if (!reconciled) return closeFailedPane(start);
+      : (await cli.agentGet(agentName)).ok === true;
+    if (!reconciled) return await closeFailedPane(start);
   }
   const renamed = isClaudeProfile(registryProfile)
     ? await renameClaudeAgent({ cli, paneId, agentName, readyTimeoutMs, readyPollMs })
     : { ok: true, terminalId: field(entity(start.value), 'terminal_id', 'pane_id') ?? paneId };
-  if (!renamed.ok) return closeFailedPane(renamed);
+  if (!renamed.ok) return await closeFailedPane(renamed);
   const handle = {
     agent_name: agentName,
     pane_id: String(paneId),
@@ -111,7 +111,7 @@ export async function launchHerdrAgent({ cli, registryProfile, runId, nodeId, at
 }
 
 export async function observeHerdrAgent({ cli, handle }) {
-  const found = cli.agentGet(handle.agent_name);
+  const found = await cli.agentGet(handle.agent_name);
   if (!found.ok) return found;
   const status = field(entity(found.value), 'agent_status', 'status');
   if (typeof status !== 'string') return { ok: false, reason: 'E_BAD_VALUE:HERDR_CLI', detail: 'agent-status-missing' };
@@ -122,7 +122,7 @@ export async function observeHerdrAgent({ cli, handle }) {
   let herdrStatus = status;
   if (status === 'idle') {
     paneGetCalled = true;
-    const pane = typeof cli.paneGet === 'function' ? cli.paneGet(handle.pane_id) : { ok: false };
+    const pane = typeof cli.paneGet === 'function' ? await cli.paneGet(handle.pane_id) : { ok: false };
     if (!pane?.ok) {
       paneGet = 'error';
     } else {
@@ -144,12 +144,12 @@ export async function observeHerdrAgent({ cli, handle }) {
 export async function reconcileHerdrAgent({ cli, handle, lastSeq = null }) {
   const observed = await observeHerdrAgent({ cli, handle });
   if (observed.ok && observed.observation.herdr_status !== 'unknown') return { kind: 'alive', observation: observed.observation, lastSeq };
-  const pane = typeof cli.paneGet === 'function' ? cli.paneGet(handle.pane_id) : { ok: false, missing: false };
+  const pane = typeof cli.paneGet === 'function' ? await cli.paneGet(handle.pane_id) : { ok: false, missing: false };
   return observed?.missing === true && pane?.missing === true ? { kind: 'host_lost' } : { kind: 'observation_lost' };
 }
 
 export async function captureHerdrResult({ cli, handle, lines = 120, judge = null }) {
-  const read = cli.agentRead(handle.agent_name, { lines, source: 'recent-unwrapped' });
+  const read = await cli.agentRead(handle.agent_name, { lines, source: 'recent-unwrapped' });
   if (!read.ok) return read;
   const text = read.value;
   const verdict = typeof judge === 'function' ? judge(text) : null;
@@ -157,8 +157,8 @@ export async function captureHerdrResult({ cli, handle, lines = 120, judge = nul
 }
 
 export async function sendToHerdrAgent({ cli, handle, text = null, keys = null }) {
-  if (text !== null) return cli.agentPrompt(handle.agent_name, String(text));
-  return cli.agentSendKeys(handle.agent_name, Array.isArray(keys) ? keys : [String(keys)]);
+  if (text !== null) return await cli.agentPrompt(handle.agent_name, String(text));
+  return await cli.agentSendKeys(handle.agent_name, Array.isArray(keys) ? keys : [String(keys)]);
 }
 
 /**
@@ -181,5 +181,5 @@ export function attachHerdrAgent({ handle }) {
 }
 
 export async function stopHerdrAgent({ cli, handle, timeoutMs = 2_000 }) {
-  return cli.paneKill(handle.pane_id, { timeoutMs });
+  return await cli.paneKill(handle.pane_id, { timeoutMs });
 }

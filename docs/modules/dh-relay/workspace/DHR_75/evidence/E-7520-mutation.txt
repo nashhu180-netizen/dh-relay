@@ -1,0 +1,14 @@
+candidate=dc547f70264a0fae988907bc0d32baf4b8061446
+reviewer=/root/dhr75_code_review2
+production_anchor=relay-core/runtime/executors/herdr/herdr-cli.mjs:103
+original=callTimeoutMs
+mutation=0
+original_hash=b69d4d2f464ec2795ffe08817ce5bb277cd2777b
+mutated_hash=20bcdba1d12b04de8e77ba9fa70ed3ee52aecacb
+restored_hash=b69d4d2f464ec2795ffe08817ce5bb277cd2777b
+test_hash=6335a179a9ec6ba901f688e5cdcd6999e06a12d6
+command=node --test --test-name-pattern "真实慢 Herdr 子进程不阻塞同一事件循环的续租节拍" test/dhr75-host-lease-during-herdr.test.mjs
+mutated_exit=1
+mutated_summary=1 test; 0 pass; 1 fail; assertion test/dhr75-host-lease-during-herdr.test.mjs:69; actual false; expected true
+restored_exit=0
+restored_summary=1 test; 1 pass; 0 fail; duration_ms 6184.7577

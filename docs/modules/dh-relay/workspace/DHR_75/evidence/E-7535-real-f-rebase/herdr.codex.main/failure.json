@@ -1,0 +1,6 @@
+{
+  "profile_id": "herdr.codex.main",
+  "stage": "agent-ready",
+  "failure_type": "System.Management.Automation.RuntimeException",
+  "failed_at": "2026-09-05T06:16:00.3609203Z"
+}

@@ -1,0 +1,14 @@
+{
+  "captured_at": "2026-09-04T18:11:18.3959464Z",
+  "expected_agent_name": "herdr-att~eb4276f71d24~t26",
+  "expected_pane_id": "w6:pB",
+  "agents_in_fixture": [
+    {
+      "name": "herdr-att~eb4276f71d24~t26",
+      "kind": "codex",
+      "status": "done",
+      "pane_id": "w6:pB"
+    }
+  ],
+  "pane_still_present": true
+}
