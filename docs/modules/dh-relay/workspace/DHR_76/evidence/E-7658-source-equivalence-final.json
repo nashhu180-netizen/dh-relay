@@ -1,0 +1,22 @@
+{
+  "production_base": "5e04dd8",
+  "files": [
+    {
+      "sha256": "893BF2C9AE978A65822CBACC54B005077C3D506F5FF7FAF3B18ADA58F253EF26",
+      "path": "relay-core/profiles/validate-profiles.mjs"
+    },
+    {
+      "sha256": "83E858122FCE831D24E8E568CFB508280AC9DDBC5DE59B10F87014AC8060C3D8",
+      "path": "relay-core/runtime/executors/herdr/profile-registry.mjs"
+    },
+    {
+      "sha256": "C3B5402987CE8F97F4C7067A9D7F805709E96B80586B6EBD682F0DE5C1568D2F",
+      "path": "relay-core/runtime/workflow-driver.mjs"
+    }
+  ],
+  "regression_since_24e575f_changed": [],
+  "production_changed_paths": [],
+  "note": "Old evidence retains original execution SHA. These named production files are unchanged; current DHR76 test changes have separate final raw evidence.",
+  "uncommitted_production_paths": [],
+  "candidate": "3d55ca739029cf4e35383fe69eab6dfa36844c7a"
+}

@@ -1,0 +1,13 @@
+✔ DHR_76/A: five-profile fixture preserves the current DHR65 registry graph (2.4123ms)
+✔ DHR_76/A: mixed config and alias faults keep the deterministic first error and stop probing (59.2901ms)
+✔ DHR_76/C: successful validation retains the complete registry and fallback relation (33.8524ms)
+✔ DHR_76/C: the frozen 60s registry budget bounds five real probes (64739.3126ms)
+ℹ DHR76-C round_budget_ms=60000 cleanup_grace_ms=10000 elapsed_ms=64740 calls=5
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 67149.613

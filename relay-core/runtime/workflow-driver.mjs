@@ -207,6 +207,7 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
     const loaded = registrySnapshot
       ? { ok: true, registry: registrySnapshot }
       : await loadExecutorProfiles({ registryPath: herdrRegistryPath, environment: profileEnvironment });
+    if (stopping) return;
     if (!loaded.ok) return; // 本机 registry 不可用时不凭空开 Attempt。
     const registryProfile = resolveProfile(loaded.registry, profile.ref);
     if (!registryProfile) return; // F-007：profile ref 无条目，保持 pending、零事件。

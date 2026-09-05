@@ -1,0 +1,10 @@
+✔ DHR_76/D: driver stop after a confirmed loader wait leaves Attempt, Agent, pane, and Result at zero (72279.7891ms)
+ℹ DHR76-D stop outcome={"ok":true} events=2 host_calls={"agents":0,"panes":0} loader_wait_ms=51717
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 74615.0106

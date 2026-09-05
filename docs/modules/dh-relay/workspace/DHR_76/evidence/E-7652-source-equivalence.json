@@ -1,0 +1,24 @@
+{
+  "note": "Only the DHR76 fixture/test and mutation scripts changed after24e575f; unchanged production evidence retains its recorded candidate, not relabeled as new execution.",
+  "regression_since_24e575f_changed": [],
+  "comparisons": [
+    {
+      "candidate": "3249c958a2aab00046c3d38ab64a82780498728e",
+      "base": "5e04dd8",
+      "production_changed_paths": [],
+      "identical": true
+    },
+    {
+      "candidate": "3249c958a2aab00046c3d38ab64a82780498728e",
+      "base": "f05e66b",
+      "production_changed_paths": [],
+      "identical": true
+    },
+    {
+      "candidate": "3249c958a2aab00046c3d38ab64a82780498728e",
+      "base": "24e575f",
+      "production_changed_paths": [],
+      "identical": true
+    }
+  ]
+}

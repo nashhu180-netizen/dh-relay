@@ -1,0 +1,15 @@
+{
+  "arguments": [
+    "--test",
+    "--test-concurrency=1",
+    "--test-name-pattern",
+    "real Host actor renews|five-profile fixture|constants",
+    "test/dhr76-profile-validation-lease.test.mjs"
+  ],
+  "candidate": "24e575f70233abfbc29578292e2773547f527f15",
+  "exit_code": 0,
+  "outer_timeout": false,
+  "elapsed_ms": 53981,
+  "stdout": "E-7645-b-restored.stdout.txt",
+  "stderr": "E-7645-b-restored.stderr.txt"
+}

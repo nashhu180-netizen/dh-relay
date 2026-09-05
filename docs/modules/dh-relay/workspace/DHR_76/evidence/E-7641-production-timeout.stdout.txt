@@ -1,0 +1,10 @@
+✔ DHR_76/C: production timeout budget retains loader error and driver four-zero boundary (39676.9127ms)
+ℹ DHR76-C timeout alias_budget_ms=15000 closed_children=2 descendants_alive=0 driver_side_effects=0
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 41976.097

@@ -1,0 +1,12 @@
+✔ DHR_76/D: Windows validation timeout waits for close and kills the child process tree (7715.8314ms)
+ℹ DHR76-D timeout elapsed_ms=7698 child_calls=1 descendant_pid=17364 alive=false
+✔ DHR_76/C: complete validation precedes the selected profile launch with four zero side effects while waiting (52457.1195ms)
+ℹ DHR76-C completed_aliases=5 selected_starts=1 unselected_starts=0
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 62552.0566

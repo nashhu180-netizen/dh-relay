@@ -1,0 +1,10 @@
+✔ host：detached 宿主存活可读（P5-M1 机器面）；强杀 -9 后 Store 重建逐字节同签名（P5-M3） (40814.3706ms)
+✔ host：shouldStop 会话优雅停机并释放租约 (33583.3107ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 76695.0762

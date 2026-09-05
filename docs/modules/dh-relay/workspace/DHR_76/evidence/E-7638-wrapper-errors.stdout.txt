@@ -1,0 +1,14 @@
+✔ DHR_76 constants freeze alias, registry, and cleanup budgets (1.7126ms)
+✔ DHR_76/C spawn error is reported as E_UNRESOLVED_ALIAS (119.0568ms)
+✔ DHR_76/C non-zero is reported as E_UNRESOLVED_ALIAS (12929.7112ms)
+✔ DHR_76/C signal is reported as E_UNRESOLVED_ALIAS (12904.2614ms)
+✔ DHR_76/C empty result is reported as E_UNRESOLVED_ALIAS (6480.4861ms)
+✔ DHR_76/A: mixed config and alias faults keep the deterministic first error and stop probing (23.6323ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 34778.7345

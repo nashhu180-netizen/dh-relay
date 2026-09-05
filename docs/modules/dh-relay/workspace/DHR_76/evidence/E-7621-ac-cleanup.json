@@ -1,0 +1,15 @@
+{
+  "arguments": [
+    "--test",
+    "--test-concurrency=1",
+    "--test-name-pattern",
+    "DHR_76/[AC]|constants|Windows validation timeout",
+    "test/dhr76-profile-validation-lease.test.mjs"
+  ],
+  "candidate": "5e04dd8fb1773489391d5ef7b5e24eb1ec2c0b34",
+  "exit_code": 1,
+  "outer_timeout": false,
+  "elapsed_ms": 69098,
+  "stdout": "E-7621-ac-cleanup.stdout.txt",
+  "stderr": "E-7621-ac-cleanup.stderr.txt"
+}

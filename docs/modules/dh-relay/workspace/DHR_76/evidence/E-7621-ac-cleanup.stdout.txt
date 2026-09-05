@@ -1,0 +1,43 @@
+✔ DHR_76 constants freeze alias, registry, and cleanup budgets (2.2973ms)
+✔ DHR_76/A: a non-target invalid alias remains fail-closed after complete-table validation (38693.2741ms)
+✔ DHR_76/C spawn error is reported as E_UNRESOLVED_ALIAS (86.4232ms)
+✖ DHR_76/C non-zero is reported as E_UNRESOLVED_ALIAS (3140.2629ms)
+✖ DHR_76/C signal is reported as E_UNRESOLVED_ALIAS (3162.4515ms)
+✖ DHR_76/C empty result is reported as E_UNRESOLVED_ALIAS (3228.8435ms)
+✔ DHR_76/C: loader awaits async validation and keeps the existing outer error face (7191.5714ms)
+✔ DHR_76/A: a broken fallback edge is rejected before any alias probe (48.0262ms)
+✔ DHR_76/A: mixed config and alias faults keep the deterministic first error and stop probing (51.3379ms)
+✔ DHR_76/D: Windows validation timeout waits for close and kills the child process tree (7715.0669ms)
+ℹ DHR76-D timeout elapsed_ms=7706 child_calls=1 descendant_pid=23808 alive=false
+✔ DHR_76/C: successful validation retains the complete registry and fallback relation (65.7106ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 8
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 65816.6615
+
+✖ failing tests:
+
+test at test\dhr76-profile-validation-lease.test.mjs:232:3
+✖ DHR_76/C non-zero is reported as E_UNRESOLVED_ALIAS (3140.2629ms)
+  Error: E_UNRESOLVED_ALIAS:probe-close-timeout
+      at Timeout._onTimeout (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_76/relay-core/profiles/validate-profiles.mjs:186:16)
+      at listOnTimeout (node:internal/timers:605:17)
+      at process.processTimers (node:internal/timers:541:7)
+
+test at test\dhr76-profile-validation-lease.test.mjs:232:3
+✖ DHR_76/C signal is reported as E_UNRESOLVED_ALIAS (3162.4515ms)
+  Error: E_UNRESOLVED_ALIAS:probe-close-timeout
+      at Timeout._onTimeout (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_76/relay-core/profiles/validate-profiles.mjs:186:16)
+      at listOnTimeout (node:internal/timers:605:17)
+      at process.processTimers (node:internal/timers:541:7)
+
+test at test\dhr76-profile-validation-lease.test.mjs:232:3
+✖ DHR_76/C empty result is reported as E_UNRESOLVED_ALIAS (3228.8435ms)
+  Error: E_UNRESOLVED_ALIAS:probe-close-timeout
+      at Timeout._onTimeout (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_76/relay-core/profiles/validate-profiles.mjs:186:16)
+      at listOnTimeout (node:internal/timers:605:17)
+      at process.processTimers (node:internal/timers:541:7)

@@ -1,0 +1,15 @@
+{
+  "arguments": [
+    "--test",
+    "--test-concurrency=1",
+    "--test-name-pattern",
+    "^host：(detached|shouldStop)",
+    "test/runtime.test.mjs"
+  ],
+  "candidate": "f05e66bbc5e385b1b9ca70eee909cd9ae0f19ce4",
+  "exit_code": 0,
+  "outer_timeout": false,
+  "elapsed_ms": 79943,
+  "stdout": "E-7639-host-lifecycle.stdout.txt",
+  "stderr": "E-7639-host-lifecycle.stderr.txt"
+}

@@ -1,0 +1,13 @@
+✔ DHR_65 loader accepts the complete structural registry and resolves both target profiles (16170.9024ms)
+✔ DHR_65 loader rejects a bad alias in every registered profile (67252.0591ms)
+✔ DHR_65 loader rejects a bad config in every registered profile (280.975ms)
+✔ DHR_65 driver rejects a bad alias complete registry before Attempt, Agent, pane, or Result (16956.6069ms)
+✔ DHR_65 driver rejects a bad config complete registry before Attempt, Agent, pane, or Result (132.9761ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 103094.9937

@@ -1,0 +1,13 @@
+{
+  "arguments": [
+    "--test",
+    "--test-concurrency=1",
+    "test/profile-identity.test.mjs"
+  ],
+  "candidate": "7940f317da2a61560ddf6515279cce5725219feb",
+  "exit_code": 0,
+  "outer_timeout": false,
+  "elapsed_ms": 5448,
+  "stdout": "E-7611-identity.stdout.txt",
+  "stderr": "E-7611-identity.stderr.txt"
+}

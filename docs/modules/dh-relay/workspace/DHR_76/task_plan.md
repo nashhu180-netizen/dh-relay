@@ -13,7 +13,7 @@
 ## 施工步骤
 
 1. Test/Create relay-core/test/dhr76-profile-validation-lease.test.mjs：五 Profile 与 fallback、真实异步子进程累计 >15s、同 actor 两次续租、独立 contender、先验后启、超时/错误/清理/stop/epoch 负例。node --test --test-concurrency=1 test/dhr76-profile-validation-lease.test.mjs；每项外层上限 120s。先记录修前失败。
-2. Modify profiles/validate-profiles.mjs：保留同步 CLI/静态入口，增加 runtime 异步完整校验；单 alias 15s、整轮 60s、清理宽限 10s。spawn error/非零/signal/超时/空结果保持 E_UNRESOLVED_ALIAS；真实 Windows 子树清理并等待 close。
+2. Modify profiles/validate-profiles.mjs：保留同步 CLI/静态入口，增加 runtime 异步完整校验；单 alias 15s、整轮 60s、清理宽限 10s。spawn error/非零/signal/超时/空结果保持 E_UNRESOLVED_ALIAS；正常超时完成真实 Windows 子树清理并等待 close；清理宽限耗尽仍未确认时以 probe-close-timeout 明确失败、标记清理未确认且不得继续启动（DHR-B-42）。
 3. Modify runtime/executors/herdr/profile-registry.mjs：await 完整校验，错误包装不变。Modify runtime/workflow-driver.mjs：仅 loader await 返回后、openAttempt 前复查 stopping；不传取消信号，不改其他语义。
 4. Test dhr65-registry-loader、profiles、profile-identity、runtime lease/host、Herdr adapter；DHR_75 专项从其树读取并在本卡基线运行，不带入生产代码。追加 package.json 本卡测试。记录每个终态、区分基线问题。
 5. 主会话执行本卡 DSH-off Windows 冻结 Codex Profile 的真实 F；完整 registry 只读；只保存白名单脱敏事件、时间线与 lease。attempt_started 时 lease 有效，随后首条 observation 才算通过；阻塞如实记 findings，不扩范围。

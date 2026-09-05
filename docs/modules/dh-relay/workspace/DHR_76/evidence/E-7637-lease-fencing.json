@@ -1,0 +1,15 @@
+{
+  "arguments": [
+    "--test",
+    "--test-concurrency=1",
+    "--test-name-pattern",
+    "^lease：|^host：租约被换手",
+    "test/runtime.test.mjs"
+  ],
+  "candidate": "6cf6f7108ab0eff8b6ddb9a8e61b380bf50bc13b",
+  "exit_code": 0,
+  "outer_timeout": false,
+  "elapsed_ms": 39964,
+  "stdout": "E-7637-lease-fencing.stdout.txt",
+  "stderr": "E-7637-lease-fencing.stderr.txt"
+}

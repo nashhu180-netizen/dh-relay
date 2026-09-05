@@ -1,0 +1,9 @@
+{
+  "anchor": "relay-core/profiles/validate-profiles.mjs",
+  "before": "893BF2C9AE978A65822CBACC54B005077C3D506F5FF7FAF3B18ADA58F253EF26",
+  "red_shell_exit": 1,
+  "mutated": "AC0C71EEA2A21CD5766CAF3795D2BDBAC501BDA4F58C0B8AAA8ECFF5995E02BB",
+  "restored": "893BF2C9AE978A65822CBACC54B005077C3D506F5FF7FAF3B18ADA58F253EF26",
+  "mutation": "B",
+  "reviewer": "/root/dhr76_code2"
+}

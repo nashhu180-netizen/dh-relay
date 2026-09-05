@@ -1,0 +1,23 @@
+{
+  "record_kind": "post-run-source-binding",
+  "files": [
+    {
+      "sha256": "893BF2C9AE978A65822CBACC54B005077C3D506F5FF7FAF3B18ADA58F253EF26",
+      "path": "relay-core/profiles/validate-profiles.mjs"
+    },
+    {
+      "sha256": "83E858122FCE831D24E8E568CFB508280AC9DDBC5DE59B10F87014AC8060C3D8",
+      "path": "relay-core/runtime/executors/herdr/profile-registry.mjs"
+    },
+    {
+      "sha256": "C3B5402987CE8F97F4C7067A9D7F805709E96B80586B6EBD682F0DE5C1568D2F",
+      "path": "relay-core/runtime/workflow-driver.mjs"
+    },
+    {
+      "sha256": "FB8CA80FA28C1639ACDC6957D0991842B0E378A2EA63227AA6B4E31805F4DB28",
+      "path": "docs/modules/dh-relay/workspace/DHR_76/scripts/run-real-f.ps1"
+    }
+  ],
+  "statement": "No source changes between run and this binding; git commit 6cf6f71 includes the runner and production",
+  "candidate": "6cf6f7108ab0eff8b6ddb9a8e61b380bf50bc13b"
+}

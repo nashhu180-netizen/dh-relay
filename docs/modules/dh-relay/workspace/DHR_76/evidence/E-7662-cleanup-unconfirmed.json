@@ -1,0 +1,15 @@
+{
+  "arguments": [
+    "--test",
+    "--test-concurrency=1",
+    "--test-name-pattern",
+    "cleanup grace exhaustion",
+    "test/dhr76-profile-validation-lease.test.mjs"
+  ],
+  "candidate": "b781d08427557ea6244740d76f6c77863ee7c108",
+  "exit_code": 0,
+  "outer_timeout": false,
+  "elapsed_ms": 5683,
+  "stdout": "E-7662-cleanup-unconfirmed.stdout.txt",
+  "stderr": "E-7662-cleanup-unconfirmed.stderr.txt"
+}

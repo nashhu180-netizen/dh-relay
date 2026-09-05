@@ -1,0 +1,15 @@
+{
+  "arguments": [
+    "--test",
+    "--test-concurrency=1",
+    "--test-name-pattern",
+    "production timeout budget",
+    "test/dhr76-profile-validation-lease.test.mjs"
+  ],
+  "candidate": "f05e66bbc5e385b1b9ca70eee909cd9ae0f19ce4",
+  "exit_code": 0,
+  "outer_timeout": false,
+  "elapsed_ms": 45197,
+  "stdout": "E-7641-production-timeout.stdout.txt",
+  "stderr": "E-7641-production-timeout.stderr.txt"
+}

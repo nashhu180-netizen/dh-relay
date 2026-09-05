@@ -1,0 +1,15 @@
+{
+  "arguments": [
+    "--test",
+    "--test-concurrency=1",
+    "--test-name-pattern",
+    "DHR_75/A",
+    "../docs/modules/dh-relay/workspace/DHR_76/scripts/dhr75-regression.test.mjs"
+  ],
+  "candidate": "7940f317da2a61560ddf6515279cce5725219feb",
+  "exit_code": 1,
+  "outer_timeout": false,
+  "elapsed_ms": 30278,
+  "stdout": "E-7615-dhr75-a.stdout.txt",
+  "stderr": "E-7615-dhr75-a.stderr.txt"
+}

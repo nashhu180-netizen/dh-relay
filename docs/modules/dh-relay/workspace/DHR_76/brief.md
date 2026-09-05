@@ -11,6 +11,10 @@
 
 DHR_76；唯一权威为 dev_plan/P6-Herdr多账号执行底座-开发方案.md § DHR_76，B-41 已确认。
 
+## 目标 (Outcome)
+
+完整 Profile 校验仍在启动前整体拒绝坏项，慢 alias 探针不阻塞 Host lease 续租；严格沿用下方任务合同。
+
 ## 完成条件
 
 | # | 条件 | 谁验（AI / 人） | 出处 |
@@ -18,11 +22,11 @@ DHR_76；唯一权威为 dev_plan/P6-Herdr多账号执行底座-开发方案.md 
 | 1 | **机器证 A（全表严格性）**：保留 5 个正式 Profile 与 fallback 关系的结构等价副本；任一 Profile 的 alias/config 失效都在 Attempt、Agent、pane、Result 前以现役错误面 fail-closed。保留非目标坏项，再变异生产代码使其跳过该项、只传目标 Profile 或跳过 fallback 关系时，原测试必须因错误接受而断言失败。 | AI | DHR_76 / B-41 |
 | 2 | **机器证 B（调度不饿死）**：默认 TTL 仍为 15,000ms；同一 Host actor 事件循环中，覆盖全部 5 个 Profile 的真实异步子进程探针总时长超过 15 秒，期间 lease 至少续租 2 次、expiry 单调前移、独立 contender 始终得到 `E_LEASE_HELD`。恢复同步等待或只拉长 TTL 的对照变异必须变红。 | AI | DHR_76 / B-41 |
 | 3 | **机器证 C（先校验后启动）**：全表校验完成前 Attempt/Agent/pane/Result 全 0；成功后仍解析两个指定 Profile 并只启动所选 Profile。单 alias 子进程/整轮/清理宽限/测试外层上限分别冻结为 15s/60s/10s/120s；spawn error、非零、signal、超时或空结果保持 `E_BAD_VALUE:PROFILE_REGISTRY`，detail 含 `E_UNRESOLVED_ALIAS`，无部分启动。 | AI | DHR_76 / B-41 |
-| 4 | **机器证 D（fencing、停止竞态与清理）**：校验期间发生 epoch 接管时旧 actor 后续结果与启动动作均拒绝、零双写；`driver.stop()` 在 await 期间发生时，校验返回后、`openAttempt()` 前复查 stopping，Attempt/Agent/pane/Result 全 0。探针自身超时后等待 child close，Windows 子进程及后代无残留；不新增 stop 取消启动前探针语义。 | AI | DHR_76 / B-41 |
+| 4 | **机器证 D（fencing、停止竞态与清理）**：校验期间发生 epoch 接管时旧 actor 后续结果与启动动作均拒绝、零双写；`driver.stop()` 在 await 期间发生时，校验返回后、`openAttempt()` 前复查 stopping，Attempt/Agent/pane/Result 全 0。正常探针超时在 10 秒清理宽限内等待 child close 与 Windows 杀树完成，并证明子进程及后代无残留；若宽限耗尽仍无法确认，允许以现役 `E_UNRESOLVED_ALIAS:probe-close-timeout` 明确失败返回，必须标记清理未确认、不得声称无残留且 Attempt/Agent/pane/Result 全 0，该异常不计作清理验收通过；不新增 stop 取消启动前探针语义。 | AI | DHR_76 / B-42 |
 | 5 | **机器证 E（直接回归与有效单测）**：profiles validator、DHR_65 loader、identity/profile、Host lease、DHR_75 专项和 Herdr adapter 定向回归均有终态，禁止改断言迁就实现；第二轮 fresh reviewer 选生产变异点，登记锚点、命令、前后/还原 hash、红绿退出码和失败摘要。 | AI | DHR_76 / B-41 |
 | 6 | **机器证 F（真实产品边界）**：本卡自己的 DSH-off Windows 基线上，用完整真实 registry 和冻结 Codex Profile 跑一次；`attempt_started` 时 lease 未过期且随后出现首条 `host_observation_changed`，证据脱敏、零凭据。不得替代 DHR_75 吸收后的重跑或 DHR_72/DHR_35 专属实录。 | AI | DHR_76 / B-41 |
 
-## 任务合同逐字副本
+## 边界 (Boundaries) 与任务合同逐字副本
 
 
 - **目标**：完整 Executor Profile registry 的 alias/config 严格校验仍在真实启动前 fail-closed，但 alias 探针不得以同步子进程阻塞 Host lease 调度；合法慢探针期间唯一写者持续持有新鲜 lease，校验成功后才可进入 Attempt/Agent/pane 链。
@@ -31,7 +35,7 @@ DHR_76；唯一权威为 dev_plan/P6-Herdr多账号执行底座-开发方案.md 
   - **机器证 A（全表严格性）**：保留 5 个正式 Profile 与 fallback 关系的结构等价副本；任一 Profile 的 alias/config 失效都在 Attempt、Agent、pane、Result 前以现役错误面 fail-closed。保留非目标坏项，再变异生产代码使其跳过该项、只传目标 Profile 或跳过 fallback 关系时，原测试必须因错误接受而断言失败。
   - **机器证 B（调度不饿死）**：默认 TTL 仍为 15,000ms；同一 Host actor 事件循环中，覆盖全部 5 个 Profile 的真实异步子进程探针总时长超过 15 秒，期间 lease 至少续租 2 次、expiry 单调前移、独立 contender 始终得到 `E_LEASE_HELD`。恢复同步等待或只拉长 TTL 的对照变异必须变红。
   - **机器证 C（先校验后启动）**：全表校验完成前 Attempt/Agent/pane/Result 全 0；成功后仍解析两个指定 Profile 并只启动所选 Profile。单 alias 子进程/整轮/清理宽限/测试外层上限分别冻结为 15s/60s/10s/120s；spawn error、非零、signal、超时或空结果保持 `E_BAD_VALUE:PROFILE_REGISTRY`，detail 含 `E_UNRESOLVED_ALIAS`，无部分启动。
-  - **机器证 D（fencing、停止竞态与清理）**：校验期间发生 epoch 接管时旧 actor 后续结果与启动动作均拒绝、零双写；`driver.stop()` 在 await 期间发生时，校验返回后、`openAttempt()` 前复查 stopping，Attempt/Agent/pane/Result 全 0。探针自身超时后等待 child close，Windows 子进程及后代无残留；不新增 stop 取消启动前探针语义。
+  - **机器证 D（fencing、停止竞态与清理）**：校验期间发生 epoch 接管时旧 actor 后续结果与启动动作均拒绝、零双写；`driver.stop()` 在 await 期间发生时，校验返回后、`openAttempt()` 前复查 stopping，Attempt/Agent/pane/Result 全 0。正常探针超时在 10 秒清理宽限内等待 child close 与 Windows 杀树完成，并证明子进程及后代无残留；若宽限耗尽仍无法确认，允许以现役 `E_UNRESOLVED_ALIAS:probe-close-timeout` 明确失败返回，必须标记清理未确认、不得声称无残留且 Attempt/Agent/pane/Result 全 0，该异常不计作清理验收通过；不新增 stop 取消启动前探针语义。
   - **机器证 E（直接回归与有效单测）**：profiles validator、DHR_65 loader、identity/profile、Host lease、DHR_75 专项和 Herdr adapter 定向回归均有终态，禁止改断言迁就实现；第二轮 fresh reviewer 选生产变异点，登记锚点、命令、前后/还原 hash、红绿退出码和失败摘要。
   - **机器证 F（真实产品边界）**：本卡自己的 DSH-off Windows 基线上，用完整真实 registry 和冻结 Codex Profile 跑一次；`attempt_started` 时 lease 未过期且随后出现首条 `host_observation_changed`，证据脱敏、零凭据。不得替代 DHR_75 吸收后的重跑或 DHR_72/DHR_35 专属实录。
 - **变更范围**：

@@ -1,0 +1,14 @@
+✔ DHR_76/C spawn error is reported as E_UNRESOLVED_ALIAS (65.2038ms)
+✔ DHR_76/C non-zero is reported as E_UNRESOLVED_ALIAS (6413.1379ms)
+✔ DHR_76/C signal is reported as E_UNRESOLVED_ALIAS (6426.3153ms)
+✔ DHR_76/C empty result is reported as E_UNRESOLVED_ALIAS (3252.1672ms)
+✔ DHR_76/D: epoch takeover during validation fences the late driver start and all late writes (57652.7421ms)
+ℹ DHR76-D takeover_during_validation old_epoch=1 replacement_epoch=2 events=2 driver={"ok":false,"error":{"reason":"E_LEASE_HELD"}}
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 76141.4744

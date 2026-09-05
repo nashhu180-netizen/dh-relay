@@ -1,0 +1,17 @@
+✔ DHR_76 constants freeze alias, registry, and cleanup budgets (1.0238ms)
+✔ DHR_76/C spawn error is reported as E_UNRESOLVED_ALIAS (51.1901ms)
+✔ DHR_76/C non-zero is reported as E_UNRESOLVED_ALIAS (3593.892ms)
+✔ DHR_76/C signal is reported as E_UNRESOLVED_ALIAS (3640.8338ms)
+✔ DHR_76/C empty result is reported as E_UNRESOLVED_ALIAS (3692.1941ms)
+✔ DHR_76/A: a broken fallback edge is rejected before any alias probe (63.5861ms)
+✔ DHR_76/D: Windows validation timeout waits for close and kills the child process tree (6189.0545ms)
+ℹ DHR76-D timeout elapsed_ms=5618 child_calls=1 descendant_pid=15680 alive=false
+✔ DHR_76/C: successful validation retains the complete registry and fallback relation (96.4792ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 19976.8376

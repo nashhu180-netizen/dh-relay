@@ -1,0 +1,16 @@
+✔ DHR_76/C spawn error is reported as E_UNRESOLVED_ALIAS (185.3719ms)
+✔ DHR_76/C non-zero is reported as E_UNRESOLVED_ALIAS (19296.5536ms)
+✔ DHR_76/C signal is reported as E_UNRESOLVED_ALIAS (19687.0333ms)
+✔ DHR_76/C empty result is reported as E_UNRESOLVED_ALIAS (9960.1642ms)
+✔ DHR_61 D1: an identity snapshot hashes only declared nonsecret projections (2.5154ms)
+✔ DHR_61 D1: registry migration only annotates legacy fingerprint field names as nonsecret (0.2208ms)
+✔ DHR_61 D1: registry migration sorts legacy projection pointers by UTF-16 code units (0.3104ms)
+✔ DHR_61 D1: projection provider reads only approved TOML fields and refuses a missing pointer (10.3653ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 53626.075

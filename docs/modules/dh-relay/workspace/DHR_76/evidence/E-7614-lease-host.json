@@ -1,0 +1,15 @@
+{
+  "arguments": [
+    "--test",
+    "--test-concurrency=1",
+    "--test-name-pattern",
+    "^(lease：|host：)",
+    "test/runtime.test.mjs"
+  ],
+  "candidate": "7940f317da2a61560ddf6515279cce5725219feb",
+  "exit_code": 124,
+  "outer_timeout": true,
+  "elapsed_ms": 122206,
+  "stdout": "E-7614-lease-host.stdout.txt",
+  "stderr": "E-7614-lease-host.stderr.txt"
+}

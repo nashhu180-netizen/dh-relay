@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { loadAjv } from '../tools/validate.mjs';
 import { jcs } from '../tools/canonical.mjs';
 
 const CREDENTIAL_KEY = /token|api[_-]?key|cookie|secret|password|authorization|bearer/i;
+export const PROFILE_ALIAS_TIMEOUT_MS = 15_000;
+export const PROFILE_VALIDATION_TIMEOUT_MS = 60_000;
+export const PROFILE_CLEANUP_GRACE_MS = 10_000;
 const CREDENTIAL_VALUE = [
   /sk-[A-Za-z0-9_-]{16,}/,
   /eyJ[A-Za-z0-9_-]{10,}/,
@@ -93,7 +96,7 @@ function fallbackPauseBytes(profile, byId) {
   }), 'utf8');
 }
 
-export function validateProfiles(json, { resolveAlias = true, environment = process.env } = {}) {
+function validateStructure(json) {
   const credential = findCredential(json);
   if (credential?.code === 'E_CREDENTIAL_FIELD') return { ok: false, errors: [credential] };
 
@@ -117,20 +120,132 @@ export function validateProfiles(json, { resolveAlias = true, environment = proc
   }
 
   if (credential) return { ok: false, errors: [credential] };
+  return { ok: true, errors: [] };
+}
 
+function validateProfileConfig(profile, environment) {
+  if (profile.headless_supported !== (profile.capabilities.headless === 'supported')) {
+    return { ok: false, errors: [error('E_SCHEMA', `${profile.executor_profile_id}.headless_supported`)] };
+  }
+  if (profile.config_fingerprint_rule) {
+    const path = expandPath(profile.config_fingerprint_rule.path_template, environment);
+    if (!path || !existsSync(path)) return { ok: false, errors: [error('E_UNRESOLVED_CONFIG', profile.config_fingerprint_rule.path_template)] };
+  }
+  return { ok: true, errors: [] };
+}
+
+export function validateProfiles(json, { resolveAlias = true, environment = process.env } = {}) {
+  const checked = validateStructure(json);
+  if (!checked.ok) return checked;
   for (const profile of json.profiles) {
-    if (profile.headless_supported !== (profile.capabilities.headless === 'supported')) {
-      return { ok: false, errors: [error('E_SCHEMA', `${profile.executor_profile_id}.headless_supported`)] };
-    }
-    if (profile.config_fingerprint_rule) {
-      const path = expandPath(profile.config_fingerprint_rule.path_template, environment);
-      if (!path || !existsSync(path)) return { ok: false, errors: [error('E_UNRESOLVED_CONFIG', profile.config_fingerprint_rule.path_template)] };
-    }
+    const configured = validateProfileConfig(profile, environment);
+    if (!configured.ok) return configured;
     if (resolveAlias && !resolvesAlias(profile.command_alias)) {
       return { ok: false, errors: [error('E_UNRESOLVED_ALIAS', profile.command_alias)] };
     }
   }
   return { ok: true, errors: [] };
+}
+
+// Runtime probes keep renewal timers runnable. CLI/static callers retain the synchronous API.
+function probeAlias(command, args, { environment, timeoutMs, cleanupGraceMs, spawnCommand }) {
+  return new Promise((resolve, reject) => {
+    let child;
+    let output = false;
+    let failed = false;
+    let timer;
+    let cleanupTimer;
+    let killerTimer;
+    let killer;
+    let cleanup = Promise.resolve();
+    let cleanupOk = true;
+    let settled = false;
+    const finish = async (status, signal) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      await cleanup;
+      clearTimeout(cleanupTimer);
+      clearTimeout(killerTimer);
+      if (killer && killer.exitCode === null) killer.kill();
+      if (!cleanupOk) {
+        reject(new Error('E_UNRESOLVED_ALIAS:probe-cleanup-incomplete'));
+        return;
+      }
+      resolve({ ok: !failed && status === 0 && !signal && output,
+        // Only an ordinary lookup miss may use the PowerShell fallback.
+        missing: !failed && status === 1 && !signal });
+    };
+    const terminate = () => {
+      if (failed) return;
+      failed = true;
+      cleanupTimer = setTimeout(() => {
+        child.kill();
+        // A missing close is a cleanup failure, never a completed probe.
+        cleanupOk = false;
+        reject(new Error('E_UNRESOLVED_ALIAS:probe-close-timeout'));
+      }, cleanupGraceMs);
+      if (process.platform === 'win32' && child.pid) {
+        cleanup = new Promise(done => {
+          killer = spawn('taskkill', ['/PID', String(child.pid), '/T', '/F'], {
+            windowsHide: true, stdio: 'ignore',
+          });
+          killer.once('error', () => { cleanupOk = false; child.kill(); done(); });
+          killer.once('close', status => { if (status !== 0) { cleanupOk = false; child.kill(); } done(); });
+          killerTimer = setTimeout(() => { cleanupOk = false; killer.kill(); child.kill(); done(); }, Math.max(1, cleanupGraceMs / 2));
+        });
+      } else child.kill('SIGKILL');
+    };
+    try {
+      child = spawnCommand(command, args, {
+        env: environment, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],
+      });
+    } catch {
+      finish(null, null);
+      return;
+    }
+    child.stdout?.on('data', chunk => { output ||= /\S/.test(String(chunk)); });
+    child.stderr?.resume(); // Never retain command output or configuration in diagnostics.
+    child.stdout?.once('error', terminate);
+    child.stderr?.once('error', terminate);
+    child.once('error', () => { failed = true; });
+    child.once('close', finish);
+    timer = setTimeout(terminate, timeoutMs);
+  });
+}
+
+export async function validateProfilesAsync(json, {
+  resolveAlias = true, environment = process.env, spawnCommand = spawn,
+  aliasTimeoutMs = PROFILE_ALIAS_TIMEOUT_MS,
+  validationTimeoutMs = PROFILE_VALIDATION_TIMEOUT_MS,
+  cleanupGraceMs = PROFILE_CLEANUP_GRACE_MS,
+} = {}) {
+  const deadline = Date.now() + validationTimeoutMs;
+  if (!resolveAlias) return validateProfiles(json, { resolveAlias: false, environment });
+  const checked = validateStructure(json);
+  if (!checked.ok) return checked;
+  for (const profile of json.profiles) {
+    const configured = validateProfileConfig(profile, environment);
+    if (!configured.ok) return configured;
+    const rejected = () => ({ ok: false, errors: [error('E_UNRESOLVED_ALIAS', profile.command_alias)] });
+    const probe = async (command, args) => {
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) return { ok: false, missing: false };
+      return probeAlias(command, args, {
+        environment: { ...process.env, ...environment, DHR_PROFILE_ALIAS: profile.command_alias },
+        timeoutMs: Math.min(aliasTimeoutMs, remaining), cleanupGraceMs, spawnCommand,
+      });
+    };
+    const where = await probe('where.exe', [profile.command_alias]);
+    if (Date.now() >= deadline) return rejected();
+    if (where.ok) continue;
+    if (!where.missing) return rejected();
+    const fallback = await probe('pwsh', ['-NoLogo', '-Command',
+      "try { Get-Command -Name $env:DHR_PROFILE_ALIAS -CommandType Application,Function,Alias,ExternalScript -ErrorAction Stop | Out-Null; Write-Output ok } catch { exit 1 }",
+    ]);
+    if (!fallback.ok || Date.now() >= deadline) return rejected();
+  }
+  return checked;
 }
 
 function main() {

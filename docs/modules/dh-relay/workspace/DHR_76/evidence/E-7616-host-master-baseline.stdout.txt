@@ -1,0 +1,25 @@
+✖ host：会话在宿主层真实续租（E5 MUT-C 空洞修复——删 renew 调用此断言红） (39644.0008ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 42024.1925
+
+✖ failing tests:
+
+test at ..\..\..\relay-core\test\runtime.test.mjs:514:1
+✖ host：会话在宿主层真实续租（E5 MUT-C 空洞修复——删 renew 调用此断言红） (39644.0008ms)
+  AssertionError [ERR_ASSERTION]: 会话必须持有租约
+      at TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/relay-core/test/runtime.test.mjs:533:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: null,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

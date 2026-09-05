@@ -5,14 +5,14 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 
 import { createExecutorIdentity, readNonsecretProfileProjection } from '../../../profiles/identity.mjs';
-import { validateProfiles } from '../../../profiles/validate-profiles.mjs';
+import { validateProfilesAsync } from '../../../profiles/validate-profiles.mjs';
 
 export const defaultRegistryPath = () => join(homedir(), '.dh-relay', 'executor-profiles.json');
 
 export async function loadExecutorProfiles({ registryPath = defaultRegistryPath(), environment = process.env } = {}) {
   try {
     const registry = JSON.parse(await readFile(registryPath, 'utf8'));
-    const checked = validateProfiles(registry, { resolveAlias: true, environment });
+    const checked = await validateProfilesAsync(registry, { resolveAlias: true, environment });
     if (!checked.ok) return { ok: false, reason: 'E_BAD_VALUE:PROFILE_REGISTRY', detail: checked.errors.map(item => item.code).join(',') };
     return { ok: true, registry };
   } catch (error) {

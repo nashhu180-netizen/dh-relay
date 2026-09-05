@@ -1,0 +1,12 @@
+✔ DHR_76/C spawn error is reported as E_UNRESOLVED_ALIAS (170.0285ms)
+✔ DHR_76/C non-zero is reported as E_UNRESOLVED_ALIAS (19354.3633ms)
+✔ DHR_76/C signal is reported as E_UNRESOLVED_ALIAS (19572.038ms)
+✔ DHR_76/C empty result is reported as E_UNRESOLVED_ALIAS (9715.3365ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 51095.8203

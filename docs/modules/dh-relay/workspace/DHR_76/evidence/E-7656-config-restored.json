@@ -1,0 +1,15 @@
+{
+  "arguments": [
+    "--test",
+    "--test-concurrency=1",
+    "--test-name-pattern",
+    "non-target invalid alias|real Host actor renews|real asynchronous spawn error|five-profile fixture",
+    "test/dhr76-profile-validation-lease.test.mjs"
+  ],
+  "candidate": "3d55ca739029cf4e35383fe69eab6dfa36844c7a",
+  "exit_code": 0,
+  "outer_timeout": false,
+  "elapsed_ms": 93781,
+  "stdout": "E-7656-config-restored.stdout.txt",
+  "stderr": "E-7656-config-restored.stderr.txt"
+}

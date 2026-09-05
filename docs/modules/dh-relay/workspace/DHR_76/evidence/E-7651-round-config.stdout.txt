@@ -1,0 +1,56 @@
+✔ DHR_76/A: five-profile fixture preserves the current DHR65 registry graph (1.8159ms)
+✖ DHR_76/A: mixed config and alias faults keep the deterministic first error and stop probing (63.7645ms)
+✖ DHR_76/C: the frozen 60s registry budget bounds five real probes (29.0852ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 1
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2559.1288
+
+✖ failing tests:
+
+test at test\dhr76-profile-validation-lease.test.mjs:345:1
+✖ DHR_76/A: mixed config and alias faults keep the deterministic first error and stop probing (63.7645ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    {
+  +   code: 'E_SCHEMA',
+  +   detail: '/profiles/2/config_fingerprint_rule/path_template must match pattern "^\\$\\{[A-Z_][A-Z0-9_]*\\}(?:/[A-Za-z0-9._ -]+)+$"'
+  -   code: 'E_UNRESOLVED_CONFIG',
+  -   detail: '${DHR76_PROFILE_HOME}/missing.json'
+    }
+  
+      at TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_76/relay-core/test/dhr76-profile-validation-lease.test.mjs:360:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { code: 'E_SCHEMA', detail: '/profiles/2/config_fingerprint_rule/path_template must match pattern "^\\$\\{[A-Z_][A-Z0-9_]*\\}(?:/[A-Za-z0-9._ -]+)+$"' },
+    expected: { code: 'E_UNRESOLVED_CONFIG', detail: '${DHR76_PROFILE_HOME}/missing.json' },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test\dhr76-profile-validation-lease.test.mjs:684:1
+✖ DHR_76/C: the frozen 60s registry budget bounds five real probes (29.0852ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'E_SCHEMA'
+  - 'E_UNRESOLVED_ALIAS'
+       ^
+  
+      at TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_76/relay-core/test/dhr76-profile-validation-lease.test.mjs:692:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'E_SCHEMA',
+    expected: 'E_UNRESOLVED_ALIAS',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

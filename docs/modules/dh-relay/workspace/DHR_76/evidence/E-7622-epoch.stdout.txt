@@ -1,0 +1,25 @@
+✖ DHR_76/D: epoch takeover during validation fences the late driver start and all late writes (57105.9762ms)
+ℹ DHR76-D takeover_during_validation old_epoch=1 replacement_epoch=2 events=2 driver={"ok":false,"error":{"reason":"E_LEASE_HELD"}}
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 59416.9382
+
+✖ failing tests:
+
+test at test\dhr76-profile-validation-lease.test.mjs:415:1
+✖ DHR_76/D: epoch takeover during validation fences the late driver start and all late writes (57105.9762ms)
+  TypeError: mock.restore is not a function
+      at TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_76/relay-core/test/dhr76-profile-validation-lease.test.mjs:185:10)
+      at TestHook.runInAsyncScope (node:async_hooks:214:14)
+      at TestHook.run (node:internal/test_runner/test:1106:25)
+      at TestHook.run (node:internal/test_runner/test:1427:18)
+      at TestHook.run (node:internal/util:585:20)
+      at Test.runHook (node:internal/test_runner/test:1024:20)
+      at async after (node:internal/test_runner/test:1064:9)
+      at async Test.run (node:internal/test_runner/test:1132:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3)

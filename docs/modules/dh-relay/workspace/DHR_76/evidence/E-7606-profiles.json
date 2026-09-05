@@ -1,0 +1,13 @@
+{
+  "arguments": [
+    "--test",
+    "--test-concurrency=1",
+    "test/profiles.test.mjs"
+  ],
+  "candidate": "7d42532e410e07d348fc0f9f9f83405cb55a7eb7",
+  "exit_code": 0,
+  "outer_timeout": false,
+  "elapsed_ms": 33535,
+  "stdout": "E-7606-profiles.stdout.txt",
+  "stderr": "E-7606-profiles.stderr.txt"
+}

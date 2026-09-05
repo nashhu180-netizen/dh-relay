@@ -1,0 +1,157 @@
+{
+  "protocol": "dhr76.real-f.timeline/v1",
+  "profile_id": "herdr.codex.main",
+  "events": [
+    {
+      "seq": 0,
+      "kind": "run_created",
+      "at": "2026-09-05T02:33:38.884Z"
+    },
+    {
+      "seq": 1,
+      "kind": "lease_acquired",
+      "at": "2026-09-05T02:33:44.540Z"
+    },
+    {
+      "seq": 2,
+      "kind": "operation_committed",
+      "at": "2026-09-05T02:33:44.546Z"
+    },
+    {
+      "seq": 3,
+      "kind": "node_started",
+      "at": "2026-09-05T02:34:04.768Z"
+    },
+    {
+      "seq": 4,
+      "kind": "attempt_started",
+      "at": "2026-09-05T02:34:04.765Z"
+    },
+    {
+      "seq": 5,
+      "kind": "host_observation_changed",
+      "at": "2026-09-05T02:34:31.975Z"
+    }
+  ],
+  "lease_samples": [
+    {
+      "event": {
+        "seq": 4,
+        "kind": "attempt_started",
+        "at": "2026-09-05T02:34:04.765Z"
+      },
+      "lease": {
+        "epoch": 1,
+        "acquired_at": "2026-09-05T02:33:44.520Z",
+        "expires_at": "2026-09-05T02:34:15.569Z",
+        "expires_at_epoch_ms": 1788575655569,
+        "sampled_at": "2026-09-05T02:34:01.9522983Z",
+        "sampled_at_epoch_ms": 1788575641952,
+        "fresh_at_sample": true,
+        "fresh_at_event": true,
+        "proof": "sample-before-event"
+      }
+    },
+    {
+      "event": {
+        "seq": 5,
+        "kind": "host_observation_changed",
+        "at": "2026-09-05T02:34:31.975Z"
+      },
+      "lease": {
+        "epoch": 1,
+        "acquired_at": "2026-09-05T02:33:44.520Z",
+        "expires_at": "2026-09-05T02:34:15.569Z",
+        "expires_at_epoch_ms": 1788575655569,
+        "sampled_at": "2026-09-05T02:34:34.5207224Z",
+        "sampled_at_epoch_ms": 1788575674520,
+        "fresh_at_sample": false,
+        "fresh_at_event": false,
+        "proof": "observation-sample"
+      }
+    }
+  ],
+  "lease_timeline": [
+    {
+      "epoch": 1,
+      "acquired_at": "2026-09-05T02:33:44.520Z",
+      "expires_at": "2026-09-05T02:34:04.551Z",
+      "expires_at_epoch_ms": 1788575644551,
+      "sampled_at": "2026-09-05T02:33:50.9692936Z",
+      "sampled_at_epoch_ms": 1788575630969,
+      "fresh_at_sample": true
+    },
+    {
+      "epoch": 1,
+      "acquired_at": "2026-09-05T02:33:44.520Z",
+      "expires_at": "2026-09-05T02:34:10.552Z",
+      "expires_at_epoch_ms": 1788575650552,
+      "sampled_at": "2026-09-05T02:33:56.5644034Z",
+      "sampled_at_epoch_ms": 1788575636564,
+      "fresh_at_sample": true
+    },
+    {
+      "epoch": 1,
+      "acquired_at": "2026-09-05T02:33:44.520Z",
+      "expires_at": "2026-09-05T02:34:15.569Z",
+      "expires_at_epoch_ms": 1788575655569,
+      "sampled_at": "2026-09-05T02:34:01.9522983Z",
+      "sampled_at_epoch_ms": 1788575641952,
+      "fresh_at_sample": true
+    },
+    {
+      "epoch": 1,
+      "acquired_at": "2026-09-05T02:33:44.520Z",
+      "expires_at": "2026-09-05T02:34:15.569Z",
+      "expires_at_epoch_ms": 1788575655569,
+      "sampled_at": "2026-09-05T02:34:07.2896037Z",
+      "sampled_at_epoch_ms": 1788575647289,
+      "fresh_at_sample": true
+    },
+    {
+      "epoch": 1,
+      "acquired_at": "2026-09-05T02:33:44.520Z",
+      "expires_at": "2026-09-05T02:34:15.569Z",
+      "expires_at_epoch_ms": 1788575655569,
+      "sampled_at": "2026-09-05T02:34:12.7792196Z",
+      "sampled_at_epoch_ms": 1788575652779,
+      "fresh_at_sample": true
+    },
+    {
+      "epoch": 1,
+      "acquired_at": "2026-09-05T02:33:44.520Z",
+      "expires_at": "2026-09-05T02:34:15.569Z",
+      "expires_at_epoch_ms": 1788575655569,
+      "sampled_at": "2026-09-05T02:34:18.2930343Z",
+      "sampled_at_epoch_ms": 1788575658293,
+      "fresh_at_sample": false
+    },
+    {
+      "epoch": 1,
+      "acquired_at": "2026-09-05T02:33:44.520Z",
+      "expires_at": "2026-09-05T02:34:15.569Z",
+      "expires_at_epoch_ms": 1788575655569,
+      "sampled_at": "2026-09-05T02:34:23.6358252Z",
+      "sampled_at_epoch_ms": 1788575663635,
+      "fresh_at_sample": false
+    },
+    {
+      "epoch": 1,
+      "acquired_at": "2026-09-05T02:33:44.520Z",
+      "expires_at": "2026-09-05T02:34:15.569Z",
+      "expires_at_epoch_ms": 1788575655569,
+      "sampled_at": "2026-09-05T02:34:29.0314559Z",
+      "sampled_at_epoch_ms": 1788575669031,
+      "fresh_at_sample": false
+    },
+    {
+      "epoch": 1,
+      "acquired_at": "2026-09-05T02:33:44.520Z",
+      "expires_at": "2026-09-05T02:34:15.569Z",
+      "expires_at_epoch_ms": 1788575655569,
+      "sampled_at": "2026-09-05T02:34:34.4637295Z",
+      "sampled_at_epoch_ms": 1788575674463,
+      "fresh_at_sample": false
+    }
+  ]
+}

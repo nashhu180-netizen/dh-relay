@@ -1,0 +1,15 @@
+{
+  "arguments": [
+    "--test",
+    "--test-concurrency=1",
+    "--test-name-pattern",
+    "DHR_76/A: a non-target invalid alias remains",
+    "test/dhr76-profile-validation-lease.test.mjs"
+  ],
+  "candidate": "2f198e597bcf3932b0dfc3f1f6b14772505a7bdc",
+  "exit_code": 1,
+  "outer_timeout": false,
+  "elapsed_ms": 31364,
+  "stdout": "E-7654-mutation-a-config.stdout.txt",
+  "stderr": "E-7654-mutation-a-config.stderr.txt"
+}

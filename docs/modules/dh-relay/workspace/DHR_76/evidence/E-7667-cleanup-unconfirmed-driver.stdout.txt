@@ -1,0 +1,12 @@
+✔ DHR_76/D: cleanup grace exhaustion fails explicitly without claiming close (85.4464ms)
+ℹ DHR76-D cleanup_unconfirmed=true close_observed=false kill_calls=2
+✔ DHR_76/D: cleanup grace exhaustion leaves driver side effects at zero (25160.2081ms)
+ℹ DHR76-D cleanup_unconfirmed=true driver_side_effects=0 kill_calls=2
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 27580.1315

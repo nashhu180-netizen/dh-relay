@@ -1,0 +1,13 @@
+{
+  "arguments": [
+    "--test",
+    "--test-concurrency=1",
+    "test/dhr65-registry-loader.test.mjs"
+  ],
+  "candidate": "7940f317da2a61560ddf6515279cce5725219feb",
+  "exit_code": 0,
+  "outer_timeout": false,
+  "elapsed_ms": 106377,
+  "stdout": "E-7607-loader.stdout.txt",
+  "stderr": "E-7607-loader.stderr.txt"
+}

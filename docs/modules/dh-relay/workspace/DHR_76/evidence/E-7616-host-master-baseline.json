@@ -1,0 +1,15 @@
+{
+  "arguments": [
+    "--test",
+    "--test-concurrency=1",
+    "--test-name-pattern",
+    "会话在宿主层真实续租",
+    "D:/MyFiles/ai-workflow/dh-relay/relay-core/test/runtime.test.mjs"
+  ],
+  "candidate": "7940f317da2a61560ddf6515279cce5725219feb",
+  "exit_code": 1,
+  "outer_timeout": false,
+  "elapsed_ms": 45313,
+  "stdout": "E-7616-host-master-baseline.stdout.txt",
+  "stderr": "E-7616-host-master-baseline.stderr.txt"
+}

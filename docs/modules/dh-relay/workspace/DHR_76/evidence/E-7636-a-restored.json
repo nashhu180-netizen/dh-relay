@@ -1,0 +1,15 @@
+{
+  "arguments": [
+    "--test",
+    "--test-concurrency=1",
+    "--test-name-pattern",
+    "DHR_76/A: a non-target invalid alias remains|broken fallback edge",
+    "test/dhr76-profile-validation-lease.test.mjs"
+  ],
+  "candidate": "6cf6f7108ab0eff8b6ddb9a8e61b380bf50bc13b",
+  "exit_code": 0,
+  "outer_timeout": false,
+  "elapsed_ms": 44190,
+  "stdout": "E-7636-a-restored.stdout.txt",
+  "stderr": "E-7636-a-restored.stderr.txt"
+}

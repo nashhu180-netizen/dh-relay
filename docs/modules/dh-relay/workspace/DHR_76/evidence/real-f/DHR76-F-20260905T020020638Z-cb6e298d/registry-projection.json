@@ -1,0 +1,46 @@
+{
+  "record_kind": "post-run-read-only-registry-projection",
+  "profiles": [
+    {
+      "has_config_rule": true,
+      "id": "herdr.codex.main",
+      "fallback_profile_ids": [],
+      "product": "codex-cli"
+    },
+    {
+      "has_config_rule": false,
+      "id": "herdr.codex.ninth",
+      "fallback_profile_ids": [
+        "herdr.codex.main"
+      ],
+      "product": "codex-cli"
+    },
+    {
+      "has_config_rule": true,
+      "id": "herdr.claude.main",
+      "fallback_profile_ids": [
+        null
+      ],
+      "product": "claude-code"
+    },
+    {
+      "has_config_rule": true,
+      "id": "herdr.claude.grok",
+      "fallback_profile_ids": [
+        null
+      ],
+      "product": "claude-code"
+    },
+    {
+      "has_config_rule": true,
+      "id": "herdr.claude.account5",
+      "fallback_profile_ids": [
+        null
+      ],
+      "product": "unverified"
+    }
+  ],
+  "sha256": "CA6916EF791747836F2C76BA4B049056601E522E9EA0497758319254174E5C77",
+  "sampled_at": "2026-09-05T02:18:09.9772373Z",
+  "last_write_utc": "2026-08-30T16:54:31.6171533Z"
+}

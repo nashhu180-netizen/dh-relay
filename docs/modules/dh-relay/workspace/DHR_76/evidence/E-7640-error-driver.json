@@ -1,0 +1,15 @@
+{
+  "arguments": [
+    "--test",
+    "--test-concurrency=1",
+    "--test-name-pattern",
+    "DHR_76/C (spawn error|non-zero|signal|empty result)",
+    "test/dhr76-profile-validation-lease.test.mjs"
+  ],
+  "candidate": "f05e66bbc5e385b1b9ca70eee909cd9ae0f19ce4",
+  "exit_code": 0,
+  "outer_timeout": false,
+  "elapsed_ms": 54317,
+  "stdout": "E-7640-error-driver.stdout.txt",
+  "stderr": "E-7640-error-driver.stderr.txt"
+}

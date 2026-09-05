@@ -1,0 +1,12 @@
+✔ DHR_61 D1: an identity snapshot hashes only declared nonsecret projections (2.1819ms)
+✔ DHR_61 D1: registry migration only annotates legacy fingerprint field names as nonsecret (0.2116ms)
+✔ DHR_61 D1: registry migration sorts legacy projection pointers by UTF-16 code units (0.2687ms)
+✔ DHR_61 D1: projection provider reads only approved TOML fields and refuses a missing pointer (10.6645ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2154.2085

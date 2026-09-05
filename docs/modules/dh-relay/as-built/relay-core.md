@@ -280,6 +280,7 @@ DHR_52 的 RPC seam 与 DHR_51 的 host 之间原本没有装配人（F-001）�
 - `relay-core/runtime/executors/herdr/` 通过 Herdr CLI 实现 launch/observe/capture/reconcile/stop，Runtime 的 `herdr-agent` 分支负责 Attempt 与事件账。`done` 不直接等于 succeeded；无 judge 时只形成有界 Attention，判定器语义留 DHR_35。
 - 当前只证明 Windows/DSH-off 慢路与安全 focus；真实 Linux SSH、事件快路和 capability hash 仍是 DHR_35 的受限项。fixture 不替代真实 SSH 证据。
 
+- **DHR_76 候选增量（未合入）**：runtime loader `await validateProfilesAsync()` 对完整 registry 校验；结构/fallback 先验，每 Profile 保持 config→alias 原首错顺序。同步 CLI `validateProfiles()` 兼容保留，runtime alias 使用异步子进程。默认单探针/整轮/清理宽限为 15s/60s/10s，Host lease TTL 不变；Windows 正常超时通过 taskkill /T /F 并等待 root close。DHR-B-42 明确：若 10 秒宽限耗尽仍无法确认，允许以 `E_UNRESOLVED_ALIAS:probe-cleanup-incomplete` 或 `probe-close-timeout` 异常拒绝，必须标记清理未确认、不得声称无残留、不得继续启动，该异常不计清理验收通过；loader 仍包装 `E_BAD_VALUE:PROFILE_REGISTRY`。driver 仅在 loader 返回后复查 stopping，停止期间不新开 Attempt；不新增探针取消协议。A~F 和独立复核终态见 `workspace/DHR_76/review.md`，不得替代 DHR_75/72/35 实录。
 ### 6.5 `digestExcluding` 曾被 `__proto__` 键静默吃掉（F-062，P1）
 
 首版 `const copy = {}` 让 `copy["__proto__"] = X` 触发 `Object.prototype.__proto__` 的 **setter**（改 copy 的原型），而不是建一个同名自有属性——该键从此在 `Object.keys(copy)` 里消失，**两份不同载荷算出同一摘要**。而 `JSON.parse('{"__proto__":{…}}')` 产出的正是自有可枚举属性，不需要刁钻构造。

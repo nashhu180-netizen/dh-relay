@@ -1,0 +1,10 @@
+✔ DHR_76/D: cleanup grace exhaustion fails explicitly without claiming close (72.9947ms)
+ℹ DHR76-D cleanup_unconfirmed=true close_observed=false kill_calls=2
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2405.4901

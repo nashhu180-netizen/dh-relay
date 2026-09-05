@@ -1,0 +1,42 @@
+{
+  "protocol": "dhr76.real-f/v1",
+  "profile_id": "herdr.codex.main",
+  "platform": "win32",
+  "herdr_env_ok": true,
+  "dsh_off": true,
+  "registry": "default-user-registry-read-only",
+  "start": {
+    "exit_code": 0,
+    "timed_out": false,
+    "reason": null
+  },
+  "observed": {
+    "attempt_started": null,
+    "first_host_observation": null,
+    "attempt_lease_fresh_at_event": false,
+    "attempt_lease_sample_before_event": false,
+    "attempt_lease_fresh_at_sample": false,
+    "observation_lease_fresh_at_sample": false,
+    "observation_after_attempt": false
+  },
+  "bounded": {
+    "total_seconds": 150,
+    "start_call_seconds": 75,
+    "herdr_call_seconds": 10,
+    "cleanup_seconds": 10
+  },
+  "stopped_after": "timeout-or-failure",
+  "runner_sent_prompt": false,
+  "waited_for_checkpoint_or_result": false,
+  "cleanup": {
+    "pane_close": [],
+    "service_owned_count": 1,
+    "service_remaining_count": 0,
+    "fixture_empty": true,
+    "performed": true
+  },
+  "verdict": false,
+  "failure_stage": "real-observation",
+  "failure_type": "System.Management.Automation.RuntimeException",
+  "failure_line": 516
+}

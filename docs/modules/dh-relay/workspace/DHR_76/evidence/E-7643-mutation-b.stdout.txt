@@ -1,0 +1,25 @@
+✖ DHR_76/B: the real Host actor renews its default 15s lease during the five-probe async window (66405.3446ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 68688.4368
+
+✖ failing tests:
+
+test at test\dhr76-profile-validation-lease.test.mjs:378:1
+✖ DHR_76/B: the real Host actor renews its default 15s lease during the five-probe async window (66405.3446ms)
+  AssertionError [ERR_ASSERTION]: expected multiple expiry samples, got 3
+      at TestContext.<anonymous> (file:///D:/MyFiles/ai-workflow/dh-relay/.dh-worktrees/DHR_76/relay-core/test/dhr76-profile-validation-lease.test.mjs:436:12)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

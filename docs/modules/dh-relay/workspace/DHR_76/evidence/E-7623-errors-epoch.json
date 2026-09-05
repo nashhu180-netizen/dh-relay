@@ -1,0 +1,15 @@
+{
+  "arguments": [
+    "--test",
+    "--test-concurrency=1",
+    "--test-name-pattern",
+    "DHR_76/C (spawn error|non-zero|signal|empty result)|epoch takeover",
+    "test/dhr76-profile-validation-lease.test.mjs"
+  ],
+  "candidate": "5e04dd8fb1773489391d5ef7b5e24eb1ec2c0b34",
+  "exit_code": 0,
+  "outer_timeout": false,
+  "elapsed_ms": 79370,
+  "stdout": "E-7623-errors-epoch.stdout.txt",
+  "stderr": "E-7623-errors-epoch.stderr.txt"
+}

@@ -1,0 +1,15 @@
+{
+  "arguments": [
+    "--test",
+    "--test-concurrency=1",
+    "--test-name-pattern",
+    "real Host actor renews",
+    "test/dhr76-profile-validation-lease.test.mjs"
+  ],
+  "candidate": "2f198e597bcf3932b0dfc3f1f6b14772505a7bdc",
+  "exit_code": 1,
+  "outer_timeout": false,
+  "elapsed_ms": 72009,
+  "stdout": "E-7643-mutation-b-config.stdout.txt",
+  "stderr": "E-7643-mutation-b-config.stderr.txt"
+}

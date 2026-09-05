@@ -1,0 +1,20 @@
+{
+  "schema": "dhr76.mutation-git-objects/v1",
+  "candidate": "af5653f",
+  "source": "relay-core/profiles/validate-profiles.mjs",
+  "revert": {
+    "git_object": "7cccbc5cf199f4f8295256852dd25dbde0f738de",
+    "sha256": "893BF2C9AE978A65822CBACC54B005077C3D506F5FF7FAF3B18ADA58F253EF26"
+  },
+  "mutation_a": {
+    "git_object": "e1244c90fbd577859d3290885dc9233dcc66fe66",
+    "sha256": "7541D9BA97110DF9883BAB1E28DA21480CD82B29247469FC477FDBAB32F8DF47",
+    "transform": "async profile loop uses json.profiles.slice(0, -1)"
+  },
+  "mutation_b": {
+    "git_object": "26283778e165461fc41c1f9456edc2aee090ad61",
+    "sha256": "AC0C71EEA2A21CD5766CAF3795D2BDBAC501BDA4F58C0B8AAA8ECFF5995E02BB",
+    "transform": "insert real synchronous 16s wait before async validation loop"
+  },
+  "verification": "all git objects exist; recomputed SHA256 values match the preserved mutation evidence"
+}

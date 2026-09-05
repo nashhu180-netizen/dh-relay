@@ -1,0 +1,15 @@
+{
+  "arguments": [
+    "--test",
+    "--test-concurrency=1",
+    "--test-name-pattern",
+    "frozen 60s registry budget|five-profile fixture|mixed config",
+    "test/dhr76-profile-validation-lease.test.mjs"
+  ],
+  "candidate": "3249c958a2aab00046c3d38ab64a82780498728e",
+  "exit_code": 1,
+  "outer_timeout": false,
+  "elapsed_ms": 5823,
+  "stdout": "E-7651-round-config.stdout.txt",
+  "stderr": "E-7651-round-config.stderr.txt"
+}

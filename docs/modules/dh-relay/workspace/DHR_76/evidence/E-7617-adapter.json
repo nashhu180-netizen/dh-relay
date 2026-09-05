@@ -1,0 +1,15 @@
+{
+  "arguments": [
+    "--test",
+    "--test-concurrency=1",
+    "--test-name-pattern",
+    "^(?!DHR_33 driver|DHR_33：driver)",
+    "test/herdr-adapter.test.mjs"
+  ],
+  "candidate": "4f940db4b25578f0352770e1c9bc04513fc03a94",
+  "exit_code": 0,
+  "outer_timeout": false,
+  "elapsed_ms": 105057,
+  "stdout": "E-7617-adapter.stdout.txt",
+  "stderr": "E-7617-adapter.stderr.txt"
+}

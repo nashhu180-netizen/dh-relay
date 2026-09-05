@@ -1,0 +1,15 @@
+{
+  "arguments": [
+    "--test",
+    "--test-concurrency=1",
+    "--test-name-pattern",
+    "DHR_75/[BCD]",
+    "../docs/modules/dh-relay/workspace/DHR_76/scripts/dhr75-regression.test.mjs"
+  ],
+  "candidate": "6cf6f7108ab0eff8b6ddb9a8e61b380bf50bc13b",
+  "exit_code": 1,
+  "outer_timeout": false,
+  "elapsed_ms": 80620,
+  "stdout": "E-7626-dhr75-bcd.stdout.txt",
+  "stderr": "E-7626-dhr75-bcd.stderr.txt"
+}

@@ -1,0 +1,15 @@
+{
+  "arguments": [
+    "--test",
+    "--test-concurrency=1",
+    "--test-name-pattern",
+    "complete validation precedes",
+    "test/dhr76-profile-validation-lease.test.mjs"
+  ],
+  "candidate": "24e575f70233abfbc29578292e2773547f527f15",
+  "exit_code": 0,
+  "outer_timeout": false,
+  "elapsed_ms": 58817,
+  "stdout": "E-7646-two-profile-selection.stdout.txt",
+  "stderr": "E-7646-two-profile-selection.stderr.txt"
+}

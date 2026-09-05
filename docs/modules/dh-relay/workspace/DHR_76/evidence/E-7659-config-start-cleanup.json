@@ -1,0 +1,15 @@
+{
+  "arguments": [
+    "--test",
+    "--test-concurrency=1",
+    "--test-name-pattern",
+    "complete validation precedes|Windows validation timeout",
+    "test/dhr76-profile-validation-lease.test.mjs"
+  ],
+  "candidate": "3d55ca739029cf4e35383fe69eab6dfa36844c7a",
+  "exit_code": 0,
+  "outer_timeout": false,
+  "elapsed_ms": 65800,
+  "stdout": "E-7659-config-start-cleanup.stdout.txt",
+  "stderr": "E-7659-config-start-cleanup.stderr.txt"
+}
