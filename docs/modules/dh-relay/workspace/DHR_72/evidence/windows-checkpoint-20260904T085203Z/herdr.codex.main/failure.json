@@ -1,0 +1,6 @@
+{
+  "profile_id": "herdr.codex.main",
+  "stage": "checkpoint-observation",
+  "failure_type": "System.Management.Automation.RuntimeException",
+  "failed_at": "2026-09-04T08:57:48.1640775Z"
+}

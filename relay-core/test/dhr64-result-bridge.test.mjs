@@ -227,12 +227,17 @@ test('DHR64 driver gate: missing done submission becomes E_EXECUTOR_RESULT_MISSI
     herdrPollMs: 2, doneTimeoutMs: 10,
   });
   t.after(() => driver.stop());
-  await driver.done;
+  await until(() => store.events.some(event => event.kind === 'human_input_requested'
+    && event.reason === 'E_EXECUTOR_RESULT_MISSING'), 5_000);
+  const pollsAtAttention = fake.agentGets;
+  await until(() => fake.agentGets > pollsAtAttention, 5_000);
   const missing = store.events.find(event => event.kind === 'human_input_requested'
     && event.reason === 'E_EXECUTOR_RESULT_MISSING');
   assert.ok(missing, 'missing submission must be a persistent attention event');
   assert.equal((await readdir(join(root, 'results'))).length, 0, 'missing submission must not create Result');
   assert.equal((await store.readState()).node_states[0].status, 'waiting_human');
+  await driver.stop();
+  await driver.done;
 });
 
 test('DHR64 service v2: restart-recovered gate routes submission through actor and Store', async (t) => {

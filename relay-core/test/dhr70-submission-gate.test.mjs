@@ -353,7 +353,8 @@ test('DHR70 C: agent_get=idle ∧ pane_get=error 不得单独判死 Attempt，�
     herdrPollMs: 20, doneTimeoutMs: 200,
   });
   t.after(() => driver.stop());
-  await driver.done;
+  await until(() => store.events.some(event => event.kind === 'human_input_requested'
+    && event.reason === 'E_EXECUTOR_RESULT_MISSING'));
 
   // 观测形态必须真的是 E-3526 那一条，否则本例证明不了任何事。
   const observation = [...store.events].reverse()
@@ -368,7 +369,6 @@ test('DHR70 C: agent_get=idle ∧ pane_get=error 不得单独判死 Attempt，�
   const attention = store.events.find(event => event.kind === 'human_input_requested');
   assert.equal(attention?.reason, 'E_EXECUTOR_RESULT_MISSING',
     '本届等待到期只该落「没交结果」，不该落「宿主没了」');
-  assert.equal((await store.readState()).node_states[0].status, 'waiting_human');
   assert.equal(driver.hasOpenSubmissionGates, true, 'gate 必须活过本届等待');
 
   // 提交仍须走得通（A1 形态）：恰一个 Result，节点转 succeeded。
@@ -379,6 +379,10 @@ test('DHR70 C: agent_get=idle ∧ pane_get=error 不得单独判死 Attempt，�
     outcome: 'succeeded', reason: null,
   });
   assert.equal(submitted.ok, true, JSON.stringify(submitted));
+  await driver.done;
+  const eventsAfterExit = store.events.length;
+  await new Promise(resolve => setTimeout(resolve, 60));
+  assert.equal(store.events.length, eventsAfterExit, 'committed Result 后不得继续追加观测事件');
   assert.deepEqual(await resultsOf(runRoot), [receiptId + '.json']);
   assert.equal((await store.readState()).node_states[0].status, 'succeeded');
 });

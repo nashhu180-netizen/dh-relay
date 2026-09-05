@@ -1,0 +1,16 @@
+{
+  "event": {
+    "protocol": "relay.event/v2",
+    "run_id": "R001-relay-dhr72-real-checkpoint-1-20260905",
+    "seq": 6,
+    "at": "2026-09-05T07:23:19.798Z",
+    "kind": "host_observation_changed",
+    "node_id": "real-product",
+    "attempt_id": "att~07e801d7fb03",
+    "executor_kind": null,
+    "executor_ref": "herdr-att~07e801d7fb03~t26",
+    "observation_status": "alive",
+    "reason": null,
+    "detail": "herdr_status=working;agent=herdr-att~07e801d7fb03~t26;pane=w6:pQ;seq=60;work_dir_root=C:\\Users\\nash\\AppData\\Local\\Temp\\DHR72-fixture-herdr-codex-main;profile=herdr.codex.main;agent_get=working;pane_get=-"
+  }
+}

@@ -404,3 +404,10 @@ DHR_52 的 RPC seam 与 DHR_51 的 host 之间原本没有装配人（F-001）�
   - `runHostSession` 的 lease TTL / tick 不可从 `createHostSessionActor` 外部注入，夹具只能等 5s tick，A2 单例耗时约 11.6s（F-7002，记录不修）。
   - 本卡**不跑真实 Agent**：A4 的真实闭环仍归 DHR_35，机器证用受控夹具跑真实 service/driver。
 - **证据**：`dhr70-submission-gate.test.mjs` 6/6（A1 lease 有效晚交 / A2 失租后重建补交 / A3-1 真接管一直拒 / A3-2 非 current Receipt / A3-3+B 终态冲突与未知 Receipt / C `agent_get=idle ∧ pane_get=error` 不判死 Attempt）。A2 断言链覆盖口径两半：拒绝阶段逐次 `E_LEASE_HELD` + 事件账逐字节不变，成功后 `holder_pid`/`epoch+2`/`lease_acquired` 恰新增一条。
+
+## 13. DHR_72 增量 —— Herdr driver 持续观测
+
+- **修的是什么**：`idle` / host-side `done` 只表示 Herdr 当前没有更多进展，不是 Receipt Result。driver 不再在首次 idle 后停止；缺 Result 时只去重写一条 `E_EXECUTOR_RESULT_MISSING` Attention，随后继续轮询，因此稍后的 `working`、合法晚交 Result 或 host loss 仍可观测。
+- **checkpoint 与出口**：只有真实 `working` 才追加 checkpoint；长期 idle 折叠为 `waiting_human`，不产生 Result。committed Result、显式 stop、host_lost、Attempt 已终态，以及 actor-closed/lease-lost 写入失败仍是退出边界，退出后不再追加观测事件。
+- **边界**：DHR_72 的 DSH-off Codex 实录只证明 checkpoint 可达，明确禁止 submit-result，不能替代 DHR_35 的 Receipt→Result 完整闭环。poll 比例守卫只覆盖列名 fixture 参数，不是全局生产默认值守卫。
+- **证据**：专属套件 8/8、poll 守卫 1/1、冻结五文件 55/55（0 skip/0 fail）；真实 run6 保存 4 条 `checkpoint_recorded`、2 条 alive observation、0 Result。fresh 二轮选定 idle/done 分支提前 `return` 的生产变异点，变异后指定用例以 `timeout:working checkpoint` 失败，还原后 1/1。

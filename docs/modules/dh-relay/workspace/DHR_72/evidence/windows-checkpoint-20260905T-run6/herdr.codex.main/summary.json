@@ -1,0 +1,25 @@
+{
+  "profile_id": "herdr.codex.main",
+  "run_id": "R001-relay-dhr72-real-checkpoint-1-20260905",
+  "receipt": {
+    "protocol": "relay.launch-receipt/v2",
+    "receipt_id": "rcpt~3f18f9f4e30b",
+    "request_id": "cli-404d61da-4c15-4ba5-9b1b-e6319b412cd3",
+    "client_id": "cli-132157b1-2a55-4e9a-ad6c-7b0b6ffba391",
+    "method": "start",
+    "state": "committed",
+    "reason": null,
+    "run_id": "R001-relay-dhr72-real-checkpoint-1-20260905",
+    "node_id": null,
+    "attempt_id": null,
+    "kind": "start",
+    "issued_at": "2026-09-05T07:22:48.456Z",
+    "issued_by_runtime": "runtime-cf87af25-f774-4fa4-a7b2-8ecd2474cc1c",
+    "request_digest": "4ecd3e113c66bba49928d226120f9b56ffa42de3e04125129d5b59917ba9f8cf"
+  },
+  "agent_name": "herdr-att~07e801d7fb03~t26",
+  "pane_id": "w6:pQ",
+  "elapsed_ms": 42281,
+  "run_status": "running",
+  "checkpoint_count": 1
+}

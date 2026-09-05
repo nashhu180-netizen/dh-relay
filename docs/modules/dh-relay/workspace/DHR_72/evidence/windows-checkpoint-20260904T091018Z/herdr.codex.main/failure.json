@@ -1,0 +1,6 @@
+{
+  "profile_id": "herdr.codex.main",
+  "stage": "driver-observation-ready",
+  "failure_type": "System.Management.Automation.RuntimeException",
+  "failed_at": "2026-09-04T09:16:10.9212617Z"
+}

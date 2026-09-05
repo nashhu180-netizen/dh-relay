@@ -1,0 +1,16 @@
+{
+  "protocol": "relay.launch-receipt/v2",
+  "receipt_id": "rcpt~0dd32476b035",
+  "request_id": "cli-c013f7ba-64a3-4acb-9357-b49925b3a267",
+  "client_id": "cli-0bd89b84-da28-4196-83b8-b188ebc333a4",
+  "method": "start",
+  "state": "committed",
+  "reason": null,
+  "run_id": "R001-relay-dhr72-real-checkpoint-1-20260904",
+  "node_id": null,
+  "attempt_id": null,
+  "kind": "start",
+  "issued_at": "2026-09-04T09:11:09.387Z",
+  "issued_by_runtime": "runtime-8fc85abe-35b2-4165-9978-320788cc0159",
+  "request_digest": "ec2cea03eb2c1ff4ac77b62d336d7f2beb490c7c46157f505054e0cb108c8e9c"
+}

@@ -1,0 +1,28 @@
+{
+  "protocol": "relay.client-read-model/v1",
+  "view": "detail",
+  "source": "runtime-v2",
+  "read_only": false,
+  "status": null,
+  "detail": {
+    "protocol": "relay.run-state/v1",
+    "run_id": "R001-relay-dhr72-real-checkpoint-1-20260905",
+    "run_status": "running",
+    "group": "running",
+    "progress": {
+      "done": 0,
+      "total": 1
+    },
+    "elapsed_seconds": 0,
+    "node_states": [
+      {
+        "node_id": "real-product",
+        "status": "running",
+        "current_attempt_id": "att~07e801d7fb03",
+        "attempt_count": 1
+      }
+    ],
+    "updated_at": "2026-09-05T07:23:23.549Z",
+    "state_signature": "ffc8aea2804cd9754a9602087c7d182062c852a223dfbfedf8404e06108ee1ab"
+  }
+}

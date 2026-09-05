@@ -1,0 +1,11 @@
+{
+  "redacted_at": "2026-09-05T08:07:50.334Z",
+  "rule": "design/12 §2 与 §4 P6-RI-A4：证据只保留截断/摘要关联符，不留原 Receipt ID",
+  "algorithm": "correlator = sha256(lowercase(attempt_uuid)).hex[0:12]；receipt 记 rcpt~<c>，attempt 记 att~<c>，两者共享同一 <c>",
+  "reversible": false,
+  "correlators": [],
+  "distinct_ids_redacted": 0,
+  "files_changed": 21,
+  "files_renamed": 10,
+  "note": "本清单只列关联符，不含任何原值。原值随临时 fixture 根一并销毁，已不可用。"
+}

@@ -216,7 +216,7 @@ test('批4 边界钉：driver 不托管 agent 节点——不开 Attempt、不�
   }
 });
 
-test('DHR_33 窄路径：driver 托管 herdr-agent，开 Attempt、记心跳并按 stop 落 killed', { timeout: FILE_TEST_TIMEOUT_MS, skip: 'F-3520 → DHR_72：现役 driver 在 stop 时写 human_input_requested(E_EXECUTOR_KILLED) 而非 attempt_failed(E_EXECUTOR_KILLED)，用例待按 Receipt-bound 语义重写' }, async (t) => {
+test('DHR_33 窄路径：driver 托管 herdr-agent，开 Attempt、记心跳并按 stop 落 killed Attention', { timeout: FILE_TEST_TIMEOUT_MS }, async (t) => {
   const repoRoot = await makeRepo('dhr33-herdr-driver-');
   t.after(() => rm(repoRoot, { recursive: true, force: true }));
   const runId = 'R001-herdr-driver-20260829';
@@ -257,7 +257,8 @@ test('DHR_33 窄路径：driver 托管 herdr-agent，开 Attempt、记心跳并�
   const events = store.events;
   assert.ok(events.some(event => event.kind === 'attempt_started' && event.node_id === 'agent-herdr'));
   assert.ok(events.some(event => event.kind === 'checkpoint_recorded' && event.node_id === 'agent-herdr'));
-  assert.equal(events.find(event => event.kind === 'attempt_failed' && event.node_id === 'agent-herdr')?.reason, 'E_EXECUTOR_KILLED');
+  assert.equal(events.some(event => event.kind === 'attempt_failed' && event.node_id === 'agent-herdr'), false);
+  assert.equal(events.find(event => event.kind === 'human_input_requested' && event.node_id === 'agent-herdr')?.reason, 'E_EXECUTOR_KILLED');
 });
 
 test('DHR_61 D1: Herdr Attempt freezes source and ordered fallback identities before launch', { timeout: FILE_TEST_TIMEOUT_MS }, async (t) => {

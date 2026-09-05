@@ -42,30 +42,9 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
   /** Receipt-bound Herdr attempts are the only result ingress for the new path. */
   const submissionGates = new Set();
   const submissionResults = new Map();
-  const submissionWaiters = new Map();
 
   /** 读当前快照——state.json 由 Store 在每次变更后重算，driver 不自己折叠事件。 */
   const readState = () => actor.submitControl(store => store.readState());
-
-  function resolveSubmissionWaiter(receiptId, response) {
-    const waiter = submissionWaiters.get(receiptId);
-    if (!waiter) return;
-    submissionWaiters.delete(receiptId);
-    clearTimeout(waiter.timer);
-    waiter.resolve(response);
-  }
-
-  function waitForExecutorResult(receiptId) {
-    const prior = submissionResults.get(receiptId);
-    if (prior) return Promise.resolve(prior);
-    return new Promise(resolve => {
-      const timer = setTimeout(() => {
-        submissionWaiters.delete(receiptId);
-        resolve(null);
-      }, doneTimeoutMs);
-      submissionWaiters.set(receiptId, { resolve, timer });
-    });
-  }
 
   /**
    * Recovery can race a late submission: once the Store has committed the
@@ -88,7 +67,8 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
   /**
    * The service may only enter the Store through this driver gate.  The Store
    * still authenticates the Receipt and performs the atomic mutation; this
-   * method only wakes the matching Herdr waiter after a committed response.
+   * method only records the committed response; the polling loop observes it
+   * at the start of its next turn.
    */
   async function submitExecutorResult(submission) {
     if (!submissionGates.has(submission?.receipt_id)) return { ok: false, reason: 'E_IDENTITY_MISMATCH' };
@@ -96,7 +76,6 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
     if (response?.ok === true) {
       submissionResults.set(submission.receipt_id, response);
       submissionGates.delete(submission.receipt_id);
-      resolveSubmissionWaiter(submission.receipt_id, response);
     }
     return response;
   }
@@ -308,6 +287,8 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
     let lostAttention = false;
     let mismatchAt = null;
     let mismatchEscalated = false;
+    let resultMissingAt = null;
+    let resultMissingAttention = false;
     let lastStatus = recovery
       ? (recoveredObservation?.ok ? recoveredObservation.observation.herdr_status : null)
       : launch?.ready_observation?.herdr_status ?? null;
@@ -393,29 +374,32 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
             }
           }
           if (observation.herdr_status === 'working') {
+            resultMissingAt = null;
+            resultMissingAttention = false;
             checkpoint += 1;
             await actor.submitControl(store => store.appendCheckpoint({ receipt_id: receiptId, node_id: node.node_id, attempt_id: attemptId,
               checkpoint_id: `hb-${checkpoint}`, payload_digest: digest(observation), at: nowIso() }));
           } else if (observation.herdr_status === 'blocked') {
+            resultMissingAt = null;
             if (lastStatus !== 'blocked') {
               await actor.submitControl(store => store.appendEvent({ kind: 'human_input_requested', at: nowIso(), node_id: node.node_id, attempt_id: attemptId,
                 executor_ref: handle.agent_name,
                 detail: herdrDetail(handle, 'blocked', observation.state_change_seq, observation) }));
             }
           } else if (observation.herdr_status === 'done' || observation.herdr_status === 'idle') {
-            if (!receiptBound) {
+            resultMissingAt ??= clock();
+            // `idle` and host-side `done` say only that Herdr has no more
+            // progress to report. They are not a Receipt Result and must not
+            // end this driver: a late submission, a later working state, or
+            // host loss remains observable on following turns.
+            if (!resultMissingAttention && (!receiptBound || clock() - resultMissingAt >= doneTimeoutMs)) {
+              resultMissingAttention = true;
               await actor.submitControl(store => store.appendEvent({ kind: 'human_input_requested', at: nowIso(), node_id: node.node_id,
                 attempt_id: attemptId, executor_ref: handle.agent_name, reason: 'E_EXECUTOR_RESULT_MISSING',
                 detail: herdrDetail(handle, observation.herdr_status, observation.state_change_seq, observation) }));
-              return;
             }
-            const submitted = await waitForExecutorResult(receiptId);
-            if (submitted) return;
-            if (stopping) return;
-            await actor.submitControl(store => store.appendEvent({ kind: 'human_input_requested', at: nowIso(), node_id: node.node_id,
-              attempt_id: attemptId, executor_ref: handle.agent_name, reason: 'E_EXECUTOR_RESULT_MISSING',
-              detail: herdrDetail(handle, observation.herdr_status, observation.state_change_seq, observation) }));
-            return;
+          } else {
+            resultMissingAt = null;
           }
           lastStatus = observation.herdr_status;
           lastSeq = observation.state_change_seq;
@@ -607,11 +591,6 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
     /** 请求停止：先杀在跑的子进程（它会被记成 E_EXECUTOR_KILLED），再等本届收口。 */
     async stop() {
       stopping = true;
-      for (const waiter of submissionWaiters.values()) {
-        clearTimeout(waiter.timer);
-        waiter.resolve(null);
-      }
-      submissionWaiters.clear();
       await current?.kill();
       return done;
     },

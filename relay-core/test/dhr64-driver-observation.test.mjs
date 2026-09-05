@@ -8,6 +8,15 @@ import { startWorkflowDriver } from '../runtime/workflow-driver.mjs';
 import { createStore } from '../store/store.mjs';
 import { makeFakeHerdr } from './helpers/fake-herdr.mjs';
 
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+async function until(check, label, timeoutMs = 20_000) {
+  const deadline = Date.now() + timeoutMs;
+  while (!(await check())) {
+    if (Date.now() > deadline) throw new Error(`timeout:${label}`);
+    await sleep(5);
+  }
+}
+
 const HASH = 'a'.repeat(64);
 const run = {
   protocol: 'relay.run/v2', run_id: 'RUN-DHR64-OBS', workflow_name: 'dhr64', summary: 'DHR64 observation',
@@ -43,13 +52,18 @@ async function fixture(t, fake) {
 }
 
 for (const status of ['done', 'idle']) {
-  test(`DHR64 driver: ${status} without Receipt submission raises attention and creates no Result`, async (t) => {
+  test(`DHR64 driver: ${status} without Receipt submission raises attention, continues observation, and creates no Result`, async (t) => {
     const item = await fixture(t, makeFakeHerdr({ statuses: [status], read: 'must-not-be-captured' }));
-    await item.driver.done;
+    await until(() => item.store.events.some(event => event.kind === 'human_input_requested'
+      && event.reason === 'E_EXECUTOR_RESULT_MISSING'), `${status} attention`);
+    const pollsAtAttention = item.fake.agentGets;
+    await until(() => item.fake.agentGets > pollsAtAttention, `${status} continues observing`);
     assert.equal((await readdir(join(item.root, 'results'))).length, 0);
     assert.equal(item.fake.agentReads, 0, 'pane/capture text must not infer Result');
     assert.ok(item.store.events.some(event => event.kind === 'human_input_requested'
       && event.reason === 'E_EXECUTOR_RESULT_MISSING'));
+    await item.driver.stop();
+    await item.driver.done;
   });
 }
 

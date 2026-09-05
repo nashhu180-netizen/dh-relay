@@ -240,27 +240,32 @@ test('DHR_33 driver #1/#2：心跳逐次落账，blocked 第二沿与重放持�
   assert.deepEqual(await (await openStore({ root })).readState(), await store.readState());
 });
 
-test('DHR_33 driver #3/#5：done 有界、判定成功与双亡 HOST_LOST', { skip: 'F-3520 → DHR_72：herdrJudge 直写 Result 通路已被 DHR_64 删除，用例待按 Receipt-bound 语义重写' }, async (t) => {
-  const noJudge = await runtimeFixture(t, ['idle', 'done'], { driver: { doneTimeoutMs: 100, herdrPollMs: 20 } });
-  t.after(() => noJudge.driver.stop());
-  await noJudge.driver.done;
+test('DHR_33 driver #3/#5：done 等 Receipt-bound Result，提交成功与双亡 HOST_LOST', async (t) => {
+  const noJudge = await runtimeFixture(t, ['idle', 'done'], { driver: { doneTimeoutMs: 0, herdrPollMs: 20 } });
+  await runtimeUntil(() => noJudge.store.events.some(event => event.reason === 'E_EXECUTOR_RESULT_MISSING'), 'missing Result attention');
   assert.equal((await settledState(noJudge.root)).node_states[0].status, 'waiting_human');
-  const judged = await runtimeFixture(t, ['idle', 'done'], { driver: { herdrJudge: () => ({ outcome: 'succeeded', reason: null, structured: { verdict: 'ok' } }) } });
-  t.after(() => judged.driver.stop());
-  await runtimeUntil(() => judged.store.events.some(event => event.kind === 'attempt_succeeded'), 'judge result');
+  await noJudge.driver.stop();
+  await noJudge.driver.done;
+  const judged = await runtimeFixture(t, ['idle', 'done']);
+  await runtimeUntil(() => judged.store.events.some(event => event.kind === 'attempt_started')
+    && judged.driver.hasOpenSubmissionGates, 'receipt opened');
+  const judgedReceipt = judged.store.events.find(event => event.kind === 'attempt_started').detail.replace(/^receipt:/, '');
+  assert.equal((await judged.driver.submitExecutorResult({ protocol: 'relay.executor-result-submission/v1', receipt_id: judgedReceipt,
+    outcome: 'succeeded', reason: null })).ok, true);
   await judged.driver.done;
   assert.equal((await judged.store.readState()).node_states[0].status, 'succeeded');
-  const judgedReceipt = judged.store.events.find(event => event.kind === 'attempt_succeeded').detail.replace(/^receipt:/, '');
   assert.equal(JSON.parse(await readFile(join(judged.root, 'results', `${judgedReceipt}.json`), 'utf8')).executor_kind, 'herdr-agent');
-  const idleJudged = await runtimeFixture(t, ['idle', 'idle'], { driver: { herdrJudge: () => ({ outcome: 'succeeded', reason: null, structured: { verdict: 'idle-ok' } }) } });
-  t.after(() => idleJudged.driver.stop());
+  const idleJudged = await runtimeFixture(t, ['idle', 'idle']);
+  await runtimeUntil(() => idleJudged.store.events.some(event => event.kind === 'attempt_started')
+    && idleJudged.driver.hasOpenSubmissionGates, 'idle receipt opened');
+  const idleReceipt = idleJudged.store.events.find(event => event.kind === 'attempt_started').detail.replace(/^receipt:/, '');
+  assert.equal((await idleJudged.driver.submitExecutorResult({ protocol: 'relay.executor-result-submission/v1', receipt_id: idleReceipt,
+    outcome: 'succeeded', reason: null })).ok, true);
   await idleJudged.driver.done;
-  const idleReceipt = idleJudged.store.events.find(event => event.kind === 'attempt_succeeded').detail.replace(/^receipt:/, '');
   assert.equal(JSON.parse(await readFile(join(idleJudged.root, 'results', `${idleReceipt}.json`), 'utf8')).executor_kind, 'herdr-agent');
   const missing = await runtimeFixture(t, ['unknown'], { fake: { agentAlive: false, paneAlive: false, missing: true } });
-  t.after(() => missing.driver.stop());
-  await runtimeUntil(() => missing.store.events.some(event => event.kind === 'attempt_failed'), 'host lost');
-  assert.equal(missing.store.events.find(event => event.kind === 'attempt_failed').reason, 'E_EXECUTOR_HOST_LOST');
+  await runtimeUntil(() => missing.store.events.some(event => event.reason === 'E_EXECUTOR_HOST_LOST'), 'host lost');
+  await missing.driver.done;
 });
 
 test('DHR_33 driver：blocked 后 send、恢复心跳；观测断不落 Result', async (t) => {
@@ -277,7 +282,7 @@ test('DHR_33 driver：blocked 后 send、恢复心跳；观测断不落 Result',
   assert.equal(lost.store.events.some(event => event.kind === 'attempt_failed' || event.kind === 'attempt_orphaned'), false);
 });
 
-test('DHR_33 driver：stop 撞 launch 窗口仍杀 pane，失败写 killed Result 且不造 Attention', { skip: 'F-3520 → DHR_72：现役 driver 在 stop 撞 launch 窗口时写 human_input_requested 而非 attempt_failed(E_EXECUTOR_KILLED)，用例待重写' }, async (t) => {
+test('DHR_33 driver：stop 撞 launch 窗口仍杀 pane，写 killed Attention 且不造 Result', async (t) => {
   let driver;
   const { store, fake, driver: started } = await runtimeFixture(t, ['idle'], { fake: {
     paneKillResult: { ok: false, detail: 'close-failed' }, onAgentStart: () => driver.stop(),
@@ -285,9 +290,8 @@ test('DHR_33 driver：stop 撞 launch 窗口仍杀 pane，失败写 killed Resul
   driver = started;
   await driver.done;
   assert.equal(fake.paneKills, 1);
-  const failed = store.events.find(event => event.kind === 'attempt_failed');
-  assert.equal(failed?.reason, 'E_EXECUTOR_KILLED');
-  assert.equal(store.events.some(event => event.kind === 'human_input_requested'), false);
+  assert.equal(store.events.some(event => event.kind === 'attempt_failed'), false);
+  assert.equal(store.events.find(event => event.kind === 'human_input_requested')?.reason, 'E_EXECUTOR_KILLED');
 });
 
 test('DHR_67 driver：Claude adapter 启动失败保留既有 Attempt，进入人工处理且不造 Result', async (t) => {
@@ -303,14 +307,17 @@ test('DHR_67 driver：Claude adapter 启动失败保留既有 Attempt，进入�
   assert.equal(fake.paneKills, 1);
 });
 
-test('DHR_33 driver：idle 超阈值单次 Attention 后停止轮询', async (t) => {
+test('DHR_33 driver：idle 超阈值单次 Attention 后继续轮询', async (t) => {
   const { store, driver, fake } = await runtimeFixture(t, ['idle'], { driver: { doneTimeoutMs: 100, herdrPollMs: 20 } });
   t.after(() => driver.stop());
   await runtimeUntil(() => store.events.some(event => event.kind === 'human_input_requested'), 'idle attention');
-  await driver.done;
+  const pollsAtAttention = fake.agentGets;
+  await runtimeUntil(() => fake.agentGets > pollsAtAttention, 'idle follows with another observation');
   assert.equal(store.events.filter(event => event.kind === 'human_input_requested').length, 1);
   assert.equal(fake.paneKills, 0);
   assert.equal(fake.agentReads, 0);
+  await driver.stop();
+  await driver.done;
 });
 
 test('DHR_33 driver #4/#7/#9：观测断单次升级、恢复后再升级；SSH 桩不冒充', async (t) => {
@@ -352,7 +359,7 @@ async function recoveryFixture(t, fakeOptions) {
   return { store, driver };
 }
 
-test('DHR_33 driver #10：恢复届按账上 ref 判 orphaned 或接管同一 attempt', { skip: 'F-3520 → DHR_72：DHR_64 起恢复届探活 missing 写 human_input_requested(E_EXECUTOR_HOST_LOST) 而非 attempt_orphaned(E_EXECUTOR_ORPHANED)，用例待按 Receipt-bound 语义重写' }, async (t) => {
+test('DHR_33 driver #10：恢复届 missing 写 HOST_LOST Attention 或接管同一 attempt', async (t) => {
   // 上限依据：恢复届的探活是 `herdrCli.agentGet` 一次调用，生产上限是 herdr-cli 的
   // per-call `timeoutMs = 10_000`（herdr-cli.mjs:41）——**不是** `HERDR_START_TIMEOUT_MS`
   // （那只给 `agent start` 用，恢复届不 launch）。原来的 10s 预算等于 0 余量，Store 落盘
@@ -365,14 +372,15 @@ test('DHR_33 driver #10：恢复届按账上 ref 判 orphaned 或接管同一 at
   // 另：`recoveryFixture` 不暴露 fake，所以现场只打事件序列与派生状态。
   const goneScene = () => dumpDriverScene({ store: gone.store });
   try {
-    await untilEvent(() => gone.store.events.some(event => event.kind === 'attempt_orphaned'),
-      { label: '#10 恢复届 attempt_orphaned', timeoutMs: RECOVERY_PROBE_BUDGET_MS, dump: goneScene });
+    await untilEvent(() => gone.store.events.some(event => event.reason === 'E_EXECUTOR_HOST_LOST'),
+      { label: '#10 恢复届 HOST_LOST Attention', timeoutMs: RECOVERY_PROBE_BUDGET_MS, dump: goneScene });
     // driver.done 的生产上限是 driver 自己的 `doneTimeoutMs = 60_000`（workflow-driver.mjs:33）。
     await withDeadline(gone.driver.done, { label: '#10 gone.driver.done', timeoutMs: 60_000, dump: goneScene });
   } finally {
     await gone.driver.stop();
   }
-  assert.equal(gone.store.events.find(event => event.kind === 'attempt_orphaned').reason, 'E_EXECUTOR_ORPHANED');
+  assert.equal(gone.store.events.some(event => event.kind === 'attempt_orphaned'), false);
+  assert.equal(gone.store.events.find(event => event.reason === 'E_EXECUTOR_HOST_LOST')?.kind, 'human_input_requested');
   const live = await recoveryFixture(t, { statuses: ['working'] });
   try {
     await untilEvent(() => live.store.events.some(event => event.kind === 'checkpoint_recorded'),
@@ -610,12 +618,15 @@ test('DHR_68/C driver：blocked 直接跳到 done 时提交指令仍补发一次
 
   await runtimeUntil(() => fake.sent.length === 1, 'deferred instruction on blocked->done', 45_000);
   assert.match(fake.sent[0].text, /submit-result --receipt-id /);
-  await driver.done;
+  await runtimeUntil(() => store.events.some(event => event.reason === 'E_EXECUTOR_RESULT_MISSING'),
+    'blocked->done missing Result attention', 45_000);
   assert.equal(fake.sent.length, 1, 'completion instruction 只补发一次');
   assert.equal(store.events.filter(event => event.kind === 'human_input_requested'
     && (event.reason ?? null) === null).length, 1, '启动期 blocked 的等人事件仍只有一条');
   assert.equal(store.events.some(event => event.reason === 'E_EXECUTOR_HOST_LOST'), false);
   assert.equal(fake.paneKills, 0);
+  await driver.stop();
+  await driver.done;
 });
 
 test('DHR_68/D：fake-herdr 每个被触及命令的返回形态逐条对齐真实 herdr 的实测记录', async () => {
