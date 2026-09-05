@@ -17,7 +17,7 @@
 | 2026-09-05 | 主控 | DHR_76 已收口后，把 `wt/DHR_75` rebase 到 `master@bf34886`；冲突只在测试入口，保留 DHR_76 与 DHR_75 两个独立 test token。DHR_75 专项 7/7 与 adapter 24 pass/3 frozen skip 均有终态通过。DHR_76 全套回归在第 4 项后无终态，已停止其本次 parent/child 测试进程，不将其计作通过或归因。 | E-7532/E-7533/E-7534 | 真实 F 仍须在 Herdr-managed pane 用新基线独立重跑；此前 E-7529 的失败只作旧基线事实。 |
 | 2026-09-05 | 主控 | 在 `HERDR_ENV=1`、DSH-off 受管 pane 对 rebase 后候选跑冻结 Codex Profile。`attempt_started=06:15:53.096Z` 后首条 `host_observation_changed(alive)=06:16:00.057Z`，lease 到期为 `06:16:14.974Z`；F 的时序谓词成立。agent 随后在 `agent-ready` 显示 blocked，未发送无害命令，故无 checkpoint；该项仅为 F 的可选佐证。已脱敏并核验零原 Receipt/Attempt 字段与文件名。 | E-7535 | 等待 fresh 需求复核裁定该新实录后才可进入 E10；不把 blocked 或无 checkpoint 写成 DHR_72/DHR_35 通过。 |
 | 2026-09-05 | 主控 | E11 授权后在主干暂存 squash 候选复验：DHR_75 整套在 A/B/C 后未取得终态，adapter 整套在 13 项通过后未取得终态，均无遗留测试进程；不记全套通过。分别重跑 D 两项，Windows timeout/子孙清理与 spawn/signal/空 stdout 均 1/1 exit=0。 | E-7537 | 提交 squash；主干体检如实保留 DHR_74 的独立 R31。 |
-| 2026-09-05 | 用户 + 主控 | 用户在对话中明文确认 E11；DHR_75 已 squash 入 master `24ba064`。主干 `dh dh-relay` 仅余 DHR_74 R31，DHR_75 无 failure；据授权提交本卡 verify 并销户任务树。 | E-7538 | 不推送、不部署、不启动 DHR_72；DHR_74 R31 仍等 DHR_72 的 H。 |
+| 2026-09-05 | 用户 + 主控 | 用户在对话中明文确认 E11；DHR_75 已 squash 入 master `24ba064`。主干 `dh dh-relay` 仅余 DHR_74 R31，DHR_75 无 failure；verify 强闸因该独立失败拒绝，未代签、未销户。 | E-7538 | 不推送、不部署、不启动 DHR_72；DHR_74 R31 仍等 DHR_72 的 H。 |
 
 ## 证据账本 (Evidence Ledger)
 
