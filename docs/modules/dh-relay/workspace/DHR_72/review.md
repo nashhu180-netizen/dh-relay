@@ -74,7 +74,7 @@
 
 <!-- dh:mutation-transfer:v1 direction=out producer=DHR_72 consumer=DHR_74 producer-acceptance=DHR72-H consumer-acceptance=DHR_74-R31 source=13c072db4bcc8f7b5d575fc7b0bb0e648fbcdd8a parent=084a00d9d673844e71d09e205a96a1c9b744f006 diff-sha256=0ec7f5a8db2f4cb11d709bad880b239b305821db79b7787eb766bf09c5f34393 source-review=docs/modules/dh-relay/workspace/DHR_72/review.md source-format=legacy-v1 mutation-sha256=fca3640849aa5ecfb637ec159f5477caa55d5166b3501c576519e4d10fee728b anchor=relay-core/runtime/workflow-driver.mjs:389 depth=1 -->
 
-→ 当前状态：**待验收。E11 已认可，squash `13c072d` 已入 master；E-7241 已完成双向、单跳 `mutation-transfer:v1` 正式落账，clean-master `dh dh-relay` exit=0、DHR_72/DHR_74 R31 清零，已具备生成 verify 的条件。**
+→ 当前状态：**已完成。E11 已认可，squash `13c072d` 已入 master；E-7241 已完成双向、单跳 `mutation-transfer:v1` 正式落账，clean-master `dh dh-relay` exit=0、DHR_72/DHR_74 R31 清零；verify=`64fa91f`，`release_mode=full`。**
 
 ### E10 放行证据包（releasePacket-DHR72-v1）
 
@@ -96,5 +96,5 @@
 ---
 
 - 确认记录：2026-09-05 用户在对话中对 releasePacket-DHR72-v1 明文“认可”；仅授权该包列明的本地收口链。
-- verify 提交 SHA：待 E12。
+- verify 提交 SHA：`64fa91f`（`verify(dh-relay): DHR_72 端到端验收通过`，full，Risk-Count=0）。
 - 签名：用户 E11 明文确认（2026-09-05）。

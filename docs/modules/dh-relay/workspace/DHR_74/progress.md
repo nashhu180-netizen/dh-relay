@@ -97,6 +97,7 @@
 |---|---|---|---|---|
 | E-7409 | session-run | 独立基线（master@84f2514 + 本卡 10 笔）冻结命令 ×3，无探针 | 三轮 exit=0；51 pass / 4 skip / 0 fail；284.2–285.5s | `evidence/ownbase-gate-round{1,2,3}-*` + `ownbase-signature-scan-20260903.md` |
 | E-7241 | check | clean master `b956e04` 上 `dh dh-relay`；核对 DHR_72/DHR_74 双向 `mutation-transfer:v1` marker | pass：exit=0；DHR_74 R31 清零；全仓 0 failure | DHR_72 H 已正式承接本卡 R31 义务；具备补签 `verify(dh-relay): DHR_74` 的条件。 |
+| E-7243 | verify | `a20cfc7` `verify(dh-relay): DHR_74 带风险放行` | pass：risk-accepted；Risk-Count=1；Risk-Refs=`RISK-DHR74-F7402`；chat-confirm | DHR_74 verify 已落账；F-7402 诚实边界保留并移交，不含 push、deploy 或下一卡。 |
 
 ## E7 · as-built 判定（2026-09-03，收口段）
 

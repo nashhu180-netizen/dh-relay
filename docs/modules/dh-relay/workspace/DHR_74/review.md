@@ -184,7 +184,7 @@
 3. 本卡时间参数改动对绿闸达标的必要性未证：DHR_71 独立基线不含它也三轮达标，差约 1%。
 4. F-7402 停顿机制内核级未钉死，移交环境侧 A/B 与 DHR_73。
 
-→ 当前状态：**待验收（用户 2026-09-04 已对话确认收口口径并授权本地收口包，工件已 squash 合入 master `14c0fef`；E-7241 已使 R31 清零，`verify(dh-relay)` 现可签）**
+→ 当前状态：**已完成（用户 2026-09-04 已对话确认收口口径并授权本地收口包，工件已 squash 合入 master `14c0fef`；E-7241 已使 R31 清零；verify=`a20cfc7`，`release_mode=risk-accepted`）**
 
 **verify 前置已满足（E-7241）**：DHR_72 已承接并正式落账 poll/配对超时比例守卫的双向、单跳 `mutation-transfer:v1`；source squash、parent、双 digest、`legacy-v1`、anchor、depth=1 与 stable acceptance ID 均通过，clean master `dh dh-relay` exit=0，DHR_74 R31 清零。保留本卡 A/B 未达成与 F-7402 的诚实边界，不伪造本卡生产变异。
 
@@ -213,7 +213,7 @@
 7. **诚实边界申报**：六名复核者全部为只读沙盒 fresh 实例、一律静态审，**测试全部由主控跑**；本卡未做任何环境变更。
 
 - 确认记录：用户 2026-09-04 在对话里作出三条决定——① 接受四条诚实结论与「必要性未证」措辞，原文不许弱化也不许变强；② 7 条挂起项只改 REQB-04，其余 6 条保持原样带入收口后处理；③ 执行 verify + squash 合入 master + 删 worktree。
-- verify 提交 SHA：**待本轮 E12 生成**。工件已 squash 合入 master `14c0fef`，DevPlan 状态＝待验收；E-7241 已满足用户 2026-09-04 裁决的补签条件。verify 后按既有 E11 授权清理本卡 worktree/branch。
+- verify 提交 SHA：`a20cfc7`（`verify(dh-relay): DHR_74 带风险放行`，risk-accepted，Risk-Count=1，Risk-Refs=`RISK-DHR74-F7402`）。工件已 squash 合入 master `14c0fef`；E-7241 满足用户 2026-09-04 裁决的补签条件。按既有 E11 授权清理本卡 worktree/branch。
 - 签名：hyf（chat-confirm 代签，仅覆盖上表三条人判项与收口口径，**不代表 verify 已签**）　　时间：2026-09-04
 
 ### 确认记录（append-only）
