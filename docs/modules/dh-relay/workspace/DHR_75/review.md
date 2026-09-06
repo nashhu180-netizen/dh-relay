@@ -93,7 +93,7 @@
 
 **as-built 更新了没**：已更新 DHR_75 async/timeout/平台边界。
 
-→ 当前状态：**待验收（用户 E11 已确认、本地 squash 已入主干；全仓 DHR_74 R31 阻断 verify）**
+→ 当前状态：**E11～E13 本地收口完成；squash=`24ba064`，verify=下一提交，release_mode=full**
 
 ### E10 放行证据包
 
@@ -112,10 +112,10 @@
 | 本地收口授权包 | 查看 E10 展示的机器证、复核结论、diff 与残余边界 | 明确同意或拒绝本地 squash/复验/verify/销户/任务树清理；不含 push/deploy/下一卡 | [x] |
 
 - 确认记录：用户在对话中明文回复“确认”。
-- verify 提交 SHA：未生成；`dh dh-relay` 仅余 DHR_74 R31，强闸拒绝代签。
+- verify 提交 SHA：下一提交（`verify(dh-relay): DHR_75 Herdr 异步续租验收通过`）。
 - 签名：hyf（chat-confirm）　　时间：2026-09-05
 
-→ 解锁状态：**用户已验收，待 DHR_74 R31 清零后签 verify；不含 push/deploy/下一卡**
+→ 解锁状态：**用户已验收并完成 E12/E13；DHR_74 R31 已由 DHR_72 transfer 清零；不含 push/deploy/下一卡**
 
 ### 确认记录（append-only）
 

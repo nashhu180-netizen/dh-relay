@@ -19,6 +19,7 @@
 | 2026-09-05 | 主控 | E11 授权后在主干暂存 squash 候选复验：DHR_75 整套在 A/B/C 后未取得终态，adapter 整套在 13 项通过后未取得终态，均无遗留测试进程；不记全套通过。分别重跑 D 两项，Windows timeout/子孙清理与 spawn/signal/空 stdout 均 1/1 exit=0。 | E-7537 | 提交 squash；主干体检如实保留 DHR_74 的独立 R31。 |
 | 2026-09-05 | 用户 + 主控 | 用户在对话中明文确认 E11；DHR_75 已 squash 入 master `24ba064`。主干 `dh dh-relay` 仅余 DHR_74 R31，DHR_75 无 failure；verify 强闸因该独立失败拒绝，未代签、未销户。 | E-7538 | 不推送、不部署、不启动 DHR_72；DHR_74 R31 仍等 DHR_72 的 H。 |
 | 2026-09-06 | 主控 | 按既有 E-7535/E-7536 与 E10 展示材料回填机器可读收口记录：E9 交付汇报已发出；E10 放行证据包与人验证据展示区已发出。 | E-7535/E-7536/E-7538 | 解除 R18 的材料缺口；不改变 F 的事实边界，也不代签 DHR_75 verify。 |
+| 2026-09-06 | 主控 | DHR_72/DHR_74 已按登记路径完成并清零原 R31 阻塞；clean `master@7c7db92` 重跑模块体检 0 failure。当前 `relay-core` 自 DHR_77 合入态 E-7752 的 DHR_75 单文件 7/7 终态通过后无代码变化，故不重复启动历史上会非确定挂起的大全套。 | E-7540 | E13 机械回填后签 DHR_75 verify，并清理本卡 worktree/branch；不含 push/deploy/下一卡。 |
 
 ## 证据账本 (Evidence Ledger)
 
@@ -60,3 +61,4 @@
 | E-7536 | review-dispatch | collaboration read-only F evidence review | observed | 复核派出：/root/dhr75_f_review2｜fresh requirement re-review: E-7535 F PASS, P0/P1=0 |
 | E-7537 | integration test | 主干暂存 squash 候选：DHR_75 全套与 adapter 整套均无终态（前者已输出 A/B/C 通过，后者已输出 13 项通过，均无残留 node）；分别运行 D timeout/子孙清理与 D 错误形状 | observed + pass | 两个 D 定向均 1/1、exit=0；无终态整套不算通过，保留 E-7533/E-7517 的已终态回归事实，不把本轮无终态归因于 DHR_75。 |
 | E-7539 | closeout-record | `progress.md` E9/E10 machine-readable closeout records；`review.md` mutation row normalized and re-run in `wt/DHR_75` | pass | E9/E10 已发出；变异施加后指定测试 exit=1，施加 blob=`20bcdba1d12b04de8e77ba9fa70ed3ee52aecacb`，工作树已还原干净。 |
+| E-7540 | check / closeout | clean `master@7c7db92`：`dh dh-relay`；核对 `36aa990..7c7db92 -- relay-core` 无变化，并承接同一合入态 E-7752 的 DHR_75 单文件 7/7 终态 | pass：`dh` exit 0，0 failure / 90 warning；DHR_74 R31 已由 DHR_72 transfer 清零；DHR_75 当前代码与 E-7752 受测版本一致 | 原 verify 阻塞解除；允许按既有 E11 本地收口授权连续完成 verify、销户与本任务树清理，不扩张为 push/deploy/下一卡 |
