@@ -45,6 +45,7 @@
   - `relay-core/rpc/capabilities.mjs`
   - `relay-core/runtime/executors/herdr/herdr-executor.mjs`
   - `relay-core/runtime/workflow-driver.mjs`
+  - `relay-core/store/store.mjs`
   - `relay-core/runtime/service.mjs`
   - `relay-core/cli/main.mjs`
   - `relay-core/cli/render.mjs`
@@ -67,7 +68,7 @@
   - `docs/modules/dh-relay/knowledge/教训库-候选.md`
   - `docs/modules/dh-relay/dev_plan/P6-Herdr多账号执行底座-开发方案.md`
 
-  **限定**：`herdr-executor.mjs` 只保留合格 `terminal_id`，不得使用 `pane_id`/agent/`agent_session` fallback；`workflow-driver.mjs` 只改 host-observation 写入、最后成功 ref 对账与 recovery，停止从旧 `detail` 重建 terminal identity，既有 `executor_ref` locator 与 Result/Attention/lease 行为不变；`service.mjs`、CLI 与 fixtures 只承接事件回放、read-model/安全展示和新旧账本兼容，默认人验投影不得输出 `detail`；`rpc/capabilities.mjs` 删除 v1 固定 hash 分叉，使 v1/v2 共用完整 baseline，`server.mjs` 现有“hash 校验早于分派/subscribe”顺序只读守住；fixtures 只更新受协议/hash/展示变化直接影响的样本，`package.json` 只追加本卡测试。workspace 只存脱敏向量、测试日志、受控对照与截图；原始 `terminal_id`、路径、账号、Receipt、Result 或凭据不得进入证据。
+  **限定**：`herdr-executor.mjs` 只保留合格 `terminal_id`，不得使用 `pane_id`/agent/`agent_session` fallback；`workflow-driver.mjs` 只改 host-observation 写入、最后成功 ref 对账与 recovery，停止从旧 `detail` 重建 terminal identity，既有 `executor_ref` locator 与 Result/Attention/lease 行为不变；`store.mjs` 只允许 `emitEvent` 把 `input.host_ref` 复制到封闭 event 对象，不得改变 Store 的校验、写入、回放、通知、lease、fencing 或其他事件语义；`service.mjs`、CLI 与 fixtures 只承接事件回放、read-model/安全展示和新旧账本兼容，默认人验投影不得输出 `detail`；`rpc/capabilities.mjs` 删除 v1 固定 hash 分叉，使 v1/v2 共用完整 baseline，`server.mjs` 现有“hash 校验早于分派/subscribe”顺序只读守住；fixtures 只更新受协议/hash/展示变化直接影响的样本，`package.json` 只追加本卡测试。workspace 只存脱敏向量、测试日志、受控对照与截图；原始 `terminal_id`、路径、账号、Receipt、Result 或凭据不得进入证据。
 - **档位**：标准（协议、RPC 兼容与 Herdr 组件接线，高危）。
 - **任务类型**：重核<!-- dh:task-type:v1 task=DHR_77 type=heavy -->
 - **依赖**：DHR_72（已完成）。DHR_77 收口只解除 DHR_35 的计划阻塞，不构成 DHR_35 D-start；须独立 D-start。

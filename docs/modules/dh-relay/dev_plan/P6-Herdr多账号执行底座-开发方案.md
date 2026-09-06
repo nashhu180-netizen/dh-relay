@@ -4,7 +4,7 @@
 <!-- dh:status
 汇报: DHR_32（normal）已于 2026-08-30 经用户对话确认收口，verify `2f80fa1`；主干复验定向 profiles 14/14、contracts 审计 0 违规、模块体检 0 failure。DHR_33（heavy）已于 2026-08-30 经用户接受 E-3303 现场、E-3304 受限、E-3307/3308 Oracle 差异与 P6-M6 延后后收口，verify `5d662b6`；候选-40 依用户裁决 B 冻结为“fresh 实例 + 独立会话”，模型身份仅作诊断记录。DHR_34（heavy）已于 2026-08-30 经用户接受 P6-M4 受限结论，verify `0b72cb6`；quota 定向 12/12、Store/Attempt 组合 30/30、contracts 审计 0 违规、模块体检 0 failure。DHR_64（heavy）已于 2026-08-30 经用户本地收口授权完成，verify `8376e02`；稳定定向 15/15、contracts audit 0 违规、validator 57/57、capability 20/20。
 汇报补充: DHR_65（normal）已经用户 E11 明文认可；主干复验专项五项均 1/1、profiles 14/14、contracts audit 0、模块体检 0 failure。DHR_67（heavy）已于 2026-08-31 经用户明文授权本地收口；主干定向 6/6、contracts audit 0 failure、模块体检 0 failure。DHR_66（light）已于 2026-08-31 经用户 E11 认可收口；主干复验 registry validator PASS、strict config exit 0、定向 23/23、模块体检 0 failure。DHR_69（heavy）已于 2026-09-01 经用户点选认可本地收口；主干定向 10/10，假就绪会停下来等人，DHR_35 还差真实 Agent 授权才能跑闭环。**DHR_70（heavy）已于 2026-09-01 经用户点选认可本地收口；主干定向 6/6 exit=0，交不回去的结果现在能交回去了，锁没动，只差真实环境实录那一步。**
-现状: DHR_32/33/34/61/63~72/74/76 已完成；DHR_75 待验收；DHR_73 未开始；**DHR_77（heavy）已完成 S0～S2 且用户于 2026-09-06 明文 D-start，准备在独立 `wt/DHR_77` 进入 construction Node；DHR_35 进行中且 `blocked-by:DHR_77`**。P6-M1 仍未达成
+现状: DHR_32/33/34/61/63~72/74/76 已完成；DHR_75 待验收；DHR_73 未开始；**DHR_77（heavy）已完成 S0～S2 且用户于 2026-09-06 明文 D-start；首轮 construction 在 `wt/DHR_77@c4cee7f` 因 Store 未复制 `host_ref` durable blocked，用户随后确认 B-44 最小扩围并续做；DHR_35 进行中且 `blocked-by:DHR_77`**。P6-M1 仍未达成
 历史进展（2026-09-02～09-03）: P6 ▸ `DHR-B-36` 已于 2026-09-02 经用户点选「确认落盘」生效（三名 fresh 只读实例三轮，5 议题采纳 5 驳回 0）：DHR_71 隔离清单 2→4、`dhr69:179` 等待归 DHR_71、DHR_72 机器证 E 扩到 4 条。DHR_71 同日已 D-start（开树 `wt/DHR_71`；施工派 Opus Herdr 交互式 pane；light 配方两路复核；授权至 E10），worker 首轮施工 `wt/DHR_71@b268456` 按 blocked 判据停手、待按 B-36 续做增量。`DHR-B-35` 同日已落盘（四个 fresh 只读实例三轮审核，10 个议题采纳 10 驳回 0）；DHR_35 三轮独立复核已闭合施工侧问题、转为等待 DHR_72。**2026-09-03**：DHR_71 施工与两届复核整改均已落盘（隔离恰 4 条 skip 的代码面完成），但门禁连续三轮被 BL-17 一族停顿打红——F-7108（停于 `attempt_started` 后、fake 全 0）与 F-7109（停于首次 `host_observation_changed(alive)` 后、fake 非零；清理 `%TEMP%`、隔离子进程 TEMP 均不能根除）；DHR_71 转 blocked-等专卡。用户当日对话确认按标准档立 **DHR_74** 承接诊断与修复（授权原文见该卡 brief）；本会话不在 Herdr pane 内、无法按派活手册拉交互 worker，施工由主会话按 brief 边界承担（偏差如实登记 progress），复核仍须 fresh 换人
 
 **2026-09-03（Claude 主控接手当日）**：DHR_74 三路 fresh 只读复核（代码轮 1 / 需求方向 / 教训，均 `gpt-5.6-terra` high · `--sandbox read-only`，零写入可证）共出 17 条，主控裁决**采纳 15、驳回 0**（P0=0 / P1=9 / P2=6），裁决在 `workspace/DHR_74/review.md`：技术工作与升级条款守住（三路独立确认零 `store/**`、`runtime/**`、`contracts/**` 与零断言改动），但结论强度超出证据——机器证 A 交付的是机制推断而非「精确 op」、B 缺停顿侧红→绿对照、C 的六轮跑在合入 `wt/DHR_71` 的组合分支上不可单独归因。据此：① 用户点选确认按实际做法**修订时间参数授权文字**（本文件 §3.2，`2b5810a`）；② 用户点选确认合并序改为「DHR_71 先收口 → DHR_74 rebase 后重跑」；③ 主控实测 **DHR_71 独立基线（不含 DHR_74 改动）连续三轮 `51 pass / 4 skip / 0 fail`、285–289s、S1~S4 逐名核销一致、四类签名零命中**（`workspace/DHR_71/progress.md` E-7119），**DHR_71 门禁阻塞解除、机器证达标**，同时证明 DHR_74 的 ×10 时间参数改动**不是达标的必要条件**；④ DHR_74 整改轮 1 派单已就绪（`workspace/DHR_74/remediation-brief-r1.md`），其机器证 B/C 措辞须据 ③ 再降一级。**DHR_71 已收口**：用户点选「同意收口，合入 master」后 squash 合入（`84f2514`），主干复验 1 轮 51 pass / 4 skip / 0 fail、315s；E6 教训回流候选-69~74、E7 判定不改 as-built、E10 展示区与确认记录已落 `workspace/DHR_71/review.md`；保留项 F-7108/F-7109 → DHR-BL-17/DHR_74、F-71-CON-03 → backlog，均经用户知情确认。**DHR_74 仍进行中**：整改轮 1 已闭合（措辞降级 / 账目改正 / 探针盲区 / 教训重写），分支已重建（丢弃组合分支合并提交）并在自己基线上取得机器证 C 三轮（`51/4/0`、284–285s），待三路窄复核后申请收口。
@@ -14,7 +14,7 @@
 阻塞: **DHR_77 当前无前置阻塞；DHR_35 仍 `blocked-by:DHR_77`（B-43）**。DHR_77 的任何测试/人验证据不得替代 DHR_35 P6-M1；F-3516/F-3519 仍由 DHR_73 调查，Linux SSH 真实 smoke 按 B-22 延后。
 -->
 
-<!-- dh:planning-no-event:v1 artifact="dev_plan/P6-Herdr多账号执行底座-开发方案.md" reason="2026-09-06 机械回填已确认 DHR_77 D-start、workspace 链接与当前状态；不改变 B-43 已冻结的目标、验收、范围或依赖" -->
+<!-- dh:planning-event:v1 id=DHR-B-44 stage=B-adjust artifact=dev_plan/P6-Herdr多账号执行底座-开发方案.md review=../design/evidence/43-DHR77-Store-host-ref复制点-B调整交叉审核记录.md#review-b44 understanding=../design/evidence/43-DHR77-Store-host-ref复制点-B调整交叉审核记录.md#understanding-b44 -->
 
 ## 0. B 方案审核与理解确认
 
@@ -105,6 +105,9 @@
 - **B-43 terminal-instance `host_ref` 原子兼容闭环（2026-09-06，`DHR-B-43`，已确认并生效）**：正式 `design/14` 新增 `HC-HR-A1..A5/H1` 后，resolver 实测以 7 份 `designInputs[]` 为唯一规划输入。新增 **DHR_77（heavy）**，在单卡内原子承接 event/v2 与 v0 mirror、Herdr `terminal_id` 来源、writer/recovery、完整 capability baseline 与 v1/v2 hash、read-model/CLI 安全投影、新旧账本/客户端以及 DSH-off 人验展示；禁止拆成 schema/driver/CLI 各自可声称完成的卡。顺序为 `DHR_72 → DHR_77 → DHR_35`；DHR_77 的证据不得冒充 DHR_35 P6-M1。
   - **审核**：fresh-context 只读实例 `/root/b43_fresh_review` 独立核验 resolver、正式合同、P6 依赖和现役 schema/recovery/RPC/CLI，结论 `approved`，P0/P1/P2/P3=0；记录见 [evidence/42](../design/evidence/42-DHR77-terminal-instance-host-ref-B调整交叉审核记录.md)。
   - **理解与确认**：用户在主控解释“DHR_77 只解除计划阻塞，DHR_35 仍需独立 D-start”后回复“好的明白了”，随后明确要求“落盘，建workspace，建task-plan”。本轮授权包括正式 B-adjust 与 DHR_77 S0～S2；不授权生产代码、真实 Agent、DHR_35、verify、合并、推送或部署。
+- **B-44 Store `host_ref` 复制点最小扩围（2026-09-06，`DHR-B-44`，已确认并生效）**：DHR_77 首轮施工证明 `workflow-driver.mjs` 已向 Store 传入 `host_ref`，但 `store.mjs:439-457` 的封闭事件构造未复制该字段，导致 driver 定向测试 exit 1、0/2；唯一扩围为把 `relay-core/store/store.mjs` 加入 DHR_77 allowed paths，并把实现限定为 `emitEvent` 复制 `input.host_ref`，不得改变 Store 其他语义。既有 `dhr77-host-ref.test.mjs` 已经由真实 `createStore` 路径承重，不新增 `store.test.mjs`。目标、验收、依赖、任务类型与 DHR_35 阻塞关系均不变；`task_plan.md` 作为已消费施工说明不回写，实际绕行记入 progress。
+  - **审核**：fresh 独立 Codex 会话完成静态复核，结论 `approved`、P0/P1/P2/P3=0；请求的 `--sandbox read-only` 启动横幅实际显示 `danger-full-access`，故只登记“独立审核、非机器强制只读”，审核前后主树 `ce1f4b3`、任务树 `c4cee7f` 及洁净状态一致。记录见 [evidence/43](../design/evidence/43-DHR77-Store-host-ref复制点-B调整交叉审核记录.md)。
+  - **理解与确认**：用户判断非宿主观测事件携带非空 `host_ref` 应拒绝写入，并明文“确认落盘”。该确认同时承接主控上一问中的最小 B-adjust 落盘与从 `c4cee7f` 续做 construction；仍不授权复核、verify、合并、DHR_35、push 或 deploy。
 - **B-36 DHR_71 隔离清单 2→4 与绿闸范围校正（2026-09-02，`DHR-B-36`，已确认并生效）**：DHR_71 施工 worker 按 blocked 判据停手（`wt/DHR_71@b268456`）：三轮绿闸 51/2/2 → 50/2/3 → 51/2/2，机器证 B/C/D 达成，差 fail=0。取证推翻 B-35 对 F-3520 的归类——`agent-node:198`「DHR_33 窄路径」断言 `attempt_failed(E_EXECUTOR_KILLED)` 而现役写 `human_input_requested`（与已 skip 的 `:279` 同根）、`herdr-adapter:354`「#10 恢复届」等 `attempt_orphaned` 而 DHR_64 后恢复届写 `human_input_requested(E_EXECUTOR_HOST_LOST)`，两条都是**语义红**（F-7102/F-7104）；真时序红只有 `agent-node:231`（已修）。652s 挂死 = `t.after` 的 `rm` 撞 driver 正在写的 `state.json.<uuid>.tmp` 永不返回（`FSReqPromise`），测试侧 `try/finally stop` 修掉、生产零改动（F-7103）；`dhr69-false-ready:179` 三轮 绿/红/绿且不在允许路径（F-7105）。
   - **审核**：三名 fresh 只读实例、三轮（`b36rev1` 4×P1 → `b36ver1` 定向复审 1×P1 → `b36ver2` 定向复核 PASS），**5 个独立议题：采纳 5 · 驳回 0**，见 [evidence/36](../design/evidence/36-DHR71隔离清单与绿闸范围校正-B调整交叉审核记录.md)。关键议题：四条 skip 须按「文件 + 完整用例名 + 基线行号」冻结可核销；同一用例体内两卡反向禁改；`dhr69:179` 走 Claude `paneRun` 链、`:510` 走 Codex `agentStart` 链，上限须按各自真实调用链逐段相加 × 1.5（120s / 90s），45s 不是生产上限。
   - **用户裁决**：①`D-B36-1` 隔离清单 **2→4**（S1 `:242`、S2 `:279`、S3 `:354`、S4 `agent-node:198`，按用例名核销），DHR_71 验收 A 改「隔离 4 条 skip、其余全 pass」；②`D-B36-2` `dhr69-false-ready:179` 归 DHR_71（仅该用例体等待，上限按真实链推导）。理解问题「DHR_71 收口跑出 55 条 · 51 pass · 4 skip · 0 fail 意味着什么」用户答**「DHR_71 达标；4 条是转给 DHR_72 的债」**（正确，排除「skip = 永久豁免」「有 skip 就不算绿闸」两条错解）。
@@ -608,6 +611,7 @@
   - `relay-core/rpc/capabilities.mjs`
   - `relay-core/runtime/executors/herdr/herdr-executor.mjs`
   - `relay-core/runtime/workflow-driver.mjs`
+  - `relay-core/store/store.mjs`
   - `relay-core/runtime/service.mjs`
   - `relay-core/cli/main.mjs`
   - `relay-core/cli/render.mjs`
@@ -630,7 +634,7 @@
   - `docs/modules/dh-relay/knowledge/教训库-候选.md`
   - `docs/modules/dh-relay/dev_plan/P6-Herdr多账号执行底座-开发方案.md`
 
-  **限定**：`herdr-executor.mjs` 只保留合格 `terminal_id`，不得使用 `pane_id`/agent/`agent_session` fallback；`workflow-driver.mjs` 只改 host-observation 写入、最后成功 ref 对账与 recovery，停止从旧 `detail` 重建 terminal identity，既有 `executor_ref` locator 与 Result/Attention/lease 行为不变；`service.mjs`、CLI 与 fixtures 只承接事件回放、read-model/安全展示和新旧账本兼容，默认人验投影不得输出 `detail`；`rpc/capabilities.mjs` 删除 v1 固定 hash 分叉，使 v1/v2 共用完整 baseline，`server.mjs` 现有“hash 校验早于分派/subscribe”顺序只读守住；fixtures 只更新受协议/hash/展示变化直接影响的样本，`package.json` 只追加本卡测试。workspace 只存脱敏向量、测试日志、受控对照与截图；原始 `terminal_id`、路径、账号、Receipt、Result 或凭据不得进入证据。
+  **限定**：`herdr-executor.mjs` 只保留合格 `terminal_id`，不得使用 `pane_id`/agent/`agent_session` fallback；`workflow-driver.mjs` 只改 host-observation 写入、最后成功 ref 对账与 recovery，停止从旧 `detail` 重建 terminal identity，既有 `executor_ref` locator 与 Result/Attention/lease 行为不变；`store.mjs` 只允许 `emitEvent` 把 `input.host_ref` 复制到封闭 event 对象，不得改变 Store 的校验、写入、回放、通知、lease、fencing 或其他事件语义；`service.mjs`、CLI 与 fixtures 只承接事件回放、read-model/安全展示和新旧账本兼容，默认人验投影不得输出 `detail`；`rpc/capabilities.mjs` 删除 v1 固定 hash 分叉，使 v1/v2 共用完整 baseline，`server.mjs` 现有“hash 校验早于分派/subscribe”顺序只读守住；fixtures 只更新受协议/hash/展示变化直接影响的样本，`package.json` 只追加本卡测试。workspace 只存脱敏向量、测试日志、受控对照与截图；原始 `terminal_id`、路径、账号、Receipt、Result 或凭据不得进入证据。
 - **档位**：标准（协议、RPC 兼容与 Herdr 组件接线，高危）。
 - **任务类型**：重核<!-- dh:task-type:v1 task=DHR_77 type=heavy -->
 - **依赖**：DHR_72（已完成）。DHR_77 收口只解除 DHR_35 的计划阻塞，不构成 DHR_35 D-start；须独立 D-start。
