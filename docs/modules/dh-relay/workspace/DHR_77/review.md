@@ -97,7 +97,7 @@
 **材料齐没齐**：brief / task_plan / progress(证据) / 独立复核记录 / review 都有了？ [x]
 **as-built 更新了没**：`as-built/relay-core.md` 已按真实实现覆盖更新？ [x]
 
-→ 当前状态：**HC-HR-A1～A5 与 H1 均通过；E11 本地收口授权已成立，进入 E12 精确合入与复验**
+→ 当前状态：**HC-HR-A1～A5 与 H1 均通过；E11～E13 本地收口完成；squash=`36aa990`，verify=下一提交，release_mode=full**
 
 ---
 
@@ -114,10 +114,10 @@
 ---
 
 - 确认记录：2026-09-06 用户在 E10 证据展示后明文“认可”，授权执行 DHR_77 本地收口包
-- verify 提交 SHA：<待 E12>
+- verify 提交 SHA：下一提交（`verify(dh-relay): DHR_77 terminal host_ref 原子闭环验收通过`）
 - 签名：hyf（chat-confirm 代签）　　时间：2026-09-06T19:48:31+08:00
 
-→ 解锁状态：**已通过，待 E12/E13 机械收口**
+→ 解锁状态：**已通过并完成 E12/E13；DHR_35 计划阻塞解除，但未获独立 D-start**
 
 ### 确认记录（append-only）
 

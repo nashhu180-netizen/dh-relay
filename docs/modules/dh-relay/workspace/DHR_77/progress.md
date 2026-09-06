@@ -19,6 +19,7 @@
 | 2026-09-06 | 主控 | E10 人验证据展示区已生成并发出 | E-7748 | 等待 E11 用户确认 |
 | 2026-09-06 | 主控 | DHR_77 自动收口账目复验：R18/R27/R29/R31 本卡缺口清零；模块体检只余 DHR_75 跨卡基线两项 | E-7749 | 精确提交 E9/E10 工件后停在人验门前 |
 | 2026-09-06 | 用户 / 主控 | 用户在 E10 证据展示后明文“认可”；HC-HR-H1 判定通过，releasePacket-DHR77-v1 与默认本地收口授权包生效 | E-7750 | 连续执行精确 squash、合入复验、verify、销户与本任务树清理；不含 push/deploy/环境操作/DHR_35 |
+| 2026-09-06 | 主控 | E12 在主干 `36aa990` 完成精确合入复验；首次兄弟组合出现一次 DHR_75/B 既有清理型非确定性失败，随后单文件 7/7、同组合 17/17 均自然终态转绿，首次失败未抹除；静态契约、仓根回归与模块体检通过 | E-7751～E-7754 | 进入 E13 verify 与状态回填；完整 `npm test` 仍保持 E-7721“未得终态”边界 |
 
 ## 证据账本 (Evidence Ledger)
 
@@ -78,3 +79,7 @@
 | E-7748 | human | 本轮对话业务化五段 + E-7743/E-7744 安全投影 | sent；同一脱敏 ref、四态标签、禁值扫描 0 已展示 | E10 已发出；只待用户判断 HC-HR-H1 并确认本地收口 |
 | E-7749 | check | `dh dh-relay` | exit 1；2 failures / 89 warnings；DHR_77 的 R18/R27/R29/R31 均无失败，余项仅 DHR_75 R30/R31 | DHR_77 自身收口工件闭合；DHR_75 基线不在本卡修改范围，未伪装模块全绿 |
 | E-7750 | human / authorization | 用户对话明文“认可”；releasePacket-DHR77-v1；shownVersion=`544d2b3d42f223b7cf5b9df1e32f726ac6ff96c3`；evidenceDigest=`sha256:54b6f187d8af49c19583a45184f0c39e233d70269ec5401f273b24cf2bbf5e84` | pass | E11 人验与本地收口授权成立；边界仍排除 push/deploy/环境操作/下一卡/DHR_35 |
+| E-7751 | merge / regression | squash 合入 `master@36aa990169701ae6244f1b9650271546ea0f9cae` 后串行运行六文件 DHR_77/contract 组、DHR_72、DHR_64/70、CLI/client、DHR_69/75 兄弟组 | 前四组 pass：113/113、8/8、21/21、19/19；末组首次 fail：exit 1，16/17，DHR_75/B 在 actor close 后清理读取空 lease 并产生异步 rejection | DHR_77 核心与直接回归均通过；首次跨卡时序失败如实保留，不以已合入或后续重跑覆盖 |
+| E-7752 | regression / reproducibility | `cd relay-core; node --test --test-concurrency=1 test/dhr75-host-lease-during-herdr.test.mjs`；随后重跑 `test/dhr69-false-ready.test.mjs test/dhr75-host-lease-during-herdr.test.mjs` | pass：单文件 7/7、exit 0；双文件 17/17、exit 0，均自然终态 | 首次失败未稳定复现，归为 DHR_75 既有 lease 清理型非确定性债务；本卡不越界修 DHR_75，DHR_77 的 B-45 夹具兼容在同组合复验为绿 |
+| E-7753 | check / regression | `cd relay-core; node tools/capability-baseline.mjs`；`node tools/audit-contracts.mjs`；仓根 `pwsh -NoProfile -File tools/tests/run-relay-tests.ps1` | pass：三命令均 exit 0；baseline 20 份/hash 前缀 `241a8804525a2d40`；audit 0 未登记开口、0 `$ref` 失败、0 JSON-only/跨边界违规；`RELAY ALL PASS (SKIPPED: 1)` | 合入态契约与仓根回归闭合；真实 psmux 套件按脚本合同跳过；不替代完整 `npm test` |
+| E-7754 | check | `dh dh-relay`（clean `master@36aa990`） | pass：exit 0；0 failures / 91 warnings | DHR_77 与跨卡 R31 在已提交合入态清零；warnings 为存量或主干只对账提示，不冒充零警告 |
