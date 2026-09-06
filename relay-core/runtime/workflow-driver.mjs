@@ -180,6 +180,7 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
     paneGet: extras.paneGet ?? observation?.pane_get,
     conflictEscalation: extras.conflictEscalation,
   });
+  const hostRefField = hostRef => typeof hostRef === 'string' ? { host_ref: hostRef } : {};
 
   async function driveHerdrNode({ node, profile, firstAttempt, recovery = null,
     registrySnapshot = null, executorIdentity = null, fallbackProfileSnapshots = null }) {
@@ -237,9 +238,11 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
       current = stopHandle;
       if (stopping) await stopHandle.kill();
       const readyObservation = launch.ready_observation;
+      const launchHostRef = readyObservation?.host_ref ?? handle.host_ref;
       await actor.submitControl(store => store.appendEvent({
         kind: 'host_observation_changed', at: nowIso(), node_id: node.node_id, attempt_id: attemptId,
         executor_ref: handle.agent_name, observation_status: readyObservation ? 'alive' : 'observation_lost',
+        ...hostRefField(launchHostRef),
         detail: herdrDetail(handle, readyObservation?.herdr_status ?? 'unknown', launch.ready_state_change_seq, readyObservation),
       }));
       if (receiptBound && launchBlocked) {
@@ -263,6 +266,7 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
         await actor.submitControl(store => store.appendEvent({
           kind: 'host_observation_changed', at: nowIso(), node_id: node.node_id, attempt_id: attemptId,
           executor_ref: handle.agent_name, observation_status: 'alive',
+          host_ref: recoveredObservation.observation.host_ref,
           detail: herdrDetail(handle, recoveredObservation.observation.herdr_status,
             recoveredObservation.observation.state_change_seq, recoveredObservation.observation),
         }));
@@ -298,6 +302,9 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
     let lastObservationStatus = recovery
       ? (recoveredObservation?.ok ? 'alive' : null)
       : launch?.ready_observation ? 'alive' : 'observation_lost';
+    let lastHostRef = recoveredObservation?.ok
+      ? recoveredObservation.observation.host_ref
+      : recovery?.last_host_ref ?? launch?.ready_observation?.host_ref ?? launch?.handle?.host_ref ?? null;
     if (blind || launchBlocked) {
       // 启动即 blocked 时 lastStatus 已是 'blocked'，轮询段的 blocked 分支因此不会重复写——
       // 这一条就是 design/06 要求的那**一次**持久 Attention。
@@ -328,7 +335,8 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
           }
           lostAt ??= clock();
           if (lastObservationStatus !== 'observation_lost') await actor.submitControl(store => store.appendEvent({ kind: 'host_observation_changed', at: nowIso(), node_id: node.node_id, attempt_id: attemptId,
-            executor_ref: handle.agent_name, observation_status: 'observation_lost', detail: herdrDetail(handle, 'unknown', lastSeq) }));
+            executor_ref: handle.agent_name, observation_status: 'observation_lost', ...hostRefField(lastHostRef),
+            detail: herdrDetail(handle, 'unknown', lastSeq) }));
           lastObservationStatus = 'observation_lost';
           if (!lostAttention && clock() - lostAt >= observationLostMs) {
             lostAttention = true;
@@ -339,12 +347,14 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
           const observation = observed.observation;
           lostAt = null;
           if (lastObservationStatus === 'observation_lost') lostAttention = false;
-          if (lastObservationStatus !== 'alive' || lastStatus !== observation.herdr_status) {
+          if (lastObservationStatus !== 'alive' || lastStatus !== observation.herdr_status
+            || lastHostRef !== observation.host_ref) {
             await actor.submitControl(store => store.appendEvent({ kind: 'host_observation_changed', at: nowIso(), node_id: node.node_id, attempt_id: attemptId,
-              executor_ref: handle.agent_name, observation_status: 'alive',
+              executor_ref: handle.agent_name, observation_status: 'alive', host_ref: observation.host_ref,
               detail: herdrDetail(handle, observation.herdr_status, observation.state_change_seq, observation) }));
           }
           lastObservationStatus = 'alive';
+          lastHostRef = observation.host_ref;
           const mismatch = observation.agent_get === 'idle' && observation.pane_get === 'blocked';
           if (mismatch) {
             mismatchAt ??= clock();
@@ -505,7 +515,11 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
       const events = await actor.submitControl(store => store.events);
       const attempt = events.find(event => event.kind === 'attempt_started' && event.node_id === node.node_id && event.attempt_id === nodeState.current_attempt_id);
       const receiptId = attempt?.detail?.replace(/^receipt:/, '');
-      const observed = [...events].reverse().find(event => event.node_id === node.node_id && event.attempt_id === nodeState.current_attempt_id && typeof event.executor_ref === 'string');
+      const attemptEvents = events.filter(event => event.node_id === node.node_id
+        && event.attempt_id === nodeState.current_attempt_id);
+      const observed = [...attemptEvents].reverse().find(event => typeof event.executor_ref === 'string');
+      const lastHostRef = [...attemptEvents].reverse().find(event => event.kind === 'host_observation_changed'
+        && typeof event.host_ref === 'string')?.host_ref ?? null;
       if (!receiptId) continue;
       let attemptReceipt;
       try { attemptReceipt = JSON.parse(await readFile(join(runRoot, 'receipts', `${receiptId}.json`), 'utf8')); } catch { continue; }
@@ -515,6 +529,7 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
         const profile = (node.executor_profiles ?? []).find(item => item?.kind === 'herdr-agent');
         await appendRecoveryEventIfOpen({ nodeId: node.node_id, attemptId: nodeState.current_attempt_id, input: { kind: 'host_observation_changed', at: nowIso(), node_id: node.node_id,
           attempt_id: nodeState.current_attempt_id, observation_status: 'observation_lost',
+          ...hostRefField(lastHostRef),
           detail: observationDetail({ herdrStatus: 'unknown', agentName: '-', paneId: '-', seq: null, workDirRoot: repoRoot, profileId: profile?.ref ?? '-' }) } });
         continue;
       }
@@ -526,24 +541,34 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
             detail: observationDetail({ herdrStatus: 'unknown', agentName: observed.executor_ref, paneId: '-', seq: null,
               workDirRoot: repoRoot, profileId: '-' }) } });
         } else {
-          const fields = Object.fromEntries(String(observed.detail ?? '').split(';').map(part => part.split(/=(.*)/s)).filter(([key]) => key));
           await appendRecoveryEventIfOpen({ nodeId: node.node_id, attemptId: nodeState.current_attempt_id, input: { kind: 'host_observation_changed', at: nowIso(), node_id: node.node_id,
             attempt_id: nodeState.current_attempt_id, executor_ref: observed.executor_ref, observation_status: 'observation_lost',
-            detail: observationDetail({ herdrStatus: 'unknown', agentName: observed.executor_ref, paneId: fields.pane ?? '-', seq: fields.seq ?? null,
-              workDirRoot: fields.work_dir_root ?? repoRoot, profileId: fields.profile ?? '-' }) } });
+            ...hostRefField(lastHostRef),
+            detail: observationDetail({ herdrStatus: 'unknown', agentName: observed.executor_ref, paneId: '-', seq: null,
+              workDirRoot: repoRoot, profileId: '-' }) } });
         }
         continue;
       }
-      const fields = Object.fromEntries(String(observed.detail ?? '').split(';').map(part => part.split(/=(.*)/s)).filter(([key]) => key));
+      const probeEntity = probe.value?.agent ?? probe.value?.pane ?? probe.value;
       const profile = (node.executor_profiles ?? []).find(item => item?.kind === 'herdr-agent');
-      if (!profile || !fields.pane) continue;
-      const recoveredProfileRef = attemptReceipt.executor_identity?.executor_profile_id ?? fields.profile ?? profile.ref;
+      const paneId = probeEntity?.pane_id;
+      if (!profile || typeof paneId !== 'string' || paneId.length === 0) {
+        await appendRecoveryEventIfOpen({ nodeId: node.node_id, attemptId: nodeState.current_attempt_id, input: {
+          kind: 'host_observation_changed', at: nowIso(), node_id: node.node_id,
+          attempt_id: nodeState.current_attempt_id, executor_ref: observed.executor_ref,
+          observation_status: 'observation_lost', ...hostRefField(lastHostRef),
+          detail: observationDetail({ herdrStatus: 'unknown', agentName: observed.executor_ref, paneId: '-', seq: null,
+            workDirRoot: repoRoot, profileId: profile?.ref ?? '-' }),
+        } });
+        continue;
+      }
+      const recoveredProfileRef = attemptReceipt.executor_identity?.executor_profile_id ?? profile.ref;
       if (!recoveredProfileRef) continue;
       await driveHerdrNode({ node, profile: { ...profile, ref: recoveredProfileRef }, firstAttempt: false, recovery: {
-        receiptId, attemptId: nodeState.current_attempt_id,
+        receiptId, attemptId: nodeState.current_attempt_id, last_host_ref: lastHostRef,
         handle: {
-          agent_name: observed.executor_ref, pane_id: fields.pane, terminal_id: fields.pane,
-          work_dir_root: fields.work_dir_root ?? repoRoot, executor_profile_id: recoveredProfileRef,
+          agent_name: observed.executor_ref, pane_id: paneId,
+          work_dir_root: repoRoot, executor_profile_id: recoveredProfileRef,
         },
       } });
     }

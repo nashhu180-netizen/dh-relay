@@ -15,10 +15,6 @@ import { digest } from '../tools/canonical.mjs';
 
 // 权威快照与生成工具同路径（capability-baseline.mjs 里的 BASELINE）。
 const BASELINE = fileURLToPath(new URL('../capability-baseline.json', import.meta.url));
-// DHR_61 compatibility gate: v1 clients compiled before bootstrap/v2 keep this
-// exact handshake identity. New contracts participate only in the v2 hash.
-const RPC_V1_CAPABILITY_HASH = '994d5f038cd1bcbbb9463eed5ca04b2ffc324f07b374571899b8df3a6c5c971e';
-
 /** RPC reason code（reason-codes.md §一）：能力指纹不符且形态合法时拒绝。 */
 export const E_CAPABILITY_MISMATCH = 'E_CAPABILITY_MISMATCH';
 
@@ -39,14 +35,14 @@ export function localCapability() {
   return { capability_manifest: manifest, capability_hash: baseline.capability_hash };
 }
 
-/** 本地指纹（参考实现逐字匹配基线的那个值）。 */
+/** 本地指纹：v1 与 bootstrap/v2 共用完整 event-inclusive baseline。 */
 export function localCapabilityHash() {
-  return RPC_V1_CAPABILITY_HASH;
+  return localCapability().capability_hash;
 }
 
-/** Full DHR_61 contract-set fingerprint advertised only by bootstrap/v2. */
+/** Full contract-set fingerprint used by bootstrap/v2 as well as v1. */
 export function localCapabilityHashV2() {
-  return localCapability().capability_hash;
+  return localCapabilityHash();
 }
 
 /**

@@ -63,7 +63,7 @@ async function startService(t, prefix, options = {}) {
 }
 
 /** 一个连接 = 一个客户端。所有帧都过冻结 relay.rpc/v1 校验，杜绝「测试自己发非法帧还绿」。 */
-async function connect(t, endpoint, { clientId = 'cli-1' } = {}) {
+async function connect(t, endpoint, { clientId = 'cli-1', capabilityHash = localCapabilityHash() } = {}) {
   const responses = new Map();
   const notifications = [];
   const client = await createTransportClient(endpoint, {
@@ -82,7 +82,7 @@ async function connect(t, endpoint, { clientId = 'cli-1' } = {}) {
       jsonrpc: '2.0', id, method,
       handshake: {
         protocol_version: 'relay.rpc/v1', runtime_version: '0.0.0',
-        capability_hash: localCapabilityHash(), client_id: clientId, request_id: requestId ?? `req-${id}`,
+        capability_hash: capabilityHash, client_id: clientId, request_id: requestId ?? `req-${id}`,
       },
       params,
     });
@@ -90,6 +90,8 @@ async function connect(t, endpoint, { clientId = 'cli-1' } = {}) {
   };
   return { client, call, notifications, responses };
 }
+
+const LEGACY_FIXED_V1_HASH = '994d5f038cd1bcbbb9463eed5ca04b2ffc324f07b374571899b8df3a6c5c971e';
 
 const authorize = (session, descriptor) => session.call('contracts', {
   descriptor_version: descriptor.descriptor_version, repo_id: descriptor.repo_id,
@@ -440,6 +442,16 @@ test('service：subscribe 先快照后增量，cursor 严格连续，断开只�
   const after = (await session.call('inspectRun', { run_id: runId, view: 'status' })).result.status;
   assert.deepEqual(after.ledger, before.ledger, '客户端断开不得改变 Run 的任何账面状态');
   assert.equal((await session.call('listRuns', { include_legacy: false })).result.items.length, 1);
+});
+
+test('DHR_77 service：旧固定 v1 hash 在分派前拒绝且零订阅推送', async (t) => {
+  const { endpoint, service } = await startService(t, 'dhr77-old-hash-');
+  const session = await connect(t, endpoint, { clientId: 'legacy-v1', capabilityHash: LEGACY_FIXED_V1_HASH });
+  const rejected = await session.call('subscribe', { run_id: 'R404-legacy-hash-20260906', after_seq: null });
+  assert.equal(rejected.error?.data?.reason, 'E_CAPABILITY_MISMATCH');
+  assert.equal(session.notifications.length, 0, '能力不匹配必须早于 subscribe 注册与 event 推送');
+  assert.equal(LEGACY_FIXED_V1_HASH === localCapabilityHash(), false);
+  await service.close();
 });
 
 test('service：actor 换代后订阅无缝重挂——subscribe → stop → resume，新事件仍推给原连接且不重不漏', async (t) => {

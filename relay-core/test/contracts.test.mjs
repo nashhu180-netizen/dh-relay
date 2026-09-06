@@ -149,6 +149,52 @@ test('JCS 规范化实现符合 CANONICALIZATION.md 口径', async () => {
   assert.notEqual(digest({ x: 1 }), digest({ x: 2 }), '语义改动必须改变 digest');
 });
 
+test('DHR_77 event/v2: host_ref is closed to observation events and required for alive', async () => {
+  const { loadAjv, validateOne } = await import(new URL('../tools/validate.mjs', import.meta.url));
+  const { ajv, byId } = loadAjv();
+  const hostRef = `herdr-terminal/sha256-${'a'.repeat(64)}`;
+  const base = {
+    protocol: 'relay.event/v2', run_id: 'RUN-DHR77', seq: 1,
+    at: '2026-09-06T00:00:00.000Z', kind: 'host_observation_changed',
+    node_id: 'node-a', attempt_id: 'attempt-a', observation_status: 'alive', host_ref: hostRef,
+  };
+  const validate = document => validateOne(ajv, byId, 'relay.event/v2', document).ok;
+  assert.equal(validate(base), true);
+  assert.equal(validate({ ...base, host_ref: null }), false);
+  const absent = { ...base };
+  delete absent.host_ref;
+  assert.equal(validate(absent), false);
+  assert.equal(validate({ ...base, observation_status: 'observation_lost', host_ref: null }), true);
+  const lostAbsent = { ...base, observation_status: 'observation_lost' };
+  delete lostAbsent.host_ref;
+  assert.equal(validate(lostAbsent), true);
+  assert.equal(validate({ ...base, host_ref: 'herdr-terminal/sha256-short' }), false);
+  assert.equal(validate({ ...base, kind: 'checkpoint_recorded' }), false);
+  assert.equal(validate({ ...base, kind: 'checkpoint_recorded', host_ref: null }), true);
+});
+
+test('DHR_77 host-observation/v0 shape: host_ref mirrors the event/v2 alive/lost discipline', async () => {
+  const { loadAjv, validateOne } = await import(new URL('../tools/validate.mjs', import.meta.url));
+  const { ajv, byId } = loadAjv();
+  const hostRef = `herdr-terminal/sha256-${'b'.repeat(64)}`;
+  const base = {
+    protocol: 'relay.host-observation/v1', run_id: 'RUN-DHR77', node_id: 'node-a', attempt_id: 'attempt-a',
+    executor_kind: 'herdr-agent', observation_status: 'alive', host_ref: hostRef,
+    observed_at: '2026-09-06T00:00:00.000Z',
+  };
+  const validate = document => validateOne(ajv, byId, 'relay.host-observation/v1', document).ok;
+  assert.equal(validate(base), true);
+  assert.equal(validate({ ...base, host_ref: null }), false);
+  const aliveAbsent = { ...base };
+  delete aliveAbsent.host_ref;
+  assert.equal(validate(aliveAbsent), false);
+  assert.equal(validate({ ...base, host_ref: 'herdr-terminal/sha256-short' }), false);
+  assert.equal(validate({ ...base, observation_status: 'observation_lost', host_ref: null }), true);
+  const lostAbsent = { ...base, observation_status: 'observation_lost' };
+  delete lostAbsent.host_ref;
+  assert.equal(validate(lostAbsent), true);
+});
+
 test('G2 聚合条款①~⑥逐档红绿矩阵（allOf 自身的回归护栏）', async () => {
   // 为什么要这条（E2 代码复核轮 2 · P2-1）：F-048 把七档聚合条款从 description 升成 allOf，
   // 这一步是对的（cp3 轮2 与 E2 各自穷举确认与条款等价）。但 **allOf 自身没有被任何东西钉住**——

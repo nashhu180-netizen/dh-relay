@@ -14,8 +14,14 @@
     "attempt_id": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/attempt_id" },
     "executor_kind": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/executor_kind" },
     "host_ref": {
-      "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/locator",
-      "description": "被观测宿主的符号化引用（bridge_ref / server_ref / 进程指纹）。禁绝对路径，G5。"
+      "oneOf": [
+        {
+          "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/locator",
+          "allOf": [{ "pattern": "^herdr-terminal/sha256-[0-9a-f]{64}$" }]
+        },
+        { "type": "null" }
+      ],
+      "description": "Herdr terminal instance 的脱敏标签；alive 必有，lost 可保留最后成功标签或在从未绑定时缺省。"
     },
     "observation_status": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/observation_status" },
     "observed_at": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/timestamp" },
@@ -28,5 +34,22 @@
     }
   },
   "required": ["protocol", "run_id", "observation_status", "observed_at"],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": { "observation_status": { "const": "alive" } },
+        "required": ["observation_status"]
+      },
+      "then": {
+        "required": ["host_ref"],
+        "properties": {
+          "host_ref": {
+            "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/locator",
+            "allOf": [{ "pattern": "^herdr-terminal/sha256-[0-9a-f]{64}$" }]
+          }
+        }
+      }
+    }
+  ]
 }

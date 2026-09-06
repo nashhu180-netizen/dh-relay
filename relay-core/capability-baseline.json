@@ -24,7 +24,7 @@
       },
       {
         "id": "relay.event/v2",
-        "digest": "391b9eeec24df241e5051ce7a59627dfd5e3264a193ecab651038eb12ac0fd54"
+        "digest": "dcd119e3e343a5a50ec0fd6cc6e209d8b741769e0726fb5c056a7b70d7785c4d"
       },
       {
         "id": "relay.executor-result-submission/v1",
@@ -101,5 +101,5 @@
       "process"
     ]
   },
-  "capability_hash": "ee33b670d6f7204a62cc573417a475ffb828e55a8de72e0987ec60cb76b56830"
+  "capability_hash": "241a8804525a2d408b2297304ac9a8c872acb1f35c15e5c90d87d1988582030e"
 }

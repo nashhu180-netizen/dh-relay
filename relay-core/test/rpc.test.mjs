@@ -35,6 +35,7 @@ const STORE_RUN = {
 
 // 形态合法但值不同：sha256 小写十六进制，64 字符。
 const DIFFERENT_SHA256 = '0'.repeat(63) + 'f';
+const LEGACY_FIXED_V1_HASH = '994d5f038cd1bcbbb9463eed5ca04b2ffc324f07b374571899b8df3a6c5c971e';
 
 test('基线平等：localCapability() 复算指纹与权威快照 capability_hash 逐字相等', () => {
   const baseline = JSON.parse(readFileSync(BASELINE, 'utf8'));
@@ -46,8 +47,16 @@ test('基线平等：localCapability() 复算指纹与权威快照 capability_ha
   assert.deepEqual(local.capability_manifest, baseline.capability_manifest);
   // 且快照记录的 hash 确实是快照 manifest 的指纹（不经帮助器，独立复核 canonical 口径）。
   assert.equal(localCapabilityHashV2(), baseline.capability_hash);
-  assert.equal(localCapabilityHash(), '994d5f038cd1bcbbb9463eed5ca04b2ffc324f07b374571899b8df3a6c5c971e',
-    'v1 handshake hash must remain byte-for-byte compatible with the pre-DHR_61 endpoint');
+  assert.equal(localCapabilityHash(), baseline.capability_hash,
+    'v1 and bootstrap/v2 must advertise the same full event-inclusive baseline');
+  assert.equal(localCapabilityHash(), localCapabilityHashV2());
+});
+
+test('DHR_77 capability: legacy fixed v1 hash is rejected before dispatch', () => {
+  assert.notEqual(LEGACY_FIXED_V1_HASH, localCapabilityHash());
+  const r = verifyPeerCapability(LEGACY_FIXED_V1_HASH);
+  assert.equal(r.ok, false);
+  assert.equal(r.code, E_CAPABILITY_MISMATCH);
 });
 
 test('基线平等：本地指纹是 64 位小写十六进制 sha256（形态合法）', () => {

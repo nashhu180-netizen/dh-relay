@@ -77,21 +77,49 @@ export function renderEventSnapshot(envelope) {
   ].join('\n');
 }
 
-/** event 通知：seq / kind / detail 都取自事件本体。 */
-export function renderEvent(params) {
-  return `[${params.seq}] ${params.kind}${params.detail ? ` ${params.detail}` : ''}`;
+/**
+ * 默认安全事件投影：诊断 detail 可能包含 work_dir_root，不能进入 DSH-off
+ * 事件/焦点展示。其余封闭事件字段逐字保留，host_ref 因而可被用户核对。
+ */
+export function projectEvent(params) {
+  if (!params || typeof params !== 'object') return params;
+  const { detail: _detail, ...safe } = params;
+  return safe;
 }
 
-/** focus 只转述事件对象已有字段；附着模板仅逐字插入 executor_ref，绝不拆解 detail。 */
+const hostRefLabel = (event) => {
+  if (!event || typeof event !== 'object' || !Object.prototype.hasOwnProperty.call(event, 'host_ref')) {
+    return 'legacy 未提供';
+  }
+  return typeof event.host_ref === 'string' && event.host_ref.length > 0
+    ? (event.observation_status === 'alive' ? '当前观测' : '历史观测')
+    : '尚无可信 terminal 标签';
+};
+
+/** 焦点 Read Model 只保留用户核对所需字段，并明确当前/历史/尚无标签。 */
+export function projectFocus(event) {
+  if (!event) return null;
+  return { ...projectEvent(event), host_ref_label: hostRefLabel(event) };
+}
+
+/** event 通知：默认文本投影只显示安全的序号与种类，不输出 detail。 */
+export function renderEvent(params) {
+  const safe = projectEvent(params);
+  return `[${safe.seq}] ${safe.kind}`;
+}
+
+/** focus 的 text 与 --json 共用 projectFocus；不输出 detail。 */
 export function renderFocus(event) {
   if (!event) return '无宿主观测';
+  const focus = projectFocus(event);
   return [
-    `node_id: ${dash(event.node_id)}`,
-    `at: ${dash(event.at)}`,
-    `observation_status: ${dash(event.observation_status)}`,
-    `executor_ref: ${dash(event.executor_ref)}`,
-    `detail: ${dash(event.detail)}`,
-    ...(event.executor_ref ? [`attach: herdr agent attach ${event.executor_ref}`] : []),
+    `node_id: ${dash(focus.node_id)}`,
+    `at: ${dash(focus.at)}`,
+    `observation_status: ${dash(focus.observation_status)}`,
+    `host_ref: ${dash(focus.host_ref)}`,
+    `host_ref_label: ${focus.host_ref_label}`,
+    `executor_ref: ${dash(focus.executor_ref)}`,
+    ...(focus.executor_ref ? [`attach: herdr agent attach ${focus.executor_ref}`] : []),
   ].join('\n');
 }
 

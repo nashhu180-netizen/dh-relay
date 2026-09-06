@@ -10,7 +10,7 @@ import { HERDR_START_TIMEOUT_MS, makeHerdrCli } from '../runtime/executors/herdr
 import { startWorkflowDriver } from '../runtime/workflow-driver.mjs';
 import { createStore, openStore } from '../store/store.mjs';
 import { HEADLESS_SSH_SCENARIO } from './helpers/headless-ssh-scenario.mjs';
-import { HERDR_STATUS_MAPPING, attachHerdrAgent, captureHerdrResult, launchHerdrAgent, observationDetail, observeHerdrAgent, reconcileHerdrAgent, sendToHerdrAgent, stopHerdrAgent } from '../runtime/executors/herdr/herdr-executor.mjs';
+import { HERDR_STATUS_MAPPING, attachHerdrAgent, captureHerdrResult, deriveHerdrHostRef, launchHerdrAgent, observationDetail, observeHerdrAgent, reconcileHerdrAgent, sendToHerdrAgent, stopHerdrAgent } from '../runtime/executors/herdr/herdr-executor.mjs';
 import { loadExecutorProfiles, resolveProfile } from '../runtime/executors/herdr/profile-registry.mjs';
 import { dumpDriverScene, untilEvent, withDeadline } from './helpers/bounded-wait.mjs';
 import { makeFakeHerdr } from './helpers/fake-herdr.mjs';
@@ -141,7 +141,9 @@ test('DHR_33 profile registry：只读校验、未命中 profile 保持 null', a
 test('DHR_33 focus：只渲染事件既有字段，无观测降级', () => {
   const event = { node_id: 'node-a', at: '2026-08-29T00:00:00Z', observation_status: 'observation_lost', executor_ref: 'relay-a', detail: 'herdr_status=unknown' };
   const text = renderFocus(event);
-  for (const value of Object.values(event)) assert.ok(text.includes(value));
+  for (const key of ['node_id', 'at', 'observation_status', 'executor_ref']) assert.ok(text.includes(event[key]));
+  assert.ok(!text.includes(event.detail), 'DSH-off focus must omit diagnostic detail');
+  assert.ok(text.includes('host_ref_label: legacy 未提供'));
   assert.ok(text.includes('herdr agent attach relay-a'));
   assert.equal(text.split('\n').find(line => line.startsWith('attach: ')),
     `attach: ${attachHerdrAgent({ handle: { agent_name: 'relay-a', pane_id: 'pane-a' } }).instruction}`);
@@ -353,7 +355,7 @@ async function recoveryFixture(t, fakeOptions) {
   await store.appendEvent({ kind: 'run_created', at: run.created_at });
   await store.appendEvent({ kind: 'node_started', at: run.created_at, node_id: 'herdr' });
   await store.registerReceipt({ receipt_id: 'rcpt-recover', attempt_id: 'attempt-recover', node_id: 'herdr', at: run.created_at });
-  if (!fakeOptions.withoutRef) await store.appendEvent({ kind: 'host_observation_changed', at: run.created_at, node_id: 'herdr', attempt_id: 'attempt-recover', executor_ref: 'recover-agent', observation_status: 'alive', detail: observationDetail({ herdrStatus: 'working', agentName: 'recover-agent', paneId: 'recover-pane', seq: 3, workDirRoot: repoRoot, profileId: profile.executor_profile_id }) });
+  if (!fakeOptions.withoutRef) await store.appendEvent({ kind: 'host_observation_changed', at: run.created_at, node_id: 'herdr', attempt_id: 'attempt-recover', executor_ref: 'recover-agent', observation_status: 'alive', host_ref: deriveHerdrHostRef('term-1'), detail: observationDetail({ herdrStatus: 'working', agentName: 'recover-agent', paneId: 'recover-pane', seq: 3, workDirRoot: repoRoot, profileId: profile.executor_profile_id }) });
   const fake = makeFakeHerdr(fakeOptions);
   const driver = startWorkflowDriver({ repoRoot, runId, actor: { submitControl: fn => fn(store) }, herdrCli: fake.cli, herdrRegistryPath: registryPath, herdrPollMs: 20 });
   return { store, driver };

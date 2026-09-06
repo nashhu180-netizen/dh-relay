@@ -39,7 +39,10 @@ async function setup(t) {
   t.after(async () => { await rm(repoRoot, { recursive: true, force: true }); });
 
   const replies = new Map();
-  const client = await createTransportClient(service.descriptor.endpoint, { onFrame: frame => replies.set(frame.id, frame) });
+  const notifications = [];
+  const client = await createTransportClient(service.descriptor.endpoint, {
+    onFrame: frame => { if ('id' in frame) replies.set(frame.id, frame); else notifications.push(frame); },
+  });
   t.after(() => client.destroy());
   let id = 0;
   const call = async (method, params) => {
@@ -61,7 +64,7 @@ async function setup(t) {
     generation: service.descriptor.generation, local_user_capability: service.localUserCapability,
   });
   assert.deepEqual(contracts.result, service.descriptor);
-  return { stores, call };
+  return { repoRoot, stores, call, notifications };
 }
 
 const list = async (call) => (await call('listRuns', { include_legacy: false })).result.items;
@@ -116,4 +119,33 @@ test('Read Model 镜像：只改同组 run_status 时，除该字段外投影逐
   assert.deepEqual(afterAlpha, { ...beforeAlpha, run_status: 'running' }, '改后差异恰为 R001.run_status');
   assert.deepEqual(after.find(item => item.run_id === 'R002-beta-20260827'), beforeBeta, '未改的 R002 不得漂移');
   assert.deepEqual(withoutStatus(after), withoutStatus(before), '不能随 run_status 漂移其他 RunSummary 字段');
+});
+
+test('DHR_77 Read Model：host_ref 逐字随事件推送，服务不从 detail 重建身份', async (t) => {
+  const { stores, call, notifications } = await setup(t);
+  const alpha = stores.get('R001-alpha-20260827');
+  await alpha.appendEvent({ kind: 'run_created', at: '2026-08-27T00:00:00Z' });
+  await alpha.appendEvent({ kind: 'node_started', node_id: 'node-a', at: '2026-08-27T00:00:01Z' });
+  const hostRef = `herdr-terminal/sha256-${'b'.repeat(64)}`;
+  await alpha.appendEvent({
+    kind: 'host_observation_changed', node_id: 'node-a', attempt_id: null,
+    executor_ref: 'herdr-node-a', observation_status: 'alive', host_ref: hostRef,
+    at: '2026-08-27T00:00:02Z', detail: 'work_dir_root=C:/must-not-be-a-CLI-identity-source',
+  });
+  const listed = await call('listRuns', { include_legacy: false });
+  assert.ok(listed?.result, JSON.stringify(listed));
+  const status = await call('inspectRun', { run_id: 'R001-alpha-20260827', view: 'status' });
+  assert.ok(status?.result, JSON.stringify(status));
+  const subscribed = await call('subscribe', { run_id: 'R001-alpha-20260827', after_seq: 1 });
+  assert.ok(subscribed?.result, JSON.stringify(subscribed));
+  assert.equal(subscribed.result.view, 'event_stream_snapshot');
+  const deadline = Date.now() + 5_000;
+  let eventFrame;
+  while (!eventFrame && Date.now() < deadline) {
+    eventFrame = notifications.find(frame => frame.method === 'event' && frame.params?.kind === 'host_observation_changed');
+    if (!eventFrame) await new Promise(resolve => setTimeout(resolve, 10));
+  }
+  assert.ok(eventFrame, 'subscribe 必须推送追加的观测事件');
+  assert.equal(eventFrame.params.host_ref, hostRef);
+  assert.match(eventFrame.params.detail, /work_dir_root/);
 });

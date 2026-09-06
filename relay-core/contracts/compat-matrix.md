@@ -12,9 +12,9 @@ v1 的 `schema_version` 是**单一全局版本串** `relay/v1`，一份契约�
 
 | | 保留 | 改名 | 改型 | 新增 | 弃用 | 合计 |
 |---|---|---|---|---|---|---|
-| 计数 | 2 | 4 | 24 | 10 | 4 | 44 |
+| 计数 | 2 | 4 | 24 | 11 | 4 | 45 |
 
-> 计数由脚本按下方各表「标记」列精确统计得出，非估计。复算方式：取本文件所有 `|` 起头的表格行，切出第 3 列、去除 `**`/`~~` 与括注后按五枚举计数（§4b 的逐值对照表只有 3 列，不参与计数）。**2026-08-21 复算**：批次检查点 2 小审 D-6 把 `proposed_by/proposed_at` 一行拆成两行（`proposed_at` 仍为改名、`proposed_by` 改判改型），故较前值 43 增 1。**2026-08-21 二次复算**：E14 一致性复核 F-E14-1 把 `plan_hash` 由改名改判改型，改名 5→4、改型 23→24，合计仍 44。（⚠️ **改判要连计数一起改**——这大概就是当初没改的原因，教训见 lesson_candidates。） ⚠️ **44 是「已列行」的精确计数，不是「v1 字段全集」**（E14 一致性复核 F-E14-9）：抽验发现至少 4 个 v1 字段没有对应行——receipt 的 `role`（`relay-schema.ps1:184`）、result 的 `next_action`（`:210`，与 node 的 `next_action` 是两个字段）、plan-pointer / authority 的 `activated_at` / `granted_at`（`:151` / `:161`）；v2 侧 `payload_digest` 也没有「新增」行（`request_digest` / `capability_hash` / `state_signature` 都有）。**别拿 44 当「v1 字段都过了一遍」用**——补全字段全集的对照属 DHR_29 迁移期工作，本卡只把这个边界写明。**改型占一半以上（23/44）不是失控**——v2 的主要工作正是把 v1 里"名字误导 / 混在一个字段里 / 缺约束"的东西拆开并加严，逐条理由见各行说明。
+> 计数由脚本按下方各表「标记」列精确统计得出，非估计。复算方式：取本文件所有 `|` 起头的表格行，切出第 3 列、去除 `**`/`~~` 与括注后按五枚举计数（§4b 的逐值对照表只有 3 列，不参与计数）。**2026-08-21 复算**：批次检查点 2 小审 D-6 把 `proposed_by/proposed_at` 一行拆成两行（`proposed_at` 仍为改名、`proposed_by` 改判改型），故较前值 43 增 1。**2026-08-21 二次复算**：E14 一致性复核 F-E14-1 把 `plan_hash` 由改名改判改型，改名 5→4、改型 23→24，合计仍 44。（⚠️ **改判要连计数一起改**——这大概就是当初没改的原因，教训见 lesson_candidates。） ⚠️ **45 是「已列行」的精确计数，不是「v1 字段全集」**（E14 一致性复核 F-E14-9）：抽验发现至少 4 个 v1 字段没有对应行——receipt 的 `role`（`relay-schema.ps1:184`）、result 的 `next_action`（`:210`，与 node 的 `next_action` 是两个字段）、plan-pointer / authority 的 `activated_at` / `granted_at`（`:151` / `:161`）；v2 侧 `payload_digest` 也没有「新增」行（`request_digest` / `capability_hash` / `state_signature` 都有）。**别拿 45 当「v1 字段都过了一遍」用**——补全字段全集的对照属 DHR_29 迁移期工作，本卡只把这个边界写明。**改型占一半以上（23/45）不是失控**——v2 的主要工作正是把 v1 里"名字误导 / 混在一个字段里 / 缺约束"的东西拆开并加严，逐条理由见各行说明。
 
 ## 1. 版本与身份链
 
@@ -83,6 +83,7 @@ v1 的 `schema_version` 是**单一全局版本串** `relay/v1`，一份契约�
 | event `event_id` / `kind` / `occurred_at` | `seq` / `kind` / `at` | 改型 | v2 用单调 `seq` 保证回放确定性；v1 的 `event_id` 是字符串、不保证序 |
 | event `kind` 12 值 | v2 16 值（批次 1 K-1 补 `human_input_requested` 后） | 改型 | ⚠️ 原写法只说"新增 6、弃用 3"，`12−3+6=15` 数字凑巧对上，**掩盖了实际 churn**（批次检查点 2 小审 D-8，findings F-017）。逐值对照见 §4b |
 | event `observation` kind 携带 `terminal_state` | `host_observation_changed` 携带 `observation_status` | 改名 | G6 的事件侧落地 |
+| — | `host_ref`（`relay.event/v2` 与 `relay.host-observation/v1`） | **新增** | DHR_77：Herdr 返回的非空 `terminal_id` 只按冻结 UTF-8 + SHA-256 公式投影为 `herdr-terminal/sha256-*`；alive 必有，lost 只保留最后成功值或如实缺省，非观测事件必须为 null/缺省。旧账本没有该字段时仅显示 legacy 缺省，不回写或猜测。 |
 | event `control` kind 的 `actor`/`source`/`nonce` | `relay.rpc/v1` 握手的 `client_id`/`request_id` | 改型 | |
 | `SessionTailMaxBytes = 65536` + `relay-redaction.ps1` | — | **弃用（本卡范围内）** | ⚠️ v1 有"截取会话尾巴 + 凭据形态脱敏 + 残留检测"的完整机制。v2 协议层不承载会话尾巴（`log_locator` 只给指针）。**但 AGENTS 宪章#6 的密钥红线依然生效**——DHR_29 实现 Store 落盘时须复用 v1 的 redaction 口径作 Oracle，本条**留给 DHR_29，不在本卡关闭** |
 

@@ -15,7 +15,7 @@ import { buildRequestEnvelope, clientError, connectCli, connectCliV2 } from './c
 import { addPendingRecord, readPendingRecords, removePendingRecord } from './pending.mjs';
 import { requestDigest } from '../runtime/ledger.mjs';
 import {
-  renderDetailView, renderEvent, renderEventSnapshot, renderFocus, renderReceipt, renderRpcError,
+  projectEvent, projectFocus, renderDetailView, renderEvent, renderEventSnapshot, renderFocus, renderReceipt, renderRpcError,
   renderRunList, renderRunStateChanged, renderStatusView, renderTransportFailure, RESULT_UNKNOWN_HINT,
 } from './render.mjs';
 
@@ -242,7 +242,8 @@ async function runEvents({ repoRoot, flags, positional, json, out, err }) {
       if (state.printedSeq !== null && seq <= state.printedSeq) return; // 重复 seq 由客户端丢弃
       state.printedSeq = seq;
       state.printedSeqs.push(seq);
-      out.write(json ? `${JSON.stringify(params)}\n` : `${renderEvent(params)}\n`);
+      const safeEvent = projectEvent(params);
+      out.write(json ? `${JSON.stringify(safeEvent)}\n` : `${renderEvent(safeEvent)}\n`);
       // 非 follow 的完成判据（F-021）：补发区间 (after_seq, next_seq) 逐条计数，
       // 收齐即完成——不用任何固定静默窗当判据。
       const backfill = state.backfill;
@@ -368,7 +369,7 @@ async function runFocus({ repoRoot, flags, positional, json, out, err }) {
       });
     }
     const event = events.sort((a, b) => a.seq - b.seq).at(-1) ?? null;
-    const model = { event };
+    const model = { event: projectFocus(event) };
     out.write(json ? `${JSON.stringify(model, null, 2)}\n` : `${renderFocus(event)}\n`);
     return 0;
   } finally {

@@ -65,6 +65,16 @@
       ],
       "description": "承接 G5：符号化，禁绝对路径。按 executor_kind 语义分别是可执行入口 / adapter_ref / bridge_ref / server_ref（ADR-002）。"
     },
+    "host_ref": {
+      "oneOf": [
+        {
+          "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/locator",
+          "allOf": [{ "pattern": "^herdr-terminal/sha256-[0-9a-f]{64}$" }]
+        },
+        { "type": "null" }
+      ],
+      "description": "Herdr terminal instance 的脱敏观测标签。仅 host_observation_changed 可非空；原始 terminal_id 不入账。"
+    },
     "observation_status": {
       "oneOf": [
         { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/observation_status" },
@@ -149,6 +159,43 @@
         "required": ["observation_status"],
         "properties": { "observation_status": { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/observation_status" } },
         "$comment": "G6：观测事件必须带观测态。"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": { "const": "host_observation_changed" },
+          "observation_status": { "const": "alive" }
+        },
+        "required": ["kind", "observation_status"]
+      },
+      "then": {
+        "required": ["host_ref"],
+        "properties": {
+          "host_ref": {
+            "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/locator",
+            "allOf": [{ "pattern": "^herdr-terminal/sha256-[0-9a-f]{64}$" }]
+          }
+        },
+        "$comment": "DHR_77：alive 必须绑定本次 Herdr 返回 terminal_id 的脱敏标签。"
+      }
+    },
+    {
+      "if": {
+        "properties": { "kind": { "not": { "const": "host_observation_changed" } } },
+        "required": ["kind"]
+      },
+      "then": {
+        "properties": {
+          "host_ref": {
+            "oneOf": [
+              { "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/locator" },
+              { "const": null }
+            ],
+            "const": null
+          }
+        },
+        "$comment": "DHR_77：非宿主观测事件不得携带非空 host_ref。"
       }
     },
     {

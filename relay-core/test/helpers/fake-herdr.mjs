@@ -28,7 +28,7 @@ const paneRecord = ({ paneId = 'pane-1', agentStatus = 'unknown' } = {}) => ({
 export const herdrErrorDetail = (code, message) => `exit:1:{"error":{"code":"${code}","message":"${message}"},"id":"cli:fake"}`;
 
 export function makeFakeHerdr({ statuses = ['idle'], paneStatuses = ['unknown'], read = 'result', paneAlive = true, agentAlive = true, missing = false,
-  agentGetFailAfter = null,
+  agentGetFailAfter = null, terminalIds = null,
   paneKillResult = { ok: true, value: { type: 'ok' } },
   paneRunResult = { ok: true, value: '' },
   agentStartResult = { ok: true, value: { agent: agentRecord(), argv: [], type: 'ok' } },
@@ -83,8 +83,12 @@ export function makeFakeHerdr({ statuses = ['idle'], paneStatuses = ['unknown'],
         if (typeof agentGetFailAfter === 'number' && agentGets > agentGetFailAfter) {
           return { ok: false, reason: 'E_BAD_VALUE:HERDR_CLI', detail: herdrErrorDetail('agent_not_ready', 'agent get failed after probe') };
         }
+        const record = agentRecord({ agentStatus: current(), seq: index });
+        if (Array.isArray(terminalIds) && terminalIds.length > 0) {
+          record.terminal_id = terminalIds[Math.min(agentGets - 1, terminalIds.length - 1)];
+        }
         return agentAlive
-          ? { ok: true, value: { agent: agentRecord({ agentStatus: current(), seq: index }), type: 'ok' } }
+          ? { ok: true, value: { agent: record, type: 'ok' } }
           : { ok: false, reason: 'E_BAD_VALUE:HERDR_CLI', detail: herdrErrorDetail('agent_not_found', 'agent target herdr-x not found'), missing };
       },
       agentRead: () => { agentReads += 1; return { ok: true, value: read }; },

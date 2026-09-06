@@ -158,7 +158,7 @@ test('DHR_75/B：真实慢 CLI 返回后，同一 Host actor 继续落 observati
   const statePath = join(scratch, 'state.json');
   const bin = fileURLToPath(new URL('./helpers/fake-herdr-bin.mjs', import.meta.url));
   await writeFile(statePath, JSON.stringify({ delay_ms: 2_000, responses: {
-    'agent get': { agent: { agent_status: 'working', state_change_seq: 1 } },
+    'agent get': { agent: { agent_status: 'working', state_change_seq: 1, terminal_id: 't1' } },
   } }), 'utf8');
 
   const actor = createHostSessionActor({ repoRoot: repo, runId, ttlMs: 5_000, tickMs: 250 });

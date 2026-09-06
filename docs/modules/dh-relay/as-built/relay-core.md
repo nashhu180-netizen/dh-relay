@@ -186,7 +186,7 @@ DHR_52 的 RPC seam 与 DHR_51 的 host 之间原本没有装配人（F-001）�
 
 **「可驱动」的判据是 ref 在本仓解析到真实文件**；解析不到时节点保持 `pending`、**不开 Attempt**——Runtime 不为一个自己启动不了的入口凭空造一次尝试（F-007，批 2 小审裁定保持不收紧）。它同时是 DHR_30 既有 Run（`bin/probe`、golden 的 `bin/fix.sh`）事件账逐字不变的保护栏。
 
-**Agent 节点（`pi-agent` / `dsh-agent`）不被 Runtime 托管**：driver 只认 `kind==='process'`，所以 `capability-baseline.json` 的 `executor_kinds:["process"]` 至今是真话。Agent 的 Attempt 由外部代持、Runtime 只记账（DHR_31 批 4 窄路径）；终态一律经 `appendResult`，孤儿场景用已冻结的 `E_EXECUTOR_ADAPTER_LOST`（pi 的 Adapter 消失）/ `E_EXECUTOR_HOST_LOST`（DSH 宿主消失）/ `E_EXECUTOR_ORPHANED`（恢复后探活失败），三者首用均不新增码。
+**DHR_31 当时的 Agent 边界（历史）**：当时 driver 只认 `kind==='process'`，Agent Attempt 由外部代持、Runtime 只记账。该“至今只托管 process”的结论已被 DHR_33 及后续 Herdr driver 实现取代；当前 `capability-baseline.json` 的 `executor_kinds` 为 `herdr-agent` + `process`。`pi-agent` / `dsh-agent` 仍未被 Runtime 直接托管；终态继续走 Receipt-bound Result 路径，不能由 Herdr 的 idle/done 观测代造。
 
 ### 3.10 增量 —— `adapters/dsh-bridge/snapshot-main.mjs`（DHR_31 批 5 sidecar）
 
@@ -196,7 +196,7 @@ DHR_52 的 RPC seam 与 DHR_51 的 host 之间原本没有装配人（F-001）�
 
 ### 3.12 DHR_61 增量 —— Attempt 身份、持久 Attention 与 RPC v2
 
-- **contracts / capability**：新增 `relay.attempt-receipt/v1`、pause/resolution、`relay.client-read-model/v2`、bootstrap/descriptor、RPC methods/envelope v2 与 subscription terminal。旧 `relay.rpc/v1` schema、端点、参数和成功 payload 不加字段；其握手 hash 固定为 DHR_61 前的 `994d5f…c971e`，新增合同只进入 bootstrap/v2 的 `fb55f2…d073`。双轨计算口径见 `contracts/CANONICALIZATION.md`。
+- **contracts / capability**：新增 `relay.attempt-receipt/v1`、pause/resolution、`relay.client-read-model/v2`、bootstrap/descriptor、RPC methods/envelope v2 与 subscription terminal。旧 `relay.rpc/v1` schema、端点、参数和成功 payload 不加字段；DHR_77 起 v1、bootstrap 与 v2 共用当前完整 capability baseline，DHR_61 前的固定 `994d5f…c971e` 只作为分派/订阅前应拒绝的历史值。现役计算口径见 `contracts/CANONICALIZATION.md`。
 - **profiles / Receipt 签发**：Registry 只允许显式标为 `nonsecret` 的 TOML/JSON Pointer 进入 projection；`profiles/identity.mjs` 只哈希该闭集。Herdr Attempt 在 launch 前冻结 source identity 与最多六项有序 fallback snapshots，Receipt、事件和 fixture 不保存原配置或凭据值。
 - **Store / recovery**：`appendFallbackPause` 与 `appendFallbackPauseResolution` 通过 blob-before-prepared 的 `relay.store-mutation/v1` journal 同批提交工件、事件与状态；恢复逐目标核对 before/staging hash，journal/blob/派生 ID/路径/账本任一不一致即 `E_STORE_MUTATION_RECOVERY_FAILED`。pause 重放同时导出旧 Attempt fence、`waiting_human` 和 open Attention；旧 Attempt 的 checkpoint/result 返回 `E_ATTEMPT_FENCED`。只读 RPC 使用不重写 `state.json` 的 Attention 投影，未完成 prepared mutation 一律拒读。
 - **RPC / retry**：`endpointForRepo(...,{channel})` 派生互不复用的 v1、bootstrap、v2 本地端点。bootstrap 只接受 `{protocol:"relay.rpc-bootstrap/v1"}` 并返回有 schema 的 v2 descriptor；客户端仍须从受保护的 v1 ready descriptor 取得本机 credential，再用 bootstrap 发现 v2 endpoint，bootstrap 不复制 secret。v2 的 list/inspect/subscribe 显式选择 `read_model_version`，v2 投影携带 `open_attentions`。任一 Run 的 mutation 账本不可恢复时，list 操作整体返回稳定 `E_STORE_MUTATION_RECOVERY_FAILED`，不静默过滤坏 Run；v1 若命中 open Attention 返回 `E_ATTENTION_REQUIRES_READ_MODEL_V2`，订阅建立后才出现 pause 时，publisher 在发送新事件前先发标准 error 并关闭连接。`retry-with-profile` 只在 actor 写队列内复核 pause 范围、冻结 profile 与当前非敏感 projection 全等，再原子关闭 Attention 并开 fresh Attempt；同一 `(pause_id,retry_request_id)` 返回原结果。
@@ -268,18 +268,19 @@ DHR_52 的 RPC seam 与 DHR_51 的 host 之间原本没有装配人（F-001）�
 |---|---|---|
 | 1 | `protocols` 是**裸名字数组** | `"relay.run/v2"` 只是个名字。两个 Runtime 对着**不同修订版**的同名协议编译，指纹完全相同 ⇒ 握手通过 ⇒ 然后 Runtime 拒掉对方发来的每一个节点。**这不是假设**——本卡之内 `relay.run/v2` 就实质变过两次（6.1 的 `$ref` 全量重写、6.2 的 `required` 改必填） |
 | 2 | 改成 `{id, digest}` 对，另加 `executor_kinds` 维度 | 只枚举 `contracts/` **顶层** 7 份，`_shared/` 不在内。实测把 `relay.common/v1` 的 `locator.pattern` 改成 `^.*$`（G5 绝对路径禁令**彻底失效**）之后，`capability_hash` **逐字未变** |
-| 3 | 纳入共享定义模块 ⇒ **8 条** | 当前形态。`capability_hash` 由 `5c5685d0…` 变 `3ccf3b10…`——**这个变化本身是正确的，它确实是一次能力变更** |
+| 3 | 纳入共享定义模块 ⇒ **8 条** | DHR_29 当时形态。`capability_hash` 由 `5c5685d0…` 变 `3ccf3b10…`——**这个变化本身是正确的，它确实是一次能力变更** |
+| 4 | 继续按同一规则扩到 **20 份**（19 个顶层协议 + 1 个共享定义模块） | DHR_77 当前形态；v1、bootstrap、v2 共用该完整 baseline，当前 hash 为 `241a8804525a2d40…`。旧固定 v1 hash 不再是兼容常量。 |
 
 `executor_kinds` 这个维度存在的理由：只托管 `process` 的 Runtime 与还托管 `dsh-agent`/`pi-agent`/`herdr-agent` 的，前三个键完全相同 ⇒ 指纹相同。**在 P5 特别活**——`pi-agent` 是 DevPlan §4.2 明列的 P5-X 条件项、非必达，**两个都合规的 P5 构建**（带 / 不带 Pi Adapter）在没有本键时指纹一模一样。
 
-> 当前基线取「只托管 `process` 的最小 P5 参考实现」：`methods` 7 个、`notifications` 2 个、`executor_kinds = ["process"]`。DHR_29 真做出 Pi Adapter 或 DSH Native 时，算出的是**另一个**指纹，那是设计意图不是回归。
+> 当前基线：`methods` 7 个、`notifications` 2 个、`executor_kinds = ["herdr-agent", "process"]`。将来若加入 Pi Adapter 或 DSH Native，算出**另一个**指纹是设计意图，不是回归。
 
 ### 6.4a Executor Profile 与 Herdr Adapter 现役边界（DHR_32/33）
 
 - `relay-core/profiles/` 是闭字段 Executor Profile 注册表、校验器与 fixtures；用户级候选只保存路径模板、别名、能力位、掩码身份和 fallback 引用，不保存凭据值。注册表机读层目前不表达「当前可派/停用」；`codex-ninth` 未登录、当前不可派只由 DHR_32 evidence/findings 记录，下游不得仅凭六项 CLI 能力位推导它可派。
 - `relay-core/runtime/executors/herdr/` 通过 Herdr CLI 实现 launch/observe/capture/reconcile/stop，Runtime 的 `herdr-agent` 分支负责 Attempt 与事件账。`done` 不直接等于 succeeded；无 judge 时只形成有界 Attention，判定器语义留 DHR_35。
 - **DHR_75**：Herdr CLI wrapper 已改为 `spawn` + Promise，所有 adapter 调用点等待 Promise；通用 10s、启动 60s 与生产 Host lease 15s 均未改变。超时在 Windows 先用 `taskkill /T /F` 清进程树（清理工具自身上限 5s）并等 child `close` 后返回既有 `spawn:ETIMEDOUT` 形状；spawn/stream/signal/非零/空 stdout 的既有失败映射保持。正常 taskkill 路径已有真实父子进程零残留证据；若 taskkill 工具自身失败，Node fallback 只能保证父进程有界终止，要求异常路径也绝对清零须另建 Windows Job Object/专用清理能力，不能在 wrapper 内假装已保证。
-- 当前只证明 Windows/DSH-off 慢路与安全 focus；真实 Linux SSH、事件快路和 capability hash 仍是 DHR_35 的受限项。fixture 不替代真实 SSH 证据。
+- 当前只证明 Windows/DSH-off 慢路与安全 focus；DHR_77 已闭合 v1/bootstrap/v2 共用 capability hash 的协议与定向机器证。真实 Linux SSH、事件快路及 Codex/Claude Receipt→Result 业务闭环仍是 DHR_35 的受限项；fixture 不替代真实 SSH 证据。
 
 - **DHR_76（已合入）**：runtime loader `await validateProfilesAsync()` 对完整 registry 校验；结构/fallback 先验，每 Profile 保持 config→alias 原首错顺序。同步 CLI `validateProfiles()` 兼容保留，runtime alias 使用异步子进程。默认单探针/整轮/清理宽限为 15s/60s/10s，Host lease TTL 不变；Windows 正常超时通过 taskkill /T /F 并等待 root close。DHR-B-42 明确：若 10 秒宽限耗尽仍无法确认，允许以 `E_UNRESOLVED_ALIAS:probe-cleanup-incomplete` 或 `probe-close-timeout` 异常拒绝，必须标记清理未确认、不得声称无残留、不得继续启动，该异常不计清理验收通过；loader 仍包装 `E_BAD_VALUE:PROFILE_REGISTRY`。driver 仅在 loader 返回后复查 stopping，停止期间不新开 Attempt；不新增探针取消协议。A~F 和独立复核终态见 `workspace/DHR_76/review.md`，不得替代 DHR_75/72/35 实录。
 ### 6.5 `digestExcluding` 曾被 `__proto__` 键静默吃掉（F-062，P1）
@@ -368,7 +369,7 @@ DHR_52 的 RPC seam 与 DHR_51 的 host 之间原本没有装配人（F-001）�
 
 ## 9. 已知不覆盖的（说清楚，别当已兑现）
 
-**能力不匹配 fail-closed 已由 DHR_52 补足运行期一半**：契约层仍只校验 `capability_hash` 的形态；`rpc/capabilities.mjs` 复算权威 8 份 capability 基线，`server.mjs` 在冻结信封通过后严格比较 peer hash。形态合法但不同的 hash 返回 `E_CAPABILITY_MISMATCH`，不按交集降级；该路径由真实本地 socket 回归钉住。DHR_52 只负责握手比较，不把客户端类型、CLI 或 Read Model 偷渡进来。
+**能力不匹配 fail-closed 已由 DHR_52 接入运行期、由 DHR_77 闭合 v1/v2 当前基线**：契约层仍只校验 `capability_hash` 的形态；`rpc/capabilities.mjs` 复算权威 20 份 capability 基线，v1 与 v2 返回同一当前 hash，`server.mjs` 在冻结信封通过后严格比较 peer hash。形态合法但不同的 hash（含旧固定 v1 值）在 handler/subscribe 前返回 `E_CAPABILITY_MISMATCH`，不按交集降级、不产生订阅推送。
 
 另两处 schema 层的固有边界（`OPEN-POINTS.md` §H6，**不是缺陷但别以为 H6 已被完全兜住**）：
 
@@ -411,3 +412,11 @@ DHR_52 的 RPC seam 与 DHR_51 的 host 之间原本没有装配人（F-001）�
 - **checkpoint 与出口**：只有真实 `working` 才追加 checkpoint；长期 idle 折叠为 `waiting_human`，不产生 Result。committed Result、显式 stop、host_lost、Attempt 已终态，以及 actor-closed/lease-lost 写入失败仍是退出边界，退出后不再追加观测事件。
 - **边界**：DHR_72 的 DSH-off Codex 实录只证明 checkpoint 可达，明确禁止 submit-result，不能替代 DHR_35 的 Receipt→Result 完整闭环。poll 比例守卫只覆盖列名 fixture 参数，不是全局生产默认值守卫。
 - **证据**：专属套件 8/8、poll 守卫 1/1、冻结五文件 55/55（0 skip/0 fail）；真实 run6 保存 4 条 `checkpoint_recorded`、2 条 alive observation、0 Result。fresh 二轮选定 idle/done 分支提前 `return` 的生产变异点，变异后指定用例以 `timeout:working checkpoint` 失败，还原后 1/1。
+
+## 14. DHR_77 增量 —— terminal-instance `host_ref` 与旧账只读兼容
+
+- **来源与算法**：Herdr adapter 只接受 API 返回对象里的非空 string `terminal_id`，逐字计算 `SHA-256(UTF8("dh-relay.host-ref/v1\0" + terminal_id))`，展示为完整小写 `herdr-terminal/sha256-<64 hex>`。不 trim/normalize/case-fold，不从 pane、agent、session、路径、Receipt 或诊断文本 fallback；原始值只可留在运行期 handle，不进事件、Read Model、CLI 或证据。
+- **生命周期与事件**：alive 必带当前 ref；lost 有历史则保留最后成功 ref、从未成功则缺省；同 ID 保持、不同 ID 形成 replacement，即使 `working→working` 也写新观测事件。恢复只用既有 `executor_ref` 重新查询 Herdr，不从旧事件诊断文本重建；旧事件不回写。
+- **协议与 Store**：event/v2 与 host-observation/v0 对齐 nullable/optional 字段及 alive/非观测约束。新 writer 仍严格拒绝 alive 缺 ref。`loadEvents` 只有一个用户确认的 B-46 形状级历史例外：原 schema 失败且事件为 otherwise-valid alive v2、对象自身缺字段时，浅拷贝补固定全零 sentinel 仅供 schema 复验；返回原事件，不迁移、不写回、不造 ref。显式 null 与任何邻近损坏继续拒绝。
+- **capability 与展示**：v1、bootstrap、v2 共用包含 event/v2 的 20 份完整 baseline；旧固定 v1 hash 在方法分派/订阅注册前拒绝且零推送。focus 默认安全投影移除诊断字段；非空 ref 按 alive/lost 标“当前观测/历史观测”，显式 null 标“尚无可信 terminal 标签”，旧账缺字段标“legacy 未提供”；`executor_ref` 仍只是 attach locator。
+- **诚实边界**：现存账没有可信代际标记，真正旧账与升级后删字段的同形损坏账无法区分，方案 A 会把两者都按 legacy 只读接纳；该残余由用户在 DHR-B-46 明文接受。完整 `npm test` 仍未得自然终态，已知 DHR_76/C 预算断言与 DHR_34 identity-quota 挂起保持范围外；DHR_77 的受控 Herdr/DSH-off 标签对照不替代 DHR_35 真实产品 Agent、Linux SSH 或 Receipt→Result 闭环。

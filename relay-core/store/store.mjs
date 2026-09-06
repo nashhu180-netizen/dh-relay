@@ -9,6 +9,7 @@ import { applyEvents, replayRun } from './state.mjs';
 const encode = (value) => JSON.stringify(value);
 
 const EVENT_SCHEMA_ID = 'relay.event/v2';
+const LEGACY_HOST_REF_SENTINEL = `herdr-terminal/sha256-${'0'.repeat(64)}`;
 const ATTEMPT_RECEIPT_SCHEMA_ID = 'relay.attempt-receipt/v1';
 const RESULT_SCHEMA_ID = 'relay.result/v2';
 const RESULT_SUBMISSION_SCHEMA_ID = 'relay.executor-result-submission/v1';
@@ -447,6 +448,7 @@ function createHandle({ root, run, events, receipts, checkpoints, results, opera
       attempt_id: input.attempt_id ?? null,
       executor_kind: input.executor_kind ?? null,
       executor_ref: input.executor_ref ?? null,
+      host_ref: input.host_ref ?? null,
       observation_status: input.observation_status ?? null,
       reason: input.reason ?? null,
     };
@@ -911,7 +913,15 @@ async function loadEvents(root, run) {
     }
     if (event?.protocol !== 'relay.event/v2' || event.run_id !== run.run_id) throw new Error(`E_EVENT_LOG_CORRUPT:line-${index}`);
     if (event.seq !== index) throw new Error(`E_EVENT_LOG_CORRUPT:seq-${index}`);
-    if (!validateOne(ajv, byId, EVENT_SCHEMA_ID, event).ok) throw new Error(`E_EVENT_LOG_CORRUPT:schema-line-${index}`);
+    let verdict = validateOne(ajv, byId, EVENT_SCHEMA_ID, event);
+    const legacyShape = event?.protocol === EVENT_SCHEMA_ID
+      && event.kind === 'host_observation_changed'
+      && event.observation_status === 'alive'
+      && !Object.prototype.hasOwnProperty.call(event, 'host_ref');
+    if (!verdict.ok && legacyShape) {
+      verdict = validateOne(ajv, byId, EVENT_SCHEMA_ID, { ...event, host_ref: LEGACY_HOST_REF_SENTINEL });
+    }
+    if (!verdict.ok) throw new Error(`E_EVENT_LOG_CORRUPT:schema-line-${index}`);
     events.push(event);
   }
   return events;

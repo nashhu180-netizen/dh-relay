@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { launchHerdrAgent, observationDetail, observeHerdrAgent } from '../runtime/executors/herdr/herdr-executor.mjs';
+import { deriveHerdrHostRef, launchHerdrAgent, observationDetail, observeHerdrAgent } from '../runtime/executors/herdr/herdr-executor.mjs';
 import { startWorkflowDriver } from '../runtime/workflow-driver.mjs';
 import { createStore } from '../store/store.mjs';
 import { dumpDriverScene, untilEvent } from './helpers/bounded-wait.mjs';
@@ -93,6 +93,7 @@ async function recoveryFixture(t, { statuses, paneStatuses, ...fakeExtras }) {
   await store.appendEvent({
     kind: 'host_observation_changed', at: run.created_at, node_id: 'herdr', attempt_id: 'attempt-recover',
     executor_ref: 'recover-agent', observation_status: 'alive',
+    host_ref: deriveHerdrHostRef('term-1'),
     detail: observationDetail({
       herdrStatus: 'working', agentName: 'recover-agent', paneId: 'recover-pane', seq: 3,
       workDirRoot: repoRoot, profileId: claudeProfile.executor_profile_id,

@@ -61,9 +61,9 @@ v1 已经做过同一件事——`tools/contracts/relay-schema.ps1` 的 `Convert
 
 ### DHR_61 后的 v1/v2 双轨
 
-- `relay.rpc/v1` 为兼容既有客户端，固定广播历史指纹 `994d5f038cd1bcbbb9463eed5ca04b2ffc324f07b374571899b8df3a6c5c971e`。它是兼容常量，**不再**由当前 `contracts/` 重新计算；校验入口为 `rpc/capabilities.mjs` 的 `localCapabilityHash()`。
-- bootstrap 与 `relay.rpc/v2` 使用当前契约集合按下述算法计算的指纹；权威清单与逐项 digest 在 `capability-baseline.json`，校验入口为 `localCapabilityHashV2()`。
-- 因此，下述算法与清单规则描述的是 v2 当前能力指纹；v1 客户端不得拿当前 manifest 重算值替代上述兼容常量。新增契约或修改承重 schema 只推动 v2 指纹，除非另行发布新的 v1 兼容决策。
+- `relay.rpc/v1`、bootstrap 与 `relay.rpc/v2` 共用当前契约集合按下述算法计算的**完整 capability baseline**；权威清单与逐项 digest 在 `capability-baseline.json`，校验入口为 `rpc/capabilities.mjs` 的 `localCapabilityHash()` 与 `localCapabilityHashV2()`。
+- 固定历史 v1 指纹 `994d5f038cd1bcbbb9463eed5ca04b2ffc324f07b374571899b8df3a6c5c971e` 仅作为被拒的历史值保留，**不是**当前 v1 的兼容常量；peer 提供该值时，必须在 handler/subscribe 分派前以 `E_CAPABILITY_MISMATCH` 拒绝。
+- 因此，下述算法与清单规则同时描述 v1 与 bootstrap/v2 的当前能力指纹；新增契约或修改承重 schema 会推动两条轨道共同变更，旧 v1 信封仍须使用当前完整 baseline。
 
 下面的 JSON 是最小参考实现的历史形状示例，不是当前 v2 清单的穷举；当前条目数量和值一律以生成的 `capability-baseline.json` 为准。
 

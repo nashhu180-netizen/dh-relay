@@ -1,5 +1,7 @@
 // herdr-executor.mjs — 纯 Herdr adapter：不导入 Store、不认识节点依赖。
 
+import { createHash } from 'node:crypto';
+
 export const HERDR_STATUS_MAPPING = Object.freeze({
   working: { status: 'running', event: 'checkpoint_recorded' },
   blocked: { status: 'waiting_human', event: 'human_input_requested' },
@@ -17,6 +19,22 @@ const entity = (value) => value?.agent ?? value?.pane ?? value;
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 export const ATTACH_PREFIX = 'herdr agent attach ';
 
+export function deriveHerdrHostRef(terminalId) {
+  if (typeof terminalId !== 'string' || terminalId.length === 0) return null;
+  const digest = createHash('sha256').update(`dh-relay.host-ref/v1\0${terminalId}`, 'utf8').digest('hex');
+  return `herdr-terminal/sha256-${digest}`;
+}
+
+const terminalIdentity = (value) => {
+  const terminalId = field(entity(value), 'terminal_id');
+  const hostRef = deriveHerdrHostRef(terminalId);
+  return hostRef === null ? null : { terminalId, hostRef };
+};
+
+const invalidTerminalIdentity = () => ({
+  ok: false, reason: 'E_BAD_VALUE:HERDR_CLI', detail: 'terminal-id-missing-or-invalid',
+});
+
 function paneCandidates(value, paneId) {
   const agents = Array.isArray(value) ? value : value?.agents;
   if (!Array.isArray(agents)) return [];
@@ -32,7 +50,8 @@ async function renameClaudeAgent({ cli, paneId, agentName, readyTimeoutMs, ready
     if (candidates.length === 1 && candidates[0]?.agent === 'claude') {
       const renamed = await cli.agentRename({ target: paneId, name: agentName });
       if (!renamed.ok) return renamed;
-      return { ok: true, terminalId: field(candidates[0], 'terminal_id', 'pane_id') ?? paneId };
+      const identity = terminalIdentity(renamed.value);
+      return identity === null ? invalidTerminalIdentity() : { ok: true, ...identity };
     }
     if (Date.now() >= deadline) {
       return { ok: false, reason: 'E_BAD_VALUE:HERDR_CLI', detail: `claude-agent-identification-not-unique:${candidates.length}` };
@@ -73,23 +92,32 @@ export async function launchHerdrAgent({ cli, registryProfile, runId, nodeId, at
   // DHR_68/C：启动期 `agent_not_ready`（产品自己的目录信任框之类）是要人处理的暂停，
   // 不是启动失败——保留 handle、不关 pane，由 driver 写一条 Attention。
   const startBlocked = start.notReady === true;
+  let reconciledStart = null;
   if (!start.ok && !startBlocked) {
     if (start.timedOut !== true) return await closeFailedPane(start);
     // 对账**只读**。绝不重发启动调用：那会在真实宿主上拉起第二个 Agent 进程。
     const listed = isClaudeProfile(registryProfile) ? await cli.agentList() : null;
-    const reconciled = isClaudeProfile(registryProfile)
-      ? listed.ok === true && paneCandidates(listed.value, paneId).length > 0
-      : (await cli.agentGet(agentName)).ok === true;
-    if (!reconciled) return await closeFailedPane(start);
+    reconciledStart = isClaudeProfile(registryProfile)
+      ? (listed.ok === true && paneCandidates(listed.value, paneId).length > 0 ? listed : null)
+      : await cli.agentGet(agentName);
+    if (!reconciledStart?.ok) return await closeFailedPane(start);
+  }
+  if (startBlocked && !isClaudeProfile(registryProfile) && terminalIdentity(start.value) === null) {
+    reconciledStart = await cli.agentGet(agentName);
+    if (!reconciledStart?.ok) return await closeFailedPane(start);
   }
   const renamed = isClaudeProfile(registryProfile)
     ? await renameClaudeAgent({ cli, paneId, agentName, readyTimeoutMs, readyPollMs })
-    : { ok: true, terminalId: field(entity(start.value), 'terminal_id', 'pane_id') ?? paneId };
+    : (() => {
+      const identity = terminalIdentity(reconciledStart?.value ?? start.value);
+      return identity === null ? invalidTerminalIdentity() : { ok: true, ...identity };
+    })();
   if (!renamed.ok) return await closeFailedPane(renamed);
   const handle = {
     agent_name: agentName,
     pane_id: String(paneId),
-    terminal_id: String(renamed.terminalId),
+    terminal_id: renamed.terminalId,
+    host_ref: renamed.hostRef,
     work_dir_root: workDirRoot,
     executor_profile_id: registryProfile.executor_profile_id,
     started_at: new Date().toISOString(),
@@ -113,6 +141,8 @@ export async function launchHerdrAgent({ cli, registryProfile, runId, nodeId, at
 export async function observeHerdrAgent({ cli, handle }) {
   const found = await cli.agentGet(handle.agent_name);
   if (!found.ok) return found;
+  const identity = terminalIdentity(found.value);
+  if (identity === null) return invalidTerminalIdentity();
   const status = field(entity(found.value), 'agent_status', 'status');
   if (typeof status !== 'string') return { ok: false, reason: 'E_BAD_VALUE:HERDR_CLI', detail: 'agent-status-missing' };
   // DHR_69：仅当 agent get 报 idle 时才读 pane get。覆盖规则唯一：idle ∧ pane blocked → 派生 blocked。
@@ -132,6 +162,7 @@ export async function observeHerdrAgent({ cli, handle }) {
     }
   }
   return { ok: true, observation: {
+    host_ref: identity.hostRef,
     herdr_status: herdrStatus,
     agent_get: status,
     pane_get: paneGet,
