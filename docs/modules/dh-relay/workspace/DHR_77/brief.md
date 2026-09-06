@@ -4,7 +4,7 @@
 
 ## 授权与现场
 
-2026-09-06，用户在理解“DHR_77 只解除 DHR_35 的计划阻塞，DHR_35 仍须独立 D-start”后明确要求“落盘，建workspace，建task-plan”，先授权 S0～S2；task plan 写成后又明确要求“右侧开可交互终端执行。你这边挂个wait”，据此独立 D-start 已成立，授权在 `wt/DHR_77` 执行 S3 并等待 construction Node 收口。仍不授权真实 Codex/Claude 产品 Agent、DHR_35、verify、合并、推送或部署。
+2026-09-06，用户在理解“DHR_77 只解除 DHR_35 的计划阻塞，DHR_35 仍须独立 D-start”后明确要求“落盘，建workspace，建task-plan”，先授权 S0～S2；task plan 写成后又明确要求“右侧开可交互终端执行。你这边挂个wait”，据此独立 D-start 已成立。首个完整施工批次在 `wt/DHR_77@9ea4714` durable 收口后，用户要求改为“完整批次 → 主控检查点 → 完整批次”的协作方式，并在主控展示分支/主干回归对照后明文“同意新增” B-45；随后指定第二施工批次尝试使用 OpenCode `glm-5.3-flash`、reasoning `max`。据此只允许新 worker 补 DHR_69/C 与 DHR_75/B 的兼容夹具。仍不授权 DHR_76/DHR_34 修复、真实 Codex/Claude 产品 Agent、DHR_35、复核、verify、合并、推送或部署。
 
 ## 覆盖任务
 
@@ -57,6 +57,8 @@
   - `relay-core/test/cli.test.mjs`
   - `relay-core/test/herdr-adapter.test.mjs`
   - `relay-core/test/dhr72-continuous-observation.test.mjs`
+  - `relay-core/test/dhr69-false-ready.test.mjs`
+  - `relay-core/test/dhr75-host-lease-during-herdr.test.mjs`
   - `relay-core/test/helpers/fake-herdr.mjs`
   - `relay-core/test/dhr77-host-ref.test.mjs`
   - `relay-core/fixtures/golden/**`
@@ -68,7 +70,7 @@
   - `docs/modules/dh-relay/knowledge/教训库-候选.md`
   - `docs/modules/dh-relay/dev_plan/P6-Herdr多账号执行底座-开发方案.md`
 
-  **限定**：`herdr-executor.mjs` 只保留合格 `terminal_id`，不得使用 `pane_id`/agent/`agent_session` fallback；`workflow-driver.mjs` 只改 host-observation 写入、最后成功 ref 对账与 recovery，停止从旧 `detail` 重建 terminal identity，既有 `executor_ref` locator 与 Result/Attention/lease 行为不变；`store.mjs` 只允许 `emitEvent` 把 `input.host_ref` 复制到封闭 event 对象，不得改变 Store 的校验、写入、回放、通知、lease、fencing 或其他事件语义；`service.mjs`、CLI 与 fixtures 只承接事件回放、read-model/安全展示和新旧账本兼容，默认人验投影不得输出 `detail`；`rpc/capabilities.mjs` 删除 v1 固定 hash 分叉，使 v1/v2 共用完整 baseline，`server.mjs` 现有“hash 校验早于分派/subscribe”顺序只读守住；fixtures 只更新受协议/hash/展示变化直接影响的样本，`package.json` 只追加本卡测试。workspace 只存脱敏向量、测试日志、受控对照与截图；原始 `terminal_id`、路径、账号、Receipt、Result 或凭据不得进入证据。
+  **限定**：`herdr-executor.mjs` 只保留合格 `terminal_id`，不得使用 `pane_id`/agent/`agent_session` fallback；`workflow-driver.mjs` 只改 host-observation 写入、最后成功 ref 对账与 recovery，停止从旧 `detail` 重建 terminal identity，既有 `executor_ref` locator 与 Result/Attention/lease 行为不变；`store.mjs` 只允许 `emitEvent` 把 `input.host_ref` 复制到封闭 event 对象，不得改变 Store 的校验、写入、回放、通知、lease、fencing 或其他事件语义；`service.mjs`、CLI 与 fixtures 只承接事件回放、read-model/安全展示和新旧账本兼容，默认人验投影不得输出 `detail`；`rpc/capabilities.mjs` 删除 v1 固定 hash 分叉，使 v1/v2 共用完整 baseline，`server.mjs` 现有“hash 校验早于分派/subscribe”顺序只读守住；fixtures 只更新受协议/hash/展示变化直接影响的样本，其中 B-45 新增的 DHR_69/C、DHR_75/B 两文件只补 `host_ref`/`terminal_id` 输入，不改既有断言目标；`package.json` 只追加本卡测试。workspace 只存脱敏向量、测试日志、受控对照与截图；原始 `terminal_id`、路径、账号、Receipt、Result 或凭据不得进入证据。
 - **档位**：标准（协议、RPC 兼容与 Herdr 组件接线，高危）。
 - **任务类型**：重核<!-- dh:task-type:v1 task=DHR_77 type=heavy -->
 - **依赖**：DHR_72（已完成）。DHR_77 收口只解除 DHR_35 的计划阻塞，不构成 DHR_35 D-start；须独立 D-start。
