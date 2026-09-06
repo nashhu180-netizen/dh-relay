@@ -12,6 +12,7 @@
 - [Receipt 绑定结果提交与 P6 真实闭环：契约调整](./12-Receipt绑定结果提交与P6真实闭环-契约调整.md)
 - [目录信任自动放行：产品设计与验收](./13-目录信任自动放行-产品设计与验收.md)
 - [Herdr terminal-instance host_ref 与 DSH-off 可验证展示](./14-Herdr-host-ref正式冻结与DSH-off可验证展示.md)
+- [Herdr Agent 单一启动内容与有限重发](./15-Herdr-Agent单一启动内容与有限重发.md)
 <!-- dh:design-inputs:end -->
 
 ## 内容目录
@@ -33,6 +34,9 @@
 - [A-30 Herdr terminal-instance host_ref 与 DSH-off 可验证展示（正式设计输入）](./14-Herdr-host-ref正式冻结与DSH-off可验证展示.md)
 - [A-29 Herdr host_ref 交叉审核及理解对齐](./evidence/40-A29-host-ref-交叉审核记录.md)
 - [A-30 terminal_id → host_ref 修订交叉审核及整版确认](./evidence/41-A30-terminal-id-host-ref修订-交叉审核记录.md)
+- [A-31 Herdr Agent 单一启动内容与有限重发（正式设计输入）](./15-Herdr-Agent单一启动内容与有限重发.md)
+- [A-31 单一启动内容与有限重发交叉审核及整版确认](./evidence/42-A31-单一启动内容与有限重发-交叉审核记录.md)
+- [A-31 单一启动内容与有限重发候选（形成史）](./drafts/DHR-A-31-单一启动内容与有限重发-候选.md)
 - [A-27 目录信任自动放行三轮交叉审核、理解对齐及整版确认](./evidence/31-A27-目录信任自动放行-交叉审核记录.md)
 - [A-27 目录信任能力矩阵只读实测](./evidence/32-A27-目录信任能力矩阵-实测.md)
 - [A-28 目录信任自动放行正式晋升决策记录（来源 A-27）](./records/05-A27-目录信任自动放行-正式晋升决策记录.md)
