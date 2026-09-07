@@ -29,6 +29,7 @@
 | 2026-09-07 | 第 1 轮复核整改：复用现有 fallback selection fixture，补合法 registry 下 platform 不匹配、冻结快照漂移、候选不可签名三类 frozen candidate 全部不可用时返回 `fallback_unavailable` 的断言；未改生产代码。 | `node --test relay-core/test/identity-quota.test.mjs`：4 tests / 4 pass / 0 fail / exit 0，自然终态；`node --test relay-core/test/identity-quota.test.mjs relay-core/test/dhr80-retry-result-bridge.test.mjs`：11 tests / 11 pass / 0 fail / exit 0，自然终态；`git diff --check`：exit 0（仅 LF→CRLF 提示） |
 | 2026-09-07 | 主控完成整改后两路 fresh 复核、争议定向复议与 E0/E10 备料；最终无 open finding。 | E-7904～E-7907；主控组合复验 11/11、exit 0；`dh dh-relay` 0 failure / 91 warning、exit 0；`git diff --check` exit 0；旧 driver 符号 0 命中 |
 | 2026-09-07 | E11：用户在对话中明文回复“认可”，确认 `releasePacket-DHR79-v2` 并授权轻档本地收口包。 | 确认时间 2026-09-07 23:28 +08:00；授权范围为精确 squash、合入态复验、DevPlan/workspace 回填与 DHR_79 worktree/branch 清理；不含 verify、push、deploy、真实 Agent、DHR_35、DHR_73、下一卡或其他清理。 |
+| 2026-09-07 | E12/E13：任务分支精确 squash 合入本地 `master`，并在合入态完成受影响组合复验；随后机械销户。 | squash `2535989`；组合测试 11/11 pass、0 fail、exit 0，自然终态；`git diff --check HEAD^ HEAD` exit 0；旧 driver 符号扫描 0 命中、exit 1（无命中预期）；轻档按规则不打 `verify(dh-relay)`。 |
 
 ## 第 1 轮复核整改停止线（历史）
 
@@ -64,7 +65,7 @@
 ## 验收
 
 - 历史 AI 自评（E-7902/E-7903 后）：**未达成 / P1 阻塞**。条件 1 与条件 3 已满足；条件 2 当时仅有成功半支，且暴露 retry Receipt 与现役 Receipt-bound Result bridge 不一致，不能以 3/3 绿替代语义闭环。
-- 当前 AI 自评（E-7906/E-7907 后）：**三条完成条件均达成，机器证据等价覆盖，无未关闭 finding；进入待人验**。本结论不复用旧确认，不代表已销户。
+- 当前 AI 自评（E-7906/E-7907 与合入态复验后）：**三条完成条件均达成，机器证据等价覆盖，无未关闭 finding；用户已认可并完成本地销户**。
 - 用户确认记录：2026-09-07 早先回复“DHR79 确认”，但随后自动复核改变了放行证据包，该旧确认不用于销户。用户于 2026-09-07 23:28 +08:00 对重新展示的 `releasePacket-DHR79-v2` 明文回复“认可”；本次确认有效并授权轻档本地收口。
 
 ## releasePacket-DHR79-v2（E10）
@@ -78,6 +79,6 @@
   4. `git diff --check`：exit 0；任务分支对 master 的改动只含 DHR_79 卡面、`workspace/DHR_79/**` 与目标测试，均在允许路径。
   5. E-7906 教训复核与 E-7907 一致性复核最终均 PASS，无 P0–P3；一致性表逐项覆盖 selection 三态、pause、Receipt-bound mode 与 non-frozen 零推进。
   6. `dh dh-relay`：0 failure、91 warning、exit 0；警告为存量治理项，本次未新增 DHR_79 failure。
-- 放行资格：三条机器验收项均为等价覆盖，无不可豁免缺口、无待认险风险；H=0 谓词 B 成立。`release_mode=full` 候选。
+- 放行资格：三条机器验收项均为等价覆盖，无不可豁免缺口、无待认险风险；H=0 谓词 B 成立。`release_mode=full`。
 - E11：用户已于 2026-09-07 23:28 +08:00 明文“认可”本包。轻档本地收口只含精确 squash 合入本地主干、合入态复验、DevPlan/workspace 状态回填、确认记录与 DHR_79 worktree/branch 清理；按轻档规则不打 `verify(dh-relay)` 提交。
 - 包外：push、deploy/发布/重启、环境或生产数据操作、真实 Agent、DHR_35、DHR_73、下一卡与任何其他 worktree 清理。
