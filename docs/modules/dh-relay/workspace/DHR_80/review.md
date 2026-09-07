@@ -115,7 +115,7 @@
 - **残余边界**：唯一默认完整 `npm test` 仍为 exit 1、370 tests / 365 pass / 5 fail / 0 cancelled。B-51 只证明未观察到 DHR_80 特有失败：DHR_76/C 与 identity-quota 两侧同形，CLI/DHR_69/F/DHR_76/B 在单点及小并发两侧同绿；不证明默认全量健康或原负载下全部根因。F-8007 以 P3 open 留在 DHR-BL-17。
 - **E11 本地收口授权包**：用户若明文认可，将连续执行精确本地 squash 合入 master、合入后相关复验、`verify(dh-relay)`、DevPlan/workspace 回填销户、本任务 worktree/branch 清理；不含 push、deploy、环境/生产操作、真实 Agent、DHR_35、下一卡或兄弟卡修复。F-8006/F-8007 的尾巴分流须同拍裁决。
 
-→ 当前状态：**E11 已认可；正在执行本地收口授权包，尚未 verify/销户**
+→ 当前状态：**E11 已认可；squash `cb66f78` 已入本地 master，合入复验 37/37、audit/dh/diff-check 均通过；verify 本提交，release_mode=full**
 
 ---
 
@@ -130,10 +130,10 @@
 | 人判：无新增业务选择；收口仍展示上述机器证据并取得本地收口确认，不代替 DHR_35 真实产品验收。 | 查看 E10 展示的命令终态、关键 Ack/拒绝摘要、零启动计数、五路复核和变异结果 | 证据足以支持本地收口，且未声称已跑真实 Agent/DHR_35 | [x] |
 
 - 确认记录：2026-09-07T22:05:41+08:00，用户在 E10 `releasePacket-DHR80-v2` 后明文“认可”；同拍认可 F-8006/F-8007 整批入验收池 `ACC-2026-09-07-01`。
-- verify 提交 SHA：待主干 squash、合入复验后生成。
+- verify 提交 SHA：本提交（`verify(dh-relay): DHR_80 端到端验收通过`）。
 - 签名：hyf（chat-confirm）　　时间：2026-09-07T22:05:41+08:00
 
-→ 解锁状态：**已确认本地收口；待主干合入复验与 verify**
+→ 解锁状态：**已确认并完成主干合入复验；verify 本提交**
 
 ### 确认记录（append-only）
 

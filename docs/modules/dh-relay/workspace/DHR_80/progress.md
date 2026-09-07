@@ -66,6 +66,9 @@
 | E-8046 | human-evidence | `releasePacket-DHR80-v2` 业务化五段与 A/B 表 | pass：E10 证据展示区已发出 | 已展示 37/37、变异红/恢复绿、默认 npm 370/365/5/0 exit 1、五点 DHR_80/master 对称结论及证据局限；未把真实 Agent/DHR_35 或默认全量健康纳入结论。 |
 | E-8047 | human-authorization | 2026-09-07T22:05:41+08:00 用户对 `releasePacket-DHR80-v2` 明文“认可” | pass | E11 成立：授权精确本地 squash、合入复验、`verify(dh-relay)`、DevPlan/workspace 回填与本任务 worktree/branch 清理；不含 push/deploy/环境生产操作/真实 Agent/DHR_35/下一卡。 |
 | E-8048 | acceptance-routing | `dh accept add --item "DHR_80 收口尾巴 F-8006/F-8007" ...` | pass：`ACC-2026-09-07-01` | 用户对同一 E11 确认口明文认可；两项整批入验收池，保持 F-8007 默认全量非绿边界，不在本卡修兄弟路径。 |
+| E-8049 | merge-regression | squash `cb66f78` 合入本地 master；运行 DHR80/attempt/DHR64/DHR70 四文件组合 | pass：exit 0；tests=37、pass=37、fail=0、cancelled=0、duration=88833.5015ms；自然终态 | 正式 retry/result、Attempt、Result bridge 与 submission gate 在合入版本闭合；默认完整 npm 按 releasePacket 边界不重跑。 |
+| E-8050 | check | master@`cb66f78`：`node tools/audit-contracts.mjs`；`dh dh-relay`；`git diff --check` | pass：三命令均 exit 0；audit 0 未登记开口/0 `$ref` 失败/0 命名与 meta 违规；dh 0 failures/91 warnings | 合入态合同治理与模块结构通过；91 条为存量警告，不冒充零 warning。 |
+| E-8051 | acceptance-routing | 主树共享 `docs/acceptance/验收池.md` 新增 `ACC-2026-09-07-01` | pass | 该行未进入实现 squash `cb66f78`，将在 verify/status 提交中精确暂存；无其它共享池改动。 |
 
 ## 批次 3 记录（2026-09-07）
 
