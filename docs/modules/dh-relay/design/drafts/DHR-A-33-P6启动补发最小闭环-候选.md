@@ -1,13 +1,13 @@
-<!-- dh:planning-event:v1 id=DHR-A-33 stage=A-full artifact=design/15-Herdr-Agent单一启动内容与有限重发.md review=evidence/47-A33-P6精简方案-交叉审核记录.md#review-a33 understanding=evidence/47-A33-P6精简方案-交叉审核记录.md#understanding-a33 -->
-# Herdr Agent 单一启动内容与有限重发
+<!-- dh:planning-no-event:v1 artifact="design/drafts/DHR-A-33-P6启动补发最小闭环-候选.md" reason="A33 已确认；候选形成史，正式合同见 design/15" -->
+# DHR-A-33 · P6 启动补发最小闭环（形成史）
 
-> DHR-A-33 正式设计：用户已确认以 P6 最小闭环替换 A32。已完成 fresh 审核与定向复审。本文件继续属于 README 的正式 designInputs；设计生效不代表代码已实现或真实运行已通过。
+> 用户已明确回复“替换把”，确认精简行为及异常恢复的人工代价；正式合同已晋级 [design/15](../15-Herdr-Agent单一启动内容与有限重发.md)。下文保留候选原貌，不参与正式 designInputs。B47 需按正式输入另行调整。
 
 ## 1. 目标和取舍
 
 当前 P6 只做一件事：任务指针与 Receipt 提交说明合成一份启动指令，经同一个发送者交给 Herdr；首次明确 accepted 后等 60 秒，仍无当前 Attempt 进展时向同一 Agent 原样补发一次。
 
-自动补发只服务于同一存活 driver/Actor 中的正常启动。Runtime/driver 恢复或 Actor 被接管后，已有 Attempt 不自动重新发送启动指令；继续现有观测和 Receipt-bound 提交，未完成时提示人工处理。新 Attempt 仍只能由已有显式控制面创建。本设计不实现跨恢复续算补发资格。
+自动补发只服务于同一存活 driver/Actor 中的正常启动。Runtime/driver 恢复或 Actor 被接管后，已有 Attempt 不自动重新发送启动指令；继续现有观测和 Receipt-bound 提交，未完成时提示人工处理。新 Attempt 仍只能由已有显式控制面创建。本稿不实现跨恢复续算补发资格。
 
 具体代价：若首发已占用次数、尚未实际调用 Herdr 就崩溃，旧 Agent 可能完全没有收到任务。恢复 Attention 必须明示“启动内容可能未送达，本 Attempt 不再自动发送”。已收到指令的 Agent 可以继续提交；未收到的不能假定会自然完成。操作员需检查现场，必要时通过既有 stop 控制面停止旧执行，再显式发起新的执行；确认旧执行停止前不并发新建同任务 Agent，不自动代提交或绕过次数限制。
 
@@ -19,7 +19,7 @@
 
 - 当前 P6 Herdr node 增加 `instruction_ref={path,sha256}`；path 解析到当前 Runtime canonical repoRoot 内的文件，摘要匹配才可启动。校验在创建 Attempt/调用 Herdr 前完成。
 - 启动指令仅包含当前仓根、instruction_ref、当前 Attempt 的 Receipt 提交命令和“重复收到时从持久事实续做”的固定提示；业务内容留在被引用文件。无须增加独立 workspace 字段，不从 `docs/modules/...` 路径猜任务身份。
-- P6 保留现有节点完成与停止行为；本设计不引入 Ticket、`node_closed` 协议或新 stop_after 枚举。design/10 的未来 Ticket 合同仍留在其原阶段，本卡不做映射接口或 fixture。
+- P6 保留现有节点完成与停止行为；本稿不引入 Ticket、`node_closed` 协议或新 stop_after 枚举。design/10 的未来 Ticket 合同仍留在其原阶段，本卡不做映射接口或 fixture。
 - driver 生成一次启动内容，Host Adapter 是唯一物理 sender；启动、恢复、解除 blocked 三处旧 completion-only 发送改为统一入口。blocked 时不发送，解除后只有尚未发送的新 Attempt 可首发；恢复的旧 Attempt 不因此重发。
 
 ### 发送与进展
@@ -39,9 +39,9 @@
 - 反例覆盖双 sender、并发占次、进展已存在、迟到进展、blocked、身份变化、源文件变化、失租/stop、发送前后崩溃、恢复不重发、两发上限。使用有界故障注入/恢复测试，不要求每一场景都修改生产代码做变异。
 - 保留既有 heavy 复核配方与代码轮 2 独立选取一个关键生产变异点；不再额外要求全场景变异矩阵。变异须断言失败，还原后绿。
 
-## 3. 当前验收清单
+## 3. 替代验收清单
 
-本版当前验收项为 HC-SD-A9..A12/H3。旧 A31/A32 命题已由本版取代，不能计入当前 pass；design/10 的验收项保持其原阶段范围。
+以下是待确认的新命题；正式晋级时，design/15 旧 A1..A8/H1/H2 保留历史追踪并标记由本版取代，禁止复用旧通过结论。本稿不修改 design/10 的验收项。
 
 | ID | 类型 | 命题与验证 |
 |---|---|---|
@@ -51,18 +51,8 @@
 | HC-SD-A12 | 机器证 | 私有记录字段封闭且不含正文/凭据，沿用 Run 保留策略；不新增公开协议、timeline 写入或 checkpoint/Result 事务重构。字段负例与代码范围检查验证。 |
 | HC-SD-H3 | 人判 | AI 展示正常首发、60 秒无进展补发、已有进展不补发、首发占用后调用前崩溃四例安全摘要；最后一例须展示可能未送达、旧 Attempt 不再自动发、检查现场并经现有 stop/显式新执行处理。用户在 5 分钟内判断简化后的行为和人工代价是否可接受。 |
 
-## 4. 旧版追踪与计划承接
+## 4. 对 B47 的影响
 
-A31/A32 的原文与审核结论保留在 [A31 形成史](drafts/DHR-A-31-单一启动内容与有限重发-候选.md)、[A32 形成史](drafts/DHR-A-32-startup-progress游标与补发线性化-候选.md) 和对应 evidence；本版不抹去历史，也不要求旧版能力先实施。
+待本版正式确认后，B47 再消费更新后的 designInputs 并做定向 B 复审：DHR_78 只承接上述当前 P6 闭环，删未来 Ticket 配套、独立 timeline 协议、cursor/UTC 持久计时、checkpoint/Result 原子重构和全场景变异矩阵。精确代码路径在 B 中按实际需要缩减。
 
-- HC-SD-A1、HC-SD-A2 → HC-SD-A9：superseded-before-implementation；删除未来 Ticket 配套与固定 workspace 来源。
-- HC-SD-A3 → HC-SD-A10、HC-SD-A12：superseded-before-implementation；删除跨恢复 prompt 重建要求。
-- HC-SD-A4、HC-SD-A5、HC-SD-A8 → HC-SD-A10、HC-SD-A11、HC-SD-A12：superseded-before-implementation；删除进展游标、跨恢复计时、checkpoint/Result 重构与全场景变异矩阵。
-- HC-SD-A6、HC-SD-A7 → HC-SD-A9、HC-SD-A10、HC-SD-A11：superseded-before-implementation；同身份、唯一 sender、Receipt-bound 完成和重复续做边界由精简合同承接。
-- HC-SD-H1、HC-SD-H2 → HC-SD-H3：superseded-before-implementation；不再要求 timeline 协议。
-
-未实施的 startup-dispatch v1/v2 与 timeline/v2 不再是本卡实施目标；不建设它们的兼容/迁移层。新的私有发送记录只按本设计的最小用途定义内部版本，未知记录不得触发发送。
-
-B47 必须重新消费本正式输入后缩减并进行 B 复审：删除未来 Ticket 配套、独立 timeline 协议、cursor/UTC 持久计时、checkpoint/Result 原子重构及全场景变异矩阵。精确代码路径按实际需要登记。
-
-DHR_35 仍自行验证 Codex/Claude 真实链，其 runner 删除第二 prompt 并提供 instruction_ref；本卡 fake 证据不替代真实链。设计确认只完成本次正式替换，施工与运行仍遵循各自任务授权。
+DHR_35 仍自行验证 Codex/Claude 真实链；其 runner 删除第二 prompt 并提供 instruction_ref。自动补发的 fake 测试不替代真实链证据。
