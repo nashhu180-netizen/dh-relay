@@ -69,6 +69,7 @@
 | E-8049 | merge-regression | squash `cb66f78` 合入本地 master；运行 DHR80/attempt/DHR64/DHR70 四文件组合 | pass：exit 0；tests=37、pass=37、fail=0、cancelled=0、duration=88833.5015ms；自然终态 | 正式 retry/result、Attempt、Result bridge 与 submission gate 在合入版本闭合；默认完整 npm 按 releasePacket 边界不重跑。 |
 | E-8050 | check | master@`cb66f78`：`node tools/audit-contracts.mjs`；`dh dh-relay`；`git diff --check` | pass：三命令均 exit 0；audit 0 未登记开口/0 `$ref` 失败/0 命名与 meta 违规；dh 0 failures/91 warnings | 合入态合同治理与模块结构通过；91 条为存量警告，不冒充零 warning。 |
 | E-8051 | acceptance-routing | 主树共享 `docs/acceptance/验收池.md` 新增 `ACC-2026-09-07-01` | pass | 该行未进入实现 squash `cb66f78`，将在 verify/status 提交中精确暂存；无其它共享池改动。 |
+| E-8052 | verify | 本地 master 提交 `3db949a`（`verify(dh-relay): DHR_80 端到端验收通过`） | pass：Verification=full；Risk-Count=0 | 用户 E11 授权、验收池分流、签名区与完成状态已进主干；本行仅机械回填显式 SHA，随后按精确路径提交并清理本任务 worktree/branch。 |
 
 ## 批次 3 记录（2026-09-07）
 

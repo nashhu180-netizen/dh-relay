@@ -14,7 +14,7 @@
 阻塞: DHR_78 已完成；DHR_35 仍缺自身独立 D-start、A9 外围分账、P6-M1 真实链与用户真实 Agent 授权。DHR_73 旁支调查和 Linux 延后不变。
 -->
 
-<!-- dh:planning-no-event:v1 artifact="dev_plan/P6-Herdr多账号执行底座-开发方案.md" reason="2026-09-07 机械回填 DHR_80 用户 E11 认可、本地 squash、合入态复验、verify 收口与 F-8006/F-8007 验收池分流；不改变 B-48/B-50/B-51 已冻结的目标、验收、范围、依赖或任务类型" -->
+<!-- dh:planning-no-event:v1 artifact="dev_plan/P6-Herdr多账号执行底座-开发方案.md" reason="2026-09-07 机械回填 DHR_80 用户 E11 认可、本地 squash、合入态复验、verify 3db949a 收口与 F-8006/F-8007 验收池分流；不改变 B-48/B-50/B-51 已冻结的目标、验收、范围、依赖或任务类型" -->
 
 ## 0. B 方案审核与理解确认
 
@@ -222,7 +222,7 @@
 | DHR_72 | 修 driver 单次 idle 采样即永久退出观测 | 标准 | 已完成 | DHR_71、DHR_75（均已完成） | [workspace/DHR_72/](../workspace/DHR_72/) | squash `13c072d`；verify `64fa91f`（2026-09-06） | 任务类型=heavy；用户 2026-09-05 E11 明文认可；主干专属 8/8、poll 1/1、冻结 55/55 全绿，真实 F 保持有效；DHR_72-H 与 DHR_74 双向单跳 transfer 已由 E-7241 清零 R31；release_mode=full；不含 push/deploy/下一卡 |
 | DHR_77 | 原子实现 Herdr terminal-instance `host_ref`、RPC hash 与 DSH-off 安全展示 | 标准 | 已完成 | DHR_72（已完成） | [workspace/DHR_77/](../workspace/DHR_77/) | squash `36aa990`；verify 下一提交（2026-09-06） | 任务类型=heavy；用户 E11 明文“认可”；两批施工、B-46 方案 A、heavy 四路终审、有效单测变异及 HC-HR-A1～A5/H1 均闭合；合入态核心 113/113、DHR_72 8/8、Result/lease 21/21、CLI 19/19、兄弟组复验 17/17、仓根回归与 dh 通过；完整 npm 仍按 E-7721 未得终态，DHR_75/B 非确定性清理债务见 F-7709；release_mode=full；证据不得替代 DHR_35 P6-M1；不含 push/deploy/下一卡 |
 | DHR_78 | 当前 P6 单一启动指令与一次补发 | 标准 | 已完成 | DHR_77 | [workspace/DHR_78/](../workspace/DHR_78/) | squash `71e795e`；verify 本提交（2026-09-07） | B-47；任务类型=heavy；用户 E11 明文“认可”；A9 核心分账及 A10..A12/H3、有效变异与 heavy 五路复核闭合；master 受影响 125/125、模块体检 0 failure；完整 npm 仍未得自然终态；release_mode=full；不含 push/deploy/真实 Agent/DHR_35/DHR_80 |
-| DHR_80 | 修复人工重试 Receipt 的结果接收闭环 | 标准 | 已完成 | DHR_64、DHR_70、DHR_78 | [workspace/DHR_80/](../workspace/DHR_80/) | squash `cb66f78`；verify 本提交（2026-09-07）；release_mode=full | B-48/B-50/B-51；task_type=heavy；用户 E11 明文“认可”；主干受影响组合 37/37、audit/dh/diff-check exit 0，heavy 五路与变异闭合。默认完整 npm 仍为 370/365/5/0、exit 1，不称全量绿；F-8006/F-8007 入 `ACC-2026-09-07-01`；不新增 Agent 启动，不替代真实 Agent/DHR_35，不含 push/deploy/下一卡。 |
+| DHR_80 | 修复人工重试 Receipt 的结果接收闭环 | 标准 | 已完成 | DHR_64、DHR_70、DHR_78 | [workspace/DHR_80/](../workspace/DHR_80/) | squash `cb66f78`；verify `3db949a`（2026-09-07）；release_mode=full | B-48/B-50/B-51；task_type=heavy；用户 E11 明文“认可”；主干受影响组合 37/37、audit/dh/diff-check exit 0，heavy 五路与变异闭合。默认完整 npm 仍为 370/365/5/0、exit 1，不称全量绿；F-8006/F-8007 入 `ACC-2026-09-07-01`；不新增 Agent 启动，不替代真实 Agent/DHR_35，不含 push/deploy/下一卡。 |
 | DHR_73 | 调查启动链静默停摆（F-3516 / F-3519） | 标准 | 未开始 | DHR_72 | [workspace/DHR_73/](../workspace/DHR_73/) | | 任务类型=normal；B-35 新增；**纯调查卡，不改 `relay-core/**`**；时间盒 ≤12 次真实启动或两个工作时段；出口 (a) 根因钉死 + 修复卡 B-adjust 候选 / (b) 复现率 + 现场 + 看门狗候选；两种出口下 F-3516/F-3519 保持 open；DHR_35 重开不等本卡；须另行 D-start |
 | DHR_74 | 钉死 BL-17 一族停顿（F-7108/F-7109）的精确落点并按证据修复，解阻塞 DHR_71 绿闸 | 标准 | 已完成 | 无前置（DHR_71 门禁依赖本卡） | [workspace/DHR_74/](../workspace/DHR_74/) | verify `a20cfc7`（2026-09-06） | 任务类型=常规；用户接受四条诚实结论与未闭合项移交；own-baseline 51/4/0 三轮通过；DHR_72-H transfer 已由 E-7241 清零 R31；release_mode=risk-accepted，Risk-Count=1，RISK-DHR74-F7402 移交 DHR_73/环境侧 A-B；不含 push/deploy/下一卡 |
 
@@ -721,7 +721,7 @@
 - 档位：标准（结果入口组件接线）。任务类型：heavy。<!-- dh:task-type:v1 task=DHR_80 type=heavy -->
 - Design：共享正式 design/11、design/12，不新增专题设计。
 - 依赖：DHR_64、DHR_70 已完成的提交桥；施工基线须包含已收口 DHR_78，以消除 service/driver 与启动发送在途接线重叠。DHR_79 的缺失负例仍由 DHR_79 补齐；其最终收口等待本卡闭合后复核。不把本卡新增为 DHR_35 的主链前置。
-- 状态：已完成；用户 2026-09-07 对 `releasePacket-DHR80-v2` 明文“认可”，squash `cb66f78` 已入本地 master；合入态受影响组合 37/37、audit/dh/diff-check 均 exit 0，verify 本提交，`release_mode=full`。默认完整 npm 的 exit 1 残余不改写为绿，F-8006/F-8007 已入 `ACC-2026-09-07-01`。
+- 状态：已完成；用户 2026-09-07 对 `releasePacket-DHR80-v2` 明文“认可”，squash `cb66f78` 已入本地 master；合入态受影响组合 37/37、audit/dh/diff-check 均 exit 0，verify `3db949a`，`release_mode=full`。默认完整 npm 的 exit 1 残余不改写为绿，F-8006/F-8007 已入 `ACC-2026-09-07-01`。
 
 ##### 验收口径
 
