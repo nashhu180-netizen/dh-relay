@@ -15,6 +15,8 @@
 | 2026-09-07 | 主会话 | E7 as-built 已更新；E9 七段交付汇报与 E10 H3 四例安全摘要已生成，尚待本轮对话发出。模块体检修正本卡账本/派出/变异锚点结构后通过。 | E-7822 | 精确创建候选提交并发出 E9/E10；停在 E11 前。 |
 | 2026-09-07 | 主会话 / 用户 | E9 七段交付汇报与 E10 H3 四例安全摘要已在对话发出；用户回复“认可”，HC-SD-H3 与默认本地收口包生效。 | E-7823、E-7829 | rebase 当前 master 后执行合入态复验、verify 与销户。 |
 | 2026-09-07 | 主会话 | DHR_78 候选从 `34d53f7` rebase 到 master `3c3a905`；唯一冲突为 P6 任务表相邻 DHR_78/DHR_80 行，精确保留两行，新候选 `99e2884`。 | E-7830 | 在新候选补提交确认账并重取核心回归。 |
+| 2026-09-07 | 主会话 | DHR_78 以 squash `71e795e` 合入本地 master；两个未跟踪 DHR_80 工件未暂存、未提交，DHR_79 worktree 未触碰。合入态受影响 11 文件自然终态 125/125。 | E-7831 | 运行模块体检并签 `verify(dh-relay)`。 |
+| 2026-09-07 | 主会话 | master 预 verify 模块体检自然终态通过；完整 npm 仍沿用 E-7818“未得终态”边界。 | E-7832 | 以 verify 提交同步已完成状态，然后复验并销户。 |
 
 ## 证据账本 (Evidence Ledger)
 
@@ -38,6 +40,8 @@
 | E-7823 | report / human evidence | 本轮对话 E9 七段交付汇报 + E10 HC-SD-H3 四例安全摘要 | sent | 目标、能力、测试、复核、残余、四例人工动作与授权边界均已展示。 |
 | E-7829 | authorization | 用户在 E10 后对请求语回复“认可” | observed / pass | HC-SD-H3 人判通过；授权本地 squash、合入复验、`verify(dh-relay)`、状态回填与 DHR_78 worktree/branch 清理；不含 push/deploy/真实 Agent/DHR_35/DHR_80。 |
 | E-7830 | rebase / boundary | `git rebase master`：`34d53f7` → `99e2884`，base=`3c3a905` | natural terminal exit 0；DevPlan 单冲突手工保留 DHR_78 最新行与 DHR_80 未开始行；其他文件无冲突 | 消费 master 新增的 DHR_80 计划提交，不覆盖主树两个未跟踪 DHR_80 工件，不触碰独立 DHR_79 worktree。 |
+| E-7831 | test | master `71e795e`：受影响 11 文件串行回归 | natural terminal: 125 pass / 0 fail / 0 cancelled，134660.1717ms，exit 0 | 合入态 contracts、Receipt-bound、连续观测、lease、host_ref、adapter 与 DHR_78 行为均未退化。 |
+| E-7832 | check | master `71e795e`：`dh dh-relay` | natural terminal: exit 0；0 failures / 91 warnings | DHR_78 的 R18/R27/R29/R31 通过；warning 为主干无任务分叉点提示及存量项，不冒充零 warning。 |
 
 ### 2026-09-07 施工调整授权与当前边界
 

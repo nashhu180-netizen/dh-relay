@@ -73,7 +73,7 @@
 | 已有进展 | 有当前 Attempt checkpoint（Result 同样阻断） | 1 | 不产生第二次发送 | Store 返回 progress，保持现有执行 |
 | 已占次、物理调用前崩溃/stop | 无法证明是否送达 | 0（本次受控例）且旧 Attempt 恢复不自动再发 | durable outcome=`authorized`，正文未入账 | **可能未送达；先检查现场，必要时先 stop 旧 Attempt，再显式新执行** |
 
-→ 当前状态：**用户已认可 HC-SD-H3 并授权 E11 本地收口；待合入复验与 verify，尚未完成**
+→ 当前状态：**本地 squash `71e795e` 与 master 受影响回归 125/125 已闭合；本提交以 `verify(dh-relay)` 完成收口**
 
 ---
 
