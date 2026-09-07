@@ -1,345 +1,162 @@
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
-import { writeFileSync } from 'node:fs';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 
 import { createExecutorIdentity } from '../profiles/identity.mjs';
+import { retryWithFrozenProfile } from '../runtime/attempt-retry.mjs';
 import { buildFallbackPause, selectQualifiedFallback } from '../runtime/executors/identity/fallback.mjs';
 import { classifyQuota } from '../runtime/executors/quota/classifier.mjs';
-import { startWorkflowDriver } from '../runtime/workflow-driver.mjs';
 import { createStore } from '../store/store.mjs';
-import { makeFakeHerdr } from './helpers/fake-herdr.mjs';
 
 const HASH = 'a'.repeat(64);
-const STARTUP_TASK = 'DHR34 quota fallback task';
-const instruction_ref = { path: 'task.md', sha256: createHash('sha256').update(STARTUP_TASK, 'utf8').digest('hex') };
 const TEST_DETECTOR_ID = 'synthetic-usage-limit/v1';
-const TEST_QUOTA_DETECTORS = Object.freeze({
-  [TEST_DETECTOR_ID]: Object.freeze({ status: 429, code: 'usage_limit_reached' }),
-});
-const capabilities = {
-  interactive: 'supported', resume: 'supported', readonly: 'supported',
-  headless: 'supported', structured_result: 'supported', user_input_passthrough: 'supported',
-};
+const SHA256_HEX = /^[0-9a-f]{64}$/;
+const capabilities = { interactive: 'supported', resume: 'supported', readonly: 'supported', headless: 'supported', structured_result: 'supported', user_input_passthrough: 'supported' };
 
-function profile(id, account, root, extra = {}) {
+function profile(id, account, pathTemplate, extra = {}) {
   return {
-    executor_profile_id: id, backend: 'herdr', product: 'codex-cli', command_alias: 'codex',
-    account_alias: account, capabilities, supported_platforms: ['win32'], headless_supported: true,
-    config_fingerprint_rule: {
-      kind: 'file-exists', path_template: '${DHR34_CONFIG}/profile.json',
-      fields: [{ pointer: '/model', classification: 'nonsecret' }],
-    },
+    executor_profile_id: id, backend: 'herdr', product: 'codex-cli', command_alias: 'codex', account_alias: account,
+    capabilities, supported_platforms: ['win32'], headless_supported: true,
+    config_fingerprint_rule: { kind: 'file-exists', path_template: pathTemplate, fields: [{ pointer: '/model', classification: 'nonsecret' }] },
     ...extra,
   };
 }
 
-test('DHR_34: quota requires a registered detector plus explicit 429/code agreement', () => {
-  assert.deepEqual(classifyQuota({
-    detectorId: TEST_DETECTOR_ID, signal: { http_status: 429, error_code: 'usage_limit_reached' },
-    detectors: TEST_QUOTA_DETECTORS,
-  }), { classification: 'quota_confirmed', detector_id: TEST_DETECTOR_ID });
-  for (const signal of [
-    { http_status: 403, error_code: 'permission_denied' },
-    { http_status: 503, error_code: 'network_unavailable' },
-    { http_status: 500, error_code: 'internal_error' },
-    { http_status: 429, error_code: 'rate_limited' },
-    { http_status: 503, error_code: 'usage_limit_reached' },
-  ]) assert.equal(classifyQuota({ detectorId: TEST_DETECTOR_ID, signal, detectors: TEST_QUOTA_DETECTORS }).classification, 'not_quota');
-  assert.equal(classifyQuota({
-    detectorId: 'unknown-detector/v1', signal: { http_status: 429, error_code: 'usage_limit_reached' },
-  }).classification, 'unknown');
-  assert.equal(classifyQuota({ detectorId: TEST_DETECTOR_ID, signal: { message: 'usage limit reached' },
-    detectors: TEST_QUOTA_DETECTORS }).classification, 'unknown');
-});
-
-test('DHR_34: fallback selection follows Receipt order and skips drift or platform mismatch', async (t) => {
-  const root = await mkdtemp(join(tmpdir(), 'dhr34-fallback-'));
-  t.after(() => rm(root, { recursive: true, force: true }));
-  await writeFile(join(root, 'profile.json'), JSON.stringify({ model: 'test-model' }), 'utf8');
-  const environment = { DHR34_CONFIG: root };
-  const first = profile('herdr.codex.first', 'acct-first', root, { supported_platforms: ['linux'] });
-  const second = profile('herdr.codex.second', 'acct-second', root);
-  const third = profile('herdr.codex.third', 'acct-third', root);
-  const frozenFirst = createExecutorIdentity(first, { '/model': 'test-model' });
-  const frozenSecond = createExecutorIdentity(second, { '/model': 'old-model' });
-  const frozenThird = createExecutorIdentity(third, { '/model': 'test-model' });
-  const receipt = { fallback_profile_snapshots: [frozenFirst, frozenSecond, frozenThird] };
-  const selected = await selectQualifiedFallback({
-    attemptReceipt: receipt, registry: { profiles: [first, second, third] }, environment, platform: 'win32',
-  });
-  assert.equal(selected.status, 'selected');
-  assert.equal(selected.profile.executor_profile_id, 'herdr.codex.third');
-  assert.deepEqual(selected.identity, frozenThird);
-  assert.deepEqual(selected.fallback_profile_snapshots, []);
-  assert.deepEqual(await selectQualifiedFallback({ attemptReceipt: receipt, registry: null, environment, platform: 'win32' }),
-    { status: 'registry_unavailable' });
-});
-
-test('DHR_34: no qualified fallback produces the frozen canonical pause identity chain', () => {
-  const frozen = {
-    executor_profile_id: 'herdr.codex.backup', account_alias: 'acct-backup',
-    config_fingerprint: HASH, executor_capability_hash: HASH,
+async function mutationSnapshot(runRoot) {
+  const files = async directory => (await readdir(join(runRoot, directory))).sort();
+  return {
+    eventsText: await readFile(join(runRoot, 'events.jsonl'), 'utf8'),
+    stateText: await readFile(join(runRoot, 'state.json'), 'utf8'),
+    resultFiles: await files('results'),
+    receiptFiles: await files('receipts'),
+    pauseFiles: await files('pauses'),
+    resolutionFiles: await files('pause-resolutions'),
   };
-  const pause = buildFallbackPause({
-    runId: 'RUN-1', nodeId: 'node-1', raisedAt: '2026-08-30T00:00:00.000Z',
-    attemptReceipt: {
-      receipt_id: 'receipt-1', attempt_id: 'attempt-1', fallback_profile_snapshots: [frozen],
-    },
-  });
-  assert.equal(pause.reason_code, 'E_FALLBACK_UNAVAILABLE');
-  assert.deepEqual(pause.manual_retry_profiles, [frozen]);
-  assert.equal(pause.fence.attempt_id, 'attempt-1');
-  assert.equal(pause.attention.state, 'open');
-  assert.match(pause.pause_id, /^[0-9a-f]{64}$/);
-});
-
-async function driverFixture(t, { fallbackPlatforms = ['win32'], fallbackFallbackIds = [], thirdProjection = true } = {}) {
-  const repoRoot = await mkdtemp(join(tmpdir(), 'dhr34-driver-'));
-  t.after(() => rm(repoRoot, { recursive: true, force: true }));
-  const runId = 'R001-dhr34-quota-fallback';
-  const root = join(repoRoot, '.dh-relay', runId);
-  await mkdir(root, { recursive: true });
-  await writeFile(join(repoRoot, 'task.md'), STARTUP_TASK, 'utf8');
-  const configRoot = join(repoRoot, 'config');
-  await mkdir(configRoot, { recursive: true });
-  await writeFile(join(configRoot, 'profile.json'), JSON.stringify({ model: 'test-model' }), 'utf8');
-  const source = profile('herdr.codex.source', 'acct-source', configRoot, {
-    quota_detector_id: TEST_DETECTOR_ID, fallback_profile_ids: ['herdr.codex.backup'],
-  });
-  const fallback = profile('herdr.codex.backup', 'acct-backup', configRoot, {
-    supported_platforms: fallbackPlatforms, quota_detector_id: TEST_DETECTOR_ID,
-    fallback_profile_ids: fallbackFallbackIds,
-  });
-  const third = profile('herdr.codex.third', 'acct-third', configRoot,
-    thirdProjection ? {} : { config_fingerprint_rule: undefined });
-  const registryPath = join(repoRoot, 'executor-profiles.json');
-  await writeFile(registryPath, JSON.stringify({ profiles: [source, fallback, third] }), 'utf8');
-  const run = {
-    protocol: 'relay.run/v2', run_id: runId, workflow_name: 'dhr34', summary: 'quota fallback',
-    trigger: 'system', trigger_by: null, created_at: '2026-08-30T00:00:00Z', labels: [],
-    nodes: [{
-      node_id: 'agent', title: 'agent', role: '执行', required: false, depends_on: [],
-      executor_profiles: [{ kind: 'herdr-agent', ref: source.executor_profile_id }],
-      instruction_ref,
-    }],
-  };
-  const store = await createStore({ root, run });
-  await store.appendEvent({ kind: 'run_created', at: run.created_at });
-  return { repoRoot, root, runId, registryPath, store, source, fallback, third,
-    environment: { DHR34_CONFIG: configRoot } };
 }
 
-test('DHR_34: confirmed quota starts one qualified fallback as a fresh Attempt', async (t) => {
-  const fixture = await driverFixture(t);
-  const fake = makeFakeHerdr({ statuses: ['idle', 'done', 'idle', 'done'], read: 'sanitized-result' });
-  let judged = 0;
-  const driver = startWorkflowDriver({
-    repoRoot: fixture.repoRoot, runId: fixture.runId, actor: { submitControl: fn => fn(fixture.store) },
-    herdrCli: fake.cli, herdrRegistryPath: fixture.registryPath, profileEnvironment: fixture.environment,
-    quotaDetectors: TEST_QUOTA_DETECTORS, platform: 'win32',
-    herdrPollMs: 1, herdrJudge: () => judged++ === 0
-      ? { outcome: 'failed', reason: 'E_EXECUTOR_EXIT_NONZERO', structured: {
-        quota_signal: { http_status: 429, error_code: 'usage_limit_reached' },
-      } }
-      : { outcome: 'succeeded', reason: null, structured: { verdict: 'ok' } },
-  });
-  t.after(() => driver.stop());
-  assert.deepEqual(await driver.done, { ok: true });
-  const starts = fixture.store.events.filter(event => event.kind === 'attempt_started');
-  assert.equal(starts.length, 2);
-  assert.notEqual(starts[0].attempt_id, starts[1].attempt_id);
-  const receipts = await Promise.all(starts.map(async event => JSON.parse(await readFile(
-    join(fixture.root, 'receipts', `${event.detail.replace(/^receipt:/, '')}.json`), 'utf8'))));
-  assert.equal(receipts[0].executor_identity.executor_profile_id, 'herdr.codex.source');
-  assert.equal(receipts[1].executor_identity.executor_profile_id, 'herdr.codex.backup');
-  assert.equal(fixture.store.events.filter(event => event.kind === 'attempt_failed').length, 1);
-  assert.equal(fixture.store.events.filter(event => event.kind === 'attempt_succeeded').length, 1);
-  assert.deepEqual(await fixture.store.appendCheckpoint({
-    receipt_id: receipts[0].receipt_id, node_id: 'agent', attempt_id: receipts[0].attempt_id,
-    checkpoint_id: 'late-source', payload_digest: HASH, at: '2026-08-30T00:00:02.000Z',
-  }), { ok: false, reason: 'E_IDENTITY_MISMATCH' });
-  assert.deepEqual(await fixture.store.appendResult({
-    receipt_id: receipts[0].receipt_id, node_id: 'agent', attempt_id: receipts[0].attempt_id,
-    executor_kind: 'herdr-agent', outcome: 'succeeded', reason: null,
-    at: '2026-08-30T00:00:03.000Z', payload_digest: HASH, structured: {},
-  }), { ok: false, reason: 'late_result_quarantined' });
+test('DHR_34: quota requires registered structured evidence', () => {
+  const detectors = { [TEST_DETECTOR_ID]: { status: 429, code: 'usage_limit_reached' } };
+  assert.deepEqual(classifyQuota({ detectorId: TEST_DETECTOR_ID, signal: { http_status: 429, error_code: 'usage_limit_reached' }, detectors }),
+    { classification: 'quota_confirmed', detector_id: TEST_DETECTOR_ID });
+  assert.equal(classifyQuota({ detectorId: TEST_DETECTOR_ID, signal: { http_status: 429, error_code: 'rate_limited' }, detectors }).classification, 'not_quota');
+  assert.equal(classifyQuota({ detectorId: 'unknown', signal: { http_status: 429, error_code: 'usage_limit_reached' }, detectors }).classification, 'unknown');
+  assert.equal(classifyQuota({ detectorId: TEST_DETECTOR_ID, signal: { message: 'usage limit reached' }, detectors }).classification, 'unknown');
 });
 
-test('DHR_34: confirmed quota without a qualified fallback pauses and opens no Attempt', async (t) => {
-  const fixture = await driverFixture(t, { fallbackPlatforms: ['linux'] });
-  const fake = makeFakeHerdr({ statuses: ['idle', 'done'], read: 'sanitized-result' });
-  const driver = startWorkflowDriver({
-    repoRoot: fixture.repoRoot, runId: fixture.runId, actor: { submitControl: fn => fn(fixture.store) },
-    herdrCli: fake.cli, herdrRegistryPath: fixture.registryPath, profileEnvironment: fixture.environment,
-    quotaDetectors: TEST_QUOTA_DETECTORS, platform: 'win32',
-    herdrPollMs: 1, herdrJudge: () => ({
-      outcome: 'failed', reason: 'E_EXECUTOR_EXIT_NONZERO',
-      structured: { quota_signal: { http_status: 429, error_code: 'usage_limit_reached' } },
-    }),
-  });
-  t.after(() => driver.stop());
-  assert.deepEqual(await driver.done, { ok: true });
-  assert.equal(fixture.store.events.filter(event => event.kind === 'attempt_started').length, 1);
-  assert.equal(fixture.store.events.filter(event => event.kind === 'attempt_failed').length, 0);
-  assert.equal(fixture.store.events.filter(event => event.kind === 'fallback_pause_created').length, 1);
-  assert.equal((await fixture.store.readState()).node_states[0].status, 'waiting_human');
+test('DHR_34: fallback selection honors the frozen Receipt snapshot', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'dhr34-fallback-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await writeFile(join(root, 'profile.json'), JSON.stringify({ model: 'test-model' }));
+  const environment = { DHR34_CONFIG: root };
+  const template = '${DHR34_CONFIG}/profile.json';
+  const linux = profile('herdr.codex.linux', 'acct-linux', template, { supported_platforms: ['linux'] });
+  const stale = profile('herdr.codex.stale', 'acct-stale', template);
+  const qualified = profile('herdr.codex.qualified', 'acct-qualified', template);
+  const unsignable = profile('herdr.codex.unsignable', 'acct-unsignable', template, { fallback_profile_ids: ['herdr.codex.unconfigured'] });
+  const unconfigured = profile('herdr.codex.unconfigured', 'acct-unconfigured', template);
+  delete unconfigured.config_fingerprint_rule;
+  const receipt = { fallback_profile_snapshots: [
+    createExecutorIdentity(linux, { '/model': 'test-model' }),
+    createExecutorIdentity(stale, { '/model': 'old-model' }),
+    createExecutorIdentity(qualified, { '/model': 'test-model' }),
+  ] };
+  const selected = await selectQualifiedFallback({ attemptReceipt: receipt, registry: { profiles: [linux, stale, qualified] }, environment, platform: 'win32' });
+  assert.equal(selected.status, 'selected');
+  assert.equal(selected.profile.executor_profile_id, qualified.executor_profile_id);
+  assert.deepEqual(await selectQualifiedFallback({
+    attemptReceipt: { fallback_profile_snapshots: [
+      receipt.fallback_profile_snapshots[0],
+      receipt.fallback_profile_snapshots[1],
+      createExecutorIdentity(unsignable, { '/model': 'test-model' }),
+    ] },
+    registry: { profiles: [linux, stale, unsignable, unconfigured] }, environment, platform: 'win32',
+  }), { status: 'fallback_unavailable' });
+  assert.deepEqual(await selectQualifiedFallback({ attemptReceipt: receipt, registry: null, environment, platform: 'win32' }), { status: 'registry_unavailable' });
 });
 
-test('DHR_34: a failed canonical pause write fails closed without a text-only Attention', async (t) => {
-  const fixture = await driverFixture(t, { fallbackPlatforms: ['linux'] });
-  const guardedStore = new Proxy(fixture.store, { get(target, property) {
-    if (property === 'appendFallbackPause') return async () => { throw new Error('E_STORE_WRITE_FAILED:test'); };
-    return Reflect.get(target, property);
-  } });
-  const fake = makeFakeHerdr({ statuses: ['idle', 'done'], read: 'sanitized-result' });
-  const driver = startWorkflowDriver({
-    repoRoot: fixture.repoRoot, runId: fixture.runId, actor: { submitControl: fn => fn(guardedStore) },
-    herdrCli: fake.cli, herdrRegistryPath: fixture.registryPath, profileEnvironment: fixture.environment,
-    quotaDetectors: TEST_QUOTA_DETECTORS, platform: 'win32',
-    herdrPollMs: 1, herdrJudge: () => ({
-      outcome: 'failed', reason: 'E_EXECUTOR_EXIT_NONZERO',
-      structured: { quota_signal: { http_status: 429, error_code: 'usage_limit_reached' } },
-    }),
+test('DHR_34: canonical pause permits an explicit frozen-profile retry only', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'dhr34-retry-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const profileHome = join(root, 'profile');
+  await mkdir(profileHome);
+  await writeFile(join(profileHome, 'profile.json'), JSON.stringify({ model: 'test-model' }));
+  const environment = { DHR34_CONFIG: profileHome };
+  const main = profile('herdr.codex.main', 'acct-main', '${DHR34_CONFIG}/profile.json');
+  const backup = profile('herdr.codex.backup', 'acct-backup', '${DHR34_CONFIG}/profile.json');
+  await writeFile(join(root, 'registry.json'), JSON.stringify({ profiles: [main, backup] }));
+  const frozen = createExecutorIdentity(backup, { '/model': 'test-model' });
+  const run = { protocol: 'relay.run/v2', run_id: 'RUN-dhr34', workflow_name: 'quota', summary: 'quota retry', trigger: 'system', trigger_by: null, created_at: '2026-09-07T00:00:00Z', labels: [], nodes: [{ node_id: 'agent', title: 'agent', required: false, executor_profiles: [{ kind: 'herdr-agent', ref: main.executor_profile_id }] }] };
+  const store = await createStore({ root: join(root, 'run'), run });
+  const receipt = { protocol: 'relay.attempt-receipt/v1', receipt_id: 'receipt-1', run_id: run.run_id, node_id: 'agent', attempt_id: 'attempt-1', issued_at: '2026-09-07T00:00:00.000Z', executor_identity: createExecutorIdentity(main, { '/model': 'test-model' }), fallback_profile_snapshots: [frozen] };
+  await store.registerAttemptReceipt(receipt);
+  const pause = buildFallbackPause({ runId: run.run_id, nodeId: 'agent', attemptReceipt: receipt, raisedAt: '2026-09-07T00:00:01.000Z' });
+  const samePause = buildFallbackPause({ runId: run.run_id, nodeId: 'agent', attemptReceipt: receipt, raisedAt: '2026-09-07T00:00:01.000Z' });
+  assert.deepEqual({
+    protocol: pause.protocol, run_id: pause.run_id, node_id: pause.node_id, attempt_id: pause.attempt_id,
+    receipt_id: pause.receipt_id, reason_code: pause.reason_code, raised_at: pause.raised_at,
+  }, {
+    protocol: 'relay.fallback-pause/v1', run_id: run.run_id, node_id: 'agent', attempt_id: 'attempt-1',
+    receipt_id: 'receipt-1', reason_code: 'E_FALLBACK_UNAVAILABLE', raised_at: '2026-09-07T00:00:01.000Z',
   });
-  t.after(() => driver.stop());
-  const outcome = await driver.done;
-  assert.equal(outcome.ok, false);
-  assert.match(outcome.error.message, /E_STORE_WRITE_FAILED/);
-  assert.equal(fixture.store.events.filter(event => event.kind === 'attempt_failed').length, 0);
-  assert.equal(fixture.store.events.filter(event => event.kind === 'fallback_pause_created').length, 0);
-  assert.equal(fixture.store.events.filter(event => event.kind === 'human_input_requested').length, 0);
+  assert.deepEqual({
+    protocol: pause.fence.protocol, attempt_id: pause.fence.attempt_id, receipt_id: pause.fence.receipt_id,
+    reason_code: pause.fence.reason_code, fenced_at: pause.fence.fenced_at,
+  }, {
+    protocol: 'relay.attempt-fence/v1', attempt_id: 'attempt-1', receipt_id: 'receipt-1',
+    reason_code: 'E_FALLBACK_UNAVAILABLE', fenced_at: '2026-09-07T00:00:01.000Z',
+  });
+  assert.deepEqual({
+    protocol: pause.attention.protocol, run_id: pause.attention.run_id, node_id: pause.attention.node_id,
+    attempt_id: pause.attention.attempt_id, receipt_id: pause.attention.receipt_id,
+    reason_code: pause.attention.reason_code, state: pause.attention.state, raised_at: pause.attention.raised_at,
+  }, {
+    protocol: 'relay.attention/v1', run_id: run.run_id, node_id: 'agent', attempt_id: 'attempt-1',
+    receipt_id: 'receipt-1', reason_code: 'E_FALLBACK_UNAVAILABLE', state: 'open', raised_at: '2026-09-07T00:00:01.000Z',
+  });
+  for (const id of [pause.pause_id, pause.fence.fence_id, pause.attention.attention_id]) assert.match(id, SHA256_HEX);
+  assert.equal(pause.pause_id, samePause.pause_id);
+  assert.equal(pause.fence.fence_id, samePause.fence.fence_id);
+  assert.equal(pause.attention.attention_id, samePause.attention.attention_id);
+  assert.deepEqual(pause.manual_retry_profiles, receipt.fallback_profile_snapshots);
+  await store.appendFallbackPause(pause);
+  const result = await retryWithFrozenProfile({ store, registryPath: join(root, 'registry.json'), environment, params: { run_id: run.run_id, node_id: 'agent', pause_id: pause.pause_id, executor_profile_id: backup.executor_profile_id, retry_request_id: HASH }, now: () => '2026-09-07T00:00:02.000Z' });
+  assert.equal(result.ok, true);
+  assert.equal(result.attempt_receipt.result_submission_mode, 'receipt-bound/v1');
+  assert.equal(result.attempt_receipt.run_id, run.run_id);
+  assert.equal(result.attempt_receipt.node_id, 'agent');
+  assert.equal(result.attempt_receipt.executor_identity.executor_profile_id, backup.executor_profile_id);
+  assert.deepEqual(result.attempt_receipt.executor_identity, frozen);
+  assert.match(result.attempt_receipt.attempt_id, /^retry-/);
+  assert.notEqual(result.attempt_receipt.attempt_id, receipt.attempt_id);
+  assert.match(result.attempt_receipt.receipt_id, /^receipt-/);
+  assert.notEqual(result.attempt_receipt.receipt_id, receipt.receipt_id);
+  assert.deepEqual(await store.openAttentions(), []);
 });
 
-test('DHR_34: permission failure remains terminal and never switches identity', async (t) => {
-  const fixture = await driverFixture(t);
-  const fake = makeFakeHerdr({ statuses: ['idle', 'done'], read: 'sanitized-result' });
-  const driver = startWorkflowDriver({
-    repoRoot: fixture.repoRoot, runId: fixture.runId, actor: { submitControl: fn => fn(fixture.store) },
-    herdrCli: fake.cli, herdrRegistryPath: fixture.registryPath, profileEnvironment: fixture.environment,
-    quotaDetectors: TEST_QUOTA_DETECTORS, platform: 'win32',
-    herdrPollMs: 1, herdrJudge: () => ({
-      outcome: 'failed', reason: 'E_EXECUTOR_EXIT_NONZERO',
-      structured: { quota_signal: { http_status: 403, error_code: 'permission_denied' } },
-    }),
-  });
-  t.after(() => driver.stop());
-  assert.deepEqual(await driver.done, { ok: true });
-  assert.equal(fixture.store.events.filter(event => event.kind === 'attempt_started').length, 1);
-  assert.equal(fixture.store.events.filter(event => event.kind === 'attempt_failed').length, 1);
-  assert.equal(fixture.store.events.filter(event => event.kind === 'fallback_pause_created').length, 0);
-});
-
-test('DHR_34: an unregistered detector cannot trigger an automatic identity switch', async (t) => {
-  const fixture = await driverFixture(t);
-  const fake = makeFakeHerdr({ statuses: ['idle', 'done'], read: 'sanitized-result' });
-  const driver = startWorkflowDriver({
-    repoRoot: fixture.repoRoot, runId: fixture.runId, actor: { submitControl: fn => fn(fixture.store) },
-    herdrCli: fake.cli, herdrRegistryPath: fixture.registryPath, profileEnvironment: fixture.environment,
-    platform: 'win32', herdrPollMs: 1, herdrJudge: () => ({
-      outcome: 'failed', reason: 'E_EXECUTOR_EXIT_NONZERO',
-      structured: { quota_signal: { http_status: 429, error_code: 'usage_limit_reached' } },
-    }),
-  });
-  t.after(() => driver.stop());
-  assert.deepEqual(await driver.done, { ok: true });
-  assert.equal(fixture.store.events.filter(event => event.kind === 'attempt_started').length, 1);
-  assert.equal(fixture.store.events.filter(event => event.kind === 'attempt_failed').length, 1);
-  assert.equal(fixture.store.events.filter(event => event.kind === 'fallback_pause_created').length, 0);
-});
-
-test('DHR_34: an unsignable nested fallback makes the candidate unavailable and pauses canonically', async (t) => {
-  const fixture = await driverFixture(t, {
-    fallbackFallbackIds: ['herdr.codex.third'], thirdProjection: false,
-  });
-  const fake = makeFakeHerdr({ statuses: ['idle', 'done'], read: 'sanitized-result' });
-  const driver = startWorkflowDriver({
-    repoRoot: fixture.repoRoot, runId: fixture.runId, actor: { submitControl: fn => fn(fixture.store) },
-    herdrCli: fake.cli, herdrRegistryPath: fixture.registryPath, profileEnvironment: fixture.environment,
-    quotaDetectors: TEST_QUOTA_DETECTORS, platform: 'win32', herdrPollMs: 1,
-    herdrJudge: () => ({ outcome: 'failed', reason: 'E_EXECUTOR_EXIT_NONZERO',
-      structured: { quota_signal: { http_status: 429, error_code: 'usage_limit_reached' } } }),
-  });
-  t.after(() => driver.stop());
-  assert.deepEqual(await driver.done, { ok: true });
-  assert.equal(fixture.store.events.filter(event => event.kind === 'attempt_started').length, 1);
-  assert.equal(fixture.store.events.filter(event => event.kind === 'attempt_failed').length, 0);
-  assert.equal(fixture.store.events.filter(event => event.kind === 'fallback_pause_created').length, 1);
-  assert.equal(fixture.store.events.filter(event => event.kind === 'human_input_requested').length, 0);
-});
-
-test('DHR_34: fallback quota pauses for human choice and cannot chain to a third identity', async (t) => {
-  const fixture = await driverFixture(t, { fallbackFallbackIds: ['herdr.codex.third'] });
-  const fake = makeFakeHerdr({ statuses: ['idle', 'done', 'idle', 'done'], read: 'sanitized-result' });
-  const driver = startWorkflowDriver({
-    repoRoot: fixture.repoRoot, runId: fixture.runId, actor: { submitControl: fn => fn(fixture.store) },
-    herdrCli: fake.cli, herdrRegistryPath: fixture.registryPath, profileEnvironment: fixture.environment,
-    quotaDetectors: TEST_QUOTA_DETECTORS, platform: 'win32',
-    herdrPollMs: 1, herdrJudge: () => ({
-      outcome: 'failed', reason: 'E_EXECUTOR_EXIT_NONZERO',
-      structured: { quota_signal: { http_status: 429, error_code: 'usage_limit_reached' } },
-    }),
-  });
-  t.after(() => driver.stop());
-  assert.deepEqual(await driver.done, { ok: true });
-  assert.equal(fixture.store.events.filter(event => event.kind === 'attempt_started').length, 2);
-  assert.equal(fixture.store.events.filter(event => event.kind === 'attempt_failed').length, 1);
-  assert.equal(fixture.store.events.filter(event => event.kind === 'fallback_pause_created').length, 1);
-  assert.equal((await fixture.store.readState()).node_states[0].status, 'waiting_human');
-});
-
-test('DHR_34: an invalid current registry fails closed through canonical pause', async (t) => {
-  const fixture = await driverFixture(t);
-  const fake = makeFakeHerdr({ statuses: ['idle', 'done'], read: 'sanitized-result' });
-  const driver = startWorkflowDriver({
-    repoRoot: fixture.repoRoot, runId: fixture.runId, actor: { submitControl: fn => fn(fixture.store) },
-    herdrCli: fake.cli, herdrRegistryPath: fixture.registryPath, profileEnvironment: fixture.environment,
-    quotaDetectors: TEST_QUOTA_DETECTORS, platform: 'win32',
-    herdrPollMs: 1, herdrJudge: () => {
-      writeFileSync(fixture.registryPath, '{', 'utf8');
-      return { outcome: 'failed', reason: 'E_EXECUTOR_EXIT_NONZERO',
-        structured: { quota_signal: { http_status: 429, error_code: 'usage_limit_reached' } } };
-    },
-  });
-  t.after(() => driver.stop());
-  assert.deepEqual(await driver.done, { ok: true });
-  assert.equal(fixture.store.events.filter(event => event.kind === 'attempt_started').length, 1);
-  assert.equal(fixture.store.events.filter(event => event.kind === 'attempt_failed').length, 0);
-  assert.equal(fixture.store.events.filter(event => event.kind === 'fallback_pause_created').length, 1);
-});
-
-test('DHR_34: recovery trusts the fallback Receipt and cannot regain automatic chaining', async (t) => {
-  const fixture = await driverFixture(t, { fallbackFallbackIds: ['herdr.codex.third'] });
-  const fallbackIdentity = createExecutorIdentity(fixture.fallback, { '/model': 'test-model' });
-  const thirdIdentity = createExecutorIdentity(fixture.third, { '/model': 'test-model' });
-  const issuedAt = '2026-08-30T00:00:01.000Z';
-  await fixture.store.appendEvent({ kind: 'node_started', at: issuedAt, node_id: 'agent' });
-  await fixture.store.registerAttemptReceipt({
-    protocol: 'relay.attempt-receipt/v1', receipt_id: 'rcpt-recovered-fallback',
-    run_id: fixture.runId, node_id: 'agent', attempt_id: 'attempt-recovered-fallback', issued_at: issuedAt,
-    executor_identity: fallbackIdentity, fallback_profile_snapshots: [thirdIdentity],
-  });
-  await fixture.store.appendEvent({
-    kind: 'host_observation_changed', at: issuedAt, node_id: 'agent', attempt_id: 'attempt-recovered-fallback',
-    executor_ref: 'recovered-fallback', observation_status: 'alive',
-    detail: `herdr_status=working;agent=recovered-fallback;pane=recovered-pane;seq=1;work_dir_root=${fixture.repoRoot};profile=${fixture.source.executor_profile_id}`,
-  });
-  const fake = makeFakeHerdr({ statuses: ['done', 'done'], read: 'sanitized-result' });
-  const driver = startWorkflowDriver({
-    repoRoot: fixture.repoRoot, runId: fixture.runId, actor: { submitControl: fn => fn(fixture.store) },
-    herdrCli: fake.cli, herdrRegistryPath: fixture.registryPath, profileEnvironment: fixture.environment,
-    quotaDetectors: TEST_QUOTA_DETECTORS, platform: 'win32',
-    herdrPollMs: 1, herdrJudge: () => ({
-      outcome: 'failed', reason: 'E_EXECUTOR_EXIT_NONZERO',
-      structured: { quota_signal: { http_status: 429, error_code: 'usage_limit_reached' } },
-    }),
-  });
-  t.after(() => driver.stop());
-  assert.deepEqual(await driver.done, { ok: true });
-  assert.equal(fixture.store.events.filter(event => event.kind === 'attempt_started').length, 1);
-  assert.equal(fixture.store.events.filter(event => event.kind === 'attempt_failed').length, 0);
-  assert.equal(fixture.store.events.filter(event => event.kind === 'fallback_pause_created').length, 1);
+test('DHR_34: non-frozen profile retry is rejected without mutation', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'dhr34-retry-rejected-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const profileHome = join(root, 'profile');
+  await mkdir(profileHome);
+  await writeFile(join(profileHome, 'profile.json'), JSON.stringify({ model: 'test-model' }));
+  const environment = { DHR34_CONFIG: profileHome };
+  const main = profile('herdr.codex.main', 'acct-main', '${DHR34_CONFIG}/profile.json');
+  const backup = profile('herdr.codex.backup', 'acct-backup', '${DHR34_CONFIG}/profile.json');
+  await writeFile(join(root, 'registry.json'), JSON.stringify({ profiles: [main, backup] }));
+  const frozen = createExecutorIdentity(backup, { '/model': 'test-model' });
+  const run = { protocol: 'relay.run/v2', run_id: 'RUN-dhr34-rejected', workflow_name: 'quota', summary: 'quota retry', trigger: 'system', trigger_by: null, created_at: '2026-09-07T00:00:00Z', labels: [], nodes: [{ node_id: 'agent', title: 'agent', required: false, executor_profiles: [{ kind: 'herdr-agent', ref: main.executor_profile_id }] }] };
+  const runRoot = join(root, 'run');
+  const store = await createStore({ root: runRoot, run });
+  const receipt = { protocol: 'relay.attempt-receipt/v1', receipt_id: 'receipt-1', run_id: run.run_id, node_id: 'agent', attempt_id: 'attempt-1', issued_at: '2026-09-07T00:00:00.000Z', executor_identity: createExecutorIdentity(main, { '/model': 'test-model' }), fallback_profile_snapshots: [frozen] };
+  await store.registerAttemptReceipt(receipt);
+  const pause = buildFallbackPause({ runId: run.run_id, nodeId: 'agent', attemptReceipt: receipt, raisedAt: '2026-09-07T00:00:01.000Z' });
+  await store.appendFallbackPause(pause);
+  const before = await mutationSnapshot(runRoot);
+  await assert.rejects(
+    retryWithFrozenProfile({ store, registryPath: join(root, 'registry.json'), environment, params: { run_id: run.run_id, node_id: 'agent', pause_id: pause.pause_id, executor_profile_id: main.executor_profile_id, retry_request_id: HASH }, now: () => '2026-09-07T00:00:02.000Z' }),
+    { message: 'E_FALLBACK_PAUSE_RESOLUTION_INVALID:profile-not-frozen' },
+  );
+  assert.deepEqual(await mutationSnapshot(runRoot), before);
 });

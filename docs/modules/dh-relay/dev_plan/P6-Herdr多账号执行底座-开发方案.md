@@ -223,6 +223,7 @@
 | DHR_77 | 原子实现 Herdr terminal-instance `host_ref`、RPC hash 与 DSH-off 安全展示 | 标准 | 已完成 | DHR_72（已完成） | [workspace/DHR_77/](../workspace/DHR_77/) | squash `36aa990`；verify 下一提交（2026-09-06） | 任务类型=heavy；用户 E11 明文“认可”；两批施工、B-46 方案 A、heavy 四路终审、有效单测变异及 HC-HR-A1～A5/H1 均闭合；合入态核心 113/113、DHR_72 8/8、Result/lease 21/21、CLI 19/19、兄弟组复验 17/17、仓根回归与 dh 通过；完整 npm 仍按 E-7721 未得终态，DHR_75/B 非确定性清理债务见 F-7709；release_mode=full；证据不得替代 DHR_35 P6-M1；不含 push/deploy/下一卡 |
 | DHR_78 | 当前 P6 单一启动指令与一次补发 | 标准 | 已完成 | DHR_77 | [workspace/DHR_78/](../workspace/DHR_78/) | squash `71e795e`；verify 本提交（2026-09-07） | B-47；任务类型=heavy；用户 E11 明文“认可”；A9 核心分账及 A10..A12/H3、有效变异与 heavy 五路复核闭合；master 受影响 125/125、模块体检 0 failure；完整 npm 仍未得自然终态；release_mode=full；不含 push/deploy/真实 Agent/DHR_35/DHR_80 |
 | DHR_80 | 修复人工重试 Receipt 的结果接收闭环 | 标准 | 已完成 | DHR_64、DHR_70、DHR_78 | [workspace/DHR_80/](../workspace/DHR_80/) | squash `cb66f78`；verify `3db949a`（2026-09-07）；release_mode=full | B-48/B-50/B-51；task_type=heavy；用户 E11 明文“认可”；主干受影响组合 37/37、audit/dh/diff-check exit 0，heavy 五路与变异闭合。默认完整 npm 仍为 370/365/5/0、exit 1，不称全量绿；F-8006/F-8007 入 `ACC-2026-09-07-01`；不新增 Agent 启动，不替代真实 Agent/DHR_35，不含 push/deploy/下一卡。 |
+| DHR_79 | 迁移 DHR_34 的过期 host-side judge 测试语义 | 轻 | 进行中 | DHR_64（已完成） | [workspace/DHR_79/](../workspace/DHR_79/) | | 用户在 2026-09-07 明确要求继续解决；仅测试迁移，不恢复已由 DHR_64 移除的 driver 自动 fallback。 |
 | DHR_73 | 调查启动链静默停摆（F-3516 / F-3519） | 标准 | 未开始 | DHR_72 | [workspace/DHR_73/](../workspace/DHR_73/) | | 任务类型=normal；B-35 新增；**纯调查卡，不改 `relay-core/**`**；时间盒 ≤12 次真实启动或两个工作时段；出口 (a) 根因钉死 + 修复卡 B-adjust 候选 / (b) 复现率 + 现场 + 看门狗候选；两种出口下 F-3516/F-3519 保持 open；DHR_35 重开不等本卡；须另行 D-start |
 | DHR_74 | 钉死 BL-17 一族停顿（F-7108/F-7109）的精确落点并按证据修复，解阻塞 DHR_71 绿闸 | 标准 | 已完成 | 无前置（DHR_71 门禁依赖本卡） | [workspace/DHR_74/](../workspace/DHR_74/) | verify `a20cfc7`（2026-09-06） | 任务类型=常规；用户接受四条诚实结论与未闭合项移交；own-baseline 51/4/0 三轮通过；DHR_72-H transfer 已由 E-7241 清零 R31；release_mode=risk-accepted，Risk-Count=1，RISK-DHR74-F7402 移交 DHR_73/环境侧 A-B；不含 push/deploy/下一卡 |
 
@@ -751,6 +752,23 @@
 - `docs/modules/dh-relay/design/evidence/51-B50-DHR80完整回归门槛-B调整交叉审核记录.md`（B-50 单文件）
 
 实施约束：优先复用 gate 恢复与现有单写队列，只改复现所需路径；需要改变历史 Receipt、公开 schema、Store 原子性或启动产品语义时停止相关改动，先回设计裁决。无新增持久化产物，沿用现役 Receipt/Result/Run 保留与恢复规则。
+#### DHR_79
+
+- **目标**：将 `identity-quota.test.mjs` 中依赖已移除 `herdrJudge` 与 driver 自动 fallback 的场景迁移为对现行 Receipt-bound 边界和既有 quota/fallback 纯函数、手动 retry 原语的测试，使测试不再无终态。
+- **非目标**：不修改 `workflow-driver`、Store、RPC、Result schema、自动 fallback 语义、DHR_34 已完成历史或任何真实 Agent/账号路径。
+- **档位**：轻（仅测试语义迁移）。
+- **任务类型**：轻量<!-- dh:task-type:v1 task=DHR_79 type=light -->
+- **依赖**：DHR_64（已完成）；不阻塞 DHR_78 或 DHR_35。
+- **验收口径**：
+  - **机器证**：`identity-quota.test.mjs` 不再传入或依赖 `herdrJudge`，不假设 driver 读取 host `done`/`idle` 即生成 Result 或自动切换身份。
+  - **机器证**：保留并覆盖已冻结的 quota 双证据分类、Receipt snapshot 的 fallback 选择/拒绝、canonical pause 与 `retryWithFrozenProfile` 的手动路径；定向命令自然终态且 exit 0。
+  - **机器证**：变更仅限下列精确路径与轻量工作区，`git diff --check` 通过。
+- **变更范围**：
+
+<!-- dh:allowed-paths:v1 task=DHR_79 -->
+  - `relay-core/test/identity-quota.test.mjs`
+  - `docs/modules/dh-relay/workspace/DHR_79/**`
+  - `docs/modules/dh-relay/dev_plan/P6-Herdr多账号执行底座-开发方案.md`
 
 #### DHR_78
 
