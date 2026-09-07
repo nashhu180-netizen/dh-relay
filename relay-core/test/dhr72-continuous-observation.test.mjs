@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -25,6 +26,8 @@ const profile = {
   config_fingerprint_rule: { kind: 'file-exists', path_template: '${DHR72_PROFILE_HOME}/profile.json',
     fields: [{ pointer: '/model', classification: 'nonsecret' }] },
 };
+const INSTRUCTION = 'DHR72 test task';
+const instruction_ref = { path: 'task.md', sha256: createHash('sha256').update(INSTRUCTION, 'utf8').digest('hex') };
 
 test('DHR72 driver: initial idle remains observable until later working records a checkpoint', async (t) => {
   const repoRoot = await mkdtemp(join(tmpdir(), 'dhr72-continuous-'));
@@ -33,16 +36,17 @@ test('DHR72 driver: initial idle remains observable until later working records 
     protocol: 'relay.run/v2', run_id: runId, workflow_name: 'dhr72', summary: 'continuous observation',
     trigger: 'system', created_at: '2026-09-04T00:00:00.000Z', labels: [],
     nodes: [{ node_id: 'node-a', title: 'A', role: 'work', required: true,
-      executor_profiles: [{ kind: 'herdr-agent', ref: profile.executor_profile_id }] }],
+      executor_profiles: [{ kind: 'herdr-agent', ref: profile.executor_profile_id }], instruction_ref }],
   };
   const root = join(repoRoot, '.dh-relay', runId);
   const store = await createStore({ root, run });
   const registryPath = join(repoRoot, 'profiles.json');
   await writeFile(join(repoRoot, 'profile.json'), JSON.stringify({ model: 'test-model' }), 'utf8');
+  await writeFile(join(repoRoot, 'task.md'), INSTRUCTION, 'utf8');
   await writeFile(registryPath, JSON.stringify({ profiles: [profile] }), 'utf8');
   // launch probes once before the polling loop; retain two idle observations
   // for the loop itself before the first working heartbeat.
-  const fake = makeFakeHerdr({ statuses: ['idle', 'idle', 'idle', 'working'] });
+  const fake = makeFakeHerdr({ statuses: ['idle', 'idle', 'idle', 'idle', 'working'] });
   const driver = startWorkflowDriver({
     repoRoot, runId, actor: { submitControl: job => job(store) }, herdrCli: fake.cli,
     herdrRegistryPath: registryPath, profileEnvironment: { DHR72_PROFILE_HOME: repoRoot },
@@ -73,16 +77,17 @@ test('DHR72 driver: idle plus blocked pane never checkpoints, returns running, o
     protocol: 'relay.run/v2', run_id: runId, workflow_name: 'dhr72', summary: 'idle blocked guard',
     trigger: 'system', created_at: '2026-09-04T00:00:00.000Z', labels: [],
     nodes: [{ node_id: 'node-a', title: 'A', role: 'work', required: true,
-      executor_profiles: [{ kind: 'herdr-agent', ref: profile.executor_profile_id }] }],
+      executor_profiles: [{ kind: 'herdr-agent', ref: profile.executor_profile_id }], instruction_ref }],
   };
   const root = join(repoRoot, '.dh-relay', runId);
   const store = await createStore({ root, run });
   const registryPath = join(repoRoot, 'profiles.json');
   await writeFile(join(repoRoot, 'profile.json'), JSON.stringify({ model: 'test-model' }), 'utf8');
+  await writeFile(join(repoRoot, 'task.md'), INSTRUCTION, 'utf8');
   await writeFile(registryPath, JSON.stringify({ profiles: [profile] }), 'utf8');
   // Launch observes working and sends the instruction once. Later idle observations
   // must be paired with the blocked pane projection, not mistaken for working.
-  const fake = makeFakeHerdr({ statuses: ['working', 'idle'], paneStatuses: ['blocked'] });
+  const fake = makeFakeHerdr({ statuses: ['working', 'working', 'working', 'idle'], paneStatuses: ['blocked'] });
   const driver = startWorkflowDriver({
     repoRoot, runId, actor: { submitControl: job => job(store) }, herdrCli: fake.cli,
     herdrRegistryPath: registryPath, profileEnvironment: { DHR72_PROFILE_HOME: repoRoot },
@@ -105,12 +110,13 @@ async function exitFixture(t, { suffix, statuses, paneStatuses, fakeOptions = {}
     protocol: 'relay.run/v2', run_id: runId, workflow_name: 'dhr72', summary: `exit ${suffix}`,
     trigger: 'system', created_at: '2026-09-04T00:00:00.000Z', labels: [],
     nodes: [{ node_id: 'node-a', title: 'A', role: 'work', required: true,
-      executor_profiles: [{ kind: 'herdr-agent', ref: profile.executor_profile_id }] }],
+      executor_profiles: [{ kind: 'herdr-agent', ref: profile.executor_profile_id }], instruction_ref }],
   };
   const root = join(repoRoot, '.dh-relay', runId);
   const store = await createStore({ root, run });
   const registryPath = join(repoRoot, 'profiles.json');
   await writeFile(join(repoRoot, 'profile.json'), JSON.stringify({ model: 'test-model' }), 'utf8');
+  await writeFile(join(repoRoot, 'task.md'), INSTRUCTION, 'utf8');
   await writeFile(registryPath, JSON.stringify({ profiles: [profile] }), 'utf8');
   const fake = makeFakeHerdr({ statuses, paneStatuses, ...fakeOptions });
   const actor = actorFactory?.(store) ?? { submitControl: job => job(store) };
@@ -175,7 +181,9 @@ test('DHR72 driver: a terminal Attempt is not observed again by a new driver', a
   });
   await resumed.done;
   assert.equal(item.fake.agentGets, pollsBeforeResume, 'terminal resume must not poll the old Attempt');
-  await assertNoLaterEvents(item.store, eventCount, 'terminal Attempt');
+  const later = item.store.events.slice(eventCount);
+  assert.ok(later.every(event => event.kind === 'run_finished' && event.node_id === null),
+    'terminal resume may only close the Run; it must not observe or mutate the old Attempt');
 });
 
 for (const closureReason of ['actor-closed', 'lease-lost']) {

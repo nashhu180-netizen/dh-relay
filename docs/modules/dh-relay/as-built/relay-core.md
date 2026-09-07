@@ -420,3 +420,10 @@ DHR_52 的 RPC seam 与 DHR_51 的 host 之间原本没有装配人（F-001）�
 - **协议与 Store**：event/v2 与 host-observation/v0 对齐 nullable/optional 字段及 alive/非观测约束。新 writer 仍严格拒绝 alive 缺 ref。`loadEvents` 只有一个用户确认的 B-46 形状级历史例外：原 schema 失败且事件为 otherwise-valid alive v2、对象自身缺字段时，浅拷贝补固定全零 sentinel 仅供 schema 复验；返回原事件，不迁移、不写回、不造 ref。显式 null 与任何邻近损坏继续拒绝。
 - **capability 与展示**：v1、bootstrap、v2 共用包含 event/v2 的 20 份完整 baseline；旧固定 v1 hash 在方法分派/订阅注册前拒绝且零推送。focus 默认安全投影移除诊断字段；非空 ref 按 alive/lost 标“当前观测/历史观测”，显式 null 标“尚无可信 terminal 标签”，旧账缺字段标“legacy 未提供”；`executor_ref` 仍只是 attach locator。
 - **诚实边界**：现存账没有可信代际标记，真正旧账与升级后删字段的同形损坏账无法区分，方案 A 会把两者都按 legacy 只读接纳；该残余由用户在 DHR-B-46 明文接受。完整 `npm test` 仍未得自然终态，已知 DHR_76/C 预算断言与 DHR_34 identity-quota 挂起保持范围外；DHR_77 的受控 Herdr/DSH-off 标签对照不替代 DHR_35 真实产品 Agent、Linux SSH 或 Receipt→Result 闭环。
+
+## 15. DHR_78 增量 —— 单一启动内容、一次补发与持久占次
+
+- **任务引用合同**：run/v2 的 Herdr node 条件必填 `instruction_ref={path,sha256}`；loader 对仓根与目标分别 `realpath` 后判包含关系，再核 UTF-8 正文 SHA-256。缺失、仓根逃逸、摘要不匹配均在创建 Attempt/启动 Agent 前 fail-closed。prompt 只含仓根、任务指针与 Receipt 提交说明；业务正文和凭据不进发送账。
+- **唯一 sender 与最终守卫**：workflow driver 的正常首发、启动 blocked 解除后的首发、60 秒补发均收敛 `dispatchStartupInstruction`，物理调用只经 Herdr adapter 的 `sendStartupInstruction`。每次先在 Store 队列持久占次并最终确认当前 Receipt/Attempt、无 checkpoint/Result；确认后重新读取 source/digest、重新观测同 `host_ref` 且状态为 idle/working/done，随后无异步间隔地调用 sender。
+- **补发与恢复**：同一存活 driver 首发 accepted 后用单调时钟计 60 秒；若 Store 仍无当前 Attempt checkpoint/Result，原样补发一次。host 的 working 字样不是进展事实；Store checkpoint/Result 才是。总次数封闭为 1/2，失败、超时、失租、stop、blocked/unknown、身份或源漂移均停止；恢复旧 Attempt 永不自动再发。占次后调用前中断保留 `authorized`，Attention 明示可能未送达，要求检查现场、必要时 stop 旧执行再显式新执行。
+- **私有账与边界**：`startup-dispatch.json` 只保存 version、Receipt/Attempt/node 关联、send_count、host_ref、prompt_digest、outcome，复用 Store 原子写与 Run 保留策略；不新增公开 event/RPC/read-model，不改变 checkpoint/Result 算法。当前专项 17/17、契约+专项 32/32、受影响 11 文件 125/125 自然终态通过；有效 host-status 变异红、还原绿。完整 `npm test` 因 DHR_76 时间预算旧断言与 identity-quota 旧 `herdrJudge`/Receipt 迁移尾项未得终态，不能写成全量绿；后者保留独立卡处理，真实产品链与 A9 外围分账仍属 DHR_35。

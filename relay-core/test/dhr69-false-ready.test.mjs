@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -10,6 +11,9 @@ import { startWorkflowDriver } from '../runtime/workflow-driver.mjs';
 import { createStore } from '../store/store.mjs';
 import { dumpDriverScene, untilEvent } from './helpers/bounded-wait.mjs';
 import { makeFakeHerdr } from './helpers/fake-herdr.mjs';
+
+const INSTRUCTION = 'DHR69 test task';
+const instruction_ref = { path: 'task.md', sha256: createHash('sha256').update(INSTRUCTION, 'utf8').digest('hex') };
 
 const HASH = 'a'.repeat(64);
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -40,12 +44,13 @@ async function runtimeFixture(t, { statuses, paneStatuses, registryProfile = cla
     protocol: 'relay.run/v2', run_id: runId, workflow_name: 'relay/basic-agent-task@1', summary: 'dhr69',
     trigger: 'system', created_at: '2026-08-31T00:00:00.000Z',
     nodes: [{ node_id: 'herdr', title: 'herdr', role: '执行', required: false, depends_on: [],
-      executor_profiles: [{ kind: 'herdr-agent', ref: registryProfile.executor_profile_id }] }],
+      executor_profiles: [{ kind: 'herdr-agent', ref: registryProfile.executor_profile_id }], instruction_ref }],
   };
   const root = join(repoRoot, '.dh-relay', runId);
   await mkdir(root, { recursive: true });
   const registryPath = join(repoRoot, 'profiles.json');
   await writeFile(join(repoRoot, 'profile.json'), JSON.stringify({ model: 'test-model' }), 'utf8');
+  await writeFile(join(repoRoot, 'task.md'), INSTRUCTION, 'utf8');
   await writeFile(registryPath, JSON.stringify({ profiles: [registryProfile] }), 'utf8');
   const store = await createStore({ root, run });
   await store.appendEvent({ kind: 'run_created', at: run.created_at });
@@ -70,12 +75,13 @@ async function recoveryFixture(t, { statuses, paneStatuses, ...fakeExtras }) {
     protocol: 'relay.run/v2', run_id: runId, workflow_name: 'relay/basic-agent-task@1', summary: 'dhr69-recovery',
     trigger: 'system', created_at: '2026-08-31T00:00:00.000Z',
     nodes: [{ node_id: 'herdr', title: 'herdr', role: '执行', required: false, depends_on: [],
-      executor_profiles: [{ kind: 'herdr-agent', ref: claudeProfile.executor_profile_id }] }],
+      executor_profiles: [{ kind: 'herdr-agent', ref: claudeProfile.executor_profile_id }], instruction_ref }],
   };
   const root = join(repoRoot, '.dh-relay', runId);
   await mkdir(root, { recursive: true });
   const registryPath = join(repoRoot, 'profiles.json');
   await writeFile(join(repoRoot, 'profile.json'), JSON.stringify({ model: 'test-model' }), 'utf8');
+  await writeFile(join(repoRoot, 'task.md'), INSTRUCTION, 'utf8');
   await writeFile(registryPath, JSON.stringify({ profiles: [claudeProfile] }), 'utf8');
   const store = await createStore({ root, run });
   await store.appendEvent({ kind: 'run_created', at: run.created_at });
@@ -221,7 +227,7 @@ test('DHR_69/A driver：假就绪恰写一次 blocked Attention，扣住指令�
 
 test('DHR_69/B：中途假 idle 不得写 RESULT_MISSING，不得结束 Attempt', async (t) => {
   const { store, driver, fake } = await runtimeFixture(t, {
-    statuses: ['working', 'working', 'idle'], paneStatuses: ['blocked'],
+    statuses: ['working', 'working', 'working', 'idle'], paneStatuses: ['blocked'],
     driver: { herdrReadyTimeoutMs: 10_000, doneTimeoutMs: 80 },
   });
   t.after(() => driver.stop());
@@ -236,17 +242,15 @@ test('DHR_69/B：中途假 idle 不得写 RESULT_MISSING，不得结束 Attempt'
   assert.equal(blocked.length, 1);
 });
 
-test('DHR_69/C recovery：假就绪先观测再扣住，离开 blocked 后届内恰补发一次', async (t) => {
+test('DHR_69/C recovery：假就绪先观测再扣住，离开 blocked 后继续观测但不重发旧 Attempt', async (t) => {
   const { store, driver, fake } = await recoveryFixture(t, { statuses: ['idle'], paneStatuses: ['blocked'] });
   await until(() => store.events.some(event => event.kind === 'human_input_requested' && (event.reason ?? null) === null),
     'recovery blocked attention');
   assert.equal(fake.sent.length, 0, '观测为 blocked 时不得先发提交指令');
   fake.setStatuses(['working']);
   fake.setPaneStatuses(['unknown']);
-  await until(() => fake.sent.length === 1, 'recovery deferred instruction');
   await until(() => store.events.some(event => event.kind === 'checkpoint_recorded'), 'working after recovery');
-  assert.equal(fake.sent.length, 1);
-  assert.match(fake.sent[0].text, /submit-result --receipt-id /);
+  assert.equal(fake.sent.length, 0, '恢复届不得重发旧 Attempt 的启动内容');
 });
 
 test('DHR_69/C recovery：观测失败不得把提交指令发出去（F-69-R2-01）', async (t) => {

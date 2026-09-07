@@ -334,7 +334,7 @@ function cursorGap(detail) {
   return error;
 }
 
-function createHandle({ root, run, events, receipts, checkpoints, results, operations, pauses, resolutions, enqueue, writeGuard = null }) {
+function createHandle({ root, run, events, receipts, checkpoints, results, operations, pauses, resolutions, startupDispatches, enqueue, writeGuard = null }) {
   const runPath = join(root, 'run.json');
   const eventsPath = join(root, 'events.jsonl');
   const statePath = join(root, 'state.json');
@@ -345,6 +345,7 @@ function createHandle({ root, run, events, receipts, checkpoints, results, opera
   const operationsPath = join(root, 'operations');
   const pausesPath = join(root, 'pauses');
   const resolutionsPath = join(root, 'pause-resolutions');
+  const startupDispatchPath = join(root, 'startup-dispatch.json');
   const fencedAttempts = new Set([...pauses.values()].map(pause => `${pause.attempt_id}\u0000${pause.receipt_id}`));
   let mutationRecoveryRequired = false;
 
@@ -414,6 +415,10 @@ function createHandle({ root, run, events, receipts, checkpoints, results, opera
   function terminalOf(nodeId) {
     const current = currentReceipt(nodeId);
     return current ? results.get(current.receipt_id) : undefined;
+  }
+
+  async function persistStartupDispatches() {
+    await writeAtomic(startupDispatchPath, { version: 'startup-dispatch/v1', records: [...startupDispatches.values()] });
   }
 
   /** 本次写里新产生、尚未通知订阅者的事件。见 persistState 的顺序说明。 */
@@ -684,6 +689,61 @@ function createHandle({ root, run, events, receipts, checkpoints, results, opera
         return { ok: true, idempotent: false };
       });
     },
+    reserveStartupDispatch({ receipt_id: receiptId, attempt_id: attemptId, node_id: nodeId, host_ref: hostRef, prompt_digest: promptDigest, send_count: sendCount } = {}) {
+      return runWrite(async () => {
+        const receipt = receipts.get(receiptId);
+        if (!receipt || receipt.attempt_id !== attemptId || receipt.node_id !== nodeId || currentReceipt(nodeId)?.receipt_id !== receiptId) {
+          return { ok: false, reason: 'E_IDENTITY_MISMATCH' };
+        }
+        if (typeof hostRef !== 'string' || typeof promptDigest !== 'string' || ![1, 2].includes(sendCount)) {
+          return { ok: false, reason: 'E_STARTUP_DISPATCH_INVALID' };
+        }
+        if (results.has(receiptId) || [...checkpoints.keys()].some(key => key.startsWith(`${receiptId}\u0000`))) {
+          return { ok: false, reason: 'E_STARTUP_DISPATCH_PROGRESS' };
+        }
+        const prior = startupDispatches.get(receiptId);
+        if (prior) {
+          if (prior.version !== 'startup-dispatch/v1' || prior.attempt_id !== attemptId || prior.node_id !== nodeId
+            || prior.host_ref !== hostRef || prior.prompt_digest !== promptDigest || prior.send_count + 1 !== sendCount) {
+            return { ok: false, reason: 'E_STARTUP_DISPATCH_CONFLICT' };
+          }
+        } else if (sendCount !== 1) {
+          return { ok: false, reason: 'E_STARTUP_DISPATCH_CONFLICT' };
+        }
+        const record = { version: 'startup-dispatch/v1', receipt_id: receiptId, attempt_id: attemptId, node_id: nodeId,
+          send_count: sendCount, host_ref: hostRef, prompt_digest: promptDigest, outcome: 'authorized' };
+        startupDispatches.set(receiptId, record);
+        await persistStartupDispatches();
+        return { ok: true, record };
+      });
+    },
+    confirmStartupDispatch({ receipt_id: receiptId, attempt_id: attemptId, node_id: nodeId, host_ref: hostRef, prompt_digest: promptDigest, send_count: sendCount } = {}) {
+      return runWrite(async () => {
+        const receipt = receipts.get(receiptId);
+        const record = startupDispatches.get(receiptId);
+        if (!receipt || receipt.attempt_id !== attemptId || receipt.node_id !== nodeId || currentReceipt(nodeId)?.receipt_id !== receiptId
+          || results.has(receiptId) || [...checkpoints.keys()].some(key => key.startsWith(`${receiptId}\u0000`))
+          || !record || record.outcome !== 'authorized' || record.attempt_id !== attemptId || record.node_id !== nodeId
+          || record.host_ref !== hostRef || record.prompt_digest !== promptDigest || record.send_count !== sendCount) {
+          return { ok: false, reason: 'E_STARTUP_DISPATCH_CONFLICT' };
+        }
+        return { ok: true };
+      });
+    },
+    getStartupDispatch(receiptId) {
+      const record = startupDispatches.get(receiptId);
+      return record ? { ...record } : null;
+    },
+    recordStartupDispatchOutcome({ receipt_id: receiptId, outcome } = {}) {
+      return runWrite(async () => {
+        const prior = startupDispatches.get(receiptId);
+        if (!prior || !['accepted', 'failed'].includes(outcome)) return { ok: false, reason: 'E_STARTUP_DISPATCH_INVALID' };
+        const record = { ...prior, outcome };
+        startupDispatches.set(receiptId, record);
+        await persistStartupDispatches();
+        return { ok: true, record };
+      });
+    },
     /**
      * DHR_64 receipt-bound Result ingress. The caller supplies only the closed
      * submission object; every Result identity and its structured payload are
@@ -886,6 +946,7 @@ export async function createStore({ root, run, writeGuard = null }) {
     operations: new Map(),
     pauses: new Map(),
     resolutions: new Map(),
+    startupDispatches: new Map(),
     enqueue: createWriteQueue(),
     writeGuard,
   });
@@ -985,6 +1046,30 @@ async function loadCheckpoints(dir) {
   return map;
 }
 
+async function loadStartupDispatches(root) {
+  let document;
+  try {
+    document = await readArtifactJson(join(root, 'startup-dispatch.json'));
+  } catch (error) {
+    if (String(error?.message).includes('artifact-ENOENT-')) return new Map();
+    throw error;
+  }
+  if (document?.version !== 'startup-dispatch/v1' || !Array.isArray(document.records)) throw new Error('E_STORE_CORRUPT:startup-dispatch');
+  const records = new Map();
+  for (const record of document.records) {
+    const fields = ['version', 'receipt_id', 'attempt_id', 'node_id', 'send_count', 'host_ref', 'prompt_digest', 'outcome'];
+    if (!record || Object.keys(record).length !== fields.length || fields.some(field => !Object.hasOwn(record, field))
+      || record.version !== 'startup-dispatch/v1' || typeof record.receipt_id !== 'string'
+      || typeof record.attempt_id !== 'string' || typeof record.node_id !== 'string'
+      || ![1, 2].includes(record.send_count) || typeof record.host_ref !== 'string' || typeof record.prompt_digest !== 'string'
+      || !['authorized', 'accepted', 'failed'].includes(record.outcome) || records.has(record.receipt_id)) {
+      throw new Error('E_STORE_CORRUPT:startup-dispatch');
+    }
+    records.set(record.receipt_id, record);
+  }
+  return records;
+}
+
 /**
  * 从磁盘重建 Store：run.json 为身份锚点，events.jsonl 逐行解析并做完整性校验
  * （可解析、协议与 run 归属、seq 从 0 连续、逐条过冻结契约），receipt/checkpoint/result
@@ -1010,6 +1095,13 @@ export async function openStore({ root, writeGuard = null }) {
   const results = await loadArtifacts(join(root, 'results'), (result) => requireId(result?.receipt_id, 'receipt-id'));
   assertResultLedger(run, events, receipts, results);
   const checkpoints = await loadCheckpoints(join(root, 'checkpoints'));
+  const startupDispatches = await loadStartupDispatches(root);
+  for (const record of startupDispatches.values()) {
+    const receipt = receipts.get(record.receipt_id);
+    if (!receipt || receipt.attempt_id !== record.attempt_id || receipt.node_id !== record.node_id) {
+      throw new Error('E_STORE_CORRUPT:startup-dispatch');
+    }
+  }
   const operations = await loadArtifacts(join(root, 'operations'), (operation) => requireId(operation?.receipt_id, 'receipt-id'));
   const pauses = await loadArtifacts(join(root, 'pauses'), (pause) => {
     assertFallbackPause(pause);
@@ -1033,6 +1125,7 @@ export async function openStore({ root, writeGuard = null }) {
     operations,
     pauses,
     resolutions,
+    startupDispatches,
     enqueue: createWriteQueue(),
     writeGuard,
   });

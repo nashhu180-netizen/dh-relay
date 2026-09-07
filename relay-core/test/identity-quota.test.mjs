@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { writeFileSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -13,6 +14,8 @@ import { createStore } from '../store/store.mjs';
 import { makeFakeHerdr } from './helpers/fake-herdr.mjs';
 
 const HASH = 'a'.repeat(64);
+const STARTUP_TASK = 'DHR34 quota fallback task';
+const instruction_ref = { path: 'task.md', sha256: createHash('sha256').update(STARTUP_TASK, 'utf8').digest('hex') };
 const TEST_DETECTOR_ID = 'synthetic-usage-limit/v1';
 const TEST_QUOTA_DETECTORS = Object.freeze({
   [TEST_DETECTOR_ID]: Object.freeze({ status: 429, code: 'usage_limit_reached' }),
@@ -100,6 +103,7 @@ async function driverFixture(t, { fallbackPlatforms = ['win32'], fallbackFallbac
   const runId = 'R001-dhr34-quota-fallback';
   const root = join(repoRoot, '.dh-relay', runId);
   await mkdir(root, { recursive: true });
+  await writeFile(join(repoRoot, 'task.md'), STARTUP_TASK, 'utf8');
   const configRoot = join(repoRoot, 'config');
   await mkdir(configRoot, { recursive: true });
   await writeFile(join(configRoot, 'profile.json'), JSON.stringify({ model: 'test-model' }), 'utf8');
@@ -120,6 +124,7 @@ async function driverFixture(t, { fallbackPlatforms = ['win32'], fallbackFallbac
     nodes: [{
       node_id: 'agent', title: 'agent', role: '执行', required: false, depends_on: [],
       executor_profiles: [{ kind: 'herdr-agent', ref: source.executor_profile_id }],
+      instruction_ref,
     }],
   };
   const store = await createStore({ root, run });

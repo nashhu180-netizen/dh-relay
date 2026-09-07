@@ -67,6 +67,12 @@ const LOCATOR_TARGETS = new Set([
   'https://dh-relay.local/contracts/relay.common/v1#/$defs/locator',
   '#/$defs/locator',
 ]);
+// DHR_78：instruction_ref 是一个闭合的 source_ref 对，而非裸 locator；其 path
+// 仍经 source_ref 指向共享 locator，摘要也由同一冻结定义约束。只豁免这一个明确对象，
+// 不把任意 *_ref 的内联 shape 放开。
+const COMPOSITE_LOCATOR_FIELDS = new Map([
+  ['instruction_ref', '#/$defs/source_ref'],
+]);
 
 // ── 结构位置 token 清单（白名单层的登记表）──
 // 生成/更新：node tools/audit-contracts.mjs --write-tokens
@@ -167,7 +173,8 @@ function walk(node, path, ctx, inGuard = false) {
         // 数组型（source_refs: {type:array, items:{$ref: source_ref}}）由其元素定义自己承担，这里放过
         const isArrayOfObjects = sub.type === 'array' && sub.items?.$ref && !LOCATOR_TARGETS.has(sub.items.$ref);
         if (isArrayOfObjects) continue;
-        if (!targets.some(t => LOCATOR_TARGETS.has(t))) {
+        const compositeTarget = COMPOSITE_LOCATOR_FIELDS.get(name);
+        if (!targets.some(t => LOCATOR_TARGETS.has(t)) && !(compositeTarget && targets.includes(compositeTarget))) {
           ctx.envelopeErrors.push({ where: `${path}.properties.${name}`, why: `跨边界引用字段未 $ref 到共享 locator（实际引用 ${JSON.stringify(targets)}）——内联一份自己的 pattern 会让 G5 的 reason 判据与中立性断言同时落空` });
         }
       }

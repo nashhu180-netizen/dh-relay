@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -16,6 +17,8 @@ import { startWorkflowDriver } from '../runtime/workflow-driver.mjs';
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 const execFileAsync = promisify(execFile);
+const INSTRUCTION = 'DHR75 test task';
+const instruction_ref = { path: 'task.md', sha256: createHash('sha256').update(INSTRUCTION, 'utf8').digest('hex') };
 
 const runDoc = () => ({
   protocol: 'relay.run/v2',
@@ -27,7 +30,7 @@ const runDoc = () => ({
   created_at: '2026-09-04T00:00:00Z',
   labels: [],
   nodes: [{ node_id: 'node-a', title: 'A', role: 'executor', required: false, depends_on: [],
-    executor_profiles: [{ kind: 'herdr-agent', ref: 'herdr.codex.main' }] }],
+    executor_profiles: [{ kind: 'herdr-agent', ref: 'herdr.codex.main' }], instruction_ref }],
 });
 
 const capabilities = {
@@ -90,6 +93,7 @@ test('DHR_75/A：Host actor 在真实慢 CLI 调用期间续租，独立 contend
   t.after(() => rm(repo, { recursive: true, force: true }));
   t.after(() => rm(scratch, { recursive: true, force: true }));
   await writeFile(join(repo, '.gitignore'), '.dh-relay/\n', 'utf8');
+  await writeFile(join(repo, 'task.md'), INSTRUCTION, 'utf8');
   await execFileAsync('git', ['init', '-q'], { cwd: repo });
   const { run_id: runId, root: runRoot } = await createRunWithNumbering({
     repoRoot: repo, slug: 'async-herdr', run: runDoc(), indexPath: join(scratch, 'runs.json'),
@@ -138,6 +142,7 @@ test('DHR_75/B：真实慢 CLI 返回后，同一 Host actor 继续落 observati
   t.after(() => rm(repo, { recursive: true, force: true }));
   t.after(() => rm(scratch, { recursive: true, force: true }));
   await writeFile(join(repo, '.gitignore'), '.dh-relay/\n', 'utf8');
+  await writeFile(join(repo, 'task.md'), INSTRUCTION, 'utf8');
   await execFileAsync('git', ['init', '-q'], { cwd: repo });
   const { run_id: runId, root: runRoot } = await createRunWithNumbering({
     repoRoot: repo, slug: 'async-driver', run: runDoc(), indexPath: join(scratch, 'runs.json'),

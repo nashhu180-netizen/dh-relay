@@ -20,8 +20,9 @@ import { digest } from '../tools/canonical.mjs';
 import { runRootOf } from './host.mjs';
 import { classifyStepOutcome, resolveStepEntry, startProcessStep } from './process-executor.mjs';
 import { makeHerdrCli } from './executors/herdr/herdr-cli.mjs';
-import { launchHerdrAgent, observationDetail, observeHerdrAgent, reconcileHerdrAgent, receiptSubmissionInstruction, sendToHerdrAgent, stopHerdrAgent } from './executors/herdr/herdr-executor.mjs';
+import { launchHerdrAgent, observationDetail, observeHerdrAgent, reconcileHerdrAgent, sendStartupInstruction, stopHerdrAgent } from './executors/herdr/herdr-executor.mjs';
 import { freezeProfileIdentity, loadExecutorProfiles, resolveProfile } from './executors/herdr/profile-registry.mjs';
+import { loadStartupInstruction } from './startup-dispatch.mjs';
 
 /**
  * 起一届 driver。**不阻塞调用方**：`start`/`resume` 的 RPC 应答不该等业务节点跑完。
@@ -30,6 +31,7 @@ import { freezeProfileIdentity, loadExecutorProfiles, resolveProfile } from './e
  *                    （H12：换一次执行必换 attempt_id，绝不复用旧 id 续写）。
  */
 export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = false, clock = () => Date.now(),
+  monotonicClock = () => performance.now(), startupInstructionLoader = loadStartupInstruction,
   herdrCli = makeHerdrCli(), herdrRegistryPath, herdrPollMs = 1_000, observationLostMs = 60_000,
   doneTimeoutMs = 60_000, herdrReadyTimeoutMs = 10_000, signalConflictMs = 60_000,
   profileEnvironment = process.env } = {}) {
@@ -182,8 +184,53 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
   });
   const hostRefField = hostRef => typeof hostRef === 'string' ? { host_ref: hostRef } : {};
 
+  async function dispatchStartupInstruction({ node, receiptId, attemptId, handle, sendCount, expectedDigest = null, hostRef = handle.host_ref }) {
+    if (stopping || typeof handle.host_ref !== 'string' || hostRef !== handle.host_ref) return { ok: false, reason: 'E_STARTUP_DISPATCH_STOPPED' };
+    const instruction = await startupInstructionLoader({ repoRoot, instructionRef: node.instruction_ref, receiptId });
+    if (!instruction.ok || (expectedDigest !== null && instruction.prompt_digest !== expectedDigest)) {
+      return { ok: false, reason: 'E_STARTUP_INSTRUCTION_INVALID' };
+    }
+    const reserved = await actor.submitControl(store => store.reserveStartupDispatch({
+      receipt_id: receiptId, attempt_id: attemptId, node_id: node.node_id, host_ref: hostRef,
+      prompt_digest: instruction.prompt_digest, send_count: sendCount,
+    }));
+    if (!reserved?.ok || stopping) return { ok: false, reason: reserved?.reason ?? 'E_STARTUP_DISPATCH_STOPPED' };
+    const preConfirmInstruction = await startupInstructionLoader({ repoRoot, instructionRef: node.instruction_ref, receiptId });
+    if (!preConfirmInstruction.ok || preConfirmInstruction.prompt_digest !== instruction.prompt_digest) {
+      await actor.submitControl(store => store.recordStartupDispatchOutcome({ receipt_id: receiptId, outcome: 'failed' }));
+      return { ok: false, reason: 'E_STARTUP_INSTRUCTION_INVALID' };
+    }
+    if (stopping || hostRef !== handle.host_ref) return { ok: false, reason: 'E_STARTUP_DISPATCH_STOPPED' };
+    const currentHost = await observeHerdrAgent({ cli: herdrCli, handle });
+    if (!currentHost.ok || currentHost.observation.host_ref !== hostRef
+      || !['idle', 'working', 'done'].includes(currentHost.observation.herdr_status)) {
+      return { ok: false, reason: 'E_STARTUP_DISPATCH_STOPPED' };
+    }
+    const confirmed = await actor.submitControl(store => store.confirmStartupDispatch({
+      receipt_id: receiptId, attempt_id: attemptId, node_id: node.node_id, host_ref: hostRef,
+      prompt_digest: instruction.prompt_digest, send_count: sendCount,
+    }));
+    if (!confirmed?.ok || stopping) return { ok: false, reason: confirmed?.reason ?? 'E_STARTUP_DISPATCH_STOPPED' };
+    const finalInstruction = await startupInstructionLoader({ repoRoot, instructionRef: node.instruction_ref, receiptId });
+    if (!finalInstruction.ok || finalInstruction.prompt_digest !== instruction.prompt_digest || stopping) {
+      return { ok: false, reason: finalInstruction?.ok ? 'E_STARTUP_DISPATCH_STOPPED' : 'E_STARTUP_INSTRUCTION_INVALID' };
+    }
+    const finalHost = await observeHerdrAgent({ cli: herdrCli, handle });
+    if (!finalHost.ok || finalHost.observation.host_ref !== hostRef
+      || !['idle', 'working', 'done'].includes(finalHost.observation.herdr_status) || stopping) {
+      return { ok: false, reason: 'E_STARTUP_DISPATCH_STOPPED' };
+    }
+    const sent = await sendStartupInstruction({ cli: herdrCli, handle, text: finalInstruction.text });
+    await actor.submitControl(store => store.recordStartupDispatchOutcome({
+      receipt_id: receiptId, outcome: sent?.ok ? 'accepted' : 'failed',
+    }));
+    return sent?.ok ? { ok: true, prompt_digest: instruction.prompt_digest } : { ok: false, reason: sent?.reason ?? 'E_EXECUTOR_HOST_LOST' };
+  }
+
   async function driveHerdrNode({ node, profile, firstAttempt, recovery = null,
     registrySnapshot = null, executorIdentity = null, fallbackProfileSnapshots = null }) {
+    const startupInstruction = recovery ? null : await startupInstructionLoader({ repoRoot, instructionRef: node.instruction_ref });
+    if (!recovery && !startupInstruction?.ok) return;
     const loaded = registrySnapshot
       ? { ok: true, registry: registrySnapshot }
       : await loadExecutorProfiles({ registryPath: herdrRegistryPath, environment: profileEnvironment });
@@ -206,6 +253,8 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
     // DHR_68/C：启动期 blocked 时提交指令要扣住——不能把它打进产品自己的信任对话框。
     let launchBlocked = false;
     let instructionPending = false;
+    let startupAcceptedAt = null;
+    let startupPromptDigest = null;
     let launch = null;
     let stopHandle = null;
     if (recovery) {
@@ -236,7 +285,13 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
       launchBlocked = launch.launch_blocked === true;
       stopHandle = { result: null, async kill() { this.result = await stopHerdrAgent({ cli: herdrCli, handle }); return this.result; } };
       current = stopHandle;
-      if (stopping) await stopHandle.kill();
+      if (stopping) {
+        await stopHandle.kill();
+        await actor.submitControl(store => store.appendEvent({ kind: 'human_input_requested', at: nowIso(), node_id: node.node_id,
+          attempt_id: attemptId, executor_ref: handle.agent_name, reason: 'E_EXECUTOR_KILLED',
+          detail: herdrDetail(handle, 'unknown', null) }));
+        return;
+      }
       const readyObservation = launch.ready_observation;
       const launchHostRef = readyObservation?.host_ref ?? handle.host_ref;
       await actor.submitControl(store => store.appendEvent({
@@ -248,11 +303,14 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
       if (receiptBound && launchBlocked) {
         instructionPending = true;
       } else if (receiptBound) {
-        const instruction = await sendToHerdrAgent({ cli: herdrCli, handle, text: receiptSubmissionInstruction(receiptId) });
-        if (!instruction?.ok) {
+        const instruction = await dispatchStartupInstruction({ node, receiptId, attemptId, handle, sendCount: 1 });
+        if (!instruction.ok) {
           await actor.submitControl(store => store.appendEvent({ kind: 'human_input_requested', at: nowIso(), node_id: node.node_id,
             attempt_id: attemptId, reason: 'E_EXECUTOR_HOST_LOST', executor_ref: handle.agent_name,
-            detail: `completion-instruction-failed:${instruction?.detail ?? instruction?.reason ?? 'unknown'}` }));
+            detail: `startup-instruction-failed:${instruction.reason ?? 'unknown'}` }));
+        } else {
+          startupAcceptedAt = monotonicClock();
+          startupPromptDigest = instruction.prompt_digest;
         }
       }
     }
@@ -277,13 +335,6 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
       } else if (recoveredObservation.observation.herdr_status === 'blocked') {
         instructionPending = true;
         launchBlocked = true;
-      } else {
-        const instruction = await sendToHerdrAgent({ cli: herdrCli, handle, text: receiptSubmissionInstruction(receiptId) });
-        if (!instruction?.ok) {
-          await actor.submitControl(store => store.appendEvent({ kind: 'human_input_requested', at: nowIso(), node_id: node.node_id,
-            attempt_id: attemptId, reason: 'E_EXECUTOR_HOST_LOST', executor_ref: handle.agent_name,
-            detail: `completion-instruction-failed:${instruction?.detail ?? instruction?.reason ?? 'unknown'}` }));
-        }
       }
     }
     let checkpoint = 0;
@@ -371,16 +422,27 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
             mismatchAt = null;
             mismatchEscalated = false;
           }
-          // 人处理完信任框、agent 首次离开 blocked：把启动期扣住的提交指令补发恰好一次。
-          // 判据是「不再是 blocked」而不是白名单 working/idle——blocked 直接跳到 done 时
-          // 白名单会漏发，随后 done 分支去等 Result，最终误落 E_EXECUTOR_RESULT_MISSING。
-          if (instructionPending && observation.herdr_status !== 'blocked') {
+          // 只有新 Attempt 的启动期 blocked 可在解除后首发；恢复旧 Attempt 不重发。
+          if (!recovery && instructionPending && observation.herdr_status !== 'blocked') {
             instructionPending = false;
-            const deferred = await sendToHerdrAgent({ cli: herdrCli, handle, text: receiptSubmissionInstruction(receiptId) });
-            if (!deferred?.ok) {
+            const deferred = await dispatchStartupInstruction({ node, receiptId, attemptId, handle, sendCount: 1 });
+            if (!deferred.ok) {
               await actor.submitControl(store => store.appendEvent({ kind: 'human_input_requested', at: nowIso(), node_id: node.node_id,
                 attempt_id: attemptId, reason: 'E_EXECUTOR_HOST_LOST', executor_ref: handle.agent_name,
-                detail: `completion-instruction-failed:${deferred?.detail ?? deferred?.reason ?? 'unknown'}` }));
+                detail: `startup-instruction-failed:${deferred.reason ?? 'unknown'}` }));
+            } else {
+              startupAcceptedAt = monotonicClock();
+              startupPromptDigest = deferred.prompt_digest;
+            }
+          }
+          if (!recovery && startupAcceptedAt !== null && monotonicClock() - startupAcceptedAt >= 60_000) {
+            startupAcceptedAt = null;
+            const retry = await dispatchStartupInstruction({ node, receiptId, attemptId, handle, sendCount: 2,
+              expectedDigest: startupPromptDigest, hostRef: observation.host_ref });
+            if (!retry.ok && retry.reason === 'E_EXECUTOR_HOST_LOST') {
+              await actor.submitControl(store => store.appendEvent({ kind: 'human_input_requested', at: nowIso(), node_id: node.node_id,
+                attempt_id: attemptId, reason: 'E_EXECUTOR_HOST_LOST', executor_ref: handle.agent_name,
+                detail: 'startup-instruction-retry-failed' }));
             }
           }
           if (observation.herdr_status === 'working') {
@@ -525,6 +587,14 @@ export function startWorkflowDriver({ repoRoot, runId, actor, retryFailed = fals
       try { attemptReceipt = JSON.parse(await readFile(join(runRoot, 'receipts', `${receiptId}.json`), 'utf8')); } catch { continue; }
       const receiptBound = attemptReceipt?.result_submission_mode === 'receipt-bound/v1';
       if (receiptBound) submissionGates.add(receiptId);
+      const startupDispatch = await actor.submitControl(store => store.getStartupDispatch(receiptId));
+      if (startupDispatch?.outcome === 'authorized' && !attemptEvents.some(event => event.detail === 'startup-instruction-may-not-have-been-delivered; inspect-current-attempt; stop-old-attempt-before-explicit-new-attempt')) {
+        await appendRecoveryEventIfOpen({ nodeId: node.node_id, attemptId: nodeState.current_attempt_id, input: {
+          kind: 'human_input_requested', at: nowIso(), node_id: node.node_id, attempt_id: nodeState.current_attempt_id,
+          executor_ref: observed?.executor_ref ?? null,
+          detail: 'startup-instruction-may-not-have-been-delivered; inspect-current-attempt; stop-old-attempt-before-explicit-new-attempt',
+        } });
+      }
       if (!observed?.executor_ref) {
         const profile = (node.executor_profiles ?? []).find(item => item?.kind === 'herdr-agent');
         await appendRecoveryEventIfOpen({ nodeId: node.node_id, attemptId: nodeState.current_attempt_id, input: { kind: 'host_observation_changed', at: nowIso(), node_id: node.node_id,

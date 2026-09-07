@@ -17,7 +17,7 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -35,6 +35,8 @@ import { makeFakeHerdr } from './helpers/fake-herdr.mjs';
 import { settledState } from './helpers/settled-state.mjs';
 
 const execFileAsync = promisify(execFile);
+const INSTRUCTION = 'agent-node Herdr test task';
+const instruction_ref = { path: 'task.md', sha256: createHash('sha256').update(INSTRUCTION, 'utf8').digest('hex') };
 const WORKFLOW_SRC = new URL('../workflows/basic-agent-task/', import.meta.url);
 
 const untilAsync = async (check, timeout = 30_000, what = 'condition') => {
@@ -222,10 +224,11 @@ test('DHR_33 窄路径：driver 托管 herdr-agent，开 Attempt、记心跳并�
   const runId = 'R001-herdr-driver-20260829';
   const run = runDoc([{
     node_id: 'agent-herdr', title: 'agent-herdr', role: '执行', required: false, depends_on: [],
-    executor_profiles: [{ kind: 'herdr-agent', ref: 'herdr.codex.test' }],
+    executor_profiles: [{ kind: 'herdr-agent', ref: 'herdr.codex.test' }], instruction_ref,
   }], runId);
   const root = runRootOf(repoRoot, runId);
   await mkdir(root, { recursive: true });
+  await writeFile(join(repoRoot, 'task.md'), INSTRUCTION, 'utf8');
   const configHome = join(repoRoot, 'profile-config-dhr33');
   await mkdir(configHome, { recursive: true });
   await writeFile(join(configHome, 'profile.json'), JSON.stringify({ model: 'test-model' }), 'utf8');
@@ -266,10 +269,11 @@ test('DHR_61 D1: Herdr Attempt freezes source and ordered fallback identities be
   t.after(() => rm(repoRoot, { recursive: true, force: true }));
   const runId = 'R001-dhr61-herdr-receipt-20260829';
   const run = runDoc([{ node_id: 'agent-herdr', title: 'agent-herdr', role: '执行', required: false, depends_on: [],
-    executor_profiles: [{ kind: 'herdr-agent', ref: 'herdr.codex.test' }],
+    executor_profiles: [{ kind: 'herdr-agent', ref: 'herdr.codex.test' }], instruction_ref,
   }], runId);
   const root = runRootOf(repoRoot, runId);
   await mkdir(root, { recursive: true });
+  await writeFile(join(repoRoot, 'task.md'), INSTRUCTION, 'utf8');
   const configHome = join(repoRoot, 'profile-config');
   await mkdir(configHome, { recursive: true });
   await writeFile(join(configHome, 'profile.json'), JSON.stringify({ model: 'test-model', ignored_token: 'not-projected' }), 'utf8');
@@ -307,11 +311,12 @@ test('DHR_61 D1: a Herdr profile without a projection rule leaves only that node
   const runId = 'R001-dhr61-projection-missing-20260830';
   const run = runDoc([
     { node_id: 'agent-herdr', title: 'agent-herdr', role: '执行', required: false, depends_on: [],
-      executor_profiles: [{ kind: 'herdr-agent', ref: 'herdr.codex.legacy' }] },
+      executor_profiles: [{ kind: 'herdr-agent', ref: 'herdr.codex.legacy' }], instruction_ref },
     processNode('healthy-process', 'healthy.mjs'),
   ], runId);
   const root = runRootOf(repoRoot, runId);
   await mkdir(root, { recursive: true });
+  await writeFile(join(repoRoot, 'task.md'), INSTRUCTION, 'utf8');
   await writeFile(join(repoRoot, 'healthy.mjs'), 'process.stdout.write(JSON.stringify({ ok: true }));\n', 'utf8');
   const registryPath = join(repoRoot, 'executor-profiles.json');
   await writeFile(registryPath, JSON.stringify({ profiles: [{

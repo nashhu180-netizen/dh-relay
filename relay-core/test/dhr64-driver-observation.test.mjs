@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -18,11 +19,14 @@ async function until(check, label, timeoutMs = 20_000) {
 }
 
 const HASH = 'a'.repeat(64);
+const INSTRUCTION = 'DHR64 test task';
+const INSTRUCTION_SHA256 = createHash('sha256').update(INSTRUCTION, 'utf8').digest('hex');
 const run = {
   protocol: 'relay.run/v2', run_id: 'RUN-DHR64-OBS', workflow_name: 'dhr64', summary: 'DHR64 observation',
   trigger: 'system', created_at: '2026-08-30T00:00:00.000Z', labels: [],
   nodes: [{ node_id: 'node-a', title: 'A', role: 'work', required: true,
-    executor_profiles: [{ kind: 'herdr-agent', ref: 'herdr.codex.main' }] }],
+    executor_profiles: [{ kind: 'herdr-agent', ref: 'herdr.codex.main' }],
+    instruction_ref: { path: 'task.md', sha256: INSTRUCTION_SHA256 } }],
 };
 const profile = {
   executor_profile_id: 'herdr.codex.main', backend: 'herdr', product: 'codex-cli', command_alias: 'codex',
@@ -40,6 +44,7 @@ async function fixture(t, fake) {
   const store = await createStore({ root, run });
   const registryPath = join(repoRoot, 'profiles.json');
   await writeFile(join(repoRoot, 'profile.json'), JSON.stringify({ model: 'test-model' }), 'utf8');
+  await writeFile(join(repoRoot, 'task.md'), INSTRUCTION, 'utf8');
   await writeFile(registryPath, JSON.stringify({ profiles: [profile] }), 'utf8');
   const driver = startWorkflowDriver({
     repoRoot, runId: run.run_id, actor: { submitControl: job => job(store) }, herdrCli: fake.cli,

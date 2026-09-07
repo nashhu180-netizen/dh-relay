@@ -13,6 +13,7 @@
  * 红线：不得为修 actor-closed 放宽单写者；不得要求提交打到「写 Receipt 的那一届进程」。
  */
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -31,12 +32,14 @@ import { makeFakeHerdr } from './helpers/fake-herdr.mjs';
 
 const execFileAsync = promisify(execFile);
 const HASH = 'a'.repeat(64);
+const INSTRUCTION = 'DHR70 test task';
+const instruction_ref = { path: 'task.md', sha256: createHash('sha256').update(INSTRUCTION, 'utf8').digest('hex') };
 
 const runTemplate = {
   protocol: 'relay.run/v2', run_id: 'RUN-DHR70', workflow_name: 'dhr70', summary: 'DHR70 submission gate',
   trigger: 'system', created_at: '2026-09-01T00:00:00.000Z', labels: [],
   nodes: [{ node_id: 'node-a', title: 'A', role: 'work', required: true,
-    executor_profiles: [{ kind: 'herdr-agent', ref: 'herdr.claude.main' }] }],
+    executor_profiles: [{ kind: 'herdr-agent', ref: 'herdr.claude.main' }], instruction_ref }],
 };
 
 const identity = {
@@ -344,6 +347,7 @@ test('DHR70 C: agent_get=idle ∧ pane_get=error 不得单独判死 Attempt，�
   const store = await createStore({ root: runRoot, run: { ...runTemplate, run_id: runId } });
   const registryPath = join(repoRoot, 'profiles.json');
   await writeFile(join(repoRoot, 'profile.json'), JSON.stringify({ model: 'test-model' }), 'utf8');
+  await writeFile(join(repoRoot, 'task.md'), INSTRUCTION, 'utf8');
   await writeFile(registryPath, JSON.stringify({ profiles: [claudeProfile] }), 'utf8');
 
   const fake = makeFakeHerdr({ statuses: ['idle'], paneAlive: false });

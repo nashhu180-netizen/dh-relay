@@ -76,7 +76,7 @@
       },
       {
         "id": "relay.run/v2",
-        "digest": "0ff1e432db4df3e517d9eb89fe6ffd8b5f556b2b8114ac45b71bafdb0641e4e8"
+        "digest": "e1c8ca794ed5aa7d0ea8d1fb718c659fe321e1b442e3f6ee60bd6fbbbf9af822"
       },
       {
         "id": "relay.subscription-terminal/v1",
@@ -101,5 +101,5 @@
       "process"
     ]
   },
-  "capability_hash": "241a8804525a2d408b2297304ac9a8c872acb1f35c15e5c90d87d1988582030e"
+  "capability_hash": "d540d88d41b9b14efaac72036ae61e018aa5322abaf2e36b686e014a9a58e1e6"
 }

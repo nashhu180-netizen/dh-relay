@@ -246,6 +246,28 @@ test('G2 聚合条款①~⑥逐档红绿矩阵（allOf 自身的回归护栏）'
   assert.deepEqual(bad, [], `聚合条款红绿矩阵不符：\n  ${bad.join('\n  ')}`);
 });
 
+test('DHR_78：Herdr instruction_ref 是闭合的 path 与 sha256 对', async () => {
+  const { loadAjv, validateOne } = await import(new URL('../tools/validate.mjs', import.meta.url));
+  const { ajv, byId } = loadAjv();
+  const node = {
+    node_id: 'herdr', title: 'herdr', role: 'executor', required: false,
+    executor_profiles: [{ kind: 'herdr-agent', ref: 'herdr.codex.test' }],
+    instruction_ref: { path: 'task.md', sha256: 'a'.repeat(64) },
+  };
+  const run = { protocol: 'relay.run/v2', run_id: 'RUN-DHR78-CONTRACT', workflow_name: 'dhr78', summary: 'contract',
+    trigger: 'system', created_at: '2026-09-07T00:00:00.000Z', nodes: [node] };
+  assert.equal(validateOne(ajv, byId, 'relay.run/v2', run).ok, true);
+  const missing = { ...node };
+  delete missing.instruction_ref;
+  assert.equal(validateOne(ajv, byId, 'relay.run/v2', { ...run, nodes: [missing] }).ok, false);
+  assert.equal(validateOne(ajv, byId, 'relay.run/v2', { ...run, nodes: [{ ...missing,
+    executor_profiles: [{ kind: 'process', ref: 'bin/task.mjs' }] }] }).ok, true);
+  assert.equal(validateOne(ajv, byId, 'relay.run/v2', { ...run, nodes: [{ ...node,
+    instruction_ref: { ...node.instruction_ref, extra: true } }] }).ok, false);
+  assert.equal(validateOne(ajv, byId, 'relay.run/v2', { ...run, nodes: [{ ...node,
+    instruction_ref: { path: 'task.md' } }] }).ok, false);
+});
+
 test('capability 基线：20 份（19 顶层协议 + 1 共享定义模块）的 digest 与 capability_hash 与基线相符', () => {
   // DHR_30 把 relay.rpc-methods/v1 与 relay.client-read-model/v1 一并纳入指纹，故从 8 份变 10 份。
   // E4 需求复核 P1-1 + E2 代码复核 P3-3。CANONICALIZATION.md §三末句与 §四表第 1 行**逐字**

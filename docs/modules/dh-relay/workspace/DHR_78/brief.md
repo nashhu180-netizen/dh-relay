@@ -32,6 +32,17 @@
 - Out of scope：DHR_35 外围 prompt/真实链、Ticket/PlanHome/P7、timeline/event seq/UTC 持久计时、公开 event/RPC/read-model、checkpoint/Result 事务改造、用户配置/凭据、真实 Codex/Claude Agent。
 - 何时必须停下问人：需要新增允许路径、改变正式合同、复核降级、P0/P1 三轮不收敛，或 E11 本地收口确认。
 
+## 2026-09-07 用户确认的施工调整
+
+- 本工作区承接用户批准的 allowed paths 增量，仅限以下两条用于 `instruction_ref` fixture，不削弱原断言或改写 Result 结算驱动；本轮不修改工作区外的 DevPlan：
+  - `relay-core/test/identity-quota.test.mjs`
+  - `relay-core/test/dhr76-profile-validation-lease.test.mjs`
+- 已批准施工内容：修复 `workflow-driver` 的 blocked 重发与 stop-发送竞态；补恢复路径对已占次未发送的不确定投递处理及定时测试。已占次不能证明已发送或未发送，恢复须提示可能未送达，不自动重发旧 Attempt。
+- 按 `task_plan.md` 的调整顺序优先修复既有发送安全合同缺口，再完成定向与完整回归；本调整不是机器项通过或复核结论。
+- dsh-bridge Windows EBUSY 仅单独复现/定位；只有确证同一根因且进一步变更确有必要时才提出精确变更建议，不混入本卡整改，不授权修改 dsh-bridge。
+- 施工授权只到 construction Node；本次顾问操作仅限本工作区计划工件。不得改生产代码、测试、Git 状态列，不做复核、验收或提交。
+- 用户随后明文批准 `relay-core/tools/audit-contracts.mjs`、`relay-core/tools/structural-tokens.txt`、`relay-core/capability-baseline.json` 三条精确扩围；仅同步本卡 schema 变更必需的审计登记、结构 token 与 capability 摘要，不扩大其它治理范围。
+
 ## 触及子系统
 
 - `relay-core`

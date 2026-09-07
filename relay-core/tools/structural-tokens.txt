@@ -104,6 +104,7 @@ in_flight
 include_legacy
 inspectRun
 inspectRun_params
+instruction_ref
 issued_at
 issued_by_runtime
 items

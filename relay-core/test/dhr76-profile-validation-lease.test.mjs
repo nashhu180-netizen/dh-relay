@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import childProcess, { execFile } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { syncBuiltinESMExports } from 'node:module';
@@ -24,6 +25,8 @@ import { startWorkflowDriver } from '../runtime/workflow-driver.mjs';
 import { createStore } from '../store/store.mjs';
 
 const execFileAsync = promisify(execFile);
+const STARTUP_TASK = 'DHR76 profile validation task';
+const instruction_ref = { path: 'task.md', sha256: createHash('sha256').update(STARTUP_TASK, 'utf8').digest('hex') };
 const originalSpawn = childProcess.spawn.bind(childProcess);
 const fixtureEnvironment = {
   DHR76_PROFILE_HOME: fileURLToPath(new URL('../../docs/modules/dh-relay/workspace/DHR_76/fixtures', import.meta.url)),
@@ -129,6 +132,7 @@ function runDocument() {
         { kind: 'herdr-agent', ref: 'herdr.codex.main' },
         { kind: 'herdr-agent', ref: 'herdr.claude.main' },
       ],
+      instruction_ref,
     }],
   };
 }
@@ -139,6 +143,7 @@ async function runtimeFixture(t, registry = completeRegistry()) {
   t.after(() => rm(repoRoot, { recursive: true, force: true }));
   t.after(() => rm(scratch, { recursive: true, force: true }));
   await writeFile(join(repoRoot, '.gitignore'), '.dh-relay/\n', 'utf8');
+  await writeFile(join(repoRoot, 'task.md'), STARTUP_TASK, 'utf8');
   await execFileAsync('git', ['init', '-q'], { cwd: repoRoot });
   const created = await createRunWithNumbering({
     repoRoot, slug: 'dhr76', run: runDocument(), indexPath: join(scratch, 'runs.json'),
@@ -155,6 +160,7 @@ async function assertRejectedDriver(root, registryPath) {
   const runId = 'R001-dhr76-rejected';
   const runRoot = join(root, '.dh-relay', runId);
   await mkdir(runRoot, { recursive: true });
+  await writeFile(join(root, 'task.md'), STARTUP_TASK, 'utf8');
   const run = { ...runDocument(), run_id: runId };
   const store = await createStore({ root: runRoot, run });
   await store.appendEvent({ kind: 'run_created', at: run.created_at });

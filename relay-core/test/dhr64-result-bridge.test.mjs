@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -21,11 +22,13 @@ import { writeLedger } from '../runtime/ledger.mjs';
 const execFileAsync = promisify(execFile);
 
 const HASH = 'a'.repeat(64);
+const INSTRUCTION = 'DHR64 bridge test task';
+const instruction_ref = { path: 'task.md', sha256: createHash('sha256').update(INSTRUCTION, 'utf8').digest('hex') };
 const run = {
   protocol: 'relay.run/v2', run_id: 'RUN-DHR64', workflow_name: 'dhr64', summary: 'DHR64 bridge',
   trigger: 'system', created_at: '2026-08-30T00:00:00.000Z', labels: [],
   nodes: [{ node_id: 'node-a', title: 'A', role: 'work', required: true,
-    executor_profiles: [{ kind: 'herdr-agent', ref: 'herdr.codex.main' }] }],
+    executor_profiles: [{ kind: 'herdr-agent', ref: 'herdr.codex.main' }], instruction_ref }],
 };
 
 const identity = {
@@ -183,6 +186,7 @@ test('DHR64 driver gate: an early submission finishes a working Herdr Attempt wi
   const store = await createStore({ root, run: runDocument });
   const registryPath = join(repoRoot, 'profiles.json');
   await writeFile(join(repoRoot, 'profile.json'), JSON.stringify({ model: 'test-model' }), 'utf8');
+  await writeFile(join(repoRoot, 'task.md'), INSTRUCTION, 'utf8');
   await writeFile(registryPath, JSON.stringify({ profiles: [herdrProfile] }), 'utf8');
   const fake = makeFakeHerdr({ statuses: ['working'], read: 'must-not-be-used' });
   const driver = startWorkflowDriver({
@@ -219,6 +223,7 @@ test('DHR64 driver gate: missing done submission becomes E_EXECUTOR_RESULT_MISSI
   const store = await createStore({ root, run: runDocument });
   const registryPath = join(repoRoot, 'profiles.json');
   await writeFile(join(repoRoot, 'profile.json'), JSON.stringify({ model: 'test-model' }), 'utf8');
+  await writeFile(join(repoRoot, 'task.md'), INSTRUCTION, 'utf8');
   await writeFile(registryPath, JSON.stringify({ profiles: [herdrProfile] }), 'utf8');
   const fake = makeFakeHerdr({ statuses: ['idle'] });
   const driver = startWorkflowDriver({

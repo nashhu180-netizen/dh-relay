@@ -11,13 +11,16 @@ import { startWorkflowDriver } from '../runtime/workflow-driver.mjs';
 import { createStore, openStore, readEventLog } from '../store/store.mjs';
 import { makeFakeHerdr } from './helpers/fake-herdr.mjs';
 
+const INSTRUCTION = 'DHR77 test task';
+const instruction_ref = { path: 'task.md', sha256: createHash('sha256').update(INSTRUCTION, 'utf8').digest('hex') };
+
 const PREFIX = 'herdr-terminal/sha256-';
 
 const legacyRun = (runId = 'RUN-DHR77-LEGACY') => ({
   protocol: 'relay.run/v2', run_id: runId, workflow_name: 'dhr77', summary: 'legacy host ref',
   trigger: 'system', created_at: '2026-09-06T00:00:00.000Z', labels: [],
   nodes: [{ node_id: 'node-a', title: 'A', role: 'work', required: true,
-    executor_profiles: [{ kind: 'herdr-agent', ref: 'herdr-agent' }] }],
+    executor_profiles: [{ kind: 'herdr-agent', ref: 'herdr-agent' }], instruction_ref }],
 });
 
 const legacyAliveEvent = (runId = 'RUN-DHR77-LEGACY') => ({
@@ -168,13 +171,14 @@ async function driverFixture(t, fakeOptions) {
     protocol: 'relay.run/v2', run_id: runId, workflow_name: 'dhr77', summary: 'host ref',
     trigger: 'system', created_at: '2026-09-06T00:00:00.000Z', labels: [],
     nodes: [{ node_id: 'node-a', title: 'A', role: 'work', required: true,
-      executor_profiles: [{ kind: 'herdr-agent', ref: profileRef }] }],
+      executor_profiles: [{ kind: 'herdr-agent', ref: profileRef }], instruction_ref }],
   };
   const root = join(repoRoot, '.dh-relay', runId);
   await mkdir(root, { recursive: true });
   const store = await createStore({ root, run });
   const registryPath = join(repoRoot, 'profiles.json');
   await writeFile(join(repoRoot, 'profile.json'), JSON.stringify({ model: 'test' }), 'utf8');
+  await writeFile(join(repoRoot, 'task.md'), INSTRUCTION, 'utf8');
   await writeFile(registryPath, JSON.stringify({ profiles: [{
     executor_profile_id: profileRef, backend: 'herdr', product: 'codex-cli', command_alias: 'codex',
     account_alias: 'acct-test', capabilities: { interactive: 'supported', resume: 'supported', readonly: 'supported',
@@ -238,7 +242,7 @@ async function recoveryFixture(t, fakeOptions, { seedHostRef = null } = {}) {
     protocol: 'relay.run/v2', run_id: runId, workflow_name: 'dhr77', summary: 'host ref recovery',
     trigger: 'system', created_at: '2026-09-06T00:00:00.000Z', labels: [],
     nodes: [{ node_id: 'node-a', title: 'A', role: 'work', required: true,
-      executor_profiles: [{ kind: 'herdr-agent', ref: profileRef }] }],
+      executor_profiles: [{ kind: 'herdr-agent', ref: profileRef }], instruction_ref }],
   };
   const root = join(repoRoot, '.dh-relay', runId);
   await mkdir(root, { recursive: true });

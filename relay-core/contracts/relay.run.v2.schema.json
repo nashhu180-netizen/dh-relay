@@ -146,6 +146,9 @@
             "$ref": "https://dh-relay.local/contracts/relay.common/v1#/$defs/executor_profile"
           },
           "description": "该节点可用的 Executor 候选集合。"
+        },
+        "instruction_ref": {
+          "$ref": "#/$defs/source_ref"
         }
       },
       "required": [
@@ -156,6 +159,35 @@
         "executor_profiles"
       ],
       "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "executor_profiles": {
+                "contains": {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "const": "herdr-agent"
+                    }
+                  },
+                  "required": [
+                    "kind"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "executor_profiles"
+            ]
+          },
+          "then": {
+            "required": [
+              "instruction_ref"
+            ]
+          }
+        }
+      ],
       "if": {
         "properties": {
           "required": {

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -21,6 +22,8 @@ const profile = {
   capabilities: { interactive: 'supported', resume: 'supported', readonly: 'supported', headless: 'supported', structured_result: 'supported', user_input_passthrough: 'supported' },
   supported_platforms: ['win32'], headless_supported: true,
 };
+const INSTRUCTION = 'Herdr adapter test task';
+const instruction_ref = { path: 'task.md', sha256: createHash('sha256').update(INSTRUCTION, 'utf8').digest('hex') };
 
 test('DHR_33 adapter：状态映射、句柄、附着与输入均不触碰 Store', async () => {
   const fake = makeFakeHerdr({ statuses: ['idle', 'working', 'blocked', 'done'], read: 'VERDICT: ok' });
@@ -216,12 +219,13 @@ async function runtimeFixture(t, statuses, options = {}) {
   const repoRoot = await mkdtemp(join(tmpdir(), 'dhr33-runtime-'));
   const runId = 'R001-herdr-runtime-20260829';
   const profileRef = options.profileRef ?? 'herdr.codex.test';
-  const run = { protocol: 'relay.run/v2', run_id: runId, workflow_name: 'relay/basic-agent-task@1', summary: 'herdr runtime', trigger: 'system', created_at: '2026-08-29T00:00:00Z', nodes: [{ node_id: 'herdr', title: 'herdr', role: '执行', required: false, depends_on: [], executor_profiles: [{ kind: 'herdr-agent', ref: profileRef }] }] };
+  const run = { protocol: 'relay.run/v2', run_id: runId, workflow_name: 'relay/basic-agent-task@1', summary: 'herdr runtime', trigger: 'system', created_at: '2026-08-29T00:00:00Z', nodes: [{ node_id: 'herdr', title: 'herdr', role: '执行', required: false, depends_on: [], executor_profiles: [{ kind: 'herdr-agent', ref: profileRef }], instruction_ref }] };
   const root = join(repoRoot, '.dh-relay', runId);
   await mkdir(root, { recursive: true });
   const registryPath = join(repoRoot, 'profiles.json');
   const configPath = join(repoRoot, 'profile.json');
   await writeFile(configPath, JSON.stringify({ model: 'test-model' }), 'utf8');
+  await writeFile(join(repoRoot, 'task.md'), INSTRUCTION, 'utf8');
   const registryProfile = options.registryProfile ?? { executor_profile_id: 'herdr.codex.test', backend: 'herdr', product: 'codex-cli', command_alias: 'codex', account_alias: 'acct-test', capabilities: { interactive: 'supported', resume: 'supported', readonly: 'supported', headless: 'supported', structured_result: 'supported', user_input_passthrough: 'supported' }, supported_platforms: ['win32'], headless_supported: true, config_fingerprint_rule: { kind: 'file-exists', path_template: '${DHR33_PROFILE_HOME}/profile.json', fields: [{ pointer: '/model', classification: 'nonsecret' }] } };
   await writeFile(registryPath, JSON.stringify({ profiles: [registryProfile] }), 'utf8');
   const store = await createStore({ root, run });
@@ -233,7 +237,7 @@ async function runtimeFixture(t, statuses, options = {}) {
 }
 
 test('DHR_33 driver #1/#2：心跳逐次落账，blocked 第二沿与重放持久', async (t) => {
-  const { store, root, driver } = await runtimeFixture(t, ['idle', 'working', 'working', 'blocked', 'working', 'blocked']);
+  const { store, root, driver } = await runtimeFixture(t, ['idle', 'idle', 'idle', 'working', 'working', 'blocked', 'working', 'blocked']);
   t.after(() => driver.stop());
   await runtimeUntil(() => store.events.filter(event => event.kind === 'human_input_requested').length === 2, 'two blocked edges');
   const checkpoints = store.events.filter(event => event.kind === 'checkpoint_recorded');
@@ -323,7 +327,7 @@ test('DHR_33 driver：idle 超阈值单次 Attention 后继续轮询', async (t)
 });
 
 test('DHR_33 driver #4/#7/#9：观测断单次升级、恢复后再升级；SSH 桩不冒充', async (t) => {
-  const { store, driver } = await runtimeFixture(t, ['idle', 'unknown', 'unknown', 'unknown', 'unknown', 'unknown', 'unknown', 'working', 'unknown', 'unknown', 'unknown', 'unknown', 'unknown', 'unknown']);
+  const { store, driver } = await runtimeFixture(t, ['idle', 'idle', 'idle', 'unknown', 'unknown', 'unknown', 'unknown', 'unknown', 'unknown', 'working', 'unknown', 'unknown', 'unknown', 'unknown', 'unknown', 'unknown']);
   t.after(() => driver.stop());
   await runtimeUntil(() => store.events.filter(event => event.kind === 'human_input_requested').length >= 2, 'loss attention twice');
   const lost = store.events.filter(event => event.kind === 'host_observation_changed' && event.observation_status === 'observation_lost');
