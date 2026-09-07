@@ -18,6 +18,10 @@
 
 ## 0. B 方案审核与理解确认
 
+- **B-48（2026-09-07）**：用户在明确提出独立修复人工重试 Receipt-bound 结果链后要求“那你立卡”；据此登记 DHR_80，标准/heavy、未开始，修复现行 design/11 P6-IQ-A5 与 design/12 P6-RI-A1/A2/A3 的接线缺口。独立审核与裁决见 [evidence/49](../design/evidence/49-B48-人工重试结果链-交叉审核记录.md)。排在 DHR_78 收口后，DHR_79 在其任务树继续保留 P1、最终收口待本卡；DHR_35 依赖不变。本次授权为立卡，不是 D-start。
+
+<!-- dh:planning-event:v1 id=DHR-B-48 stage=B-adjust artifact=dev_plan/P6-Herdr多账号执行底座-开发方案.md review=../design/evidence/49-B48-人工重试结果链-交叉审核记录.md#review-b48 understanding=../design/evidence/49-B48-人工重试结果链-交叉审核记录.md#understanding-b48 -->
+
 - **B-47（已确认）**：用户明确“确认写入”。依据 A33 design/15 新增 DHR_78（heavy、未开始），核心只做一份指令、60 秒后一次补发、持久占次与异常停自动发。A9 核心/外围分别由 DHR_78/DHR_35 承接，A10..A12/H3 由 DHR_78 承接；DHR_35 增加 blocked-by:DHR_78。fresh 初审一个 P1 分账问题采纳，定向复审 PASS；[审核与确认](../design/evidence/48-B47-P6精简任务-交叉审核记录.md)。本次只改计划，不建立 DHR_78 工作区。
 
 ### 0.1 白话说明：这个阶段做啥、解决啥、做完得到啥
@@ -218,6 +222,7 @@
 | DHR_72 | 修 driver 单次 idle 采样即永久退出观测 | 标准 | 已完成 | DHR_71、DHR_75（均已完成） | [workspace/DHR_72/](../workspace/DHR_72/) | squash `13c072d`；verify `64fa91f`（2026-09-06） | 任务类型=heavy；用户 2026-09-05 E11 明文认可；主干专属 8/8、poll 1/1、冻结 55/55 全绿，真实 F 保持有效；DHR_72-H 与 DHR_74 双向单跳 transfer 已由 E-7241 清零 R31；release_mode=full；不含 push/deploy/下一卡 |
 | DHR_77 | 原子实现 Herdr terminal-instance `host_ref`、RPC hash 与 DSH-off 安全展示 | 标准 | 已完成 | DHR_72（已完成） | [workspace/DHR_77/](../workspace/DHR_77/) | squash `36aa990`；verify 下一提交（2026-09-06） | 任务类型=heavy；用户 E11 明文“认可”；两批施工、B-46 方案 A、heavy 四路终审、有效单测变异及 HC-HR-A1～A5/H1 均闭合；合入态核心 113/113、DHR_72 8/8、Result/lease 21/21、CLI 19/19、兄弟组复验 17/17、仓根回归与 dh 通过；完整 npm 仍按 E-7721 未得终态，DHR_75/B 非确定性清理债务见 F-7709；release_mode=full；证据不得替代 DHR_35 P6-M1；不含 push/deploy/下一卡 |
 | DHR_78 | 当前 P6 单一启动指令与一次补发 | 标准 | 进行中 | DHR_77 | [workspace/DHR_78/](../workspace/DHR_78/) | | B-47 已确认；任务类型=heavy；A9 核心分账及 A10..A12/H3；恢复不自动发；2026-09-07 用户明文确认独立 D-start，先落七件套与 `wt/DHR_78`，仅授权当前 construction Node |
+| DHR_80 | 修复人工重试 Receipt 的结果接收闭环 | 标准 | 未开始 | DHR_64、DHR_70、DHR_78 | workspace/DHR_80/（开工时创建） | | B-48；task_type=heavy；只修复结果提交接收，不新增 Agent 启动；DHR_79 最终收口待本卡，不新增 DHR_35 前置 |
 | DHR_73 | 调查启动链静默停摆（F-3516 / F-3519） | 标准 | 未开始 | DHR_72 | [workspace/DHR_73/](../workspace/DHR_73/) | | 任务类型=normal；B-35 新增；**纯调查卡，不改 `relay-core/**`**；时间盒 ≤12 次真实启动或两个工作时段；出口 (a) 根因钉死 + 修复卡 B-adjust 候选 / (b) 复现率 + 现场 + 看门狗候选；两种出口下 F-3516/F-3519 保持 open；DHR_35 重开不等本卡；须另行 D-start |
 | DHR_74 | 钉死 BL-17 一族停顿（F-7108/F-7109）的精确落点并按证据修复，解阻塞 DHR_71 绿闸 | 标准 | 已完成 | 无前置（DHR_71 门禁依赖本卡） | [workspace/DHR_74/](../workspace/DHR_74/) | verify `a20cfc7`（2026-09-06） | 任务类型=常规；用户接受四条诚实结论与未闭合项移交；own-baseline 51/4/0 三轮通过；DHR_72-H transfer 已由 E-7241 清零 R31；release_mode=risk-accepted，Risk-Count=1，RISK-DHR74-F7402 移交 DHR_73/环境侧 A-B；不含 push/deploy/下一卡 |
 
@@ -706,6 +711,42 @@
 - **任务类型**：常规<!-- dh:task-type:v1 task=DHR_74 type=normal -->
   - 启动时冻结，不中途升档；若触发升级条款则整卡重新分流
 - **依赖**：无前置；DHR_71 门禁依赖本卡；D-B35-1 卡序 71→72→73 不变。须另行 D-start（已于 2026-09-03 经用户对话确认完成）。
+
+#### DHR_80 · 人工重试的 Receipt-bound 结果提交闭环
+
+- 目标：人工选择冻结且仍匹配的 profile 后，fresh Attempt 能接收符合合同的外部结果提交，通过现役 v2 入口与合法 actor/gate 提交唯一 committed Result；重启后仍能按同一 Receipt 恢复接收。本卡不承诺新 Attempt 会启动/驱动 Agent 或自动产生结果。
+- 非目标：不恢复自动 fallback，不增加自动启动 Agent 的行为，不改变 quota 来源、公开协议、Store 事务算法或用户配置；不迁移/覆写历史 immutable Receipt；不运行真实 Agent。
+- 档位：标准（结果入口组件接线）。任务类型：heavy。<!-- dh:task-type:v1 task=DHR_80 type=heavy -->
+- Design：共享正式 design/11、design/12，不新增专题设计。
+- 依赖：DHR_64、DHR_70 已完成的提交桥；施工基线须包含已收口 DHR_78，以消除 service/driver 与启动发送在途接线重叠。DHR_79 的缺失负例仍由 DHR_79 补齐；其最终收口等待本卡闭合后复核。不把本卡新增为 DHR_35 的主链前置。
+- 状态：未开始；工作区 workspace/DHR_80/ 在独立 D-start 时创建。
+
+##### 验收口径
+
+1. 机器证（design/11 P6-IQ-A5；design/12 P6-RI-A1）：最小失败复现使用当前 v2 retry-with-profile 与 submit-executor-result 入口；修复后 fresh Receipt 持久带正确模式，成功与失败提交均由新 Receipt 派生身份，经 actor/gate 返回 committed Ack，Result/event/state 一致。不得用直接 appendResult 或 helper-only 测试代替入口集成。
+2. 机器证（design/12 P6-RI-A1/A3）：服务重启后从同一新 Receipt 恢复 gate，不开第二个 Attempt、不启动 Agent；重复同结果仅在 committed 后幂等，冲突终态拒绝。既有缺 mode 的历史 Receipt 保持不可提交，不因修复原地升级。
+3. 机器证（design/11 P6-IQ-A5；design/12 P6-RI-A3）：非冻结 profile、快照漂移、pause 已关闭/同键冲突拒绝且无新增重试事实；同键合法重放保持同一新 Receipt。旧 Attempt 始终 fenced，旧 Receipt 提交不污染新结果；失租/未认证/未知或非当前 Receipt 继续拒绝。
+4. 机器证（design/12 P6-RI-A2）：done/idle 无正式提交仍不产生 Result 或自动 fallback；使用 fake adapter 验证本次重试结果修复不会新增 Agent 启动/指令发送。
+5. 证据门槛：专项与受影响回归自然终态、退出码及版本落账；heavy 五路独立复核，轮2选点的变异红/恢复绿。未终态不记通过，既有全量回归债不靠定向绿抵扣。
+6. 人判：无新增业务选择；收口仍展示上述机器证据并取得本地收口确认，不代替 DHR_35 真实产品验收。
+
+##### 精确允许路径
+
+<!-- dh:allowed-paths:v1 task=DHR_80 -->
+- `relay-core/runtime/attempt-retry.mjs`
+- `relay-core/runtime/service.mjs`
+- `relay-core/runtime/workflow-driver.mjs`
+- `relay-core/test/dhr80-retry-result-bridge.test.mjs`
+- `relay-core/test/attempt-contract.test.mjs`
+- `relay-core/test/dhr64-result-bridge.test.mjs`
+- `relay-core/test/dhr70-submission-gate.test.mjs`
+- `relay-core/package.json`
+- `docs/modules/dh-relay/workspace/DHR_80/**`
+- `docs/modules/dh-relay/dev_plan/P6-Herdr多账号执行底座-开发方案.md`
+- `docs/modules/dh-relay/as-built/relay-core.md`
+- `docs/modules/dh-relay/knowledge/教训库-候选.md`
+
+实施约束：优先复用 gate 恢复与现有单写队列，只改复现所需路径；需要改变历史 Receipt、公开 schema、Store 原子性或启动产品语义时停止相关改动，先回设计裁决。无新增持久化产物，沿用现役 Receipt/Result/Run 保留与恢复规则。
 
 #### DHR_78
 
