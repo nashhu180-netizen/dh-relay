@@ -44,6 +44,7 @@ export async function retryWithFrozenProfile({ store, params, registryPath, envi
   const attempt_receipt = {
     protocol: 'relay.attempt-receipt/v1', receipt_id, run_id: pause.run_id, node_id: pause.node_id, attempt_id,
     issued_at: resolved_at, executor_identity: current, fallback_profile_snapshots: [],
+    result_submission_mode: 'receipt-bound/v1',
   };
   for (const profileId of profile.fallback_profile_ids ?? []) {
     const fallback = resolveProfile(loaded.registry, profileId);

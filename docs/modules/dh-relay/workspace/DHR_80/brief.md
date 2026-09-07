@@ -36,3 +36,7 @@
 ## 触及子系统（收口时更新其 as-built）
 
 - `relay-core`
+
+## DHR-B-50 运行解释（2026-09-07）
+
+完成条件 1~6、design/11、design/12 与任务范围不变。B-50 只覆盖 `task_plan.md` 批次 3 的默认完整 `npm test` 绿色门槛：本次 E-8029 仍明确为 exit 1，不计通过；E-8021 37/37、E-8018 21/21 及治理检查只足以把施工状态记为 `BATCH_3_CONSTRAINED` 并送 heavy fresh review。该状态不等于全量健康、待验收、verify 或可合并；CLI、DHR_69/F、DHR_76/B 保持未证明基线同形，DHR_76/C 与 `identity-quota` 仅按既有证据记历史同形。

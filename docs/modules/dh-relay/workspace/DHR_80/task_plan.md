@@ -89,3 +89,27 @@
 - TDD：批次 1 必须正式入口红测开场，静态字段断言不算。
 - Review：每批 fresh 只读小审并由主控裁决；heavy 收口另做 fresh 轮 2、需求、教训、一致性和轮 2 指定变异。
 - 停止点：需扩大合同/Store/启动语义、测试未得自然终态或返工不收敛；全部绿色也只到待用户本地收口确认。
+
+## DHR-B-50 覆盖条款（2026-09-07）
+
+原批次 3 与主控审查表不改写，作为启动时冻结合同保留。E-8029 已证明其默认完整 `npm test` 绿色门槛未满足：主控按用户授权终止卡死的 `identity-quota.test.mjs` 子进程后，唯一运行 exit 1、365/370 pass、5 fail、0 cancelled。
+
+用户经 fresh 审核、两次定向复审、理解问答和最终确认，授权 `DHR-B-50` 覆盖本次施工放行规则：
+
+- E-8021 直接组合 37/37、E-8018 整改组合 21/21、E-8025 contract audit、E-8026 diff-check、E-8027 `dh` 只构成 DHR_80 专项施工证据，不代表默认全量健康。
+- 状态固定为 `BATCH_3_CONSTRAINED`，不得写 `BATCH_3_DONE`、PASS 或“全量通过”；它只允许结束同一 construction Node 并进入 heavy fresh review。
+- DHR_76/C 预算断言与 `identity-quota` 有 DHR_77 历史同形；CLI 并发、DHR_69/F、DHR_76/B 未证明基线同形，保持未归因残余。五项均不在本卡越界修复，也不由定向绿抵扣。
+- 后续 review、变异、人验、verify、合并、push 仍是独立闸；B-50 不授权其中任何自动跨越。
+
+审核与确认见 `design/evidence/51-B50-DHR80完整回归门槛-B调整交叉审核记录.md`。
+
+## DHR-B-51 · F-8007 最小基线归因（2026-09-07）
+
+用户在 E10 阻塞版 releasePacket 后明文“授权继续”，授权对象是上一轮确认口限定的最小诊断：不重跑默认完整 `npm test`、不改生产代码，只在 DHR_80 与 clean master 隔离树运行 E-8029 点名失败用例的同一最小命令，对比失败集合；若出现本卡特有失败，只报告诊断，不自动修复或扩路径。
+
+- 任务版本：`wt/DHR_80@2614bd6`；基线版本：detached `master@8918461`，短路径临时树 `.wt80b`，测试结束后 clean 删除。
+- 四个失败测试文件相对 master 零 diff；DHR_80 的生产 diff 仍只有 `attempt-retry.mjs` 一行 mode。
+- CLI 并发、DHR_69/F、DHR_76/B 在单点与三文件小并发中两侧均通过；未复现 E-8029 的全量负载红，但也未观察到 DHR_80 特有差异。
+- DHR_76/C 在两侧同一 `:753` 均以 `true !== false` 失败；三文件小并发两侧均为 5 tests / 4 pass / 1 fail，唯一失败仍是该断言。
+- `identity-quota` 两侧都只完成前三条后停在第四条 pending；受控终止后均为 tests=4 / pass=3 / fail=0 / cancelled=1 / exit 1。该证据证明同形挂起，不把受控终止写成自然终态。
+- 本轮只形成 F-8007 归因材料；是否解除 DHR_80 的 P1 阻塞，须由原代码轮 2 reviewer 定向裁决。无 reviewer 结论不得自行改 finding 状态或进入 E11。

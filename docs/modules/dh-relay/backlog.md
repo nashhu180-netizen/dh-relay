@@ -290,6 +290,7 @@
 - **档位建议**：标准档（触及 Store 落盘路径则升高危）。
 - **2026-09-03 独立基线补录（E-7119）**：`wt/DHR_71@73c43eb` 不含 DHR_74 探针与时间参数改动，按同一冻结五文件命令连续三轮 `51 pass / 4 skip / 0 fail`、285–289s 全部达标。因此 DHR_74 时间参数调整对绿闸的必要性未证，是否解除阻塞待主控按独立基线裁决。
 - **DHR_74 收口备注（2026-09-03，范围外观察登记，不立卡）**：门禁冻结五文件之外仍有测试文件使用 `herdrPollMs: 1~2`（`dhr64-result-bridge.test.mjs:191,227`、`identity-quota.test.mjs`、`dhr65-registry-loader.test.mjs:135`）。均不在 DHR_74 冻结命令与授权面内、本次未被碰；若未来把这些文件纳入门禁，F-7401 同一放大问题会再现（DHR_74 轮 2 代码路范围外观察）。
+- **DHR_80 补录（2026-09-07，E-8029 / DHR-B-50）**：唯一默认完整 `npm test` 在主控按用户授权终止卡死的 `identity-quota.test.mjs` 子进程后退出，370 tests / 365 pass / 5 fail / 0 cancelled。DHR_76/C 的 60s budget 与 `identity-quota` 挂起有 DHR_77 F-7702/E-7721 历史同形；CLI 并发 mutating timeout、DHR_69/F `timeout:escalation`、DHR_76/B null lease 尚未证明基线同形，保持未归因，不能先验并入既有债。DHR_80 直接组合 37/37 与整改组合 21/21 不抵扣本条；B-50 只允许该卡进入 heavy fresh review，本条继续 open。
 
 ### DHR-BL-18 master 历史证据里的原 Receipt UUID（DHR_30 / DHR_31，只登记不重写）
 

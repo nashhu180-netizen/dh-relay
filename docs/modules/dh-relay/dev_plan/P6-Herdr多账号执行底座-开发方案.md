@@ -14,11 +14,13 @@
 阻塞: DHR_78 已完成；DHR_35 仍缺自身独立 D-start、A9 外围分账、P6-M1 真实链与用户真实 Agent 授权。DHR_73 旁支调查和 Linux 延后不变。
 -->
 
-<!-- dh:planning-no-event:v1 artifact="dev_plan/P6-Herdr多账号执行底座-开发方案.md" reason="2026-09-07 机械回填 DHR_80 用户 D-start 授权、workspace 落点与进行中状态；不改变 B-48 已冻结的目标、验收、范围、依赖或任务类型" -->
+<!-- dh:planning-event:v1 id=DHR-B-50 stage=B-adjust artifact=dev_plan/P6-Herdr多账号执行底座-开发方案.md review=../design/evidence/51-B50-DHR80完整回归门槛-B调整交叉审核记录.md#review-b50 understanding=../design/evidence/51-B50-DHR80完整回归门槛-B调整交叉审核记录.md#understanding-b50 -->
 
 ## 0. B 方案审核与理解确认
 
 - **B-48（2026-09-07）**：用户在明确提出独立修复人工重试 Receipt-bound 结果链后要求“那你立卡”；据此登记 DHR_80，标准/heavy、未开始，修复现行 design/11 P6-IQ-A5 与 design/12 P6-RI-A1/A2/A3 的接线缺口。独立审核与裁决见 [evidence/49](../design/evidence/49-B48-人工重试结果链-交叉审核记录.md)。排在 DHR_78 收口后，DHR_79 在其任务树继续保留 P1、最终收口待本卡；DHR_35 依赖不变。本次授权为立卡，不是 D-start。
+
+- **B-50（2026-09-07）**：DHR_80 唯一默认完整 `npm test` 在用户授权终止卡死的 `identity-quota` 子进程后得到 exit 1、365/370 pass、5 fail。用户经 fresh 初审、两次定向复审、理解问答与最终确认，授权保留该失败并以 `BATCH_3_CONSTRAINED` 结束施工：37/37、21/21 与治理检查只允许进入 heavy fresh review，不代表全量通过；DHR_76/C 与 `identity-quota` 有历史同形，CLI、DHR_69/F、DHR_76/B 保持未证明基线同形。六条验收、design 输入、任务范围和 E11/verify/合并/push 闸不变。审核与确认见 [evidence/51](../design/evidence/51-B50-DHR80完整回归门槛-B调整交叉审核记录.md)。
 
 - **B-47（已确认）**：用户明确“确认写入”。依据 A33 design/15 新增 DHR_78（heavy、未开始），核心只做一份指令、60 秒后一次补发、持久占次与异常停自动发。A9 核心/外围分别由 DHR_78/DHR_35 承接，A10..A12/H3 由 DHR_78 承接；DHR_35 增加 blocked-by:DHR_78。fresh 初审一个 P1 分账问题采纳，定向复审 PASS；[审核与确认](../design/evidence/48-B47-P6精简任务-交叉审核记录.md)。本次只改计划，不建立 DHR_78 工作区。
 
@@ -220,7 +222,7 @@
 | DHR_72 | 修 driver 单次 idle 采样即永久退出观测 | 标准 | 已完成 | DHR_71、DHR_75（均已完成） | [workspace/DHR_72/](../workspace/DHR_72/) | squash `13c072d`；verify `64fa91f`（2026-09-06） | 任务类型=heavy；用户 2026-09-05 E11 明文认可；主干专属 8/8、poll 1/1、冻结 55/55 全绿，真实 F 保持有效；DHR_72-H 与 DHR_74 双向单跳 transfer 已由 E-7241 清零 R31；release_mode=full；不含 push/deploy/下一卡 |
 | DHR_77 | 原子实现 Herdr terminal-instance `host_ref`、RPC hash 与 DSH-off 安全展示 | 标准 | 已完成 | DHR_72（已完成） | [workspace/DHR_77/](../workspace/DHR_77/) | squash `36aa990`；verify 下一提交（2026-09-06） | 任务类型=heavy；用户 E11 明文“认可”；两批施工、B-46 方案 A、heavy 四路终审、有效单测变异及 HC-HR-A1～A5/H1 均闭合；合入态核心 113/113、DHR_72 8/8、Result/lease 21/21、CLI 19/19、兄弟组复验 17/17、仓根回归与 dh 通过；完整 npm 仍按 E-7721 未得终态，DHR_75/B 非确定性清理债务见 F-7709；release_mode=full；证据不得替代 DHR_35 P6-M1；不含 push/deploy/下一卡 |
 | DHR_78 | 当前 P6 单一启动指令与一次补发 | 标准 | 已完成 | DHR_77 | [workspace/DHR_78/](../workspace/DHR_78/) | squash `71e795e`；verify 本提交（2026-09-07） | B-47；任务类型=heavy；用户 E11 明文“认可”；A9 核心分账及 A10..A12/H3、有效变异与 heavy 五路复核闭合；master 受影响 125/125、模块体检 0 failure；完整 npm 仍未得自然终态；release_mode=full；不含 push/deploy/真实 Agent/DHR_35/DHR_80 |
-| DHR_80 | 修复人工重试 Receipt 的结果接收闭环 | 标准 | 进行中 | DHR_64、DHR_70、DHR_78 | [workspace/DHR_80/](../workspace/DHR_80/) | | B-48；task_type=heavy；只修复结果提交接收，不新增 Agent 启动；DHR_79 最终收口待本卡，不新增 DHR_35 前置 |
+| DHR_80 | 修复人工重试 Receipt 的结果接收闭环 | 标准 | 进行中 | DHR_64、DHR_70、DHR_78 | [workspace/DHR_80/](../workspace/DHR_80/) | | B-48/B-50；task_type=heavy；`BATCH_3_CONSTRAINED` 只允许进入 heavy fresh review，默认全量仍 exit 1；只修复结果提交接收，不新增 Agent 启动；DHR_79 最终收口待本卡，不新增 DHR_35 前置 |
 | DHR_73 | 调查启动链静默停摆（F-3516 / F-3519） | 标准 | 未开始 | DHR_72 | [workspace/DHR_73/](../workspace/DHR_73/) | | 任务类型=normal；B-35 新增；**纯调查卡，不改 `relay-core/**`**；时间盒 ≤12 次真实启动或两个工作时段；出口 (a) 根因钉死 + 修复卡 B-adjust 候选 / (b) 复现率 + 现场 + 看门狗候选；两种出口下 F-3516/F-3519 保持 open；DHR_35 重开不等本卡；须另行 D-start |
 | DHR_74 | 钉死 BL-17 一族停顿（F-7108/F-7109）的精确落点并按证据修复，解阻塞 DHR_71 绿闸 | 标准 | 已完成 | 无前置（DHR_71 门禁依赖本卡） | [workspace/DHR_74/](../workspace/DHR_74/) | verify `a20cfc7`（2026-09-06） | 任务类型=常规；用户接受四条诚实结论与未闭合项移交；own-baseline 51/4/0 三轮通过；DHR_72-H transfer 已由 E-7241 清零 R31；release_mode=risk-accepted，Risk-Count=1，RISK-DHR74-F7402 移交 DHR_73/环境侧 A-B；不含 push/deploy/下一卡 |
 
@@ -745,6 +747,8 @@
 - `docs/modules/dh-relay/dev_plan/P6-Herdr多账号执行底座-开发方案.md`
 - `docs/modules/dh-relay/as-built/relay-core.md`
 - `docs/modules/dh-relay/knowledge/教训库-候选.md`
+- `docs/modules/dh-relay/backlog.md`（B-50 仅追加 DHR-BL-17 的 E-8029 事实段）
+- `docs/modules/dh-relay/design/evidence/51-B50-DHR80完整回归门槛-B调整交叉审核记录.md`（B-50 单文件）
 
 实施约束：优先复用 gate 恢复与现有单写队列，只改复现所需路径；需要改变历史 Receipt、公开 schema、Store 原子性或启动产品语义时停止相关改动，先回设计裁决。无新增持久化产物，沿用现役 Receipt/Result/Run 保留与恢复规则。
 

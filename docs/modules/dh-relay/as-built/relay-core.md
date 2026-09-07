@@ -427,3 +427,9 @@ DHR_52 的 RPC seam 与 DHR_51 的 host 之间原本没有装配人（F-001）�
 - **唯一 sender 与最终守卫**：workflow driver 的正常首发、启动 blocked 解除后的首发、60 秒补发均收敛 `dispatchStartupInstruction`，物理调用只经 Herdr adapter 的 `sendStartupInstruction`。每次先在 Store 队列持久占次并最终确认当前 Receipt/Attempt、无 checkpoint/Result；确认后重新读取 source/digest、重新观测同 `host_ref` 且状态为 idle/working/done，随后无异步间隔地调用 sender。
 - **补发与恢复**：同一存活 driver 首发 accepted 后用单调时钟计 60 秒；若 Store 仍无当前 Attempt checkpoint/Result，原样补发一次。host 的 working 字样不是进展事实；Store checkpoint/Result 才是。总次数封闭为 1/2，失败、超时、失租、stop、blocked/unknown、身份或源漂移均停止；恢复旧 Attempt 永不自动再发。占次后调用前中断保留 `authorized`，Attention 明示可能未送达，要求检查现场、必要时 stop 旧执行再显式新执行。
 - **私有账与边界**：`startup-dispatch.json` 只保存 version、Receipt/Attempt/node 关联、send_count、host_ref、prompt_digest、outcome，复用 Store 原子写与 Run 保留策略；不新增公开 event/RPC/read-model，不改变 checkpoint/Result 算法。当前专项 17/17、契约+专项 32/32、受影响 11 文件 125/125 自然终态通过；有效 host-status 变异红、还原绿。完整 `npm test` 因 DHR_76 时间预算旧断言与 identity-quota 旧 `herdrJudge`/Receipt 迁移尾项未得终态，不能写成全量绿；后者保留独立卡处理，真实产品链与 A9 外围分账仍属 DHR_35。
+
+## 16. DHR_80 增量 —— 人工 retry Receipt 的结果提交模式接线
+
+- **A→B**：A 为人工 `retry-with-profile` 产生的 fresh Receipt 没有提交模式，正式 v2 `submit-executor-result` 入口返回 `E_IDENTITY_MISMATCH`；B 仅在 `runtime/attempt-retry.mjs` 的 Receipt 构造处新增 immutable `result_submission_mode: 'receipt-bound/v1'`，沿用现役 actor、gate、Store 单写者和恢复路径，正式入口可形成 succeeded/failed committed Ack 与派生 Result。`service.mjs`、`workflow-driver.mjs`、Store 和公开 schema 未改。
+- **恢复与边界**：该字段只适用于新 retry Receipt；历史缺 mode 的 Receipt 不迁移、不原地升级，旧 Receipt/旧 Attempt 仍 fenced。done/idle 无正式 submission 仍不产 Result、不触发 fallback 或 Agent 启动；retry 创建 fresh Attempt 不等于启动 Agent。
+- **证据边界**：DHR80、attempt-contract、DHR64、DHR70 基础组合自然终态 37/37；`audit-contracts.mjs` 0 未登记开口、0 审计失败。默认 `npm test` 已补收专项；主控按用户授权终止卡死的 `identity-quota.test.mjs` 子进程后，本次唯一全量运行退出为 370 tests / 365 pass / 5 fail / 0 cancelled、exit 1。DHR_76/C 预算断言与 `identity-quota` 有历史同形，CLI 并发、DHR_69/F、DHR_76/B 仍未证明基线同形；不能记全量绿或用定向绿抵扣。
