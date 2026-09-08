@@ -2,9 +2,11 @@
 <!-- dh:planning-no-event:v1 artifact="dev_plan/README.md" reason="2026-08-18 索引措辞对齐；2026-08-20 随 DHR-B-11 同步 P4/P5；2026-08-21 随 DHR-B-15 同步 P5 拆卡；2026-08-26 随 DHR-B-19/B-20 同步 P7/P8；2026-08-27 随已确认 DHR-B-21 机械同步 P7/P8 当前范围、P8 由冻结改为阶段阻塞、DHR_44 取消和 P5/P6 不扩范围边界；同日机械回填 DHR_53 旧现场已归档删除；2026-08-30 DHR_62 机械同步 DHR_32/33 待验收、DHR_34 阻塞、DHR_35 未开始及 P6 任务列表补回 DHR_61 的已有计划状态，不形成新 planning event；2026-08-31 随已确认 DHR-B-33 机械同步 P6 行（DHR_32~34/61/63~68 已完成、新增 DHR_69、DHR_35 blocked-by:DHR_69），不形成新 planning event；同日机械回填 DHR_69 D-start 进行中，不形成新 planning event；2026-09-01 随已确认 DHR-B-34 机械同步 P6 行（DHR_69 已完成、新增 DHR_70、DHR_35 改 blocked-by:DHR_70），不形成新 planning event；2026-09-02 随已确认 DHR-B-35 机械同步 P6 行（DHR_70 已完成、新增 DHR_71/72/73、DHR_35 改 blocked-by:DHR_72），不形成新 planning event；同日随已确认 DHR-B-36 机械同步 P6 行（DHR_71 进行中、隔离清单 2→4），不形成新 planning event；2026-09-04 随已确认 DHR-B-40 机械同步 P6 行（新增 DHR_75、DHR_72 进行中且 blocked-by:DHR_75），不形成新 planning event；2026-09-05 随已确认 DHR-B-41 机械同步 P6 行（新增 DHR_76、DHR_75 blocked-by:DHR_76、DHR_72 继续 blocked-by:DHR_75）；同日随已确认 DHR-B-42 机械同步 DHR_76 异常清理失败返回合同；同日随用户认可releasePacket机械同步DHR_76已完成并解除DHR_75的blocked-by，不形成本索引自己的planning event；2026-09-06 随已确认 DHR-B-43 机械同步 P6 新增 DHR_77、DHR_35 改 blocked-by:DHR_77，不形成本索引自己的 planning event；同日机械同步 DHR_77 与 DHR_75 已完成、DHR_35 停在独立 D-start 门前，不形成新 planning event；B-47 已确认，机械同步 DHR_78 未开始、DHR_35 blocked-by:DHR_78" -->
 # DH Relay DevPlan 入口
 
+> **模块状态：已暂停（2026-09-08，用户对话明文）**。保留全部 DevPlan、任务状态、worktree 与未关闭证据；暂停期间不启动或续做任何任务，不进入复核、verify、合并、push、部署或真实环境执行。恢复须用户再次明文指定恢复本模块；该标记不把任何“进行中”任务伪改成“已完成/已取消”。
+
 ## 当前主线
 
-B-47 当前更新：DHR_78 已登记为未开始；DHR_35 等待 DHR_78，之后完成外围 prompt 归零与真实闭环。详见 [P6 任务表](P6-Herdr多账号执行底座-开发方案.md)。
+模块暂停前停在 DHR_82 heavy 代码轮 1：候选生产/测试提交已在任务 worktree，fresh 复核被中止且未得 verdict；DHR_35、DHR_73 及后续阶段均不推进。恢复锚点详见 [DHR_82 progress](../workspace/DHR_82/progress.md) 与 [P6 任务卡](P6-Herdr多账号执行底座-开发方案.md#dhr_82)。
 
 当前阶段的唯一正式设计基准是 [design/10 薄 RelayPlan 与显式节点边界](../design/10-薄RelayPlan与显式节点边界-产品设计调整.md)。[design/05](../design/05-DeepSeek-Harness插件化与专属工作台-可行性评估.md) 与 [design/06](../design/06-多控制面与Headless-SSH运行-设计补充.md) 是已冻结的历史方向资料，不再作为当前阶段的拆计划依据。
 
