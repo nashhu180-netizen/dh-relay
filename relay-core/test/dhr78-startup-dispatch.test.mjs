@@ -92,10 +92,19 @@ test('DHR_78：首发和无进展补发使用同一启动内容，并在发送�
   const instruction = '只在这里保存业务任务内容。';
   const now = { value: 0 };
   const instructionRef = { path: 'task.md', sha256: sha256(instruction) };
-  const { fake, driver, root, store } = await fixture(t, instructionRef, { clock: () => now.value, instructionText: instruction });
+  const { fake, driver, root, repoRoot, store } = await fixture(t, instructionRef, { clock: () => now.value, instructionText: instruction });
   await until(() => fake.sent.length === 1, 'first startup prompt');
-  assert.match(fake.sent[0].text, /任务指针：task\.md/);
-  assert.match(fake.sent[0].text, /relay submit-result --receipt-id rcpt-/);
+  const receiptId = fake.sent[0].text.match(/relay submit-result --receipt-id (rcpt-[^ ]+) --outcome succeeded/)?.[1];
+  assert.ok(receiptId, 'startup envelope has a Receipt submission command');
+  assert.equal(fake.sent[0].text, [
+    `任务仓根：${repoRoot}`,
+    `任务指针：task.md (sha256:${instructionRef.sha256})`,
+    '先打开任务指针；其中正文是本 Attempt 唯一业务任务，执行其中正文；完成任务后再提交 Receipt-bound 结果；Receipt 提交命令不是业务任务：',
+    `relay submit-result --receipt-id ${receiptId} --outcome succeeded`,
+    `或：relay submit-result --receipt-id ${receiptId} --outcome failed --reason E_EXECUTOR_REPORTED_FAILURE`,
+    '重复收到本指令时，从持久事实续做；不要通过 pane 输出、日志、退出码或其它通道代替该提交。',
+  ].join('\n'));
+  assert.equal(fake.sent[0].text.includes(instruction), false, 'instruction body is not copied into the startup envelope');
   await until(() => startupDispatchOf(store)?.outcome === 'accepted', 'first dispatch outcome');
   const firstRecord = JSON.parse(await readFile(join(root, 'startup-dispatch.json'), 'utf8'));
   assert.equal(firstRecord.records[0].send_count, 1);

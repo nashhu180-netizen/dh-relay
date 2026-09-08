@@ -24,7 +24,7 @@ export async function loadStartupInstruction({ repoRoot, instructionRef, receipt
     const text = [
       `任务仓根：${root}`,
       `任务指针：${instructionRef.path} (sha256:${instructionRef.sha256})`,
-      receiptId === null ? null : '任务完成后，仅提交 Receipt-bound 结果：',
+      receiptId === null ? null : '先打开任务指针；其中正文是本 Attempt 唯一业务任务，执行其中正文；完成任务后再提交 Receipt-bound 结果；Receipt 提交命令不是业务任务：',
       receiptId === null ? null : `relay submit-result --receipt-id ${receiptId} --outcome succeeded`,
       receiptId === null ? null : `或：relay submit-result --receipt-id ${receiptId} --outcome failed --reason E_EXECUTOR_REPORTED_FAILURE`,
       receiptId === null ? null : '重复收到本指令时，从持久事实续做；不要通过 pane 输出、日志、退出码或其它通道代替该提交。',

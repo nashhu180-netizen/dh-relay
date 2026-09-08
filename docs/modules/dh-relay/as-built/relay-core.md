@@ -433,3 +433,9 @@ DHR_52 的 RPC seam 与 DHR_51 的 host 之间原本没有装配人（F-001）�
 - **A→B**：A 为人工 `retry-with-profile` 产生的 fresh Receipt 没有提交模式，正式 v2 `submit-executor-result` 入口返回 `E_IDENTITY_MISMATCH`；B 仅在 `runtime/attempt-retry.mjs` 的 Receipt 构造处新增 immutable `result_submission_mode: 'receipt-bound/v1'`，沿用现役 actor、gate、Store 单写者和恢复路径，正式入口可形成 succeeded/failed committed Ack 与派生 Result。`service.mjs`、`workflow-driver.mjs`、Store 和公开 schema 未改。
 - **恢复与边界**：该字段只适用于新 retry Receipt；历史缺 mode 的 Receipt 不迁移、不原地升级，旧 Receipt/旧 Attempt 仍 fenced。done/idle 无正式 submission 仍不产 Result、不触发 fallback 或 Agent 启动；retry 创建 fresh Attempt 不等于启动 Agent。
 - **证据边界**：DHR80、attempt-contract、DHR64、DHR70 基础组合自然终态 37/37；`audit-contracts.mjs` 0 未登记开口、0 审计失败。默认 `npm test` 已补收专项；主控按用户授权终止卡死的 `identity-quota.test.mjs` 子进程后，本次唯一全量运行退出为 370 tests / 365 pass / 5 fail / 0 cancelled、exit 1。DHR_76/C 预算断言与 `identity-quota` 有历史同形，CLI 并发、DHR_69/F、DHR_76/B 仍未证明基线同形；不能记全量绿或用定向绿抵扣。
+
+## 17. DHR_81 增量 —— 启动包络的执行顺序
+
+- **固定语义**：`loadStartupInstruction()` 仍只读取并校验 `instruction_ref`，不复制正文；成功后生成的唯一 sender 包络明确要求先打开任务指针，再把其中正文作为当前 Attempt 的唯一业务任务执行，最后按真实结果提交 Receipt。`submit-result` 命令不是业务任务。
+- **边界保持**：包络只含仓根、指针、摘要和 Receipt 提交说明；私有发送账继续只存 `prompt_digest` 等元数据。缺失、越界或摘要变化仍在 Attempt/Agent 前 fail-closed；Sender、Store、driver、重试与真实 Agent 均未改。
+- **证据边界**：专项对完整动态包络作精确断言，固定顺序、succeeded/failed 两条提交命令、Receipt 非业务任务与正文零复制，并保留既有 17 项发送、一次补发、拒绝与恢复断言。该 fake/fixture 证据不证明真实 Agent 已读取或执行任务文件，DHR_35 仍独自承接 A16/H4/P6-M1。
