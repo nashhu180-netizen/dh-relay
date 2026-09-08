@@ -14,7 +14,7 @@
 阻塞: DHR_35 的 DHR_81 计划阻塞已解除；DHR_35 仍缺独立 D-start、P6-M1 真实链与真实 Agent 授权。DHR_73 旁支调查和 Linux 延后不变。
 -->
 
-<!-- dh:planning-event:v1 id="DHR-B-52"  stage=B-adjust artifact=dev_plan/P6-Herdr多账号执行底座-开发方案.md review=../design/evidence/53-B52-instruction-ref执行语义修复-B调整交叉审核记录.md#review-b52 understanding=../design/evidence/53-B52-instruction-ref执行语义修复-B调整交叉审核记录.md#understanding-b52 -->
+<!-- dh:planning-event:v1 id="DHR-B-53" stage=B-adjust artifact=dev_plan/P6-Herdr多账号执行底座-开发方案.md review=../design/evidence/54-B53-startup提交屏障-B调整交叉审核记录.md#review-b53 understanding=../design/evidence/54-B53-startup提交屏障-B调整交叉审核记录.md#understanding-b53 -->
 
 ## 0. B 方案审核与理解确认
 
@@ -23,6 +23,8 @@
 - **B-50（2026-09-07）**：DHR_80 唯一默认完整 `npm test` 在用户授权终止卡死的 `identity-quota` 子进程后得到 exit 1、365/370 pass、5 fail。用户经 fresh 初审、两次定向复审、理解问答与最终确认，授权保留该失败并以 `BATCH_3_CONSTRAINED` 结束施工：37/37、21/21 与治理检查只允许进入 heavy fresh review，不代表全量通过；DHR_76/C 与 `identity-quota` 有历史同形，CLI、DHR_69/F、DHR_76/B 保持未证明基线同形。六条验收、design 输入、任务范围和 E11/verify/合并/push 闸不变。审核与确认见 [evidence/51](../design/evidence/51-B50-DHR80完整回归门槛-B调整交叉审核记录.md)。
 
 - **B-52（2026-09-08，已确认）**：依据 A34 design/15 新增 DHR_81（标准/heavy、未开始），只修唯一启动包络的明确执行顺序：打开指针、执行文件任务、按真实结果提交；正文仍不复制，Receipt 命令不是业务任务。A13~A15 由 DHR_81 承接，A16/H4 仍由 DHR_35 的真实 Codex/Claude 实录承接；DHR_35 增加 blocked-by:DHR_81。fresh 只读审核 P0/P1/P2/P3=0；用户指出复述既定边界的理解题无价值，主控采纳并停止同类流程表演，随后用户明文“写入”。审核与确认见 [evidence/53](../design/evidence/53-B52-instruction-ref执行语义修复-B调整交叉审核记录.md)。本次只落计划，不建立工作区或授权施工/真实 Agent。
+
+- **B-53（2026-09-08，已确认并 D-start）**：DHR_35 的 Windows Codex 实录存在“prompt 调用返回成功、但同 host `state_change_seq` 不前进”的假 `accepted`。用户明文“按此开工”，确认送达不可证时保留既有 `authorized`、停止自动补发并提示人工。新增 DHR_82（标准/heavy、难度中）：只在 startup 私有判定中要求同一 `host_ref` 的 seq 严格前进后才记录既有 `accepted` 并启动 60 秒计时；不可证时恰一条无新 reason 的 Attention。禁止扩展至 composer 检查、自动 Enter、通用状态机、`--wait`、第三次发送或 runner 联动；不改 Store、contracts、Receipt/Result。fresh 审核 P0/P1 已闭合，模型形态仍为待证；施工委托为 Herdr 中 `gpt-5.6-luna` reasoning=max。审核、理解与确认见 [evidence/54](../design/evidence/54-B53-startup提交屏障-B调整交叉审核记录.md)。本次授权仅到 construction node；不授权真实 Agent、verify、合并、push、部署或 DHR_35。
 
 - **B-47（已确认）**：用户明确“确认写入”。依据 A33 design/15 新增 DHR_78（heavy、未开始），核心只做一份指令、60 秒后一次补发、持久占次与异常停自动发。A9 核心/外围分别由 DHR_78/DHR_35 承接，A10..A12/H3 由 DHR_78 承接；DHR_35 增加 blocked-by:DHR_78。fresh 初审一个 P1 分账问题采纳，定向复审 PASS；[审核与确认](../design/evidence/48-B47-P6精简任务-交叉审核记录.md)。本次只改计划，不建立 DHR_78 工作区。
 
@@ -859,9 +861,42 @@
 
 实施提示：复用现有 `loadStartupInstruction()` 和现有专项快照；不得为单一文案修复新增抽象或产品分支。须独立 D-start；本次 B-52 确认不授权施工。
 
+#### DHR_82
+
+- **目标**：在 startup 私有判定建立有界 turn-start 提交屏障。`agent prompt` 裸成功不直接写 accepted；仅同一 `host_ref` 的 `state_change_seq` 严格前进后才写既有 accepted 并启动既有 60 秒最多一次补发。
+- **非目标**：不改 Store、contracts、Receipt/Result、公开 reason/协议、composer、自动 Enter、`--wait`、第三发、通用状态机或 runner；不跑真实 Agent，不替代 DHR_35 的 A16/H4/P6-M1。
+- **档位**：标准（Herdr sender 成功语义的组件接线）。
+- **任务类型**：重核<!-- dh:task-type:v1 task=DHR_82 type=heavy -->
+- **难度**：中；施工模型为 Herdr 中 `gpt-5.6-luna`、reasoning=max；其服务端模型身份不可证，形态待证。
+- **依赖**：DHR_78、DHR_81（均已完成）。DHR_35 改为 blocked-by:DHR_82。
+- **Design**：消费共享正式 design/15 的 HC-SD-A10/A11/A12/A15/A16/H4；本卡只补 A10/A11 的 accepted 判定边界，不另建设计专题。
+- **验收口径**：
+  - **机器证 A**：[design/15 HC-SD-A10](../design/15-Herdr-Agent单一启动内容与有限重发.md#3-当前验收清单)：同一 host_ref 下 seq 严格前进才写既有 accepted/`startupAcceptedAt` 并保留既有 60 秒至多一次补发；seq 冻结时即使越过 60 秒也不补发。
+  - **机器证 B**：[design/15 HC-SD-A11](../design/15-Herdr-Agent单一启动内容与有限重发.md#3-当前验收清单)：seq 缺失、未前进、unknown/观测失败或提交不可证时保留 authorized、写恰一条固定 detail 前缀的 `human_input_requested` Attention（无新 reason）且恢复不重发；host_ref 改变、CLI 明确失败与 stop/lease 失败保留既有边界。
+  - **机器证 C**：[design/15 HC-SD-A12](../design/15-Herdr-Agent单一启动内容与有限重发.md#3-当前验收清单)：Store schema/outcome、公开协议、Receipt/Result、composer、`--wait`、send-keys、第三发和 runner 均零越界；fake seq 钩子可选且默认既有调用计数行为不变。
+  - **机器证 D**：DHR_82 专项及 DHR_78 startup dispatch、herdr adapter、DHR_68/C、DHR_70、DHR_72、DHR_75、DHR_76 定向组均得自然终态；代码轮 2 选择本卡生产语义变异点，改坏专项必须断言失败、还原后转绿。
+  - **人判**：[design/15 HC-SD-H3](../design/15-Herdr-Agent单一启动内容与有限重发.md#3-当前验收清单)：展示 seq 前进 accepted 与 seq 不动 ambiguous 两例安全摘要；用户判断“不可证即停自动补发、人工检查旧 Attempt”是否可接受。该人验不宣称物理 Enter 已修复。
+- **变更范围**：
+
+<!-- dh:allowed-paths:v1 task=DHR_82 -->
+  - `relay-core/runtime/workflow-driver.mjs`
+  - `relay-core/runtime/executors/herdr/herdr-executor.mjs`
+  - `relay-core/test/dhr82-startup-submission-barrier.test.mjs`
+  - `relay-core/test/helpers/fake-herdr.mjs`
+  - `relay-core/package.json`
+  - `docs/modules/dh-relay/workspace/DHR_82/**`
+  - `docs/modules/dh-relay/dev_plan/P6-Herdr多账号执行底座-开发方案.md`
+  - `docs/modules/dh-relay/design/evidence/54-B53-startup提交屏障-B调整交叉审核记录.md`
+  - `docs/modules/dh-relay/as-built/relay-core.md`
+  - `docs/modules/dh-relay/knowledge/教训库-候选.md`
+
+范围约束：屏障只能是 startup 专用函数或 driver startup 调用点组合；`sendToHerdrAgent`、`sendStartupInstruction` 的既有公开形态和非 startup 调用方不得改变。新专项按 detail 前缀计数，不改既有 Attention。若需上述之外路径，停下重做 B-adjust。
+
+实施提示：先用可选 fake seq 钩子钉住红例，区分缺失与零值；随后在 driver 组合最小判定。fake 绿只证明判据，不证明真实 Herdr 稳定提供字段。worker 仅提交 construction commit、写 progress/findings/Handoff 后停止，不自行复核、verify、合并、push、真实 Agent 或 DHR_35。
+
 #### DHR_35
 
-- **目标**：在 DHR_34/DHR_63/DHR_64/DHR_65/DHR_66/DHR_67/DHR_68/DHR_69/DHR_70/DHR_72/DHR_77/DHR_78/**DHR_81** 闭合后，Windows 分别跑 Herdr + 一个 Codex Profile、Herdr + 一个 Claude Code Profile 的完整闭环（Receipt → Herdr 观测 → checkpoint → task side effect → `submit-executor-result` → committed Ack → Result → CLI）；DSH 关闭是必测路径。Linux SSH 保持延后。
+- **目标**：在 DHR_34/DHR_63/DHR_64/DHR_65/DHR_66/DHR_67/DHR_68/DHR_69/DHR_70/DHR_72/DHR_77/DHR_78/DHR_81/**DHR_82** 闭合后，Windows 分别跑 Herdr + 一个 Codex Profile、Herdr + 一个 Claude Code Profile 的完整闭环（Receipt → Herdr 观测 → checkpoint → task side effect → `submit-executor-result` → committed Ack → Result → CLI）；DSH 关闭是必测路径。Linux SSH 保持延后。
 - **非目标**：不改 Relay 生产代码或用户级 registry；不进 DevHarness 全收口；不做多卡；不跑 Linux/SSH；DSH 可用时只作附加客户端对证，不另跑第二份流程。
 - **验收口径**：
   - **机器证·外围分账**：[design/15 HC-SD-A9](../design/15-Herdr-Agent单一启动内容与有限重发.md#3-当前验收清单)：提供合法 instruction_ref 文件/摘要，外围 runner 的任务/提交 prompt 调用归零，在吸收 DHR_78 的新基线上证明实际入口只有统一 sender。A9 模块全量结论须核心与外围两份证据闭合；本分账不抵 P6-M1 真实实录。
