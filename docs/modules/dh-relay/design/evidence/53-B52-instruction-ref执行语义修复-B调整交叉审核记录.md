@@ -4,7 +4,7 @@
 > 正式对象：`dev_plan/P6-Herdr多账号执行底座-开发方案.md`。编号预检发现 `DHR-B-51` 已用于 DHR_80 收口诊断，本事件顺延为 `DHR-B-52`；范围与验收不变。本文记录候选审核、用户反馈与落盘确认，不授权 DHR_81 D-start、真实 Agent 或 DHR_35 重跑。
 
 <a id="review-b52"></a>
-<!-- dh:planning-evidence:v1 event=DHR-B-52 artifact=dev_plan/P6-Herdr多账号执行底座-开发方案.md kind=review -->
+<!-- dh:planning-evidence:v1 event=DHR-B-52 artifact=dev_plan/P6-Herdr多账号执行底座-开发方案.md kind="review" -->
 
 ## fresh-context 只读审核
 
@@ -26,7 +26,7 @@ P0=0、P1=0、P2=0、P3=0。审核确认 A13~A15 归 DHR_81、A16/H4 归 DHR_35 
 无新的产品/技术取舍。审核建议在理解问答后，仅请求是否把本 B-adjust 写入正式 P6 DevPlan；不得自动推导施工或运行授权。
 
 <a id="understanding-b52"></a>
-<!-- dh:planning-evidence:v1 event=DHR-B-52 artifact=dev_plan/P6-Herdr多账号执行底座-开发方案.md kind=understanding -->
+<!-- dh:planning-evidence:v1 event=DHR-B-52 artifact=dev_plan/P6-Herdr多账号执行底座-开发方案.md kind="understanding" -->
 
 ## 面向用户讲解与理解问答
 
