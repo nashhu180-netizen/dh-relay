@@ -3,10 +3,10 @@
 <!-- dh:plan-type: 开发 -->
 <!-- dh:planning-event:v1 id=RLT-B-01 stage=B-new artifact=dev_plan/P1-RelayLight-开发方案.md review=../design/evidence/02-交叉审核记录-RelayLight-B拆计划.md#review-rlt-b01 understanding=../design/evidence/02-交叉审核记录-RelayLight-B拆计划.md#understanding-rlt-b01 -->
 <!-- dh:status
-汇报: RelayLight P1 开发方案已生效，19 张任务卡待按批次开工
-现状: 19 卡 5 批覆盖正式输入 119 条验收；用户 2026-09-09 确认，尚无任务开工
-进行到: P1 ▸ B-新建已落盘
-下一步: 第 1 批按依赖开工，批末 RLT_12 交付首个端到端 demo
+汇报: 第 1 批已开工，RLT_02 一致性对照进行中
+现状: 19 卡 5 批覆盖正式输入 119 条验收；用户 2026-09-09 确认 B 计划；2026-09-09 用户指定 RLT_02 由 codex terra high 施工，已落户开工
+进行到: P1 ▸ 第 1 批 ▸ RLT_02 施工中
+下一步: RLT_02 收口后解锁 RLT_03；RLT_01 待用户就「仓内 skill 源」设计变更裁决后再开
 看什么: design/01-RelayLight-产品设计与验收.md + 本文件
 阻塞: 无
 -->
@@ -77,7 +77,7 @@
 | 任务 ID | 一句话 | 档位（轻/标准） | 状态 | 批次 | 依赖 | 工作区 | 验收时间 / verify SHA | 备注 |
 |---|---|---|---|---|---|---|---|---|
 | RLT_01 | 冻结并落实两侧 skill 同源方式 | 标准 | 未开始 | 1 | — | — | — | 方向决策账 |
-| RLT_02 | 对照 relay-light 与现役 Runner 四类核心语义 | 轻 | 未开始 | 1 | — | — | — | 单独一致性卡，只读现役实现 |
+| RLT_02 | 对照 relay-light 与现役 Runner 四类核心语义 | 轻 | 进行中 | 1 | — | [workspace/RLT_02](../workspace/RLT_02/) | — | 单独一致性卡，只读现役实现 |
 | RLT_03 | 实现 relay_plan 解析与结构 lint | 标准 | 未开始 | 1 | RLT_02 | — | — | — |
 | RLT_04 | 实现纯追加账本与 agent 状态机 | 标准 | 未开始 | 1 | RLT_03 | — | — | — |
 | RLT_05 | 实现 status、阶段生命周期与写者交接 | 标准 | 未开始 | 1 | RLT_03、RLT_04 | — | — | — |
