@@ -29,13 +29,17 @@ jobs:
       - run: npm test
 
   relay-tests-pwsh:
-    name: relay-tests (PowerShell runner)
-    runs-on: ubuntu-latest
-    # 本机未装 pwsh，未能在改这个 job 前实跑 tools/tests/run-relay-tests.ps1 验证
-    # Linux 上是否全绿；部分 suite 依赖 psmux（PATH 命令，CI 上不存在），它们自己会打印
-    # "SUITE SKIP" 前缀并被 runner 计入 skipped，理论上不会导致整体失败。保守起见先设
-    # continue-on-error，待有人在 ubuntu-latest 上实测通过后再去掉。
-    continue-on-error: true
+    name: relay-tests (PowerShell runner, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    # Windows 是这套 PowerShell Runner 的真实运行环境，作硬门禁。
+    # ubuntu 这份此前没人实测过是否全绿（部分 suite 依赖 psmux，CI 上不存在，
+    # 它们自己会打印 "SUITE SKIP" 并被 runner 计入 skipped），先设 continue-on-error，
+    # 实测通过后去掉。
+    continue-on-error: ${{ matrix.os == 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v4
       - run: pwsh -NoProfile -File tools/tests/run-relay-tests.ps1
