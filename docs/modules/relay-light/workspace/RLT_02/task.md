@@ -23,11 +23,34 @@
 
 | 时间 | 做了什么 | 证据（命令/路径/结果） |
 |------|---------|----------------------|
-| | | |
+| 2026-09-09 | 只读抽取 relay-light 的节点、角色、事件、关闭定义，并与现役 `relay/v1` schema/runner/host 对照；新增只读对照文档。 | `docs/modules/relay-light/as-built/现役Runner一致性对照.md`：四节表格共 29 条；节点 5、角色 11、事件 8、关闭 5；有意差异 29、遗漏 0。来源精确到 `design/01` 节与现役代码路径:行号。 |
+| 2026-09-09 | 第 4 步禁改路径自查。 | `git diff --stat -- tools/runner tools/host tools/contracts`；原样 stdout 见紧随本表的专节（为空）。 |
+| 2026-09-09 | 第 4 步禁改路径自查。 | `git diff --stat -- relay-core docs/modules/dh-relay`；原样 stdout 见紧随本表的专节（为空）。 |
+| 2026-09-09 | 工作区与允许路径核对。 | `git status --short` 显示本棒的 `docs/modules/relay-light/as-built/现役Runner一致性对照.md`（新增）和本卡 `task.md`（修改）；另有预存未跟踪 `docs/modules/relay-light/design/drafts/A02-仓内skill单源-增补候选.md`，未读取、未改动、非本棒产物。 |
+
+### 第 4 步禁改路径命令与原样输出
+
+命令：`git diff --stat -- tools/runner tools/host tools/contracts`
+
+stdout（原样为空）：
+
+```text
+
+```
+
+命令：`git diff --stat -- relay-core docs/modules/dh-relay`
+
+stdout（原样为空）：
+
+```text
+
+```
 
 ## 验收
 
-- AI 自评：完成条件逐条达成？证据在上表哪几行？
+- AI 自评：
+  1. 完成条件 1 已达成：对照文档按节点、角色、事件、关闭四类逐项给出二选一裁决，无待定；证据为进度表第 1 行（29 条：有意差异 29、遗漏 0）。
+  2. 完成条件 2 已达成：`tools/runner/`、`tools/host/`、`tools/contracts/` 的 `git diff --stat` 为空；额外核对 `relay-core/` 与 `docs/modules/dh-relay/` 亦为空；证据为进度表第 2、3 行及紧随其后的原样输出。状态核对见第 4 行，预存草稿未触碰。
 - 关闭方式：AI 自评 + 用户口头确认即可；做完回 DevPlan 任务表销户。
 - 复核（`light` Recipe）：教训 + 一致性两路，不要求单测。
 
