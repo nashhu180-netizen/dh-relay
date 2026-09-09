@@ -93,7 +93,9 @@ try{
   # 会话会被 psmux 判成 idle——fail-closed 必须落到显式 exit。按真实 launcher 形态断言子进程真退出且 exit=4；有界等待＋finally 兜底 kill，绝不允许套件留下挂起 pwsh。
   $noExitProc=$null
   try{
-    $noExitProc=Start-Process -FilePath 'pwsh' -ArgumentList @('-NoProfile','-NoExit','-File',"`"$entry`"",'-Receipt',"`"$receipt`"",'-BriefRef',"`"$(Join-Path $fixtures 'brief-A.md')`"",'-Cli','CLAUDE','-WorkDir',"`"$(Join-Path $root 'work')`"",'-DryRun') -PassThru -WindowStyle Hidden
+    $noExitStartArgs=@{FilePath='pwsh';ArgumentList=@('-NoProfile','-NoExit','-File',"`"$entry`"",'-Receipt',"`"$receipt`"",'-BriefRef',"`"$(Join-Path $fixtures 'brief-A.md')`"",'-Cli','CLAUDE','-WorkDir',"`"$(Join-Path $root 'work')`"",'-DryRun');PassThru=$true}
+    if($IsWindows){$noExitStartArgs.WindowStyle='Hidden'}
+    $noExitProc=Start-Process @noExitStartArgs
     $noExitDeadline=(Get-Date).AddSeconds(15)
     while(-not$noExitProc.HasExited-and(Get-Date)-lt$noExitDeadline){Start-Sleep -Milliseconds 200}
     Assert-True ($noExitProc.HasExited-and$noExitProc.ExitCode-eq4) 'worker entry exits nonzero under real -NoExit launcher on miscased cli'
@@ -110,7 +112,7 @@ param([Parameter(ValueFromRemainingArguments=$true)][string[]]$Rest)
 exit 0
 '@
   [IO.File]::WriteAllText((Join-Path $stubDir 'zcode.ps1'),$stubBody.Replace('__ARGV_CAPTURE__',$stubArgv),[Text.UTF8Encoding]::new($false))
-  $oldEntryPath=$env:PATH;$oldPathExt=$env:PATHEXT;$env:PATH="$stubDir;$env:PATH";$env:PATHEXT=".PS1;$env:PATHEXT"
+  $oldEntryPath=$env:PATH;$oldPathExt=$env:PATHEXT;$env:PATH="$stubDir$([IO.Path]::PathSeparator)$env:PATH";$env:PATHEXT=".PS1;$env:PATHEXT"
   try{
     [void](@(& pwsh -NoProfile -File $entry -Receipt $receipt -BriefRef (Join-Path $fixtures 'brief-A.md') -Cli zcode -WorkDir (Join-Path $root 'work') 2>&1))
     $argvOut=if(Test-Path -LiteralPath $stubArgv){Get-Content -LiteralPath $stubArgv -Raw}else{''}
@@ -129,12 +131,14 @@ exit 0
 '@
     [IO.File]::WriteAllText((Join-Path $sentDir "$sentry.ps1"),$sentBody.Replace('__SENTINEL__',(Join-Path $root "sentinel-$sentry.txt")),[Text.UTF8Encoding]::new($false))
   }
-  $oldEntryPath2=$env:PATH;$oldPathExt2=$env:PATHEXT;$env:PATH="$sentDir;$env:PATH";$env:PATHEXT=".PS1;$env:PATHEXT"
+  $oldEntryPath2=$env:PATH;$oldPathExt2=$env:PATHEXT;$env:PATH="$sentDir$([IO.Path]::PathSeparator)$env:PATH";$env:PATHEXT=".PS1;$env:PATHEXT"
   function Invoke-RealLaunchRejects([string]$CliValue,[string]$AssertName){
     $proc=$null
     try{
       Remove-Item -LiteralPath @((Join-Path $root 'sentinel-claude.txt'),(Join-Path $root 'sentinel-codex.txt')) -ErrorAction SilentlyContinue
-      $proc=Start-Process -FilePath 'pwsh' -ArgumentList @('-NoProfile','-NoExit','-File',"`"$entry`"",'-Receipt',"`"$receipt`"",'-BriefRef',"`"$(Join-Path $fixtures 'brief-A.md')`"",'-Cli',$CliValue,'-WorkDir',"`"$(Join-Path $root 'work')`"") -PassThru -WindowStyle Hidden
+      $realLaunchStartArgs=@{FilePath='pwsh';ArgumentList=@('-NoProfile','-NoExit','-File',"`"$entry`"",'-Receipt',"`"$receipt`"",'-BriefRef',"`"$(Join-Path $fixtures 'brief-A.md')`"",'-Cli',$CliValue,'-WorkDir',"`"$(Join-Path $root 'work')`"");PassThru=$true}
+      if($IsWindows){$realLaunchStartArgs.WindowStyle='Hidden'}
+      $proc=Start-Process @realLaunchStartArgs
       $deadline=(Get-Date).AddSeconds(15)
       while(-not$proc.HasExited-and(Get-Date)-lt$deadline){Start-Sleep -Milliseconds 200}
       Assert-True ($proc.HasExited-and$proc.ExitCode-eq4-and-not(Test-Path -LiteralPath (Join-Path $root 'sentinel-claude.txt'))-and-not(Test-Path -LiteralPath (Join-Path $root 'sentinel-codex.txt'))) $AssertName

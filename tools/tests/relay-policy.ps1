@@ -314,26 +314,30 @@ try{
     $cliText=($cliOut | Out-String)
     Assert-True ($LASTEXITCODE -eq 1 -and $cliText -match 'src/gamma/x.ts') 'CLI independent check matches oracle'
 
-    $lockedDir=Join-Path $gitRoot 'src/gamma/locked'
-    New-Item -ItemType Directory -Path $lockedDir -Force | Out-Null
-    $lockedUser=$env:USERNAME
-    $lockedAclApplied=$false
-    try{
-      & icacls $lockedDir /deny "${lockedUser}:(W)" | Out-Null
-      $lockedAclApplied=($LASTEXITCODE -eq 0)
-      Assert-True $lockedAclApplied 'icacls deny write applied'
-      $lockedFile=Join-Path $lockedDir 'x.ts'
-      $writeDenied=$false
+    if($IsWindows){
+      $lockedDir=Join-Path $gitRoot 'src/gamma/locked'
+      New-Item -ItemType Directory -Path $lockedDir -Force | Out-Null
+      $lockedUser=$env:USERNAME
+      $lockedAclApplied=$false
       try{
-        Set-Content -LiteralPath $lockedFile -Value 'export const locked=1' -Encoding utf8 -ErrorAction Stop
-      }catch{ $writeDenied=$true }
-      if(-not $writeDenied){ $writeDenied = -not (Test-Path -LiteralPath $lockedFile) }
-      Assert-True $writeDenied 'restricted-write environment actually denies write'
-      $lockedVerdict=Get-RelayContentPolicyVerdict @('src/gamma/locked/x.ts') $snap
-      Assert-True ((-not $lockedVerdict.ok) -and $lockedVerdict.reason -eq 'content-policy-violation:outside-allow-set' -and $writeDenied) 'policy agrees with denied write on unauthorized path'
-    }finally{
-      if($lockedAclApplied){ & icacls $lockedDir /remove:d $lockedUser | Out-Null }
-      if(Test-Path -LiteralPath $lockedDir){ Remove-Item -LiteralPath $lockedDir -Recurse -Force }
+        & icacls $lockedDir /deny "${lockedUser}:(W)" | Out-Null
+        $lockedAclApplied=($LASTEXITCODE -eq 0)
+        Assert-True $lockedAclApplied 'icacls deny write applied'
+        $lockedFile=Join-Path $lockedDir 'x.ts'
+        $writeDenied=$false
+        try{
+          Set-Content -LiteralPath $lockedFile -Value 'export const locked=1' -Encoding utf8 -ErrorAction Stop
+        }catch{ $writeDenied=$true }
+        if(-not $writeDenied){ $writeDenied = -not (Test-Path -LiteralPath $lockedFile) }
+        Assert-True $writeDenied 'restricted-write environment actually denies write'
+        $lockedVerdict=Get-RelayContentPolicyVerdict @('src/gamma/locked/x.ts') $snap
+        Assert-True ((-not $lockedVerdict.ok) -and $lockedVerdict.reason -eq 'content-policy-violation:outside-allow-set' -and $writeDenied) 'policy agrees with denied write on unauthorized path'
+      }finally{
+        if($lockedAclApplied){ & icacls $lockedDir /remove:d $lockedUser | Out-Null }
+        if(Test-Path -LiteralPath $lockedDir){ Remove-Item -LiteralPath $lockedDir -Recurse -Force }
+      }
+    }else{
+      Write-Host 'SKIP  restricted-write ACL checks (Windows-only: icacls)'
     }
   }finally{Pop-Location}
 }finally{foreach($root in $script:roots){if(Test-Path $root){Remove-Item -LiteralPath $root -Recurse -Force}}}

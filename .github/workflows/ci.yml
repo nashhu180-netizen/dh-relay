@@ -35,11 +35,10 @@ jobs:
       fail-fast: false
       matrix:
         os: [windows-latest, ubuntu-latest]
-    # Windows 是这套 PowerShell Runner 的真实运行环境，作硬门禁。
-    # ubuntu 这份此前没人实测过是否全绿（部分 suite 依赖 psmux，CI 上不存在，
-    # 它们自己会打印 "SUITE SKIP" 并被 runner 计入 skipped），先设 continue-on-error，
-    # 实测通过后去掉。
-    continue-on-error: ${{ matrix.os == 'ubuntu-latest' }}
+    # Windows 与 ubuntu 同为硬门禁：ubuntu 已实测全绿。
+    # Windows-only 机制（-WindowStyle / icacls / psmux）已在各 suite 内部按平台守卫处理——
+    # 用 $IsWindows 分支或（psmux）"SUITE SKIP" 让 runner 计入 skipped，不需要靠 job 级
+    # continue-on-error 兜底。
     steps:
       - uses: actions/checkout@v4
       - run: pwsh -NoProfile -File tools/tests/run-relay-tests.ps1
