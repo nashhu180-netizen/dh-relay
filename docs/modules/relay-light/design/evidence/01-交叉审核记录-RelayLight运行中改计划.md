@@ -33,7 +33,7 @@
 - **P1-6 超出范围分支断在 blocked**：用户裁决继续后没写怎么接回来。补当班监工为 `coder#1` 补写 `resume`、本阶段跑完补写 `outcome=done`，衔接 §5.2.1 的 blocked 收尾路径。
 - **P1-7 HC-RL-H16 混装两个场景**：卡内追加节点与新增任务卡追加阶段的验证动作和判断点都不同。拆为 **HC-RL-H16 卡内追加节点**（监工直接接手）与 **HC-RL-H17 新增任务卡追加阶段**（编排开出新阶段）。
 - **P1-8 `relay_plan.md` 的并发未交代**：§3.7 只讲了账本单写者。补「计划文件同样单写者：改计划实例编辑期间编排不读该文件，编排只在阶段开始前重读，两者由 `stage_result` 隔开」。
-- **P1-9 白名单是口语不是路径**，无法机器校验。改为按路径写死，并到 dev-harness skill 查证真实骨架后填：白名单 = `docs/modules/<模块>/relay/<plan_id>/relay_plan.md`（含 marker 的 `cards=`）、`docs/modules/<模块>/dev_plan/P<N>-*.md`、`docs/modules/<模块>/workspace/<卡号>/task_plan.md`；**禁区 = `docs/modules/<模块>/design/` 整个目录**（验收清单与设计方案同在 `design/01-*.md`）。HC-HC-RL-A122 的验证方法改为对这组路径做 `git diff --name-only` 断言。
+- **P1-9 白名单是口语不是路径**，无法机器校验。改为按路径写死，并到 dev-harness skill 查证真实骨架后填：白名单 = `docs/modules/<模块>/relay/<plan_id>/relay_plan.md`（含 marker 的 `cards=`）、`docs/modules/<模块>/dev_plan/P<N>-*.md`、`docs/modules/<模块>/workspace/<卡号>/task_plan.md`；**禁区 = `docs/modules/<模块>/design/` 整个目录**（验收清单与设计方案同在 `design/01-*.md`）。HC-RL-A122 的验证方法改为对这组路径做 `git diff --name-only` 断言。
 
 ### P2
 
@@ -63,3 +63,36 @@
 - 整版确认**不授权 B 拆计划、不授权 D 开工**，两者仍各自走门。
 
 - 正式输入 ID 前缀改为 `HC-RL-`，与候选稿的 `RL-` 一一对应，**编号不变**（`RL-A37` 即 `HC-RL-A37`）。改前缀是为了被 dev-harness 解析器识别（`tools/dh-core.mjs` 的 `^HC-[A-Z0-9]+-[AHM]\d+$`），不改变任何验收语义；`drafts/` 候选稿保留 `RL-` 原样作形成史。
+
+## A′ 增补 · B 审核回流（2026-09-09，**用户已确认 2026-09-09**）
+
+<a id="review-rlt-a02"></a>
+<!-- dh:planning-evidence:v1 event=RLT-A-02 artifact=design/01-RelayLight-产品设计与验收.md kind=review -->
+
+来源：B 拆计划阶段的 fresh-context 审核，在 `design/drafts/P1-RelayLight-开发方案-候选.md` 原 §7「正式输入中的矛盾或缺口」里列出 5 条 P1（该节现已改写为 §7「正式输入回流与实施证据要求」）。B 不擅自改设计，回流到 A′ 由正式输入澄清。**五条均只改契约细节与验证描述，验收 ID 一条未增未删未改号。**
+
+| # | B 审核提出的问题 | A′ 裁决与落点 |
+|---|---|---|
+| 1 | **Recipe 权威冲突**：§6.2 示例写 `normal = code-round2 + requirement + lesson` 且用 `[rework]` 节，与 §6.3、HC-RL-A115 的 `normal = requirement + lesson`、`[limits]` 节矛盾 | 以 §6.3 与 HC-RL-A115 为准。§6.2 改为只写结构不写取值，删掉 normal 的错误路数与 `[rework]` 写法，显式声明止损节名是 `[limits]` 与 `[limits.on_exceed]` |
+| 2 | **`status --json` schema 不完整**：HC-RL-A62 要的 `current_stage`、HC-RL-A106 要的建议动作与 failed 重拉计数都没有稳定键名 | §3.5 补顶层字段合同表并冻结键名：`current_stage`、`last_stage_result`、`suggested_action`（五枚举）、`monitor_relaunch_count`、`pending_nodes`、`superseded_ignored`，空值语义写明。HC-RL-A62 与 HC-RL-A106 的验证描述改为引用这些字段名 |
+| 3 | **strategist 账本链缺口**：HC-RL-A97 要 strategist 最终形成 `user_decision`，但 §3.4 把 `user_decision` 限定在 decider 的 `decision→[user_decision]→resume` 里，返工超限路径没说事件记在哪个 `(node, agent)` | §3.4 补第二条链并冻结：触发者是监工，全链记在**触发时最后一个 X 阶段 coder** 名下，顺序 `escalate` → `agent_launch strategist#n` → `decision` → `user_decision` → (`resume` 或 `cancelled`)；**`user_decision` 永远出现，不看 `decision_mode`**；该链允许 `escalate` 作链首、无 `blocked` 前置。原「`user_decision` 只在 consult 出现」改为「decider 链按 `decision_mode`；strategist 链永远有」。§9.3 补事件行样例，HC-RL-A114 与 HC-RL-A97 验证描述同步 |
+| 4 | **配置定位与生成接口未定义**：两侧 skill 同时存在时从哪份 `dh-mapping.toml` 读没说；HC-RL-A99 又要求模板生成随配置变，但首版只有 add/status/lint | 新增 §6.2.1 解析优先级：`--config-dir` 显式指定优先，其次是当前平台自己的 skill 目录（Claude Code 读 `~/.claude/`，Codex 读 `~/.codex/`），**不做跨目录比对**；两侧一致由 RLT_01 的五文件清单哈希保证。`plan_loaded` 的 `note` 必须记录实际使用的配置目录。HC-RL-A99 明确模板生成是 lint 与 skill 的内部实现，**不新增公共 CLI 子命令** |
+| 5 | **新增任务卡的路径授权未闭合**：白名单里的 `workspace/<卡号>/task_plan.md` 没说新卡算不算 | §4.5.2 收窄：`<卡号>` 只能是**改动前** marker `cards` 里已存在的卡；新增卡的 `task_plan.md` 由该卡 W 阶段 builder 建，改计划实例不写。HC-RL-A122 验证描述同步 |
+
+### 用户当场追加裁决（2026-09-09）
+
+除上表五条回流外，用户在同一轮里另拍两条，**均非 B 审核提出，属用户直接决策**：
+
+| # | 裁决 | 落点 |
+|---|---|---|
+| 6 | **`decision_mode` 默认 `auto`** ——marker 未写 `decision_mode=` 时按 `auto` 解析，要 `consult` 必须显式声明；规划 agent 的计划模板默认写 `decision_mode=auto` | `design/01` §4 marker 规范、§1.3 决策模式行、§3.5 lint 映射表、§4.5.1；HC-RL-A18 与 HC-RL-A90 的验证描述同步。B 草案 RLT_14 验收口径改为「默认 auto 与显式 consult 两路都实跑」 |
+| 7 | **`watch` 接着做，正式排第 5 批** ——RLT_18 不再标「可延后 / 待用户决定」，前四批完成后直接开工 | B 草案索引备注、RLT_18 卡、§4 批次表、§8.3、§9 完工清单去掉「可延后 / 用户决定」字样；**正式输入同步改口径**——§1.4 由「P2」改为「第 5 批必做」、§3 由「第四个 watch 是 P2 可选组件」改为「排在开发方案第 5 批」、§3.6 标题去掉「P2」、§13 由「首版不做 watch」改为「前四批不做，第 5 批必做、前四批不依赖」。全文与 B 草案的 `P2` 字样计数均归零 |
+
+第 6 条牵动一处既有契约：原 HC-RL-A18 要求 marker 必须含 `decision_mode=`，与「可省且默认 auto」直接冲突。裁决为**以用户新决策为准**——`decision_mode=` 从必需字段降为可选字段，marker 其余四个字段（`skill=` / `session=` / `recipe=` / `cards=`）仍然必需。HC-RL-A18 只改验证描述，**编号与验收语义边界不变**。
+
+<a id="understanding-rlt-a02"></a>
+<!-- dh:planning-evidence:v1 event=RLT-A-02 artifact=design/01-RelayLight-产品设计与验收.md kind=understanding -->
+
+### 理解与确认状态
+
+**状态：用户已于 2026-09-09 明文确认**，与 B 开发方案（`RLT-B-01`）同批生效；正式输入头部已改标「已确认 2026-09-09」。开发方案 §7 的对应条目改写为「已由 A′ 增补澄清」。B 事件的完整审核与确认记录见 [`02-交叉审核记录-RelayLight-B拆计划.md`](./02-交叉审核记录-RelayLight-B拆计划.md)。

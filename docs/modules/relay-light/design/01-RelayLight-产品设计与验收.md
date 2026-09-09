@@ -3,8 +3,10 @@
 # RelayLight 产品设计与验收（**正式设计输入 · 2026-09-09 整版确认**）
 
 <!-- dh:topic tier=标准 review=RelayLight运行中改计划 -->
-<!-- dh:planning-event:v1 id=RLT-A-01 stage=A-full artifact=design/01-RelayLight-产品设计与验收.md review=evidence/01-交叉审核记录-RelayLight运行中改计划.md#review-rlt-a01 understanding=evidence/01-交叉审核记录-RelayLight运行中改计划.md#understanding-rlt-a01 -->
+<!-- dh:planning-event:v1 id=RLT-A-02 stage=A-full artifact=design/01-RelayLight-产品设计与验收.md review=evidence/01-交叉审核记录-RelayLight运行中改计划.md#review-rlt-a02 understanding=evidence/01-交叉审核记录-RelayLight运行中改计划.md#understanding-rlt-a02 -->
 
+> **A′ 增补 2026-09-09：B 审核回流四处契约澄清（已确认 2026-09-09）**——§6.2 Recipe 冲突消解、§3.5 `status --json` 字段冻结、§3.4 strategist 账本链、§6.2.1 配置解析优先级，另含 §4.5.2 新增卡路径授权收窄、§4 `decision_mode` 默认 `auto`。**验收 ID 一条未增未删未改号。**
+>
 > **本文是 relay-light 模块的正式设计输入**，已经用户整版确认。整版确认不等于授权施工：B 拆计划、D 开工仍按 dev-harness 各自的门走。
 > 冻结来源：2026-09-08 至 09-09 用户与主控的产品讨论 + 六轮 fresh 复核裁决 + 一轮结构性调整 + **2026-09-09 补充：运行中改计划流程（§4.5）**。**已无遗留待决策项**（见 §8）。候选稿见 `drafts/`，审核证据见 `evidence/`。
 
@@ -71,7 +73,7 @@ relay-light 是本仓**独立模块**，slug `relay-light`；文档 `docs/module
 | 角色模型配置 | 独立 `roles.toml`，流程不写死模型 | 模型写进模板（换模型要改多处） | 中 |
 | dev-harness 映射 | 独立 `dh-mapping.toml`，承载阶段↔dh 节点、三档 reviewer、复核轮数上限、止损规则 | 映射硬编码进流程文档（dh 一改就全篇返工） | 高 |
 | 复核返工轮数上限 | 读映射配置，**当前值 2**；超限停 → strategist → 用户 | 写死 3（与 dev-harness 止损脱钩） | 低 |
-| 决策模式 | marker 的 `decision_mode=auto / consult`，只管 decider；strategist **永远交用户** | 一刀切（要么全自动风险大，要么全问烦） | 中 |
+| 决策模式 | marker 的 `decision_mode=auto / consult`，**默认 `auto`（未写即 auto，consult 须显式声明）**，只管 decider；strategist **永远交用户** | 默认 consult（每次阻塞都打断人）／一刀切（要么全自动风险大，要么全问烦） | 中 |
 | 运行中改计划 | planner 改计划实例可直接改开发方案任务行与任务卡，**绕过 dev-harness「改开发方案须 B-adjust 用户确认」**（§4.5） | 每次改计划都交用户（范围内的小改也要打断人）／完全禁改（计划一处不对就整体重来） | 中 |
 | attempt 计数 | 按 `(node, agent 名)` 计，每节点从 1 起、跨节点不累计，上限 3 每节点独立 | 全卡累计（返工节点白吃预算） | 中 |
 | 账本程序运行时 | **Python 3 单文件**，落点 `tools/relay-light/relay_log.py`，仅标准库 | pwsh 7（Linux 侧要额外装） | 高 |
@@ -81,7 +83,7 @@ relay-light 是本仓**独立模块**，slug `relay-light`；文档 `docs/module
 ### 1.4 范围与分期
 
 - **首版交付**：`relay_log.py`（`add` / `status` / `lint`）+ skill 三件 + 两份配置 + 五种阶段模板 + Windows 两个主控组合实跑。
-- **P2**：`watch` 组件（设计已冻结，见 §3.6）。
+- **第 5 批**：`watch` 组件（设计已冻结见 §3.6；**必做**，前四批不依赖它、可先验收）。
 - **人验后置**：Linux 两个组合由用户在 ThinkPad 上跑。验收矩阵 = Windows/Linux × Claude Code 主控/Codex 主控，共 4 个组合。
 - **环境实测**：Herdr 0.8.0 自管 PTY、不依赖 tmux；Windows Python **3.14.0**、Linux Python **3.12**，两侧均 ≥3.11，**`tomllib` 可用**——原「Windows 版本待确认」的探测项**已由实测答复**，JSON 退路作为不启用的兜底保留。
 
@@ -155,7 +157,7 @@ skill 内独立文件，键是角色名，值是模型与发起方式。**完整
 
 ## 3. 账本程序 relay-log
 
-**运行时 = Python 3 单文件**，落点 `tools/relay-light/relay_log.py`，只用标准库。首版三个子命令 `add` / `status` / `lint`；第四个 `watch` 是 P2 可选组件，设计已冻结（§3.6）。
+**运行时 = Python 3 单文件**，落点 `tools/relay-light/relay_log.py`，只用标准库。前四批交付三个子命令 `add` / `status` / `lint`；第四个 `watch` 排在开发方案第 5 批，设计已冻结（§3.6）。
 
 ### 3.1 命令签名与退出码
 
@@ -212,7 +214,7 @@ relay_log.py lint   --plan <dir> [--json]
 
 | 事件 | 写入者 | 时序规则 |
 |---|---|---|
-| `plan_loaded` | 编排 | 必须是**第 1 行且仅一次**；`node` 填第一个非 superseded 节点号 |
+| `plan_loaded` | 编排 | 必须是**第 1 行且仅一次**；`node` 填第一个非 superseded 节点号；`note` 必须含 **`config_dir=<实际使用的配置目录>`** 与 **`plan=<计划目录路径>`**（§6.2.1），其余内容自由 |
 | `stage_start` | 编排 | 每**阶段实例**仅一次，且在该实例任何 `monitor_launch` 之前；`note` 带 `stage_id=` |
 | `monitor_launch` | 编排 | 每阶段实例至少一次（重拉监工可多次），必须在本实例 `stage_start` 之后；`note` 带 `stage_id=` |
 | `node_start` | 监工 | 每节点仅一次；在该节点任何 `agent_launch` 之前；`depends_on` 未全 `closed` 时退出 `2` |
@@ -230,7 +232,33 @@ agent_launch → checkpoint* → ( blocked → escalate → decision → [user_d
 
 **终态后同一 `(node, agent)` 不得再有任何事件。** `escalate` / `decision` / `user_decision` **记在被阻塞的那个 agent 名下**，决策 agent 的标识写进 `note`。
 
-**决策链顺序固定**：`blocked` → `escalate` → `decision` → `resume`，其中 **`user_decision` 只在 `decision_mode=consult` 时出现**，位置固定在 `decision` 与 `resume` 之间。`auto` 模式**没有** `user_decision`；`consult` 模式缺 `user_decision` 就写 `resume` 退出 `2`。
+**决策链有两条，顺序都固定。**
+
+**一、decider 链**（施工 `blocked` 触发）：`blocked` → `escalate` → `decision` → `resume`。`user_decision` **按 `decision_mode` 决定有没有**，位置固定在 `decision` 与 `resume` 之间：`auto` 模式**没有** `user_decision`，出现即退出 `2`；`consult` 模式缺 `user_decision` 就写 `resume` 退出 `2`。
+
+**二、strategist 链**（返工轮数或 attempt 达上限触发，§7.3）：
+
+- **触发者是监工**，不是某个 agent 主动 `blocked`。
+- **事件归属分两类**（与 §9.2 的 decider 写法一致）：
+  - **决策类事件** `escalate` / `decision` / `user_decision` / `resume` / `cancelled` 记在**触发时最后一个 X 阶段 coder** 名下，strategist 的标识写进 `note`；
+  - **生命周期事件** `agent_launch` / `done` 记在 **`strategist#<n>` 自己名下**。
+- 顺序固定：
+
+```text
+escalate      <coder>         note=strategist=strategist#<n> 原因=rework 超限 或 attempt 超限
+agent_launch  strategist#<n>   ← 生命周期事件，记在 strategist 自己名下
+decision      <coder>          note=strategist=strategist#<n> <strategist 方案文件>
+done          strategist#<n>   ← 生命周期事件，记在 strategist 自己名下
+user_decision <coder>          ← 永远出现，不看 decision_mode
+  ├─ 用户选继续 → resume    <coder>   note 引用该 user_decision
+  └─ 用户选停卡 → cancelled <coder>   note 引用该 user_decision
+```
+
+- **`user_decision` 在这条链上永远出现**，`decision_mode=auto` 也一样；缺它就写 `resume` 或 `cancelled` 一律退出 `2`。
+- 这条链**没有 `blocked` 起头**——`escalate` 直接作为链首被接受，因为触发信号来自监工的计数而非 agent 自报阻塞。
+- 终局二选一：`resume`（继续，该 coder 仍是同一实例、不新增 attempt）或 `cancelled`（停卡，该 coder 终态封口）。
+
+一句话区分：**decider 链按 `decision_mode` 决定要不要问用户；strategist 链永远有 `user_decision`。**
 
 **`user_decision` 的 `note` 写法约定**：方案里含「需要改计划」时（§4.5），用户同意写 `approve-amend: <理由或补充>`，用户否决写 `reject-amend: <用户的替代指示>`。否决时监工不拉改计划实例、不重拉 decider，直接把替代指示送回同一个 coder 并写 `resume`，账本上不出现 `plan_amend`。方案不含改计划时 `note` 自由文本，不用这两个前缀。
 
@@ -243,7 +271,7 @@ agent_launch → checkpoint* → ( blocked → escalate → decision → [user_d
 **`add` 入参校验**（任一违反退出 `2`）：
 
 - `node` 必须在节点表中且**非 superseded**；
-- `agent` 名（去掉 `#attempt`）必须在**该节点**的 agent 表中；`orchestrator#<n>`、`monitor#<n>` 与 **`planner-amend#<n>`** 豁免（改计划实例由监工过门后按需拉起，不预先写进 agent 表，§4.5.2）；
+- `agent` 名（去掉 `#attempt`）必须在**该节点**的 agent 表中；`orchestrator#<n>`、`monitor#<n>`、**`planner-amend#<n>`** 与 **`strategist#<n>`** 豁免（这两者都由监工**按需**拉起、不按节点预挂进 agent 表，见 §4.5.2 与 §3.4 的 strategist 链）；
 - `event` 必须在词表中；
 - **控制事件的 `by` 必须与该事件的法定写入者一致**（§3.4 表），越权退出 `2`；
 - `trigger` 为 `on:done:<X>` 的 agent，写 `agent_launch` 时 **X 在本节点必须已有 `done`**（`agent_lost` / `cancelled` 不算）；
@@ -269,7 +297,14 @@ agent_launch → checkpoint* → ( blocked → escalate → decision → [user_d
 {
   "plan": {"marker": "...", "cards": ["DHR_90"]},
   "open_stages": ["DHR_90:C#1"],
+  "current_stage": "DHR_90:C#1",
   "current_node": "C2",
+  "last_stage_result": {"stage_id": "DHR_90:C#1", "outcome": "blocked",
+                        "note": "stage_id=DHR_90:C#1 outcome=blocked 表结构有二义"},
+  "suggested_action": "wait_user",
+  "monitor_relaunch_count": 0,
+  "pending_nodes": ["R1", "F1"],
+  "superseded_ignored": 2,
   "stages": [{"stage_id": "DHR_90:C#1", "stage": "C", "card": "DHR_90", "k": 1,
               "state": "open", "nodes": ["C1", "C2"], "result": null}],
   "nodes": [{"node": "C2", "card": "DHR_90", "stage": "DHR_90:C#1", "type": "construction",
@@ -279,6 +314,64 @@ agent_launch → checkpoint* → ( blocked → escalate → decision → [user_d
   "errors": []
 }
 ```
+
+**顶层字段合同（冻结，键名不得改）**：
+
+| 字段 | 类型与取值 | 空值 |
+|---|---|---|
+| `current_stage` | 当前阶段实例的 `stage_id` | 未开始时 `null` |
+| `current_node` | 当前节点号 | 未开始时 `null` |
+| `last_stage_result` | 对象 `{stage_id, outcome, note}`，取**当前阶段实例最新一条** `stage_result` | 本阶段尚无 `stage_result` 时 `null` |
+| `suggested_action` | 枚举五取一：`open_next_stage` / `wait_user` / `relaunch_monitor` / `notify_user` / `none` | 无可建议动作时 `none`，不用 `null` |
+| `monitor_relaunch_count` | 整数，**当前阶段实例内**因 `failed` 重拉监工的次数 | 未开始时 `0` |
+| `pending_nodes` | 字符串列表，状态为 `pending` 的节点号，按节点表顺序 | 无则空列表 `[]` |
+| `superseded_ignored` | 整数，本次派生**跳过的 superseded 行计数**（节点表 + agent 表合计） | 无则 `0` |
+| `open_stages` | 字符串列表，已 `stage_start` 未 `stage_close` 的 `stage_id` | 无则 `[]` |
+| `plan` | 对象，见下 | 恒存在 |
+| `stages` | 对象列表，见下 | 无则 `[]` |
+| `nodes` | 对象列表，见下 | 无则 `[]` |
+| `agents` | 对象列表，见下 | 无则 `[]` |
+| `errors` | 字符串列表，账本自身的结构问题 | 无则 `[]` |
+
+**嵌套对象的字段合同**：
+
+| 位置 | 字段 | 类型与取值 | 空值 |
+|---|---|---|---|
+| `plan` | `marker` | 字符串，marker 原文 | 恒存在 |
+| `plan` | `cards` | 字符串列表，marker 的 `cards` | 至少一项 |
+| `stages[]` | `stage_id` | 字符串 `<card>:<stage>#<k>` | 恒存在 |
+| `stages[]` | `stage` | 字符串，`W`/`C`/`R`/`X`/`F` 之一 | 恒存在 |
+| `stages[]` | `card` | 字符串，卡号 | 恒存在 |
+| `stages[]` | `k` | 整数，第几次进入该阶段 | 恒存在 |
+| `stages[]` | `state` | 字符串，`pending` / `open` / `closed` | 恒存在 |
+| `stages[]` | `nodes` | 字符串列表，本实例的节点号，按节点表顺序 | 至少一项 |
+| `stages[]` | `result` | 对象，取该实例最新 `stage_result`，内部字段见下 | 尚无结果时 `null` |
+| `nodes[]` | `node` | 字符串，节点号 | 恒存在 |
+| `nodes[]` | `card` | 字符串，卡号 | 恒存在 |
+| `nodes[]` | `stage` | 字符串，所属 `stage_id` | 恒存在 |
+| `nodes[]` | `type` | 字符串，`build`/`construction`/`review`/`rework`/`handoff` | 恒存在 |
+| `nodes[]` | `state` | 字符串，`pending` / `ready` / `open` / `closed` | 恒存在 |
+| `nodes[]` | `closable` | 布尔，双判据是否成立 | 恒存在 |
+| `nodes[]` | `reasons` | 字符串列表，不可关的原因 | 可关时 `[]` |
+| `agents[]` | `node` | 字符串，所在节点号 | 恒存在 |
+| `agents[]` | `agent` | 字符串 `<名字>#<attempt>` | 恒存在 |
+| `agents[]` | `last_event` | 字符串，账本事件层词表之一 | 恒存在 |
+| `agents[]` | `last_ts` | 字符串，ISO 8601 带偏移 | 恒存在 |
+| `agents[]` | `idle_seconds` | 整数，距最近事件的秒数 | 恒存在 |
+
+**`stages[].result` 的内部字段**（该对象非 `null` 时全部存在）：
+
+| 字段 | 类型与取值 | 空值 |
+|---|---|---|
+| `stage_id` | 字符串 `<card>:<stage>#<k>`，与所属 `stages[].stage_id` 相等 | 恒存在 |
+| `outcome` | 字符串，枚举四取一：`done` / `blocked` / `failed` / `cancelled` | 恒存在 |
+| `note` | 字符串，`stage_result` 的 `note` 原文 | 可为空字符串 `""` |
+| `amend` | 字符串，本阶段 `plan_amend` 的方案文件名（`note` 里 `amend=` 的值） | 本阶段无 `plan_amend` 时 `null` |
+| `nodes` | 字符串列表，本阶段追加的新节点号（`note` 里 `nodes=` 的值） | 无追加时空列表 `[]` |
+
+**superseded 行不出现在 `stages` / `nodes` / `agents` 里**，只计入 `superseded_ignored`。
+
+`suggested_action` 与 §2.1 的分路表一一对应：`done` / `cancelled` → `open_next_stage`；`blocked` → `wait_user`；`failed` 且 `monitor_relaunch_count` 为 0 → `relaunch_monitor`；`failed` 且已重拉过一次 → `notify_user`；其余 → `none`。**这是派生建议，不是命令**——编排照旧自己查表决定，程序不驱动。
 
 `stages` 与 `nodes` 按节点表顺序，`agents` 按 `(node, 首次 launch 的 seq)` 顺序。**`open_stages` 是列表**——跨卡时可能有多个阶段实例同时 open；同卡串行保证同一张卡在列表里至多出现一次。
 
@@ -292,7 +385,7 @@ agent_launch → checkpoint* → ( blocked → escalate → decision → [user_d
 |---|---|
 | 缺表头 / 表结构不合法 / 单元格含竖线 | HC-RL-A24 |
 | `agent.node` 指向不存在节点 / 同节点 agent 名重复 | HC-RL-A24 |
-| 缺 marker 或 marker 缺 `skill=` / `session=` / `decision_mode=` / `recipe=` | HC-RL-A18 |
+| 缺 marker 或 marker 缺 `skill=` / `session=` / `recipe=` / `cards=`（`decision_mode=` 可省，省则按 `auto`） | HC-RL-A18 |
 | `recipe` 值非法，或 R 阶段 reviewer 集合与该档不符 | HC-RL-A116 |
 | `decision_mode` 值非法 | HC-RL-A90 |
 | 节点号重复（含已 superseded 的号） | HC-RL-A46 |
@@ -310,7 +403,7 @@ agent_launch → checkpoint* → ( blocked → escalate → decision → [user_d
 | `card` 未在 marker 的 `cards` 列表中 | HC-RL-A87 |
 | 节点表含 kickoff / verify-signoff 类 `type` | HC-RL-A88 |
 
-### 3.6 可选组件 `watch`（P2，设计已冻结）
+### 3.6 `watch` 组件（第 5 批，设计已冻结）
 
 `relay_log.py watch --plan <dir> --notify <agent>`，在**当前阶段的终端空间**里单独开一个 pane 运行；编排层用同一程序、`--notify` 指向编排。
 
@@ -356,6 +449,8 @@ agent_launch → checkpoint* → ( blocked → escalate → decision → [user_d
 ```text
 <!-- relay-light:plan v1 skill=<ver> generated=<date> session=<herdr session> decision_mode=<auto|consult> recipe=<heavy|normal|light> cards=<卡号,卡号> -->
 ```
+
+**`decision_mode` 的默认值是 `auto`**：marker 里**没写 `decision_mode=` 时按 `auto` 解析**，要 `consult` 必须显式声明。写了就必须是 `auto` 或 `consult` 两值之一，其它值 lint 报错（HC-RL-A90）。**marker 的其余字段仍然必需**——`skill=` / `session=` / `recipe=` / `cards=` 缺一即 lint 拒绝（HC-RL-A18）。**规划 agent 生成计划时模板默认写 `decision_mode=auto`**，把默认值显式化，便于事后从计划本身看出当时的模式。
 
 正文是**两张 markdown 表，表头固定**。解析只用标准库（逐行扫描 + split），**找不到表头即报错**，不猜。
 
@@ -422,7 +517,7 @@ agent_launch → checkpoint* → ( blocked → escalate → decision → [user_d
 
 **要不要先问用户，沿用现有的门，不新增规则**：
 
-- decider 触发的，按 marker 的 `decision_mode`——`auto` 直接过门；`consult` 先问用户，出一条 `user_decision`。
+- decider 触发的，按 marker 的 `decision_mode`（**默认 `auto`**）——`auto` 直接过门；`consult` 先问用户，出一条 `user_decision`。
 - strategist 触发的，**永远先交用户**（不看 `decision_mode`，与 §2.2 一致）。
 
 **「改计划」视作决策方案的一部分：方案过门，改计划一并过门。** 不为改计划单设第二道门。
@@ -451,7 +546,9 @@ agent_launch → checkpoint* → ( blocked → escalate → decision → [user_d
 | 接力计划 | `docs/modules/<模块>/relay/<plan_id>/relay_plan.md` | 节点表与 agent 表，按 §4.4 追加行 + 旧行标 superseded |
 | 计划 marker | 同上文件第一行的 `cards=` 字段 | 新增任务卡时加卡号 |
 | 开发方案 | `docs/modules/<模块>/dev_plan/P<N>-*.md`（DevPlan 户口本） | 任务行的描述、拆分、合并、先后、依赖 |
-| 任务卡施工步骤 | `docs/modules/<模块>/workspace/<卡号>/task_plan.md` | 施工步骤 |
+| 任务卡施工步骤 | `docs/modules/<模块>/workspace/<卡号>/task_plan.md`，**`<卡号>` 只能是 marker `cards` 里已存在的卡** | 施工步骤 |
+
+**新增任务卡时，改计划实例不写新卡的 `task_plan.md`**——它只往 marker 的 `cards` 加卡号、往开发方案加任务行、往 `relay_plan` 追加该卡的阶段行；新卡的任务工作区七件套（含 `task_plan.md`）由**该卡 W 阶段的 builder** 照常建（§4.5.3 第二种情况）。所以白名单里的 `<卡号>` 判定用的是**改动前**的 `cards` 列表。
 
 **禁区（按路径）**：**`docs/modules/<模块>/design/` 整个目录**——包含 `design/01-产品设计与验收.md`（设计方案与验收清单同在此文件）、`design/README.md`、`design/evidence/`、`design/records/`、`design/drafts/`。**验收 ID 不得新增，也不得改动。**
 
@@ -561,26 +658,43 @@ outcome=blocked（监工）→ 编排通知用户 → 用户裁决
 
 ### 6.2 `dh-mapping.toml` 承载什么
 
+四类内容：**各阶段对应的 dh 节点**、**Recipe 三档对应哪些 reviewer**、**复核最大轮数**、**止损规则**。结构形如：
+
 ```toml
-[stages.C]
-dh_nodes = ["S3"]
+[stages.<阶段>]
+dh_nodes = <见 §6.3>        # 各阶段对应的 dh 节点列表，取值见 §6.3
 
-[stages.R]
-dh_nodes = ["E0", "E1", "E2", "E4", "E5", "E14", "E6", "E3"]
+[recipes.<档>]
+reviewers = [...]          # 三档的具体路数见 §6.3，本节不复述
 
-[recipes.heavy]
-reviewers = ["code-round2", "requirement", "consistency", "lesson"]
-[recipes.normal]
-reviewers = ["code-round2", "requirement", "lesson"]
-[recipes.light]
-reviewers = ["lesson", "consistency"]
+[limits]
+rework_max_rounds = <整数>   # 取值见 §6.3
+attempt_max = <整数>         # 取值见 §6.3
 
-[rework]
-max_rounds = 2
-on_exceed = "strategist-then-user"
+[limits.on_exceed]
+action = "<止损动作>"        # 取值见 §6.3
 ```
 
-四类内容：**各阶段对应的 dh 节点**、**Recipe 三档对应哪些 reviewer**、**复核最大轮数**、**止损规则**。
+**本节只写结构，不写取值。** Recipe 三档的 reviewer 集合与止损数值的**权威取值只在 §6.3 的完整样例**（对应 HC-RL-A115、HC-RL-A116）；止损配置节名固定为 `[limits]` 与 `[limits.on_exceed]`，**没有 `[rework]` 这个节**。
+
+### 6.2.1 配置文件的解析优先级
+
+`roles.toml` 与 `dh-mapping.toml` 从哪读，按以下顺序取**第一个命中**，不做合并：
+
+| 顺序 | 来源 |
+|---|---|
+| 1 | `--config-dir` 显式指定的目录 |
+| 2 | **当前平台自己的 skill 目录**：Claude Code 主控读 `~/.claude/skills/relay-light/`，Codex 主控读 `~/.codex/skills/relay-light/` |
+
+**不做跨目录比对，也不做「两侧不一致就报错」**——运行时只认自己这一侧。两侧内容一致由 `RLT_01` 的**五文件清单哈希**在同步环节保证（对应 HC-RL-A32），不是运行时职责。
+
+**`plan_loaded` 事件的 `note` 必须含 `config_dir=<实际使用的配置目录>` 与 `plan=<计划目录路径>`**，形如：
+
+```text
+skill=0.1.0 config_dir=~/.claude/skills/relay-light plan=docs/modules/dh-relay/relay/wave-2026-09 session=app cards=DHR_90,DHR_91
+```
+
+两个键都缺一不可（§3.4），这样事后从账本就能还原当时读的是哪一份配置、跑的是哪一份计划。
 
 ## 6.3 两份配置文件的完整样例
 
@@ -803,8 +917,28 @@ X2 仍不过（X 轮数达 max_rounds=2）→ 监工拉 strategist
    （另一条等价入口：某节点内 attempt 达 3 —— 两套计数谁先到谁触发，不叠加）
    输入：brief、task_plan、全部 review、账本
    输出：全局方案 或 建议停卡
-   → **永远交用户裁决**（不看 decision_mode）→ user_decision
+   → **永远交用户裁决**（不看 decision_mode）
 ```
+
+账本上这一段的事件行（§3.4 的 strategist 链：决策类事件记在 X2 那个 coder 名下，`agent_launch` 与 `done` 记在 `strategist#1` 自己名下）：
+
+```text
+escalate      coder#1        note=strategist=strategist#1 原因=rework 达 max_rounds=2
+agent_launch  strategist#1
+decision      coder#1        note=strategist=strategist#1 strategy.1.md
+done          strategist#1   note=全局方案已出，strategist 收工关 pane
+user_decision coder#1        note=用户裁决：继续，按 strategy.1.md 收窄本卡范围
+resume        coder#1        note=按 user_decision 与 strategy.1.md 继续
+```
+
+用户若选停卡，最后两行换成：
+
+```text
+user_decision coder#1        note=用户裁决：停卡，本卡转 backlog
+cancelled     coder#1        note=引用上条 user_decision，停卡
+```
+
+两种终局都**必须先有 `user_decision`**，`decision_mode=auto` 也不例外。
 
 ### 9.4 运行中改计划（blocked → decider 提出改计划 → planner 改计划实例 → 追加节点）
 
@@ -902,7 +1036,7 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 ### 10.2 账本示例 · 运行中快照
 
 ```json
-{"seq":1,"ts":"2026-09-09T09:00:05+08:00","node":"W1","event":"plan_loaded","agent":"orchestrator#1","by":"orchestrator","note":"skill=0.1.0 session=app cards=DHR_90,DHR_91"}
+{"seq":1,"ts":"2026-09-09T09:00:05+08:00","node":"W1","event":"plan_loaded","agent":"orchestrator#1","by":"orchestrator","note":"skill=0.1.0 config_dir=~/.claude/skills/relay-light plan=docs/modules/dh-relay/relay/wave-2026-09 session=app cards=DHR_90,DHR_91"}
 {"seq":2,"ts":"2026-09-09T09:00:10+08:00","node":"W1","event":"stage_start","agent":"orchestrator#1","by":"orchestrator","note":"stage_id=DHR_90:W#1"}
 {"seq":3,"ts":"2026-09-09T09:00:40+08:00","node":"W1","event":"monitor_launch","agent":"orchestrator#1","by":"orchestrator","note":"stage_id=DHR_90:W#1 ws=relay-w1"}
 {"seq":4,"ts":"2026-09-09T09:01:02+08:00","node":"W1","event":"node_start","agent":"monitor#1","by":"monitor","note":""}
@@ -993,17 +1127,17 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 | HC-RL-A119 | `plan_amend` 事件校验：`agent` 必须是 `monitor#<n>`（`by=monitor`），`note` 必须同时含方案文件名与 `nodes=<节点号,节点号>`；**不进状态机**，同一 `(node, monitor#<n>)` 可重复出现且不影响 agent 事件配对 | 单测：`agent` 填 `coder#1` 被拒；`note` 缺文件名、缺 `nodes=` 各一例被拒；合法例连写两条均被接受且状态机派生不变 |
 | HC-RL-A120 | lint 放宽后仍守得住：同一 stage 的节点**追加在表尾**通过、被 superseded 行隔开通过；而**节点号重复（含已 superseded 的号）仍被拒**，`depends_on` 指向 superseded、跨阶段依赖指向后面的阶段、同卡阶段实例并行也仍被拒 | 单测：两条放宽正例各一；四条未放宽反例各一，断言退出 2 与编号 |
 | HC-RL-A121 | 编排开阶段前重读计划：**不修改 `relay_log.py` 代码、仅向计划文件追加新阶段的节点行后再次调用 `status`**，输出的 `stages` 含该新阶段且顺序正确；下一阶段由计划推导而非固定 `W→C→R→F` | 单测：同一 plan 目录，第一次 `status` 后仅追加 X 阶段节点行、再次 `status`，断言 `stages` 多出该实例；构造非 WCRF 顺序的计划断言推导跟随计划 |
-| HC-RL-A122 | 改计划白名单（按路径）：改计划实例只允许改 `docs/modules/<模块>/relay/<plan_id>/relay_plan.md`（含其 marker 的 `cards=`）、`docs/modules/<模块>/dev_plan/P<N>-*.md`、`docs/modules/<模块>/workspace/<卡号>/task_plan.md`；**`docs/modules/<模块>/design/` 整个目录是禁区**，被改动即验收失败（验收 ID 不得新增或改动）。禁区命中时**整份改动不落笔**，不做部分执行 | 结构检查：对改计划前后做 `git diff --name-only`，断言变更路径集合 ⊆ 上述三条白名单路径且与 `design/` 前缀无交集；构造一次改到 `design/01-产品设计与验收.md` 的反例，断言检查项报错且白名单内文件也未被改动 |
+| HC-RL-A122 | 改计划白名单（按路径）：改计划实例只允许改 `docs/modules/<模块>/relay/<plan_id>/relay_plan.md`（含其 marker 的 `cards=`）、`docs/modules/<模块>/dev_plan/P<N>-*.md`、以及 `docs/modules/<模块>/workspace/<卡号>/task_plan.md` 且 **`<卡号>` 必须是改动前 marker `cards` 里已存在的卡**；新增卡的 `task_plan.md` 由该卡 W 阶段 builder 建，改计划实例写它即判失败。**`docs/modules/<模块>/design/` 整个目录是禁区**，被改动即验收失败（验收 ID 不得新增或改动）。禁区命中时**整份改动不落笔**，不做部分执行 | 结构检查：对改计划前后做 `git diff --name-only`，断言变更路径集合是白名单子集且与 `design/` 前缀无交集；新增卡场景断言变更不含新卡的 `task_plan.md`；构造一次改到 `design/01-RelayLight-产品设计与验收.md` 的反例，断言报错且白名单内文件也未被改动 |
 | HC-RL-A123 | `stage_result` 改动摘要格式：本阶段有 `plan_amend` 时 `note` 必须含 `amend=<方案文件名>` 与 `nodes=<节点号,节点号>`，缺则退出 2；无 `plan_amend` 时不得出现 `amend=` | 单测：有 amend 缺摘要被拒、格式合法被接受、无 amend 却写摘要被拒各一例 |
-| HC-RL-A106 | 编排机械分路可判定：`status --json` 暴露每个 open 阶段实例的**最新** `stage_result.outcome`，`done`/`cancelled`/`blocked`/`failed` 四值各自对应唯一动作，且 `failed` 的重拉次数上限为 1（第二次 failed 不再重拉） | 单测：四种 outcome 各断言派生出的建议动作；连续两次 failed 断言不再给「重拉」 |
+| HC-RL-A106 | 编排机械分路可判定：`status --json` 的 `last_stage_result.outcome` 暴露当前阶段实例**最新** outcome，并派生 `suggested_action` 五枚举之一——`done`/`cancelled` → `open_next_stage`，`blocked` → `wait_user`，`failed` 且 `monitor_relaunch_count` 为 0 → `relaunch_monitor`，`failed` 且已重拉一次 → `notify_user`，其余 → `none`；`failed` 重拉上限为 1 | 单测：四种 outcome 各断言 `suggested_action` 取值；连续两次 failed 断言 `monitor_relaunch_count` 为 1 且动作转为 `notify_user` |
 | HC-RL-A107 | 两套计数独立且不叠加：attempt 达 3 与 X 轮数达 `max_rounds` 各自独立触发 strategist 出口；一方递增不影响另一方计数 | 单测：只 attempt 超限、只 X 超限、两者都未超限三例，断言触发与否及计数互不影响 |
 | HC-RL-A87 | lint：`card` 必须在 marker 的 `cards` 列表中；跨卡计划能解析出多卡 | 单测：card 不在 cards 被拒；两卡计划解析出 `cards` 长度 2 |
 | HC-RL-A88 | 节点表**只含监工派 agent 的节点**：`type` 不得为 kickoff 或 verify 签字类；**E11/E12/E13 不进接力** | 单测：五种阶段模板断言无此类 `type`；结构检查映射配置未列 E11/E12/E13 |
 | HC-RL-A24 | relay_plan 解析规范：两张固定表头表、单元格禁竖线、`agent.node` 存在、同节点 agent 名唯一、`depends_on` 留空即依赖前一节点 | 单测：合法样本解析出预期结构；各反例被拒 |
-| HC-RL-A18 | marker 必需且含 `skill=` / `session=` / `decision_mode=` / `recipe=` / `cards=`；缺则 lint 拒绝；`plan_loaded` 事件带版本号 | 单测：缺各字段的 plan 被拒；`plan_loaded` 的 note 含 `skill=` |
+| HC-RL-A18 | marker 必需且含 `skill=` / `session=` / `recipe=` / `cards=`，缺则 lint 拒绝；**`decision_mode=` 可省，省略时解析为默认值 `auto`**；`plan_loaded` 事件带版本号 | 单测：缺 `skill`/`session`/`recipe`/`cards` 各一例被拒；省略 `decision_mode` 的 plan 通过 lint 且 `status --json` 读出 `auto`；`plan_loaded` 的 note 含 `skill=` |
 | HC-RL-A116 | 档位一致性：`recipe` 值在 `heavy/normal/light` 内；**R 阶段实际挂的 reviewer 集合必须等于该档在 `dh-mapping.toml` 的集合**，不等即 lint 报错 | 单测：三档各一正例；`recipe=normal` 却挂了 code-round2 的反例被拒 |
 | HC-RL-A117 | 档位来源：skill 写明档位唯一来自 DevPlan 任务卡 `任务类型` 字段；**字段缺失时规划必须向用户索取，不得默认** | 结构检查 skill 命中该规则原文与「不得自默认」字样 |
-| HC-RL-A90 | `decision_mode` 解析：只接受 `auto` / `consult`，其它值 lint 报错；解析结果可被 `status --json` 读出 | 单测：两个合法值各一例、非法值一例 |
+| HC-RL-A90 | `decision_mode` 解析：写了只接受 `auto` / `consult`，其它值 lint 报错；**未写时默认 `auto`**；解析结果可被 `status --json` 读出 | 单测：两个合法值各一例、非法值一例被拒、省略一例断言派生为 `auto` |
 | HC-RL-A35 | `trigger` 三态：lint 接受空 / `on:blocked` / `on:done:<名字>`，拒绝引用不存在的 agent 名 | 单测：三种合法各一例，`on:done:nobody` 被拒 |
 | HC-RL-A71 | `on:done:` 只允许同节点引用，跨节点报错 | 单测 |
 | HC-RL-A65 | 未触发的 agent 不算悬空：`coder` 未终态时 `status` 不把 `scribe` 视为应在场 | 单测 |
@@ -1014,7 +1148,7 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 | HC-RL-A51 | 账本不出现 pane ID | 静态检查字段与样例 |
 | HC-RL-A85 | 写入者一致性：控制事件的 `by` 必须与法定写入者一致（**`stage_start` / `stage_close` / `plan_loaded` / `monitor_launch` 归 orchestrator；`node_start` / `node_close` / `monitor_restart` / `stage_result` / `plan_amend` 与全部 agent 事件归 monitor**），越权退出 2 并在 `status` 报警（**验一致性不验真伪**，见 §8.2） | 单测：监工写 `stage_start`、编排写 `agent_launch`、编排写 `stage_result`、编排写 `plan_amend` 各一例被拒 |
 | HC-RL-A93 | 写入者交接不重叠：编排的写入区间与监工的写入区间在 `seq` 上不交错（编排只在 `stage_close`..下一 `stage_start`/`monitor_launch` 段写） | 单测：对 §10.2 样本断言区间划分；构造交错样本报警 |
-| HC-RL-A59 | `add` 入参校验：`node` 在表中且非 superseded、`agent` 名属于该节点（`orchestrator#`/`monitor#`/`planner-amend#` 豁免）、`event` 在词表；违反退出 2 | 单测：四种违反各一例；另断言 `planner-amend#1` 不在 agent 表时仍被接受 |
+| HC-RL-A59 | `add` 入参校验：`node` 在表中且非 superseded、`agent` 名属于该节点（`orchestrator#`/`monitor#`/`planner-amend#`/`strategist#` 豁免）、`event` 在词表；违反退出 2 | 单测：四种违反各一例；另断言 `planner-amend#1` 与 `strategist#1` 不在 agent 表时仍被接受 |
 | HC-RL-A60 | agent 事件状态机：单 `(node, agent)` 序列合法，终态后不得再有事件 | 单测：非法迁移与终态后追加各一反例 |
 | HC-RL-A68 | 节点级控制事件时序：`node_start` 每节点一次且先于该节点任何 `agent_launch`；`node_close` 仅双判据成立时且每节点一次；`monitor_restart` 任意位置 | 单测：前两条各一反例；`monitor_restart` 插多处均被接受 |
 | HC-RL-A89 | 阶段级控制事件时序：`plan_loaded` 唯一且居首；`stage_start` 每实例一次且先于本实例 `monitor_launch`；`monitor_launch` 必在本实例 `stage_start` 之后；`stage_close` 要求该实例全部节点 `closed`（`stage_result` 前置另见 HC-RL-A112）；`depends_on` 跨阶段只能指向前面的阶段 | 单测：五条各一反例，断言退出 2 且原因可读 |
@@ -1026,7 +1160,7 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 | HC-RL-A74 | 条件 2 只认 `done`：`close=agent:x` 而 x 为 `agent_lost` 或 `cancelled` 时判不可关 | 单测两例 |
 | HC-RL-A61 | 当前阶段与节点派生：第一个非 superseded 且未 `node_close` 的节点为当前节点，其 `stage` 为当前阶段；依赖未全 closed 为 `pending`，有 `node_start` 为 `open`，无为 `ready` | 单测：三种情形各一例 |
 | HC-RL-A81 | `closed` 只读账本：有 `node_close` 即 closed，无则不是；判据成立但无 `node_close` 时 `state` 为 `open`、`closable` 为 true | 单测 |
-| HC-RL-A62 | `status --json` 结构与排序：字段齐全（含 `current_stage` / `stages` / `card`），`stages` 与 `nodes` 按节点表顺序，`agents` 按 `(node, 首次 launch seq)` 顺序 | 单测：过 `json.loads` 并逐字段断言 |
+| HC-RL-A62 | `status --json` 结构与排序：§3.5 冻结表列出的**顶层与嵌套字段全部存在且键名精确**——顶层 `plan`/`open_stages`/`current_stage`/`current_node`/`last_stage_result`/`suggested_action`/`monitor_relaunch_count`/`pending_nodes`/`superseded_ignored`/`stages`/`nodes`/`agents`/`errors`；`plan`{marker, cards}；`stages[]`{stage_id, stage, card, k, state, nodes, result}；`nodes[]`{node, card, stage, type, state, closable, reasons}；`agents[]`{node, agent, last_event, last_ts, idle_seconds}；`stages[].result` 非 `null` 时其内部键为 {stage_id, outcome, note, amend, nodes}，`outcome` 取 `done`/`blocked`/`failed`/`cancelled` 四值之一、`amend` 无改计划时为 `null`、`nodes` 无追加时为 `[]`。空值按表：对象用 `null`、`suggested_action` 用 `none`、计数用 `0`、列表用 `[]`；superseded 行不出现在三个列表里。`stages` 与 `nodes` 按节点表顺序，`agents` 按 `(node, 首次 launch seq)` 顺序 | 单测：过 `json.loads` 逐层断言键集合与类型；未开始的计划断言三个 `null` 与计数 0；含 superseded 行的计划断言其不出现在 `nodes`/`agents` 且 `superseded_ignored` 计数正确；有 `plan_amend` 与无 `plan_amend` 的阶段各断言一次 `result` 的五个内部键与 `amend`/`nodes` 空值 |
 | HC-RL-A63 | 错误统一写 stderr，格式 `error: <code> <message>` | 单测：捕获 stderr 断言格式；stdout 无错误文本 |
 | HC-RL-A80 | `lint` 合同：签名与退出码 0/2/3；违反项每条一行写 stderr，格式 `lint: <规则编号> <message>` 且编号为验收项 ID；`--json` 输出 `{"ok","violations":[{"rule","message","line"}]}` | 单测：三种退出码各一例；断言行格式与编号取值；`--json` 逐字段断言 |
 | HC-RL-A94 | lint 规则编号全覆盖：§3.5 映射表列出的每条规则都能被触发，且报出的编号存在于本验收表 | 单测：逐规则构造反例，断言编号集合 ⊆ 验收 ID 集合 |
@@ -1034,15 +1168,15 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 | HC-RL-A91 | `roles.toml` 可加载：`tomllib` 读出全部角色的 `model` 与 `launch`；模板与流程文档**不出现硬编码模型名** | 单测加载并断言键集合；静态 grep 模板无模型名 |
 | HC-RL-A92 | `dh-mapping.toml` 可加载并承载四类内容：阶段↔dh 节点、三档 Recipe 的 reviewer 列表、`limits`、`on_exceed`；样例见 §6.3 | 单测加载并逐项断言；断言 `stages.R.dh_nodes` 含 E0/E1/E2/E3/E4/E5/E6/E14，且 E11/E12/E13 不出现在任何阶段 |
 | HC-RL-A115 | Recipe 三档的 reviewer 集合严格对齐 dev-harness 节点表的 `task_type` 派生：heavy = code-round2 + requirement + lesson + consistency；normal = requirement + lesson；light = lesson + consistency。**权威取值只在 `dh-mapping.toml`**，设计正文与 §6.2 不复述 | 单测逐档断言集合相等；静态检查 §6.2 未复述具体路数 |
-| HC-RL-A99 | 返工轮数上限读配置：把 `limits.rework_max_rounds` 从 2 改成 3 后，X 阶段模板生成的返工节点数随之改变，`relay_log.py` 无需改动 | 单测：两种配置各生成一次，断言节点数；`git diff` 对 `relay_log.py` 为空 |
+| HC-RL-A99 | 配置读取与返工上限：把 `limits.rework_max_rounds` 从 2 改成 3 后，X 阶段模板生成的返工节点数随之改变，`relay_log.py` 无需改动。**模板生成是 lint 与 skill 的内部实现，不新增公共 CLI 子命令**——前四批对外仍只有 `add`/`status`/`lint`。**配置定位按 §6.2.1**：`--config-dir` 优先于当前平台的 skill 目录；`plan_loaded` 的 `note` 必须含 `config_dir=` 与 `plan=` 两个键 | 单测：经内部接口按两种配置各生成一次，断言节点数；`git diff` 对 `relay_log.py` 为空；断言 CLI 子命令集合仍为三个；同时存在 `--config-dir` 与平台目录时断言读的是前者；断言 `plan_loaded` 的 note 含 `config_dir=` 与 `plan=`，缺一退出 2 |
 | HC-RL-A108 | checker 可选：模板默认挂 checker，删掉 checker 行后 C 节点仍能过 lint（`close` 随之留空或改指 scribe），且 `status` 不把缺席的 checker 视为悬空 | 单测：带 checker 与不带 checker 两份模板各过一次 lint 与 status 派生 |
 | HC-RL-A95 | 场景一模板：C 节点含 coder + checker + scribe + decider；**coder 与 checker 的 trigger 均留空**（批内同时在场），scribe 为 `on:done:coder`，decider 为 `on:blocked`；`close=agent:checker` | 单测：模板过 lint 并断言四个 agent 的 trigger 与 close |
 | HC-RL-A102 | 批内往返不加 attempt：同一 `(node, coder)` 连续多条 `checkpoint` 后仍是 `#1`，账本无第二条 `agent_launch` | 单测：三轮 checker 往返，断言 attempt 恒为 1 且 `agent_launch` 仅一条 |
 | HC-RL-A113 | attempt 只因实例挂掉而增：本节点 `agent_lost` / `cancelled` / 阶段 `failed` 之后重拉才接受 `attempt+1` 的 `agent_launch`；无这三种前因时第二条 `agent_launch` 退出 2 | 单测：三种合法前因各一例被接受；无前因一例被拒 |
 | HC-RL-A103 | 节点级返工才换实例：X 阶段节点的 coder 是该节点的 `#1`，与 C 阶段同名 coder 互不影响；C 节点内不产生第二个 coder 实例 | 单测：跨 C/X 两节点断言各自 `#1`；C 节点内第二条 coder `agent_launch` 被拒（attempt 校验） |
-| HC-RL-A114 | 决策链顺序：`blocked`→`escalate`→`decision`→`resume` 为固定序；`consult` 模式缺 `user_decision` 就写 `resume` 退出 2；`auto` 模式出现 `user_decision` 退出 2 | 单测：两种模式各一正例一反例 |
+| HC-RL-A114 | 两条决策链顺序：**decider 链** `blocked`→`escalate`→`decision`→`resume` 为固定序，`consult` 缺 `user_decision` 就写 `resume` 退出 2、`auto` 出现 `user_decision` 退出 2；**strategist 链** `escalate`→`agent_launch strategist#n`→`decision`→`done strategist#n`→`user_decision`→(`resume` 或 `cancelled`)，其中**决策类事件（escalate/decision/user_decision/resume/cancelled）记在触发时最后一个 X 阶段 coder 名下，生命周期事件（agent_launch/done）记在 `strategist#n` 自己名下**，**`user_decision` 永远必需（含 `auto` 模式）**，缺它写 `resume`/`cancelled` 退出 2；strategist 链允许 `escalate` 作链首、无 `blocked` 前置 | 单测：decider 链两种模式各一正例一反例；strategist 链在 `auto` 下断言缺 `user_decision` 被拒、两种终局各一正例、无 `blocked` 起头的 `escalate` 被接受；逐事件断言归属——五条决策事件的 `agent` 为该 coder，`agent_launch` 与 `done` 的 `agent` 为 `strategist#1` |
 | HC-RL-A96 | 场景二分路：`decision_mode=auto` 时账本序列不含 `user_decision`；`consult` 时 `decision` 之后必须先有 `user_decision` 才接受 `resume`；**两种模式下 `resume` 都记在原 coder 名下且不新增 `agent_launch`** | 单测：两种模式各构造一条序列；auto 例断言接受、consult 例断言缺 `user_decision` 时 `resume` 退出 2；两例均断言 coder 仍为 `#1` |
-| HC-RL-A97 | 场景三超限：X 阶段达到 `max_rounds` 后再开一轮 X 被 lint 拒绝；strategist 的结论事件恒为 `user_decision`（不因 `decision_mode=auto` 走 `resume`） | 单测：超限模板被拒；auto 模式下 strategist 链断言仍要 `user_decision` |
+| HC-RL-A97 | 场景三超限：X 阶段达到 `max_rounds` 后再开一轮 X 被 lint 拒绝；strategist 链的结论**必须经 `user_decision`** 才能走 `resume` 或 `cancelled`，`decision_mode=auto` 亦然；事件归属分两类——**决策类事件（`escalate`/`decision`/`user_decision`/`resume`/`cancelled`）记在触发时最后一个 X 阶段 coder 名下，`agent_launch` 与 `done` 记在 `strategist#n` 名下** | 单测：超限模板被拒；auto 模式下断言缺 `user_decision` 的 `resume` 与 `cancelled` 均退出 2；断言五条决策事件的 `agent` 同为该 coder，且 `agent_launch`/`done` 的 `agent` 为 `strategist#1` |
 | HC-RL-A98 | 计划与账本落点 `docs/modules/<模块>/relay/<plan_id>/`，不在任一卡的任务工作区内 | 结构检查路径；静态检查 skill 与模板无「计划放 workspace」表述 |
 | HC-RL-A100 | 术语统一：全文与 skill 中「终端空间」指 Herdr workspace、「任务工作区」指 dev-harness 目录，无混用 | 静态检查：`workspace` 一词在中文语境下不单独出现，两术语各自命中 |
 | HC-RL-A11 | 测试经薄壳 `tools/tests/relay-light-log.ps1` 登记进 `$suites` 并全绿 | 跑 `run-relay-tests.ps1` 全量，展示退出码与套件名 |
@@ -1109,7 +1243,7 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 - 多账号额度自动轮换，只有回退链。
 - **计划的原地改写引擎**：不做。运行中改计划走 §4.5 的**追加流程**——追加行并把旧行标 `superseded`，由 planner 的改计划实例一次改完。
 - **改计划 agent 碰设计方案与验收清单**：不做。禁区里的改动一律写「超出范围」交用户（§4.5.2）。
-- 首版不做 `watch`（P2 组件，设计已冻结见 §3.6）；落地后也只通知不写账。
+- **前四批不做 `watch`**：它排在开发方案第 5 批必做，前四批不依赖它、可先各自验收（设计已冻结见 §3.6）；落地后也只通知不写账。
 - 程序侧停滞检测、陈锁自动回收、文件锁。
 - **无 Herdr 的退路**：Herdr 是必备项，两个平台都是。
 - 实时监控：watch 推送 + 20 分钟兜底，不做秒级盯屏。
