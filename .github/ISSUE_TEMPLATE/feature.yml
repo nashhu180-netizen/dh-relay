@@ -1,0 +1,40 @@
+name: "功能需求"
+description: "提出一个新功能或改进建议"
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: background
+    attributes:
+      label: 需求背景
+      description: 为什么需要这个功能，当前有什么痛点
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-outcome
+    attributes:
+      label: 期望效果
+      description: 功能上线后应该达到什么效果
+    validations:
+      required: true
+
+  - type: dropdown
+    id: tier
+    attributes:
+      label: 建议档位
+      description: 参照 dev-harness 分流档位给个初步建议，最终档位以开工分流为准
+      options:
+        - 轻量
+        - 标准
+        - 高危
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: backlog-registered
+    attributes:
+      label: 登记状态
+      options:
+        - label: 已在对应模块的 `docs/modules/*/backlog.md` 登记
+          required: false

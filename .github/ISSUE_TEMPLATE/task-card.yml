@@ -1,0 +1,52 @@
+name: "任务卡"
+description: "登记一张 dev-harness 任务卡"
+title: "[TaskCard] "
+labels: ["task-card"]
+body:
+  - type: input
+    id: card-id
+    attributes:
+      label: 任务卡 ID
+      description: 如 DHR_82 / RLT_10
+      placeholder: DHR_82
+    validations:
+      required: true
+
+  - type: dropdown
+    id: module
+    attributes:
+      label: 所属模块
+      options:
+        - dh-relay
+        - relay-light
+    validations:
+      required: true
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: 目标
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: 范围
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收标准
+    validations:
+      required: true
+
+  - type: input
+    id: dev-plan-path
+    attributes:
+      label: 关联 dev_plan 路径
+      placeholder: docs/modules/dh-relay/dev_plan/...
+    validations:
+      required: false

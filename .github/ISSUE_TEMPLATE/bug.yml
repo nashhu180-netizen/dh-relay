@@ -1,0 +1,66 @@
+name: "Bug 报告"
+description: "报告一个功能异常或缺陷"
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: repro-steps
+    attributes:
+      label: 复现步骤
+      description: 请按顺序列出能稳定复现问题的步骤
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为
+      description: 你认为应该发生什么
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+      description: 实际发生了什么（含报错信息）
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: 涉及组件
+      options:
+        - relay-core
+        - tools（PowerShell Runner）
+        - relay-light
+        - docs
+        - 其他
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: 平台
+      options:
+        - Windows
+        - Linux
+        - 两者
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 证据（日志 / 截图）
+      description: >
+        请粘贴相关日志片段或附上截图。**禁止贴任何密钥 / 凭据 / token 等敏感值**（AGENTS.md 宪章#6，密钥红线）——
+        进仓前请先按白名单过滤，不要事后指望靠扫描补救。
+    validations:
+      required: false

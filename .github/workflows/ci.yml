@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch: {}
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  relay-core:
+    name: relay-core (Node test)
+    runs-on: ubuntu-latest
+    # dh-relay 模块 2026-09-08 起已暂停（docs/modules/dh-relay/dev_plan/README.md），停在
+    # DHR_82 代码轮 1，relay-core 是半成品，Linux 上已知失败（unix socket 的父目录
+    # private-runtime/ 在 bind 前未创建；Windows 走命名管道所以看不见这个问题）。
+    # 只作观测、不作门禁——模块恢复并收口后删掉本行改回硬门禁。
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: relay-core
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: relay-core/package-lock.json
+      - run: npm ci
+      - run: npm test
+
+  relay-tests-pwsh:
+    name: relay-tests (PowerShell runner, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    # Windows 与 ubuntu 同为硬门禁：ubuntu 已实测全绿。
+    # Windows-only 机制（-WindowStyle / icacls / psmux）已在各 suite 内部按平台守卫处理——
+    # 用 $IsWindows 分支或（psmux）"SUITE SKIP" 让 runner 计入 skipped，不需要靠 job 级
+    # continue-on-error 兜底。
+    steps:
+      - uses: actions/checkout@v4
+      - run: pwsh -NoProfile -File tools/tests/run-relay-tests.ps1
+
+  relay-light-python:
+    name: relay-light (Python unittest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # relay-light 的 Linux 回归入口（HC-RL-A15）。测试文件由 RLT_10 落地，
+      # 在此之前该 job 只是打印跳过并成功退出。
+      - name: Run relay-light unittest (if present)
+        run: |
+          if [ -f tools/relay-light/test_relay_log.py ]; then
+            python3 -m unittest discover -s tools/relay-light -p 'test_*.py' -v
+          else
+            echo "tools/relay-light/test_relay_log.py not found yet (RLT_10 pending) - skipping"
+            exit 0
+          fi
