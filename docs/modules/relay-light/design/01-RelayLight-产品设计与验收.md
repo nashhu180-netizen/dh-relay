@@ -3,9 +3,17 @@
 # RelayLight 产品设计与验收（**正式设计输入 · 更新至 2026-09-10**）
 
 <!-- dh:topic tier=标准 review=RelayLight运行中改计划 -->
-<!-- dh:planning-event:v1 id=RLT-A-02 stage=A-full artifact=design/01-RelayLight-产品设计与验收.md review=evidence/01-交叉审核记录-RelayLight运行中改计划.md#review-rlt-a02 understanding=evidence/01-交叉审核记录-RelayLight运行中改计划.md#understanding-rlt-a02 -->
-<!-- dh:planning-event:v1 id=RLT-A-03 stage=A-full artifact=design/01-RelayLight-产品设计与验收.md review=evidence/03-交叉审核记录-RelayLight仓内skill单源.md#review-rlt-a03 understanding=evidence/03-交叉审核记录-RelayLight仓内skill单源.md#understanding-rlt-a03 -->
-<!-- dh:planning-event:v1 id=RLT-A-04 stage=A-full artifact=design/01-RelayLight-产品设计与验收.md review=evidence/05-交叉审核记录-RLT03与RLT05验收边界.md#review-rlt-a04 understanding=evidence/05-交叉审核记录-RLT03与RLT05验收边界.md#understanding-rlt-a04 -->
+<!-- dh:planning-event:v1 id=RLT-A-05 stage=A-full artifact=design/01-RelayLight-产品设计与验收.md review=evidence/06-交叉审核记录-RLT03阶段合同补充.md#review-rlt-a05 understanding=evidence/06-交叉审核记录-RLT03阶段合同补充.md#understanding-rlt-a05 -->
+
+> **历史规划事件索引（A-full；非活动声明，仅作追溯）**——早年三条事件的原始可解析 `planning-event` 声明注释已按 `RLT-A-05` 事件转为本索引；出处、含义与证据路径保持原值，未删除、未改写，Git 历史中仍可还原。**活动声明只剩上面一条 `RLT-A-05` 与 DevPlan 的 `RLT-B-05`。**
+>
+> | 事件 | stage | 证据（交叉审核记录） | 处理 |
+> |---|---|---|---|
+> | `RLT-A-02` | A-full | `evidence/01-交叉审核记录-RelayLight运行中改计划.md#review-rlt-a02` / `#understanding-rlt-a02` | 转历史索引 |
+> | `RLT-A-03` | A-full | `evidence/03-交叉审核记录-RelayLight仓内skill单源.md#review-rlt-a03` / `#understanding-rlt-a03` | 转历史索引 |
+> | `RLT-A-04` | A-full | `evidence/05-交叉审核记录-RLT03与RLT05验收边界.md#review-rlt-a04` / `#understanding-rlt-a04` | 转历史索引 |
+>
+> 七条 A/B 旧事件（含 DevPlan 侧 `RLT-B-01`~`RLT-B-04`）的完整字段、替换缘由与本次确认来源见 [`design/evidence/06-交叉审核记录-RLT03阶段合同补充.md`](evidence/06-交叉审核记录-RLT03阶段合同补充.md)。
 
 > **RLT-A-04 修订 2026-09-10（用户已确认）**——校正 RLT_03/RLT_05/RLT_07 的验收边界：A18/A62/A73/A92 保号，A64/A86/A88/A90 退役并由 A126～A130、A62/A73/A92 原子承接；`status.plan` 补 `decision_mode`，superseded 不再伪造节点状态。活动总账 121→122。
 
@@ -181,6 +189,8 @@ relay_log.py lint   --plan <dir> [--json]
 | `status` | `0` 正常；`3` relay_plan 缺失或解析失败；`4` 账本读取或解析失败 |
 | `lint` | `0` 通过；`2` 规则违反；`3` relay_plan 缺失或解析失败 |
 
+**命令边界（A5 勘误，2026-09-10 用户确认裁决）**：**解析级**失败——relay_plan 缺文件、缺 marker、缺表头或表结构不合法等——`add` / `status` / `lint` **三个子命令一律退出 `3`** 并给可读原因；计划**已解析成功但违反 lint 规则**时，**`lint` 退出 `2`**（stderr `lint: <规则编号> <message>`），而 `add` / `status` 因该计划不可用**仍退出 `3`**（stderr `error: <code> <message>`），不得把「规则违反为 2」泛化成三命令都退 `2`。**节点号重复（含已 superseded 的号）由 A46 的负例证明**，不作为 A5 的解析失败示例。`add` 自身对 node / agent / event / 时序的入参校验（§3.5、A59）与上述分流不同层，仍照旧退出 `2`。
+
 `status` 输出：当前阶段、当前节点、节点状态、在场 agent 与各自最近事件时间、**可关闭判定与不可关原因**。**`status` 不判产出是否合格，只判账本完整性**——措辞只转述账本事实，形如「节点 C2 不可关：coder#1 无终态事件」。
 
 ### 3.2 账本行结构（固定七字段）
@@ -277,7 +287,7 @@ user_decision <coder>          ← 永远出现，不看 decision_mode
 **`add` 入参校验**（任一违反退出 `2`）：
 
 - `node` 必须在节点表中且**非 superseded**；
-- `agent` 名（去掉 `#attempt`）必须在**该节点**的 agent 表中；`orchestrator#<n>`、`monitor#<n>`、**`planner-amend#<n>`** 与 **`strategist#<n>`** 豁免（这两者都由监工**按需**拉起、不按节点预挂进 agent 表，见 §4.5.2 与 §3.4 的 strategist 链）；
+- `agent` 名（去掉 `#attempt`）必须在**该节点**的 agent 表中；豁免成员**并列四名**：`orchestrator#<n>`、`monitor#<n>`、**`planner-amend#<n>`** 与 **`strategist#<n>`**（后两者都由监工**按需**拉起、不按节点预挂进 agent 表，见 §4.5.2 与 §3.4 的 strategist 链）。**豁免的仅是本条「agent 名在该节点 agent 表中」**——`node` 活跃且非 superseded、`event` 在词表、控制事件写者一致、agent 状态机与终态封口、attempt 分配、各 trigger / 依赖 / `node_start` 前置闸**一律照常校验**（A59）；
 - `event` 必须在词表中；
 - **控制事件的 `by` 必须与该事件的法定写入者一致**（§3.4 表），越权退出 `2`；
 - `trigger` 为 `on:done:<X>` 的 agent，写 `agent_launch` 时 **X 在本节点必须已有 `done`**（`agent_lost` / `cancelled` 不算）；
@@ -406,11 +416,13 @@ user_decision <coder>          ← 永远出现，不看 decision_mode
 | `on:done:` 跨节点引用 | HC-RL-A71 |
 | 节点无非 superseded 的 agent（空节点） | HC-RL-A75 |
 | `stage` 值不在阶段枚举内 | HC-RL-A129 |
-| 同一阶段的节点未按 stage 分组连续（忽略 superseded 行；§4.5 的追加行落在表尾不算违规） | HC-RL-A129 |
+| 同一阶段的节点未按 stage 分组连续（忽略 superseded 行；§4.5 的追加行落在表尾不算违规）〔产品终态；阶段性交付范围见本表后的阶段性交付注记〕 | HC-RL-A129 |
 | `stage_id` 格式非法或 `<card>` 前缀与 `card` 列不一致 | HC-RL-A104 |
 | 同卡阶段实例的 `depends_on` 链有分叉（同卡并行） | HC-RL-A109 |
 | `card` 未在 marker 的 `cards` 列表中 | HC-RL-A87 |
 | 节点表含 kickoff / verify-signoff 类 `type` | HC-RL-A126 |
+
+**阶段性交付注记（A129，2026-09-10 用户确认裁决）**：上表与 §4.3 描述的是**产品终态**。阶段性交付的 RLT_03 只交付**基础 lint**——先忽略 superseded 行，被 superseded 行隔开的重现**当前即通过**；同一 `stage_id` 被**其他活跃 `stage_id`** 隔断而重现时按基础规则拒绝。「同一 stage 的合法追加行落在表尾通过」由 RLT_09 按 A120 承接实现与取证，届时以其合法追加正例覆盖 RLT_03 的临时限制；**只放宽连续性这一条**，其余四项硬约束不放宽。**RLT_03 的临时拒绝不代表最终产品禁止运行中追加**，§4.5 的终态承诺保留不变。
 
 ### 3.6 `watch` 组件（第 5 批，设计已冻结）
 
@@ -494,6 +506,8 @@ user_decision <coder>          ← 永远出现，不看 decision_mode
 单元格**禁止出现竖线**（解析按竖线切列）。lint 逐条查：表头齐、**节点号全计划唯一**（含已 superseded 的号）、`stage` 为合法 `stage_id` 且其 `<card>` 前缀与 `card` 列一致、**同一阶段实例的节点按 stage 分组连续**、**同卡阶段实例串行**（`depends_on` 链无分叉）、`card` 在 marker 的 `cards` 里、`close` 与 `trigger` 合法且引用存在、`on:done:` 只引用同节点、`depends_on` 指向存在且非 superseded 的节点且不成环、**跨阶段依赖只能指向已在前面的阶段**、`agent.node` 存在、同节点内 agent 名唯一、**每个节点至少一个非 superseded 的 agent**。
 
 **「连续」这条按 stage 分组判定，不看物理行号相邻**（为 §4.5 运行中改计划放宽）：忽略 superseded 行后，同一 `stage_id` 的非 superseded 节点在表中构成一段连续区间即算通过，**追加行落在表尾也通过**。其余规则一条不放松——**节点号重复（含已 superseded 的号）仍然拒绝**，`depends_on` 不得指向 superseded、跨阶段依赖只指向前面的阶段、同卡阶段实例串行也都照旧。正是这几条没放松，编排才能从计划无歧义地推出下一阶段。
+
+> **阶段性交付注记（RLT_03 → RLT_09，2026-09-10 用户确认裁决）**：上面这段是**产品终态**。阶段性交付的 RLT_03 只交付**基础 lint**，基础边界**先忽略 superseded 行**——被 superseded 行隔开的重现**当前即通过**；同一 `stage_id` 被**其他活跃 `stage_id`** 隔断而重现时，基础规则按 A129 拒绝。「同一 stage 的合法追加行落在表尾通过」由 RLT_09 按 A120 承接实现与取证，届时以其合法追加正例覆盖 RLT_03 的临时限制；**只放宽连续性这一条**，节点号唯一、`depends_on` 不指向 superseded、跨阶段依赖只指向前面的阶段、同卡阶段实例串行**四项硬约束都不放宽**。**RLT_03 的临时拒绝不代表最终产品禁止运行中追加**——§4.5 的终态承诺（当前阶段实例内追加由当班监工接手、后续阶段由编排开到时按常规处理，并由 RLT_16 / RLT_19 实跑证明）保留不变。
 
 ### 4.4 改计划规则
 
@@ -581,7 +595,7 @@ user_decision <coder>          ← 永远出现，不看 decision_mode
 - **编排不监听 `plan_amend`**：改计划信息**只经本阶段 `stage_result.note` 的 `amend=` 摘要**到达编排，编排据此在开下一阶段前重读计划。`plan_amend` 只是账本上的事实记录，不承担通知职责。
 - **`stage_result` 带改动摘要**：本阶段发生过 `plan_amend` 时，监工在 `stage_result.note` 里写方案文件名与新节点号；编排据此重读计划再定下一阶段（§5.2.1）。
 - **追加节点谁接手**：**当前阶段实例内**追加的节点由当班监工直接接手；**后续阶段**的追加由编排开到时按常规处理。
-- **lint 放宽**：只放宽「同一阶段实例的节点连续」这一条，改为按 stage 分组判定、忽略 superseded 行、允许追加行落在表尾（§4.3）；节点号唯一、`depends_on` 不指向 superseded、跨阶段依赖只指向前面阶段、同卡阶段实例串行**都不变**。
+- **lint 放宽**：只放宽「同一阶段实例的节点连续」这一条，改为按 stage 分组判定、忽略 superseded 行、允许追加行落在表尾（§4.3）；节点号唯一、`depends_on` 不指向 superseded、跨阶段依赖只指向前面阶段、同卡阶段实例串行**都不变**。本条是**产品终态**；阶段性交付的适用范围（RLT_03 的基础 lint 与 RLT_09 的放宽交付）见 §4.3 阶段性交付注记。
 
 ## 5. 阶段与节点
 
@@ -1119,17 +1133,17 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 | HC-RL-A42 | 静态守卫：无 `.lower()` / `.casefold()` 用于枚举归一 | 静态 grep |
 | HC-RL-A43 | `status` 输出六项齐：当前阶段、当前节点、节点状态、在场 agent 与最近事件时间、可关闭判定、不可关原因 | 单测：喂 §10.2 账本 + §10.1 plan，断言与 §10.3 样张一致 |
 | HC-RL-A44 | `status` 措辞只转述账本事实，不含产出合格性判断词 | 静态检查输出模板词表 |
-| HC-RL-A5 | relay_plan 缺失或解析失败时三个子命令均退出码 **3** 并给可读原因 | 单测：缺文件 / 缺表头 / 节点号重复 |
+| HC-RL-A5 | **解析级**失败（relay_plan 缺文件、缺 marker、缺表头或表结构不合法）时 `add` / `status` / `lint` **三个子命令均退出码 3** 并给可读原因；计划**已解析成功但违反 lint 规则**时，`lint` 退出 **2**、`add` / `status` 仍退出 **3**；`add` 自身的参数 / 词表 / 时序非法（A59 等）仍退出 2 | 单测：缺文件 / 缺表头 / 缺 marker 三例、三命令各退 3；一条语义违规计划 `lint=2` 且 `add` / `status`=3、拒绝路径账本不增行；节点号重复改由 A46 负例取证，不列为本条示例 |
 | HC-RL-A45 | 账本读取或解析失败时 `status` 退出码 **4** | 单测：账本含坏行 / 不可读 |
 | HC-RL-A84 | 空账本语义：账本不存在或为空时 `status` / `lint` 退出 0，`current_stage` 与 `current_node` 为 `null`、所有节点 `pending`；`add` 自动建文件且首条非 `plan_loaded` 时退出 2 | 单测：缺文件与空文件各一例；首条写 `node_start` 被拒 |
 | HC-RL-A46 | lint：节点号唯一，已 superseded 的号仍占用，重复即拒 | 单测 |
 | HC-RL-A47 | lint：`close` 为空或 `agent:<已存在 agent 名>`，其它写法一律拒 | 单测含 `all_agents_done` 反例 |
 | HC-RL-A48 | lint：`depends_on` 指向存在节点且不成环 | 单测含成环反例 |
 | HC-RL-A72 | lint：`depends_on` 指向 superseded 节点时报错 | 单测 |
-| HC-RL-A128 | parser/lint 派生活跃计划时忽略 superseded 行；显式例外封闭为 A46 节点号占用、A72 禁止依赖 superseded、A75 空节点、A120 表尾/隔断放宽 | 含/不含同一 superseded 行的对照只比较活跃结构与退出码，不比较可能由 A72 降级为 A48 的 lint 规则编号；逐项覆盖四个例外 |
+| HC-RL-A128 | parser/lint 派生活跃计划时忽略 superseded 行（**本卡核心命题**）；显式例外清单**不增不减**，其中 A46 节点号占用、A72 禁止依赖 superseded、A75 空节点三项由 RLT_03 逐项证明；A120 是**跨卡兼容性引用**，其表尾追加放宽与完整「两正四反」集成取证由 RLT_09 独占，不作为 RLT_03 已实现能力 | 含/不含同一 superseded 行的对照只比较活跃结构与退出码，不比较可能由 A72 降级为 A48 的 lint 规则编号；A46 / A72 / A75 逐项覆盖；RLT_03 已有的「superseded 行隔开通过」保留，由 RLT_09 在 A120 下复验 |
 | HC-RL-A73 | superseded 节点没有关闭状态，不进入 `stages`/`nodes`/`agents`、closed 或 pending 派生；只增加 `superseded_ignored`，且不影响 `current_stage`、`current_node` 与活跃节点状态 | 含 superseded 行的完整 status 与删去该行的活跃投影做规范化差分；唯一允许差异是 `superseded_ignored` |
 | HC-RL-A75 | lint：每个节点至少一个非 superseded 的 agent，空节点报错 | 单测：零 agent、agent 全 superseded 各一例 |
-| HC-RL-A129 | lint：`stage` 值在 `W/C/R/X/F` 枚举内，且**同一阶段的节点按 stage 分组连续**（忽略 superseded 行） | 单测：非法 stage 值、同 stage 节点被另一 stage 隔断各一例被拒；合法正例通过，并断言规则编号 A129 |
+| HC-RL-A129 | lint：`stage` 值在 `W/C/R/X/F` 枚举内，且**同一阶段的节点按 stage 分组连续**（忽略 superseded 行）〔产品终态，口径即 §3.5 的「连续」行；阶段性交付范围见 §3.5 / §4.3 注记〕 | 单测：非法 stage 值、同 stage 节点被另一**活跃** stage 隔断各一例被拒；合法正例通过并断言规则编号 A129；superseded 行隔开的重现**当前即通过**（基础边界先忽略 superseded）；「同 stage 合法追加落在表尾」的放宽由 RLT_09 按 A120 覆盖 |
 | HC-RL-A104 | lint：`stage_id` 格式为 `<card>:<stage>#<k>`，`<stage>` 在枚举内、`<card>` 与本行 `card` 列一致；格式非法或前缀不符时报错 | 单测：格式非法、前缀不符各一例被拒；合法例断言解析出 `card`/`stage`/`k` 三段 |
 | HC-RL-A109 | lint：**同卡阶段实例串行**——同一张卡的阶段实例 `depends_on` 链无分叉；跨卡并行允许 | 单测：同卡两阶段并列被拒；跨卡两阶段并列通过 |
 | HC-RL-A110 | 阶段实例可重复进入：同卡同 stage 的 `#1` / `#2` 各自独立，各写各的 `stage_result`，`R#1` 的 `failed` 不影响 `R#2` 判定 | 单测：构造 R#1 failed + R#2 done，断言 R#2 的 `stage_close` 被接受 |
@@ -1164,7 +1178,7 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 | HC-RL-A51 | 账本不出现 pane ID | 静态检查字段与样例 |
 | HC-RL-A85 | 写入者一致性：控制事件的 `by` 必须与法定写入者一致（**`stage_start` / `stage_close` / `plan_loaded` / `monitor_launch` 归 orchestrator；`node_start` / `node_close` / `monitor_restart` / `stage_result` / `plan_amend` 与全部 agent 事件归 monitor**），越权退出 2 并在 `status` 报警（**验一致性不验真伪**，见 §8.2） | 单测：监工写 `stage_start`、编排写 `agent_launch`、编排写 `stage_result`、编排写 `plan_amend` 各一例被拒 |
 | HC-RL-A93 | 写入者交接不重叠：编排的写入区间与监工的写入区间在 `seq` 上不交错（编排只在 `stage_close`..下一 `stage_start`/`monitor_launch` 段写） | 单测：对 §10.2 样本断言区间划分；构造交错样本报警 |
-| HC-RL-A59 | `add` 入参校验：`node` 在表中且非 superseded、`agent` 名属于该节点（`orchestrator#`/`monitor#`/`planner-amend#`/`strategist#` 豁免）、`event` 在词表；违反退出 2 | 单测：四种违反各一例；另断言 `planner-amend#1` 与 `strategist#1` 不在 agent 表时仍被接受 |
+| HC-RL-A59 | `add` 入参校验：`node` 在表中且非 superseded、`agent` 名属于该节点（豁免成员**并列四名** `orchestrator#` / `monitor#` / `planner-amend#` / `strategist#`，**仅**豁免「agent 名属于该节点 agent 表」这一条）、`event` 在词表；违反退出 2。状态机与终态封口、写者一致、attempt、各 trigger / 依赖 / `node_start` 前置闸**照常校验** | 单测：四种违反各一例；另断言 `planner-amend#1` 与 `strategist#1` 不在 agent 表时仍被接受，而其在 node 非活跃 / event 越词表 / 前置不成立时**仍按对应编号拒绝** |
 | HC-RL-A60 | agent 事件状态机：单 `(node, agent)` 序列合法，终态后不得再有事件 | 单测：非法迁移与终态后追加各一反例 |
 | HC-RL-A68 | 节点级控制事件时序：`node_start` 每节点一次且先于该节点任何 `agent_launch`；`node_close` 仅双判据成立时且每节点一次；`monitor_restart` 任意位置 | 单测：前两条各一反例；`monitor_restart` 插多处均被接受 |
 | HC-RL-A89 | 阶段级控制事件时序：`plan_loaded` 唯一且居首；`stage_start` 每实例一次且先于本实例 `monitor_launch`；`monitor_launch` 必在本实例 `stage_start` 之后；`stage_close` 要求该实例全部节点 `closed`（`stage_result` 前置另见 HC-RL-A112）；`depends_on` 跨阶段只能指向前面的阶段 | 单测：五条各一反例，断言退出 2 且原因可读 |

@@ -342,6 +342,8 @@ def lint_plan(path: str | Path) -> Plan:
     for agent in plan.agents:
         if agent.superseded:
             continue
+        if not agent.agent:
+            raise _error("HC-RL-A24", f"line {agent.line}: agent is empty")
         if agent.node not in all_nodes:
             raise _error("HC-RL-A24", f"line {agent.line}: agent node {agent.node} does not exist")
         if agent.node not in active_by_name:
@@ -432,7 +434,10 @@ def read_ledger(path: str | Path) -> list[dict[str, object]]:
         raise _ledger_error("last ledger line is not newline-terminated")
 
     entries: list[dict[str, object]] = []
-    for expected_seq, line in enumerate(text.splitlines(), start=1):
+    # JSONL records are delimited by LF. str.splitlines() also splits valid
+    # JSON string content such as U+0085/U+2028/U+2029, making a successful
+    # append unreadable on the next command.
+    for expected_seq, line in enumerate(text[:-1].split("\n"), start=1):
         try:
             entry = json.loads(line)
         except json.JSONDecodeError as exc:
@@ -610,7 +615,7 @@ def _validate_decision_ownership(
     owners = _active_decision_owners(entries, node.node)
     if owners and agent not in owners:
         raise _error("HC-RL-A69", f"decision event {event} must use its triggering agent")
-    if event in {"decision", "user_decision"} and agent in owners:
+    if event == "decision" and agent in owners:
         note_helper = _validate_decision_helper(note)
         if note_helper != owners[agent]:
             raise _error(
@@ -626,14 +631,23 @@ def _validate_agent_transition(
         if not _node_started(entries, node.node):
             raise _error("HC-RL-A78", f"node {node.node} must start before agent launch")
         _require_trigger(plan, entries, node, name)
-        prior = _latest_by_name(entries, node.node, name)
-        if prior is None:
+        launches = [
+            entry
+            for entry in entries
+            if entry["node"] == node.node
+            and entry["event"] == "agent_launch"
+            and _agent_parts(str(entry["agent"]))[0] == name
+        ]
+        if not launches:
             if attempt != 1:
                 raise _error("HC-RL-A58", f"first attempt for {name} must be #1")
             return
-        _, prior_attempt = _agent_parts(str(prior["agent"]))
+        prior_attempt = max(_agent_parts(str(entry["agent"]))[1] for entry in launches)
         if attempt != prior_attempt + 1:
             raise _error("HC-RL-A58", f"attempt for {name} must increment by one")
+        prior_agent = f"{name}#{prior_attempt}"
+        prior = _latest_for_instance(entries, node.node, prior_agent)
+        assert prior is not None
         if prior["event"] not in {"agent_lost", "cancelled"} and not _stage_failed_after(
             entries, node.stage_id, prior
         ):

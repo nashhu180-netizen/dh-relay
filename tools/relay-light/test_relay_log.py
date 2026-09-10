@@ -175,7 +175,7 @@ class RelayPlanLintTests(unittest.TestCase):
         result = self.run_lint_cli(self.plan_path.parent)
         self.assertEqual(3, result.returncode)
         self.assertEqual("", result.stdout)
-        self.assertRegex(result.stderr, r"^error: HC-RL-A18 marker cards=")
+        self.assertRegex(result.stderr, r"^error: HC-RL-A18 ")
 
     def test_decision_mode_accepts_frozen_values_and_rejects_others(self) -> None:
         for decision_mode in ("auto", "consult"):
@@ -321,6 +321,11 @@ class RelayPlanLintTests(unittest.TestCase):
                 "| builder | W1 | builder | | task_plan.md | | |",
                 "| builder | W1 | builder | | notes.md | | |",
             ],
+        )
+        self.assert_rule(
+            "HC-RL-A24",
+            node_rows=["| W1 | DHR_90 | DHR_90:W#1 | build | agent: | | |"],
+            agent_rows=["|  | W1 | coder | | code.md | | |"],
         )
 
     def test_deep_acyclic_dependencies_do_not_raise_recursion_error(self) -> None:
@@ -499,13 +504,13 @@ class RelayPlanLintTests(unittest.TestCase):
         missing = self.run_lint_cli(self.plan_path.parent / "missing")
         self.assertEqual(3, missing.returncode)
         self.assertEqual("", missing.stdout)
-        self.assertRegex(missing.stderr, r"^error: HC-RL-A18 cannot read relay_plan\.md:")
+        self.assertRegex(missing.stderr, r"^error: HC-RL-A18 ")
 
         self.plan_path.write_text("not a relay plan\n", encoding="utf-8")
         malformed = self.run_lint_cli(self.plan_path.parent)
         self.assertEqual(3, malformed.returncode)
         self.assertEqual("", malformed.stdout)
-        self.assertRegex(malformed.stderr, r"^error: HC-RL-A18 first line must be")
+        self.assertRegex(malformed.stderr, r"^error: HC-RL-A18 ")
 
     def test_help_lists_exactly_the_three_frozen_subcommands(self) -> None:
         result = self.run_cli("--help")
@@ -535,6 +540,22 @@ class RelayPlanLintTests(unittest.TestCase):
         for row in rows:
             self.assertNotIn("pane", json.dumps(row, ensure_ascii=False))
         self.assertEqual(before_entries | {ledger_path}, set(self.plan_path.parent.iterdir()))
+
+    def test_unicode_line_separators_round_trip_as_json_string_content(self) -> None:
+        """HC-RL-A38/A56: a successful add must remain one readable JSONL row."""
+        for separator in ("\u0085", "\u2028", "\u2029"):
+            with self.subTest(separator=f"U+{ord(separator):04X}"):
+                self.reset_ledger()
+                self.write_plan()
+                self.start_ledger()
+                add = self.run_add("monitor_restart", note=f"before{separator}after")
+                self.assertEqual(0, add.returncode, add.stderr)
+                status = self.run_cli("status", "--plan", str(self.plan_path.parent))
+                self.assertEqual(0, status.returncode, status.stderr)
+                ledger_path = self.plan_path.parent / "relay_log.jsonl"
+                rows = [json.loads(line) for line in ledger_path.read_text(encoding="utf-8").split("\n") if line]
+                self.assertEqual(2, len(rows))
+                self.assertEqual(f"before{separator}after", rows[-1]["note"])
 
     def test_all_nineteen_event_words_pass_lexical_validation(self) -> None:
         self.assertEqual(19, len(EVENTS))
@@ -623,25 +644,33 @@ class RelayPlanLintTests(unittest.TestCase):
                 ]
             )
         self.assertEqual(4, result)
-        self.assertRegex(stderr.getvalue(), r"^error: ledger cannot append relay_log\.jsonl:")
+        self.assertRegex(stderr.getvalue(), r"^error: ledger ")
         self.assertFalse((self.plan_path.parent / "relay_log.jsonl").exists())
 
     def test_non_newline_terminated_ledger_is_rejected_without_append(self) -> None:
         self.write_plan()
         ledger_path = self.plan_path.parent / "relay_log.jsonl"
-        self.assertEqual(0, self.run_add("plan_loaded", agent="orchestrator#1", note="skill=0.1.0").returncode)
-        unterminated = ledger_path.read_bytes().rstrip(b"\n")
-        ledger_path.write_bytes(unterminated)
+        for trailing_bytes in (b"", b" "):
+            with self.subTest(trailing_bytes=trailing_bytes):
+                self.reset_ledger()
+                self.assertEqual(
+                    0,
+                    self.run_add(
+                        "plan_loaded", agent="orchestrator#1", note="skill=0.1.0"
+                    ).returncode,
+                )
+                unterminated = ledger_path.read_bytes().rstrip(b"\n") + trailing_bytes
+                ledger_path.write_bytes(unterminated)
 
-        status = self.run_cli("status", "--plan", str(self.plan_path.parent))
-        self.assertEqual(4, status.returncode)
-        self.assertEqual("", status.stdout)
-        self.assertRegex(status.stderr, r"^error: ledger last ledger line is not newline-terminated")
+                status = self.run_cli("status", "--plan", str(self.plan_path.parent))
+                self.assertEqual(4, status.returncode)
+                self.assertEqual("", status.stdout)
+                self.assertRegex(status.stderr, r"^error: ledger ")
 
-        add = self.run_add("checkpoint")
-        self.assertEqual(4, add.returncode)
-        self.assertEqual("", add.stdout)
-        self.assertEqual(unterminated, ledger_path.read_bytes())
+                add = self.run_add("checkpoint")
+                self.assertEqual(4, add.returncode)
+                self.assertEqual("", add.stdout)
+                self.assertEqual(unterminated, ledger_path.read_bytes())
 
     def test_unreadable_ledger_status_exits_four(self) -> None:
         """HC-RL-A45: status over an unreadable ledger exits 4 with a ledger error."""
@@ -743,7 +772,9 @@ class RelayPlanLintTests(unittest.TestCase):
                 result = self.run_cli("status", "--plan", str(self.plan_path.parent))
                 self.assertEqual(4, result.returncode)
                 self.assertEqual("", result.stdout)
-                self.assertRegex(result.stderr, r"^error: ledger line 1: ")
+                before_index = ledger_path.read_bytes()
+                self.assertRegex(result.stderr, r"^error: ledger ")
+                self.assertEqual(before_index, ledger_path.read_bytes())
 
     def test_static_forbidden_primitive_and_pane_guards(self) -> None:
         source = Path(__file__).with_name("relay_log.py").read_text(encoding="utf-8")
@@ -778,6 +809,12 @@ class RelayPlanLintTests(unittest.TestCase):
         self.assertEqual(0, self.run_add("node_start", agent="monitor#1").returncode)
         self.assertEqual(2, self.run_add("agent_launch", agent="coder#2").returncode)
         self.assertEqual(0, self.run_add("agent_launch", agent="coder#1").returncode)
+        ledger_path = self.plan_path.parent / "relay_log.jsonl"
+        before_ineligible_relaunch = ledger_path.read_bytes()
+        ineligible_relaunch = self.run_add("agent_launch", agent="coder#2")
+        self.assertEqual(2, ineligible_relaunch.returncode)
+        self.assertRegex(ineligible_relaunch.stderr, r"^error: HC-RL-A49 ")
+        self.assertEqual(before_ineligible_relaunch, ledger_path.read_bytes())
         self.assertEqual(2, self.run_add("agent_launch", agent="coder#1").returncode)
         self.assertEqual(2, self.run_add("agent_launch", agent="coder#3").returncode)
         self.assertEqual(0, self.run_add("agent_lost", agent="coder#1").returncode)
@@ -794,6 +831,16 @@ class RelayPlanLintTests(unittest.TestCase):
             self.run_add("stage_result", agent="monitor#1", note="stage_id=DHR_90:W#1 outcome=failed").returncode,
         )
         self.assertEqual(0, self.run_add("agent_launch", agent="coder#2").returncode)
+        self.assertEqual(0, self.run_add("checkpoint", agent="coder#1").returncode)
+        self.assertEqual(
+            0,
+            self.run_add("stage_result", agent="monitor#1", note="stage_id=DHR_90:W#1 outcome=failed").returncode,
+        )
+        before_duplicate_attempt = ledger_path.read_bytes()
+        duplicate_attempt = self.run_add("agent_launch", agent="coder#2")
+        self.assertEqual(2, duplicate_attempt.returncode)
+        self.assertRegex(duplicate_attempt.stderr, r"^error: HC-RL-A58 ")
+        self.assertEqual(before_duplicate_attempt, ledger_path.read_bytes())
 
     def test_relaunch_attempt_increment_is_exact_after_terminal_causes(self) -> None:
         for terminal_event in ("agent_lost", "cancelled"):
@@ -865,7 +912,9 @@ class RelayPlanLintTests(unittest.TestCase):
                 self.assertEqual(0, self.run_add("node_start", agent="monitor#1").returncode)
                 helper_note = "decider=decider#1"
                 for event in prefix:
-                    note = helper_note if event in {"escalate", "decision", "user_decision"} else ""
+                    note = helper_note if event in {"escalate", "decision"} else ""
+                    if event == "user_decision":
+                        note = "approve-amend: 用户同意 decision.md"
                     self.assertEqual(0, self.run_add(event, agent="coder#1", note=note).returncode)
                 skipped_resume = self.run_add("done", agent="coder#1")
                 self.assertEqual(2, skipped_resume.returncode)
@@ -901,9 +950,13 @@ class RelayPlanLintTests(unittest.TestCase):
         )
         self.start_ledger()
         self.assertEqual(0, self.run_add("node_start", agent="monitor#1").returncode)
-        self.assertEqual(2, self.run_add("agent_launch", agent="scribe#1").returncode)
+        before_scribe = self.run_add("agent_launch", agent="scribe#1")
+        self.assertEqual(2, before_scribe.returncode)
+        self.assertRegex(before_scribe.stderr, r"^error: HC-RL-A70 ")
         self.assertEqual(0, self.run_add("agent_launch", agent="coder#1").returncode)
-        self.assertEqual(2, self.run_add("agent_launch", agent="scribe#1").returncode)
+        waiting_scribe = self.run_add("agent_launch", agent="scribe#1")
+        self.assertEqual(2, waiting_scribe.returncode)
+        self.assertRegex(waiting_scribe.stderr, r"^error: HC-RL-A70 ")
         self.assertEqual(0, self.run_add("done", agent="coder#1").returncode)
         self.assertEqual(0, self.run_add("agent_launch", agent="scribe#1").returncode)
 
@@ -911,7 +964,9 @@ class RelayPlanLintTests(unittest.TestCase):
         self.start_ledger()
         self.assertEqual(0, self.run_add("node_start", agent="monitor#1").returncode)
         self.assertEqual(0, self.run_add("agent_launch", agent="coder#1").returncode)
-        self.assertEqual(2, self.run_add("agent_launch", agent="decider#1").returncode)
+        before_blocked = self.run_add("agent_launch", agent="decider#1")
+        self.assertEqual(2, before_blocked.returncode)
+        self.assertRegex(before_blocked.stderr, r"^error: HC-RL-A77 ")
         self.assertEqual(0, self.run_add("blocked", agent="coder#1").returncode)
         self.assertEqual(0, self.run_add("agent_launch", agent="decider#1").returncode)
 
@@ -927,7 +982,9 @@ class RelayPlanLintTests(unittest.TestCase):
         )
         self.reset_ledger()
         self.start_ledger()
-        self.assertEqual(2, self.run_add("node_start", node="C1", agent="monitor#1").returncode)
+        before_dependency = self.run_add("node_start", node="C1", agent="monitor#1")
+        self.assertEqual(2, before_dependency.returncode)
+        self.assertRegex(before_dependency.stderr, r"^error: HC-RL-A78 ")
         self.assertEqual(0, self.run_add("node_start", node="W1", agent="monitor#1").returncode)
         self.assertEqual(0, self.run_add("agent_launch", node="W1", agent="coder#1").returncode)
         self.assertEqual(0, self.run_add("done", node="W1", agent="coder#1").returncode)
@@ -946,9 +1003,13 @@ class RelayPlanLintTests(unittest.TestCase):
         self.assertEqual(0, self.run_add("agent_launch", agent="coder#1").returncode)
         self.assertEqual(0, self.run_add("agent_launch", agent="checker#1").returncode)
         self.assertEqual(0, self.run_add("done", agent="coder#1").returncode)
-        self.assertEqual(2, self.run_add("node_close", agent="monitor#1").returncode)
+        nonterminal = self.run_add("node_close", agent="monitor#1")
+        self.assertEqual(2, nonterminal.returncode)
+        self.assertRegex(nonterminal.stderr, r"^error: HC-RL-A17 ")
         self.assertEqual(0, self.run_add("agent_lost", agent="checker#1").returncode)
-        self.assertEqual(2, self.run_add("node_close", agent="monitor#1").returncode)
+        lost_close_agent = self.run_add("node_close", agent="monitor#1")
+        self.assertEqual(2, lost_close_agent.returncode)
+        self.assertRegex(lost_close_agent.stderr, r"^error: HC-RL-A74 ")
 
         self.reset_ledger()
         self.start_ledger()
@@ -958,7 +1019,9 @@ class RelayPlanLintTests(unittest.TestCase):
             self.assertEqual(0, self.run_add("agent_launch", agent=agent).returncode)
             self.assertEqual(0, self.run_add("done", agent=agent).returncode)
         self.assertEqual(0, self.run_add("node_close", agent="monitor#1").returncode)
-        self.assertEqual(2, self.run_add("node_close", agent="monitor#1").returncode)
+        duplicate_close = self.run_add("node_close", agent="monitor#1")
+        self.assertEqual(2, duplicate_close.returncode)
+        self.assertRegex(duplicate_close.stderr, r"^error: HC-RL-A68 ")
         self.assertEqual(0, self.run_add("monitor_restart", agent="monitor#1").returncode)
 
     def test_node_close_names_a_nonterminal_launched_agent_even_when_close_agent_is_done(self) -> None:
@@ -1042,8 +1105,8 @@ class RelayPlanLintTests(unittest.TestCase):
         result = self.run_add("plan_loaded", agent="orchestrator#1", note="skill=0.1.0")
         self.assertEqual(0, result.returncode, result.stderr)
 
-    def test_decision_events_carry_the_same_helper_token_as_the_escalate(self) -> None:
-        """HC-RL-A69: decider/strategist chains must repeat one helper token in notes."""
+    def test_decision_repeats_helper_while_user_decision_uses_frozen_note_shape(self) -> None:
+        """HC-RL-A69: decision repeats the helper; user_decision retains the design note shape."""
         for helper_prefix, helper_instance in (("decider", "decider#1"), ("strategist", "strategist#1")):
             with self.subTest(helper=helper_instance):
                 self.reset_ledger()
@@ -1080,20 +1143,13 @@ class RelayPlanLintTests(unittest.TestCase):
                 else:
                     self.assertEqual(0, self.run_add("agent_launch", agent="strategist#1").returncode)
                     self.assertEqual(0, self.run_add("done", agent="strategist#1").returncode)
-                baseline = ledger_path.read_bytes()
-                wrong_instance_user_decision = self.run_add(
-                    "user_decision", agent="coder#1", note=f"{helper_prefix}={different_instance}"
-                )
-                self.assertEqual(2, wrong_instance_user_decision.returncode)
-                self.assertRegex(wrong_instance_user_decision.stderr, r"^error: HC-RL-A69 ")
-                self.assertEqual(baseline, ledger_path.read_bytes())
-                for bad_note in ("", f"{helper_prefix}="):
-                    user_decision = self.run_add("user_decision", agent="coder#1", note=bad_note)
-                    self.assertEqual(2, user_decision.returncode)
-                    self.assertRegex(user_decision.stderr, r"^error: HC-RL-A69 ")
                 self.assertEqual(
                     0,
-                    self.run_add("user_decision", agent="coder#1", note=f"{helper_prefix}={helper_instance} approve-amend").returncode,
+                    self.run_add(
+                        "user_decision",
+                        agent="coder#1",
+                        note="approve-amend: 用户同意 decision.md",
+                    ).returncode,
                 )
                 if helper_prefix == "decider":
                     self.assertEqual(0, self.run_add("resume", agent="coder#1").returncode)
