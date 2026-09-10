@@ -16,3 +16,5 @@
 - [A-01 运行中改计划交叉审核及整版确认](./evidence/01-交叉审核记录-RelayLight运行中改计划.md)
 - [P1 正式开发方案（B-新建，2026-09-09 用户确认）](../dev_plan/P1-RelayLight-开发方案.md)
 - [RLT-B-01 拆计划交叉审核、讲解与确认](./evidence/02-交叉审核记录-RelayLight-B拆计划.md)
+- [RLT-B-03 颗粒度优化：审核、裁决、讲解与确认（2026-09-10）](./evidence/04-交叉审核记录-RelayLight-B03颗粒度优化.md)
+- [RLT-B-03 颗粒度优化调整候选（B 形成史）](../dev_plan/drafts/RLT-B-03-颗粒度优化-调整候选.md)
