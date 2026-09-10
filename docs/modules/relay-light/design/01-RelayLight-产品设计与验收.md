@@ -1,9 +1,12 @@
 <!-- 01-RelayLight-产品设计与验收.md — relay-light 模块的正式设计输入；planning-event 与审核回链写在本文，不写在 README。 -->
 
-# RelayLight 产品设计与验收（**正式设计输入 · 2026-09-09 整版确认**）
+# RelayLight 产品设计与验收（**正式设计输入 · 更新至 2026-09-10**）
 
 <!-- dh:topic tier=标准 review=RelayLight运行中改计划 -->
 <!-- dh:planning-event:v1 id=RLT-A-02 stage=A-full artifact=design/01-RelayLight-产品设计与验收.md review=evidence/01-交叉审核记录-RelayLight运行中改计划.md#review-rlt-a02 understanding=evidence/01-交叉审核记录-RelayLight运行中改计划.md#understanding-rlt-a02 -->
+<!-- dh:planning-event:v1 id=RLT-A-03 stage=A-full artifact=design/01-RelayLight-产品设计与验收.md review=evidence/03-交叉审核记录-RelayLight仓内skill单源.md#review-rlt-a03 understanding=evidence/03-交叉审核记录-RelayLight仓内skill单源.md#understanding-rlt-a03 -->
+
+> **RLT-A-03 增补 2026-09-10（用户已确认）**——skill 五文件改为 `tools/relay-light/skill/` 仓内单源，两个用户级目录为全量同步的派生副本；新增 HC-RL-A124/A125，总账 119→121。首版同步失败后排除原因并整套重跑，不引入发布事务或历史 manifest。
 
 > **A′ 增补 2026-09-09：B 审核回流四处契约澄清（已确认 2026-09-09）**——§6.2 Recipe 冲突消解、§3.5 `status --json` 字段冻结、§3.4 strategist 账本链、§6.2.1 配置解析优先级，另含 §4.5.2 新增卡路径授权收窄、§4 `decision_mode` 默认 `auto`。**验收 ID 一条未增未删未改号。**
 >
@@ -686,7 +689,7 @@ action = "<止损动作>"        # 取值见 §6.3
 | 1 | `--config-dir` 显式指定的目录 |
 | 2 | **当前平台自己的 skill 目录**：Claude Code 主控读 `~/.claude/skills/relay-light/`，Codex 主控读 `~/.codex/skills/relay-light/` |
 
-**不做跨目录比对，也不做「两侧不一致就报错」**——运行时只认自己这一侧。两侧内容一致由 `RLT_01` 的**五文件清单哈希**在同步环节保证（对应 HC-RL-A32），不是运行时职责。
+**不做跨目录比对，也不做「与仓内源不一致就报错」**——运行时只认自己这一侧，**不检测副本是否陈旧**。用户级副本与仓内源一致由安装器在同步后做五文件哈希校验（对应 HC-RL-A32 / A124），不是运行时职责。仓内源更新后需要运行新版本时，重新执行全量同步；仓内源合入本身不代表任一机器已经生效。
 
 **`plan_loaded` 事件的 `note` 必须含 `config_dir=<实际使用的配置目录>` 与 `plan=<计划目录路径>`**，形如：
 
@@ -849,7 +852,11 @@ herdr agent wait <agent> --timeout 1200000
 
 ### 8.1 待决策项：**无，全部已决**
 
-skill 放置位置已拍板：**独立用户级 skill**。Claude Code 侧 `~/.claude/skills/relay-light/`（`SKILL.md` 核心 + `references/adapter-claude-code.md` + `references/adapter-codex.md` + `roles.toml` + `dh-mapping.toml`），Codex 侧 `~/.codex/skills/relay-light/` 放**同一份内容**，两侧同源、内容一致；同步方式由开发方案定。仓内 AGENTS.md 阅读矩阵加一行索引；**dev-harness 不改**。
+skill 放置位置已拍板：**仓内单源 + 两侧派生副本**。唯一可编辑源为 `tools/relay-light/skill/`，五件是 `SKILL.md` 核心、`references/adapter-claude-code.md`、`references/adapter-codex.md`、`roles.toml`、`dh-mapping.toml`；`~/.claude/skills/relay-light/` 与 `~/.codex/skills/relay-light/` 只由安装器从仓内源单向全量覆盖，不得就地编辑、反向同步或使用软链。
+
+安装器为标准库 Python 文件 `tools/relay-light/install_skill.py`。Windows 执行 `python tools/relay-light/install_skill.py --all`，Linux 执行 `python3 tools/relay-light/install_skill.py --all`；`--all` 从当前用户 home 派生两个固定目标，每次覆盖全部五文件并校验两侧哈希。任一步失败即非零退出，首版**不承诺原子、回滚或中断恢复**，失败后两侧可能暂时不同步；此时不得启动新的 relay-light 计划，排除失败原因后重新执行整套 `--all`，直到退出 0 且两侧五文件均与仓内源一致。
+
+每个目标成功后只写一份可解析的**当前 manifest**，下次成功同步直接覆盖；字段为 `source_head`、`source_dirty`、五文件相对路径与哈希、`installed_to`、`installed_at`。不设 manifest ID、不留历史、不与 `plan_loaded` 绑定；跨机正式证据要求 `source_dirty=false`。运行时加载路径仍是 `--config-dir` 优先，否则读当前 CLI 的用户级 skill 目录，**不直接读仓内源**。仓内 AGENTS.md 阅读矩阵加一行索引；**dev-harness 不改**。
 
 ### 8.2 `by` 字段可伪造：明确的设计选择
 
@@ -1089,7 +1096,7 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 
 > 分栏依据**验收二分**：机器能完整证明的进 AI 栏，只有需要用户凭业务判断「结果对不对 / 能不能用」的进人验栏。复合观察点已原子化，共享 E-ID 的两条分列两栏。
 >
-> **共 119 条：AI 自动验收 104 条 + 人类验收 15 条**（2026-09-09 补充 §4.5 运行中改计划，新增 HC-RL-A119～HC-RL-A123 与 HC-RL-H16、HC-RL-H17 共 7 条；原 112 条 = 99 + 13）。
+> **共 121 条：AI 自动验收 106 条 + 人类验收 15 条**（2026-09-10 RLT-A-03 新增 HC-RL-A124/A125；此前 2026-09-09 §4.5 增补后的总数为 119）。
 >
 > **已退役且不再复用的 ID**：HC-RL-A1、HC-RL-A3、HC-RL-A4、HC-RL-A6、HC-RL-A20、HC-RL-A22、HC-RL-A23、HC-RL-A25（原子化拆分）；HC-RL-A8、HC-RL-A76、HC-RL-A79、HC-RL-H8、HC-RL-H9（本轮结构调整后语义改变）。
 
@@ -1129,6 +1136,8 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 | HC-RL-A121 | 编排开阶段前重读计划：**不修改 `relay_log.py` 代码、仅向计划文件追加新阶段的节点行后再次调用 `status`**，输出的 `stages` 含该新阶段且顺序正确；下一阶段由计划推导而非固定 `W→C→R→F` | 单测：同一 plan 目录，第一次 `status` 后仅追加 X 阶段节点行、再次 `status`，断言 `stages` 多出该实例；构造非 WCRF 顺序的计划断言推导跟随计划 |
 | HC-RL-A122 | 改计划白名单（按路径）：改计划实例只允许改 `docs/modules/<模块>/relay/<plan_id>/relay_plan.md`（含其 marker 的 `cards=`）、`docs/modules/<模块>/dev_plan/P<N>-*.md`、以及 `docs/modules/<模块>/workspace/<卡号>/task_plan.md` 且 **`<卡号>` 必须是改动前 marker `cards` 里已存在的卡**；新增卡的 `task_plan.md` 由该卡 W 阶段 builder 建，改计划实例写它即判失败。**`docs/modules/<模块>/design/` 整个目录是禁区**，被改动即验收失败（验收 ID 不得新增或改动）。禁区命中时**整份改动不落笔**，不做部分执行 | 结构检查：对改计划前后做 `git diff --name-only`，断言变更路径集合是白名单子集且与 `design/` 前缀无交集；新增卡场景断言变更不含新卡的 `task_plan.md`；构造一次改到 `design/01-RelayLight-产品设计与验收.md` 的反例，断言报错且白名单内文件也未被改动 |
 | HC-RL-A123 | `stage_result` 改动摘要格式：本阶段有 `plan_amend` 时 `note` 必须含 `amend=<方案文件名>` 与 `nodes=<节点号,节点号>`，缺则退出 2；无 `plan_amend` 时不得出现 `amend=` | 单测：有 amend 缺摘要被拒、格式合法被接受、无 amend 却写摘要被拒各一例 |
+| HC-RL-A124 | 仓内目录是唯一可编辑源；安装器只有仓内源→两侧副本的单向全量同步。一次同步中途失败后可通过重新执行整套 `--all` 收敛，不要求原子或回滚 | 临时 home 中人为改一侧副本并注入一次五文件复制中途失败，断言失败非零且仓内源未变；再次执行 `--all`，断言两侧五文件均与仓内源一致 |
+| HC-RL-A125 | Windows 与 ThinkPad 在同一 clean commit 各执行一次 `--all`，四个用户级目录的五文件哈希全等，四份当前 manifest 的 `source_head` 与五文件源哈希一致 | 两机分别展示命令与退出 0；比对四目录五文件哈希及四份当前 manifest；`source_dirty=true` 不计入本条证据 |
 | HC-RL-A106 | 编排机械分路可判定：`status --json` 的 `last_stage_result.outcome` 暴露当前阶段实例**最新** outcome，并派生 `suggested_action` 五枚举之一——`done`/`cancelled` → `open_next_stage`，`blocked` → `wait_user`，`failed` 且 `monitor_relaunch_count` 为 0 → `relaunch_monitor`，`failed` 且已重拉一次 → `notify_user`，其余 → `none`；`failed` 重拉上限为 1 | 单测：四种 outcome 各断言 `suggested_action` 取值；连续两次 failed 断言 `monitor_relaunch_count` 为 1 且动作转为 `notify_user` |
 | HC-RL-A107 | 两套计数独立且不叠加：attempt 达 3 与 X 轮数达 `max_rounds` 各自独立触发 strategist 出口；一方递增不影响另一方计数 | 单测：只 attempt 超限、只 X 超限、两者都未超限三例，断言触发与否及计数互不影响 |
 | HC-RL-A87 | lint：`card` 必须在 marker 的 `cards` 列表中；跨卡计划能解析出多卡 | 单测：card 不在 cards 被拒；两卡计划解析出 `cards` 长度 2 |
@@ -1183,7 +1192,7 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 | HC-RL-A15 | Python 测试可脱离 pwsh 直跑（Linux 回归入口） | `python3 -m unittest` 直跑，展示退出码；与 HC-RL-A11 同一份测试文件 |
 | HC-RL-A16 | 账本程序只用标准库 | 静态检查 import 全在标准库清单内 |
 | HC-RL-A12 | skill 五件齐且落点正确：`SKILL.md` + 两个 adapter + `roles.toml` + `dh-mapping.toml`；核心含角色表 / 五阶段模板 / 账本用法 / 拓扑布局 / 硬规则 / 放弃项 | 结构检查文件存在 + 按小节标题清点 |
-| HC-RL-A32 | 两侧同源：`~/.codex/skills/relay-light/` 与 Claude Code 侧五个文件逐字节一致 | 逐文件比对哈希 |
+| HC-RL-A32 | 当前机器两个派生副本的五文件各自与仓内唯一源 `tools/relay-light/skill/` 逐字节一致 | 以仓内源为基准逐文件比对两侧哈希 |
 | HC-RL-A33 | 仓内 `AGENTS.md` 阅读矩阵含指向 relay-light skill 的索引行；dev-harness 未被改动 | 结构检查 + `git diff` 对 dev-harness 仓为空 |
 | HC-RL-A19 | skill 核心含「Linux 收口前直跑 python 测试并原样贴进 progress.md」硬规则 | 结构检查命中；Linux 实跑卡的 `progress.md` 含原样命令与退出码 |
 | HC-RL-A21 | 两适配层都写明「wait 返回时必须有接收者」及三种满足方式；监工与编排的 prompt 模板含该硬规则原文 | 结构检查 + grep 两份模板 |
@@ -1208,7 +1217,7 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 |---|---|---|---|
 | HC-RL-H1 | **〔E-链路〕** 在 Windows 用 **Claude Code 主控**跑完一份真计划（W→C→R→F） | relay_plan 全文、账本全文、`status` 两次输出、产出文件清单 | 这套接力是否真的比手动派活省事、值不值得继续用 |
 | HC-RL-H13 | **〔编排形态〕** 展示编排 + 按阶段监工的实跑形态 | 编排 pane 的操作序列、各阶段终端空间的建立与关闭、账本里 `by` 的交接段落 | 三层结构（编排→监工→agent）是否顺手；编排会不会成为新瓶颈；阶段换监工是否真的比全程一个监工好 |
-| HC-RL-H2 | 在 Windows 用 **Codex 主控**跑同样一份计划 | 同上 + 两次跑用的 skill 是同一份的证明 | 换主控后是否只靠适配层就跑通，核心有没有被迫改 |
+| HC-RL-H2 | 在 Windows 用 **Codex 主控**跑同样一份计划，且至少一次不带 `--config-dir`、直接使用默认用户级安装副本 | 同上 + 两次运行所用五文件哈希 + 默认副本实跑证据 | 换主控后是否只靠适配层就跑通，核心有没有被迫改；默认安装副本是否可直接协作 |
 | HC-RL-H3 | 在 ThinkPad（Linux）用 **Claude Code 主控**跑一份计划 | 同上 + `python3 -m unittest` 退出码 | Linux 侧用起来是否与 Windows 一致 |
 | HC-RL-H4 | 在 ThinkPad（Linux）用 **Codex 主控**跑一份计划 | 同上 | 四组合矩阵是否都能实际交付 |
 | HC-RL-H5 | 展示 `status` 输出 | §10.3 形态的真实输出 | 你能否只看这一屏就判断「现在哪个阶段、轮到谁、卡住没有、多久没动」 |
@@ -1217,7 +1226,7 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 | HC-RL-H15 | **〔场景三〕** 走一遍复核 → 返工 → 超限 → strategist → 你裁决 | X 阶段轮次账本、全部 review、strategist 结论 | 轮数上限 2 是否合适；strategist 的输入够不够它做全局判断 |
 | HC-RL-H16 | **〔改计划·卡内追加节点〕** 实跑 §9.4 那条链：施工 `blocked` → decider 提「需要改计划」→ 过门 → `planner-amend` 在**当前阶段实例内追加节点** → **当班监工直接接手**跑完 | 方案文件、改计划前后的 `relay_plan` diff、`plan_amend` 与带 `amend=` 摘要的 `stage_result`、监工接手新节点的账本片段 | 卡内追加这条路顺不顺；agent 自己改任务卡与开发方案（绕过 B-adjust）你是否放心；禁区的「超出范围 → 交你」拦得住不 |
 | HC-RL-H17 | **〔改计划·新增任务卡追加阶段〕** 实跑新增一张任务卡：`planner-amend` 改开发方案 + marker `cards` + 追加该卡的 W／C／R／F 阶段行 → **编排开到新 W 阶段时才拉监工**，builder 照常建七件套 | 开发方案与 marker 的 diff、追加的阶段行、编排开出新阶段的账本片段、新卡任务工作区的建立记录 | 跨卡追加时编排能不能正确开出新阶段；「七件套不由改计划实例建」这个分工是否顺手 |
-| HC-RL-H7 | 只改 `roles.toml` / `dh-mapping.toml` / 模板调整一次协作方式，不改代码 | 改动前后 diff + 新计划生成的 relay_plan | 「改协作 = 改配置」是否真的成立 |
+| HC-RL-H7 | 在受控 `--config-dir` fixture 中只改 `roles.toml` / `dh-mapping.toml` / 明确模板片段调整一次协作方式，不改核心或两个 adapter | fixture 从当时仓内五文件复制；展示差异白名单、核心/双 adapter 哈希不变及新计划 relay_plan | 「改协作 = 改配置」是否真的成立 |
 | HC-RL-H10 | **〔E-账本〕** 只给你账本，不给别的 | `relay_log.jsonl` 全文 | 你能否只凭它还原出当时发生了什么、卡在哪、谁救的场 |
 | HC-RL-H11 | **〔watch 实测〕** 监工正在 `working` 时 watch 发来的 prompt 是否被排队而非丢弃——Claude Code 与 Codex **分别验** | 两种监工各自：制造 working → 触发推送 → 展示收到时刻与内容 | 推送在忙时是否可靠，要不要退回前台循环 |
 | HC-RL-H12 | **〔watch 实测〕** watch 进程死亡后 20 分钟兜底是否接住 | 杀掉 watch → 展示下一次例行查看的时刻与发现 | 兜底是否兜得住，20 分钟是否可接受 |
@@ -1259,7 +1268,7 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 
 ## 14. 开发方案同步项（B 拆计划时必须承接）
 
-1. **skill 两侧同步方式**：Claude Code 侧与 Codex 侧五个文件要求内容一致，用软链、复制脚本还是手动由开发方案定。→ HC-RL-A32
+1. **skill 单源与全量同步**：仓内 `tools/relay-light/skill/` 是唯一源；标准库 Python 安装器用 `--all` 全量覆盖当前机器 Claude/Codex 两侧并校验哈希。失败后排除原因并整套重跑；不使用软链，不做事务化。→ HC-RL-A32 / HC-RL-A124 / HC-RL-A125
 2. **AGENTS.md 编排协议段**：新增 relay-light 一段（worker 完成即停、无 `node_closed`、标头判定），现有 Runner 铁律标「冻结流水」。→ HC-RL-A28 / HC-RL-A34
 3. **AGENTS.md 模块身份**：「本仓只有一个模块」与 `dh` 自动选模块的描述随双模块现状同步改。→ HC-RL-A29
 4. **一致性对照任务**：relay-light 与现役 Runner 是同一问题域的两条并行路径，B 段须出对照任务，逐条列两者对「节点 / 角色 / 事件 / 关闭」的定义差异并裁决「有意差异」还是「遗漏」。
@@ -1271,7 +1280,7 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 
 | 检查项 | 结论 |
 |---|---|
-| A-full 顺序 | 已走完「草案 → 六轮 fresh 复核 → 主控裁决 → 结构性调整 → §4.5 补充与两轮定向复审 → **2026-09-09 用户整版确认** → 正式输入原子晋级」。本文已是 `design/` 根下的正式输入并列入 `designInputs[]`。 |
+| A-full 顺序 | 初版已走完「草案 → 六轮 fresh 复核 → 主控裁决 → 结构性调整 → §4.5 补充与两轮定向复审 → 2026-09-09 用户整版确认」。RLT-A-03 又完成多轮 fresh 复审、简化裁决、讲解、理解问题与 **2026-09-10 用户确认** 后增补正式输入。 |
 | 候选稿边界 | 候选稿保留在 `drafts/` 作形成史，**不进 `designInputs[]`**、不作 B 输入；本轮审核证据已落 `design/evidence/01-交叉审核记录-RelayLight运行中改计划.md`。 |
 | 扫 knowledge/ 教训库 | 已扫。命中并规避：候选-5（大小写，HC-RL-A41/A42）、候选-10（append + superseded，§4.4）、候选-18（陈锁自动回收，§13）、候选-38（入口能解析≠能执行，适配层）。 |
 | 扫 knowledge/ 设计期知识库 | 该库在本仓不存在，按「库不存在跳过不算违规」处理。 |
@@ -1285,6 +1294,6 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 | 密钥红线 | §13 与 skill 核心引用宪章第 6 条，HC-RL-A27 以规则原文检查为主、grep 为 smoke。 |
 | 跨语言复用风险 | 账本是 Python、现役 Runner 是 PowerShell，只能借手法不能借代码；且只借纯追加、不借原子替换。 |
 | 验收二分与原子化 | 已按机器证/人判分栏，人验栏只留业务判断。AI 栏凡含两个以上可独立失败断言的均已拆分。共享 E-ID：E-链路（HC-RL-A30 / HC-RL-H1）、E-账本（HC-RL-A31 / HC-RL-H10）。 |
-| 验收 ID 稳定性 | 包内唯一，新条目一律续号（本轮 §4.5 续到 HC-RL-A119～HC-RL-A123、HC-RL-H16、HC-RL-H17），不复用退役号。**已退役且不再复用**：HC-RL-A1 / HC-RL-A3 / HC-RL-A4 / HC-RL-A6 / HC-RL-A20 / HC-RL-A22 / HC-RL-A23 / HC-RL-A25（原子化拆分）、HC-RL-A8 / HC-RL-A76 / HC-RL-A79 / HC-RL-H8 / HC-RL-H9（结构调整后语义改变）。 |
+| 验收 ID 稳定性 | 包内唯一，新条目一律续号（RLT-A-03 续到 HC-RL-A124/A125；H16/H17 保持不变），不复用退役号。**已退役且不再复用**：HC-RL-A1 / HC-RL-A3 / HC-RL-A4 / HC-RL-A6 / HC-RL-A20 / HC-RL-A22 / HC-RL-A23 / HC-RL-A25（原子化拆分）、HC-RL-A8 / HC-RL-A76 / HC-RL-A79 / HC-RL-H8 / HC-RL-H9（结构调整后语义改变）。 |
 | 一致性对照 | 已列为 §14 第 4 条开发方案同步项。 |
 | 数据口径契约 | 本模块不涉及指标口径，N/A。 |
