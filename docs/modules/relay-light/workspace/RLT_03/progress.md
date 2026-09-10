@@ -24,6 +24,7 @@
 | 2026-09-10 | 主控 | 核对 GitHub 无既有 RLT_03 Issue/PR，按用户要求补建 Issue；Draft PR 等 fresh Opus 复核闭合后创建 | [GitHub Issue #3](https://github.com/nashhu180-netizen/dh-relay/issues/3) | 先闭合 Opus P2，再精确提交、推送并建 Draft PR |
 | 2026-09-10 | 主控 | 核对 GitHub 无既有 RLT_03 Issue/PR 后补建 Issue #3；PR 待 fresh Opus 结论落盘后以 Draft 创建 | `https://github.com/nashhu180-netizen/dh-relay/issues/3` | 等 Opus review，随后精确提交并创建 Draft PR |
 | 2026-09-10 | OMP GLM-5.3-Flash construction batch=4 contract-rework=RLT-B-04 rework=1 | 按 `reviews/batch-4-contract-rework-opus.md` 闭合两项 P2（不改代码）：P2-1 更新 F-003 活动口径——退役 A86 改为 A129，冲突重述为 design §3.5(:409) 与 §11(:1132) 对 A129 是否含 §4.5 表尾豁免的文本分歧，本卡按 §11 严格执行、放宽归 RLT_09/A120，状态保持 open；P2-2 矩阵收口句去掉「无 partial」无限定宣称，改为 A128 四例外限定：A46/A72/A75 逐项闭合，A120 归 RLT_09（superseded 行隔开通过、同 stage 表尾追加按 §11 严格拒绝、须 RLT_09 显式反转）；历史记录旧号按原样保留 | E-046 | `CONSTRUCTION_DONE batch=4 contract-rework=RLT-B-04 rework=1`，停止等待 node_closed |
+| 2026-09-10 | 主控 GitHub 交付 | fresh Opus 定向复审 `APPROVE`（P0/P1/P2=0）后，精确提交并推送 `wt/RLT_03`，创建关联 Issue #3 的 Draft PR；Draft 不代表 verify、验收或允许合并 | commit `b7f4ecc`；[PR #4](https://github.com/nashhu180-netizen/dh-relay/pull/4)；[Issue #3](https://github.com/nashhu180-netizen/dh-relay/issues/3) | 等用户查看证据并另行决定验收/verify/merge |
 
 ## 证据账本 (Evidence Ledger)
 
