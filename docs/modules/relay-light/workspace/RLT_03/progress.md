@@ -141,6 +141,7 @@
 | E-088 | E11 用户确认与远端收口路线授权（主控） | 对话先回复“认可”确认展示版本 `RLT_03-E10-20260910-02`，再于主控展示远端基线事实、RLT_02 WIP 隔离方案、Issue/PR→CI→squash verify→机械回填 PR→Issue close→清理的精确操作包后明文回复“授权” | **E11 已成立**：releasePacket 风险账=0、人判结果项=0，用户授权本次精确收口包，包括 RLT_02 四路径 stash/reset 类隔离、commit/push、Issue/PR 写入、Ready、CI 后 squash merge、`verify(relay-light)`、真实 SHA 回填、Issue 关闭及 RLT_03 worktree/branch 清理。P3 尾巴已由用户按推荐整包裁决：本轮两条纯记录问题机械修正；计划文件 Unicode/LF 诊断边界挂 RLT_09；末行诊断测试与非 HC-ID 错误码裁决挂 RLT_10；其余解析诊断、pycache ignore、性能/可读性、显式 assert 与 CRLF 兼容挂 backlog。所有挂账均不扩张本卡行为范围 | 收口包进入执行态；远端基线与 #4 最终候选须分别经 CI，合并后以真实 SHA 机械回填；RLT_05 在 RLT_03 完整销户前继续不开放 |
 | E-089 | E11 后任务树候选复验（主控） | `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tools/relay-light/test_relay_log.py`；`git diff --check`；`node /home/nash/.codex/skills/dev-harness/tools/dh-check.mjs relay-light`；`dh gate relay-light RLT_03` | unittest exit 0：`Ran 54 tests in 31.072s`、`OK`；diff-check exit 0；dh-check 0 失败/1 个既有 R14 警告；gate 结构项全过，唯一硬拦仍为尚无 verify，符合 squash verify 前状态。软报告中的 RLT_02 review/verify 与阶段汇报提示均为旧解析/试水项，不改变本卡机器证结论 | 候选可提交并进入远端基线合并；未开 RLT_05 |
 | E-090 | RLT_02 基线合入与 RLT_03 候选复验（主控） | 将已由 PR #6 squash 合入的 `origin/master@86815c752a73db22550619c95cc718e3371b9094` 合并进 `wt/RLT_03`；冲突按路径所有权处理：RLT_02 `task/review` 取基线，RLT_03 `design/01` 与 DevPlan 取任务树，共享 as-built 保留 RLT_02 的 30 条归纳/50 项闭集修复并同步 RLT_03/RLT_05/RLT_07 当前责任边界；随后运行 unittest、`git diff --check`、两条 Python SHA256、当前 dev-harness 源 `dh-check` 与 scoped gate | 合并提交 `18b807f`；unittest exit 0：`Ran 54 tests in 29.683s`、`OK`；diff-check exit 0；Python SHA256 仍为 `f484ffba…7ceb1e` / `8c2098fc…00dbd`；当前源 dh-check 为 0 失败/2 警告（既有 R14 + RLT_02 纯文档卡无 test 记录的 R16 提醒）；`gate relay-light RLT_03` 结构项全过，唯一硬拦为尚无 verify。全局 `dh` launcher 指向较旧 runtime 副本，曾误报 v2 工作区缺 `visual_map.md`；当前源按 `brief.md` 的 `dh:workspace-contract:v2` 正确识别七件套，未为误报新增 v1 文件 | 任务树已吸收主干基线且无冲突/脏文件；可正常 push 并刷新 PR #4，RLT_05 仍未开启 |
+| E-091 | PR #4 Ready、CI 与 verify squash（主控） | PR #4 更新为 54 tests、heavy 五路、A05/B05 与分卡边界后转 Ready；CI run `34487435712`；三项硬门完成后按 workflow 的 `continue-on-error` 观测口径取消持续停在 `npm test` 的 relay-core Node；`gh pr merge 4 --squash` 写入 verify footers | relay-light Python=`SUCCESS`；PowerShell Ubuntu=`SUCCESS`；PowerShell Windows=`SUCCESS`；relay-core Node=`CANCELLED`（`npm test` 无终态，未称成功）；PR #4 于 2026-09-10 squash 合入，实际 verify SHA=`8b67bbdb6f6dfc7881350804edd013d921e8cc2b`，提交标题命中 `^verify(relay-light):`，Risk-Count=0、Verification=full、release_mode=full | verify 已在合入后的 master 可由 git log 命中；本次机械回填只改 DevPlan、progress、review，Issue #3 留给该回填 PR 的 `Closes #3` 真实关闭；RLT_05 未开启 |
 
 ## Batch-4 验收矩阵（brief 16 组条件 → test/subtest 映射）
 
@@ -186,6 +187,6 @@ RLT_03-owned 42 个 HC-ID：A2 A5 A17 A18 A24 A35 A37 A38 A39 A40 A41 A42 A45 A4
 - **不追认**：本记录不追认任何未被单独授权的其他写入，不建议也不执行 rewrite / rebase / force-push 已推送历史。本例外**不是** design §4.5 的运行中 planner-amend 白名单放宽（该白名单对 `design/` 整目录禁入的 A122 规则全部保留）。
 
 ## Node Signal
-CLOSEOUT_AUTHORIZED remote-package-in-progress=1
+COMPLETE verify=8b67bbdb6f6dfc7881350804edd013d921e8cc2b release_mode=full
 
-（前值 `CONSTRUCTION_DONE metadata-rework=1` = E-084 节点的收口信号；本节点 = E-085/E-086，未改任何任务表状态列）
+（前值 `CLOSEOUT_AUTHORIZED remote-package-in-progress=1`；E-091 后 verify 已合入，DevPlan 与 review 按实际 SHA 机械回填；RLT_05 未开启）

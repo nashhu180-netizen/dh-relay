@@ -14,10 +14,10 @@
 >
 > 七条 A/B 旧事件（含 design 侧 `RLT-A-02`~`RLT-A-04`）的完整字段、替换缘由与本次确认来源见 [`../design/evidence/06-交叉审核记录-RLT03阶段合同补充.md`](../design/evidence/06-交叉审核记录-RLT03阶段合同补充.md)。
 <!-- dh:status
-汇报: RLT-A-04 / RLT-B-04 已确认生效；RLT_03 进入新验收 ID 窄返工
-现状: 正式设计与 DevPlan 已对齐 122 条活动验收；RLT_03 第 4 批原规划阻塞解除，需同步规则 ID、注释、测试与验收矩阵
-进行到: P1 ▸ 第 1 批 ▸ RLT_03 施工
-下一步: OMP GLM-5.3-Flash 完成 RLT_03 施工第 4 批窄返工，再进入独立复核
+汇报: RLT_03 已完成并以 verify 提交验收；release_mode=full
+现状: RLT_03 的 parser/lint 与纯追加账本/状态机已由 PR #4 squash 合入 master，verify=8b67bbdb6f6dfc7881350804edd013d921e8cc2b
+进行到: P1 ▸ 第 1 批 ▸ RLT_03 已完成
+下一步: RLT_05 保持未开始；未取得新的开工确认前不得启动
 看什么: design/01-RelayLight-产品设计与验收.md + 本文件
 阻塞: 无
 -->
@@ -93,7 +93,7 @@
 |---|---|---|---|---|---|---|---|---|
 | RLT_01 | 建立仓内 skill 单源与全量同步安装器 | 标准 | 未开始 | 1 | — | — | — | 不写真实用户目录 |
 | RLT_02 | 对照 relay-light 与现役 Runner 四类核心语义 | 轻 | 已完成 | 1 | — | [workspace/RLT_02](../workspace/RLT_02/) | 2026-09-10 / light 口头确认 | 单独一致性卡，只读现役实现 |
-| RLT_03 | 计划解析/lint 与纯追加账本/状态机 | 标准 | 进行中 | 1 | RLT_02 | [workspace/RLT_03](../workspace/RLT_03/) | — | heavy；合并原 03/04 |
+| RLT_03 | 计划解析/lint 与纯追加账本/状态机 | 标准 | 已完成 | 1 | RLT_02 | [workspace/RLT_03](../workspace/RLT_03/) | 2026-09-10 / **verify `8b67bbdb6f6dfc7881350804edd013d921e8cc2b`** · `release_mode=full` | heavy；合并原 03/04 |
 | RLT_05 | status/生命周期与配置/Recipe/止损 | 标准 | 未开始 | 1 | RLT_03 | — | — | heavy；合并原 05/06，含两 toml |
 | RLT_07 | 编写仓内 skill、adapter 与五阶段模板 | 标准 | 未开始 | 1 | RLT_01、RLT_02、RLT_05 | — | — | — |
 | RLT_08 | 接入 AGENTS 判定、协议索引与双模块身份 | 标准 | 未开始 | 1 | RLT_07 | — | — | 显式登记有意绕过 B-adjust |
