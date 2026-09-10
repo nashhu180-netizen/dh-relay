@@ -61,7 +61,7 @@
 
 **Confidence Challenge**：代码轮 1、代码轮 2、需求方向、教训、一致性五路均已收敛为 `APPROVE`，有效变异已杀死且真实树 54 tests 全绿；A5、A128、A129 的正式文本与 as-built owner/状态词已按用户确认的 Astra REVISE 落账（doc-only，零代码改动）。需求方向 E-075 确认 E-071 唯一 P1 已由 E-074 闭合，一致性 E-072 为 `APPROVE`（P0/P1/P2=0、P3=1）。**但五路收敛不构成当前可确认状态**：R29 规划事件闸在 E-080/E-081 被判为阻塞（`design/01` `EVENT_COUNT=3`、`DevPlan` `EVENT_COUNT=4`；Astra 裁决 `VERDICT=REQUIRE_NEW_EVENT`），该阻塞已按用户明确授权的精确治理包**闭合**（E-083：design/01 留 fresh `RLT-A-05`、DevPlan 留 fresh `RLT-B-05`、七条旧事件转历史索引、新建 `design/evidence/06-交叉审核记录-RLT03阶段合同补充.md` 承载当前变化集证据，当前源版体检 0 失败、仅 R14 已知警告）。**该治理包经 Astra pane 终审为 `VERDICT=REVISE`（P0=0 / P1=0 / P2=2 / P3=0）；两项 P2 已按终审修正（E-084），并经原 Astra pane 定向复审判 `VERDICT=APPROVE`（P0=0 / P1=0 / P2=0 / P3=0，E-085）闭合：evidence/06 不再把主控派单的第三人称句写成用户逐字原话（改为「授权转述」并注明来源），且不再把批次/owner/任务索引的核验记到 E-072 名下（改归本轮 Astra 终审）；marker 绑定、结论与人类签名区未动。**完整收口体检已于本轮复跑并如实登记（E-086：54 tests OK、diff-check 0、两 Python hash 未变、dh-check 0 失败/1 警告、`dh gate` 唯一拦点=尚无 verify、R29 当前源 `issues=[]`）**，但 **releasePacket 展示版本仍未出新版**，展示版本 `RLT_03-E10-20260910-01`（E-078）继续 superseded，**在新展示版本发出并由用户明文确认前不得宣称 E10 可用**。这不推翻上述五路结论，也**不等于**用户已经签收：人类签名区保持未勾，DevPlan RLT_03 仍「进行中」，RLT_05 仍「未开始」；`b7f4ecc` 越界差分仍仅是一项不继承、不扩张 allowed-paths、且不伪称机械闸原本通过的一次性路径例外，且**不覆盖**本次新证据文件。
 
-**E-088 当前覆盖（取代上段 E-086 时点的“尚未展示/未确认”状态）**：新版 releasePacket `RLT_03-E10-20260910-02` 已于 E-087 展示，用户先回复“认可”，继而明文“授权”执行精确收口包；人类签名区据此勾选。DevPlan RLT_03 在真实 verify SHA 回填前仍保持“进行中”，RLT_05 仍“未开始”。
+**当前覆盖（取代上段 E-086 时点的“尚未展示/未确认”状态）**：新版 releasePacket `RLT_03-E10-20260910-02` 已展示，用户先回复“认可”，继而明文“授权”执行精确收口包；人类签名区据此勾选。PR #4 三项硬门 CI 成功，relay-core Node 观测项持续停在 `npm test` 后按授权取消、未称成功；PR #4 已 squash 合入，实际 `verify(relay-light)` SHA=`8b67bbdb6f6dfc7881350804edd013d921e8cc2b`，`release_mode=full`。RLT_05 仍“未开始”。
 
 **TDD 结论**：有效行为红、修复后绿与独立变异杀死证据均齐备；E-003 的导入错误已明确剔除，不作为有效红。最终有效单测证据以 E-052~E-054、E-057、E-063、E-065 为准。
 
@@ -74,7 +74,7 @@
 | RLT_03：合法 plan 可读、非法 plan fail closed | 临时目录生成合法/重复节点/坏 marker plan，逐一执行 `lint`、`status`、`add`，核退出码、stderr 与零写入 | E-008、E-018、E-045、E-052~E-054；E-071 | 满足：A5 命令边界已按 Astra 第 1 项落账（解析级退 3 / 已解析规则违反 lint 2、add-status 3 / 重复号归 A46）；E-071 独立真 CLI 五形态 × 三命令复核与 A46/A80 三方一致、拒绝路径零写入；一致性 E-072 `APPROVE` |
 | RLT_03：账本只追加且 JSONL 可持续读取 | 连续 20 次 add 保存旧前缀 bytes；另以 U+0085/U+2028/U+2029 note 往返，再以无 LF/尾随空格末行验证 status/add 均拒绝且 bytes 不变 | E-013、E-052~E-054、E-057、E-058、E-065 | 满足：54 tests 全绿；F-043 判别器与最终字节变异复验均已闭合 |
 | RLT_03：事件、attempt、agent 状态机与触发/关闭前置 fail closed | 真 CLI 执行 `plan_loaded → node_start → agent_launch → blocked → escalate → decision/user_decision → resume` 正反序列，逐项核 rc、HC-ID 与不落行 | E-040、E-052~E-054；Batch-4 验收矩阵 | 满足：代码轮 1 与代码轮 2（含 F-043 定向复验）均 APPROVE |
-| 人验项：机器证足以支撑本地收口 | 用户查看五路复核、有效变异、合同边界与 releasePacket 后明文确认 | E-078（**已 superseded**）；本表与五路 review | **待人验（R29 已闭合、两项 Astra P2 已由原 pane 定向复审 `APPROVE` 闭合（E-085），完整收口体检已复跑并如实登记（E-086），但 releasePacket 展示版本未出新版、人类签名未勾；出新展示版本并由用户明文确认前不进入人验）**；AI 不代签 |
+| 人验项：机器证足以支撑本地收口 | 用户查看五路复核、有效变异、合同边界与 releasePacket 后明文确认 | 新版 releasePacket、对话确认、本表与五路 review | **已确认**：用户先“认可”新版 releasePacket，再明文“授权”精确收口包；AI 未代签。实际 verify SHA=`8b67bbdb6f6dfc7881350804edd013d921e8cc2b`，`release_mode=full` |
 
 **完成条件逐条挂证据**
 
@@ -101,15 +101,15 @@
 
 | 命题 | 事实证明方式 | 最终裁决者 | 稳定 ID | 覆盖态 | 等价判据 | 实际执行结果 | 版本环境 | 独立 oracle | 未覆盖边界 | contractVersion | arbiterCapability | arbiterAuthorization |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| RLT_03 任务卡全部机器验收语义 | unittest 正反例 + CLI 退出码/stdio + 追加 bytes/目录观测 | machine | RLT_03 | 等价覆盖 | 42 个 owned HC-ID 映射完整、有效变异转红且真实树全绿；正式合同无冲突 | 54 tests OK；代码轮 1/2、需求方向、lessons、一致性五路均 `APPROVE`；E-071 唯一 P1 已由 E-074 闭合，终审 E-075 确认 `APPROVE`。R29 规划事件阻塞已闭合：`design/01` fresh `RLT-A-05`、DevPlan fresh `RLT-B-05`、七条旧事件转历史索引、当前变化集证据落 `design/evidence/06-交叉审核记录-RLT03阶段合同补充.md`（E-083；当前源版体检 0 失败、仅 R14 已知警告）。Astra pane 终审 `VERDICT=REVISE`（P0=0 / P1=0 / P2=2 / P3=0），两项 P2 已修正（E-084），并经原 Astra pane 定向复审 `VERDICT=APPROVE`（P0=0 / P1=0 / P2=0 / P3=0）闭合（E-085）。**完整收口体检已复跑并如实登记（E-086：54 tests OK、`git diff --check` 0、两 Python SHA256 未变、dh-check 0 失败/1 警告、`dh gate` 唯一拦点=尚无 verify、R29 当前源 `issues=[]`）**；**releasePacket 展示版本尚未出新版**，本行结果在新展示版本发出并由用户明文确认前不可用于确认 | Linux worktree / Python 3 | design/01 验收表 + 五路独立 review | RLT_05/RLT_07/RLT_09 明确不实现 | v1 | test-runner + independent-reviewers | user-authorized-local |
+| RLT_03 任务卡全部机器验收语义 | unittest 正反例 + CLI 退出码/stdio + 追加 bytes/目录观测 | machine | RLT_03 | 等价覆盖 | 42 个 owned HC-ID 映射完整、有效变异转红且真实树全绿；正式合同无冲突 | 54 tests OK；代码轮 1/2、需求方向、lessons、一致性五路均 `APPROVE`；E-071 唯一 P1 已由 E-074 闭合，终审 E-075 确认 `APPROVE`。R29 规划事件阻塞已闭合：`design/01` fresh `RLT-A-05`、DevPlan fresh `RLT-B-05`、七条旧事件转历史索引、当前变化集证据落 `design/evidence/06-交叉审核记录-RLT03阶段合同补充.md`（E-083）。Astra 两项 P2 已修正（E-084），并经原 pane 定向复审 `VERDICT=APPROVE`（P0/P1/P2/P3=0，E-085）闭合。完整收口体检与新版 releasePacket 已完成并获用户确认（E-086～E-088）；PR #4 三项硬门 CI 成功，relay-core Node 观测项取消且未称成功；实际 verify SHA=`8b67bbdb6f6dfc7881350804edd013d921e8cc2b`，`release_mode=full` | Linux worktree / Python 3 | design/01 验收表 + 五路独立 review | RLT_05/RLT_07/RLT_09 明确不实现 | v1 | test-runner + independent-reviewers | user-authorized-local |
 
 **材料齐没齐**：[x]
 
-> **当前口径（2026-09-10，E-081 → E-088）**：R29 规划事件闸已**闭合**——`design/01` 留 fresh `RLT-A-05`、DevPlan 留 fresh `RLT-B-05`，七条旧事件转普通历史索引，当前变化集证据落在新建 `design/evidence/06-交叉审核记录-RLT03阶段合同补充.md` 的四个显式锚点段；用户明确授权本精确治理包。**Astra pane 对该治理包的终审为 `VERDICT=REVISE`（P0=0 / P1=0 / P2=2 / P3=0）**，两项 P2 已按终审修正（E-084）：P2-1 把 evidence/06 的第三人称句改为「主控派单中的授权转述（非用户逐字原话）」并与用户直接原话分开登记；P2-2 把 E-072 的覆盖收窄为其报告自身记录，批次/owner/任务索引的「与 HEAD 一致」核验改归本轮 Astra 终审。**两项 P2 已由原 Astra pane 定向复审判 `VERDICT=APPROVE`（P0=0 / P1=0 / P2=0 / P3=0）闭合**（E-085）。完整收口体检 E-086 通过，随后新版 releasePacket `RLT_03-E10-20260910-02` 已于 E-087 展示；用户先回复“认可”，并在收到远端基线、RLT_02 WIP 与尾巴分流的精确执行包后明文回复“授权”（E-088）。**E11 已成立，风险账=0、人判结果项=0；当前进入已授权的 Issue/PR、CI、squash verify 与机械回填执行段。**
+> **当前口径（2026-09-10，收口回填）**：R29 规划事件闸及 Astra 两项 P2 已闭合；新版 releasePacket `RLT_03-E10-20260910-02` 已展示并获用户“认可”及后续“授权”。PR #4 三项硬门 CI 成功，relay-core Node 仅为 `continue-on-error` 观测项且因 `npm test` 无终态被取消；实际 squash verify SHA=`8b67bbdb6f6dfc7881350804edd013d921e8cc2b`。**RLT_03 已完成，`release_mode=full`，风险账=0、人判结果项=0；RLT_05 保持未开始。**
 
 **as-built 更新了没**：[x]
 
-→ 当前状态：**E11 已确认，远端收口包执行中；RLT_03 尚未合并/verify/销户，RLT_05 仍不开放**
+→ 当前状态：**已完成；PR #4 squash verify=`8b67bbdb6f6dfc7881350804edd013d921e8cc2b`，release_mode=full；RLT_05 未开启**
 
 ---
 
