@@ -5,10 +5,10 @@
 <!-- dh:planning-event:v1 id=RLT-B-02 stage=B-adjust artifact=dev_plan/P1-RelayLight-开发方案.md review=../design/evidence/03-交叉审核记录-RelayLight仓内skill单源.md#adjust-rlt-b02 understanding=../design/evidence/03-交叉审核记录-RelayLight仓内skill单源.md#understanding-rlt-b02 -->
 <!-- dh:planning-event:v1 id=RLT-B-03 stage=B-adjust artifact=dev_plan/P1-RelayLight-开发方案.md review=../design/evidence/04-交叉审核记录-RelayLight-B03颗粒度优化.md#review-rlt-b03 understanding=../design/evidence/04-交叉审核记录-RelayLight-B03颗粒度优化.md#understanding-rlt-b03 -->
 <!-- dh:status
-汇报: RLT-B-03 颗粒度优化已确认落盘（20→17 卡）；第 1 批 RLT_02 待复核收口
-现状: RLT-B-03 颗粒度优化已于 2026-09-10 确认落盘：17 卡 5 批覆盖 121 条验收；RLT_02 已施工，待 light 两路复核收口
-进行到: P1 ▸ 第 1 批 ▸ RLT_02 复核待收口
-下一步: RLT_02 完成教训与一致性两路复核后收口，解锁 RLT_03
+汇报: RLT_02 已经用户口头确认收口；RLT_03 已开工建树，待 Terra High 施工
+现状: RLT-B-03 颗粒度优化已于 2026-09-10 确认落盘；RLT_02 light 两路复核和用户口头确认均已闭合；RLT_03 工作区与任务树已启动
+进行到: P1 ▸ 第 1 批 ▸ RLT_03 施工
+下一步: Terra High 按 RLT_03 task_plan 分批 TDD 施工，Opus 按 heavy Recipe 完成独立复核
 看什么: design/01-RelayLight-产品设计与验收.md + 本文件
 阻塞: 无
 -->
@@ -82,8 +82,8 @@
 | 任务 ID | 一句话 | 档位（轻/标准） | 状态 | 批次 | 依赖 | 工作区 | 验收时间 / verify SHA | 备注 |
 |---|---|---|---|---|---|---|---|---|
 | RLT_01 | 建立仓内 skill 单源与全量同步安装器 | 标准 | 未开始 | 1 | — | — | — | 不写真实用户目录 |
-| RLT_02 | 对照 relay-light 与现役 Runner 四类核心语义 | 轻 | 进行中 | 1 | — | [workspace/RLT_02](../workspace/RLT_02/) | — | 单独一致性卡，只读现役实现 |
-| RLT_03 | 计划解析/lint 与纯追加账本/状态机 | 标准 | 未开始 | 1 | RLT_02 | — | — | heavy；合并原 03/04 |
+| RLT_02 | 对照 relay-light 与现役 Runner 四类核心语义 | 轻 | 已完成 | 1 | — | [workspace/RLT_02](../workspace/RLT_02/) | 2026-09-10 / light 口头确认 | 单独一致性卡，只读现役实现 |
+| RLT_03 | 计划解析/lint 与纯追加账本/状态机 | 标准 | 进行中 | 1 | RLT_02 | [workspace/RLT_03](../workspace/RLT_03/) | — | heavy；合并原 03/04 |
 | RLT_05 | status/生命周期与配置/Recipe/止损 | 标准 | 未开始 | 1 | RLT_03 | — | — | heavy；合并原 05/06，含两 toml |
 | RLT_07 | 编写仓内 skill、adapter 与五阶段模板 | 标准 | 未开始 | 1 | RLT_01、RLT_02、RLT_05 | — | — | — |
 | RLT_08 | 接入 AGENTS 判定、协议索引与双模块身份 | 标准 | 未开始 | 1 | RLT_07 | — | — | 显式登记有意绕过 B-adjust |

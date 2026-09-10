@@ -27,6 +27,10 @@
 | 2026-09-09 | 第 4 步禁改路径自查。 | `git diff --stat -- tools/runner tools/host tools/contracts`；原样 stdout 见紧随本表的专节（为空）。 |
 | 2026-09-09 | 第 4 步禁改路径自查。 | `git diff --stat -- relay-core docs/modules/dh-relay`；原样 stdout 见紧随本表的专节（为空）。 |
 | 2026-09-09 | 工作区与允许路径核对。 | `git status --short` 显示本棒的 `docs/modules/relay-light/as-built/现役Runner一致性对照.md`（新增）和本卡 `task.md`（修改）；另有预存未跟踪 `docs/modules/relay-light/design/drafts/A02-仓内skill单源-增补候选.md`，未读取、未改动、非本棒产物。 |
+| 2026-09-10 | 窄返工：按教训/一致性复核闭合范围、枚举和角色 findings。 | 对照明确本卡 comparator 仅为 C-005～C-007 的 `relay/v1` schema/runner/host；as-built 五份快照已作只读索引阅读，并列的 `relay-core` v2 不在本卡验收 comparator 内。归纳裁决重算为 30（节点 5、角色 12、事件 8、关闭 5），并新增 50 项覆盖矩阵：11 relay-light 角色、19 relay-light 事件、v1 node role 3、receipt role 3、proposal proposer 2、event kind 12，已映射 50、遗漏 0。新增 `replanner ↔ planner-amend` 独立裁决，完整枚举 event kind，并将 README 引用替为 host 活代码。 |
+| 2026-09-10 | 窄返工禁改路径与矩阵计数自查。 | `git diff --check -- docs/modules/relay-light/as-built/现役Runner一致性对照.md docs/modules/relay-light/workspace/RLT_02/task.md` 无输出；矩阵计数为 `11 + 3 + 3 + 2 + 19 + 12 = 50`。`git diff --stat -- tools/runner tools/host tools/contracts` 与 `git diff --stat -- relay-core docs/modules/dh-relay` 原样均为空；既有 relay-light 设计/DevPlan WIP 未触碰。 |
+| 2026-09-10 | light Recipe 两路复核收敛。 | 教训初审 LES-01/02/03 经返工闭合，复验新增 LES-04 经单点修正后再审 P0/P1/P2/P3=0；一致性初审 P1×1/P2×2 经返工复验全部闭合、P0/P1/P2/P3=0。完整登记见 `review.md`。 |
+| 2026-09-10 | 用户口头确认收口，解锁 RLT_03。 | 对话明文“relay-lite 开始开发”；DevPlan 回填 RLT_02 已完成、RLT_03 进行中。 |
 
 ### 第 4 步禁改路径命令与原样输出
 
@@ -49,8 +53,8 @@ stdout（原样为空）：
 ## 验收
 
 - AI 自评：
-  1. 完成条件 1 已达成：对照文档按节点、角色、事件、关闭四类逐项给出二选一裁决，无待定；证据为进度表第 1 行（29 条：有意差异 29、遗漏 0）。
-  2. 完成条件 2 已达成：`tools/runner/`、`tools/host/`、`tools/contracts/` 的 `git diff --stat` 为空；额外核对 `relay-core/` 与 `docs/modules/dh-relay/` 亦为空；证据为进度表第 2、3 行及紧随其后的原样输出。状态核对见第 4 行，预存草稿未触碰。
+  1. 完成条件 1 已达成：对照文档按节点、角色、事件、关闭四类给出 30 个二选一裁决，无待定；覆盖矩阵逐项消费 11 个 relay-light 角色、19 个事件，以及 v1 三套角色枚举和完整 12 个 event kind，50/50 已映射、遗漏 0。证据为 2026-09-10 窄返工行及对照 §5。
+  2. 完成条件 2 已达成：`tools/runner/`、`tools/host/`、`tools/contracts/` 的 `git diff --stat` 为空；额外核对 `relay-core/` 与 `docs/modules/dh-relay/` 亦为空。证据为 2026-09-10 禁改路径自查行及紧随其后的原样输出；既有 relay-light 设计/DevPlan WIP 未触碰。
 - 关闭方式：AI 自评 + 用户口头确认即可；做完回 DevPlan 任务表销户。
 - 复核（`light` Recipe）：教训 + 一致性两路，不要求单测。
 
