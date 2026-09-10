@@ -1,14 +1,23 @@
 # P1-RelayLight 开发方案（**正式开发方案 · 更新至 2026-09-10**）
 
 <!-- dh:plan-type: 开发 -->
-<!-- dh:planning-event:v1 id=RLT-B-01 stage=B-new artifact=dev_plan/P1-RelayLight-开发方案.md review=../design/evidence/02-交叉审核记录-RelayLight-B拆计划.md#review-rlt-b01 understanding=../design/evidence/02-交叉审核记录-RelayLight-B拆计划.md#understanding-rlt-b01 -->
-<!-- dh:planning-event:v1 id=RLT-B-02 stage=B-adjust artifact=dev_plan/P1-RelayLight-开发方案.md review=../design/evidence/03-交叉审核记录-RelayLight仓内skill单源.md#adjust-rlt-b02 understanding=../design/evidence/03-交叉审核记录-RelayLight仓内skill单源.md#understanding-rlt-b02 -->
-<!-- dh:planning-event:v1 id=RLT-B-03 stage=B-adjust artifact=dev_plan/P1-RelayLight-开发方案.md review=../design/evidence/04-交叉审核记录-RelayLight-B03颗粒度优化.md#review-rlt-b03 understanding=../design/evidence/04-交叉审核记录-RelayLight-B03颗粒度优化.md#understanding-rlt-b03 -->
+<!-- dh:planning-event:v1 id=RLT-B-05 stage=B-adjust artifact=dev_plan/P1-RelayLight-开发方案.md review=../design/evidence/06-交叉审核记录-RLT03阶段合同补充.md#review-rlt-b05 understanding=../design/evidence/06-交叉审核记录-RLT03阶段合同补充.md#understanding-rlt-b05 -->
+
+> **历史规划事件索引（B；非活动声明，仅作追溯）**——早年四条事件的原始可解析 `planning-event` 声明注释已按 `RLT-B-05` 事件转为本索引；出处、含义与证据路径保持原值，未删除、未改写，Git 历史中仍可还原。**活动声明只剩上面一条 `RLT-B-05` 与 design/01 的 `RLT-A-05`。本次不改变任务状态、依赖、批次划分与 allowed-paths。**
+>
+> | 事件 | stage | 证据（交叉审核记录） | 处理 |
+> |---|---|---|---|
+> | `RLT-B-01` | B-new | `../design/evidence/02-交叉审核记录-RelayLight-B拆计划.md#review-rlt-b01` / `#understanding-rlt-b01` | 转历史索引 |
+> | `RLT-B-02` | B-adjust | `../design/evidence/03-交叉审核记录-RelayLight仓内skill单源.md#adjust-rlt-b02` / `#understanding-rlt-b02` | 转历史索引 |
+> | `RLT-B-03` | B-adjust | `../design/evidence/04-交叉审核记录-RelayLight-B03颗粒度优化.md#review-rlt-b03` / `#understanding-rlt-b03` | 转历史索引 |
+> | `RLT-B-04` | B-adjust | `../design/evidence/05-交叉审核记录-RLT03与RLT05验收边界.md#review-rlt-b04` / `#understanding-rlt-b04` | 转历史索引 |
+>
+> 七条 A/B 旧事件（含 design 侧 `RLT-A-02`~`RLT-A-04`）的完整字段、替换缘由与本次确认来源见 [`../design/evidence/06-交叉审核记录-RLT03阶段合同补充.md`](../design/evidence/06-交叉审核记录-RLT03阶段合同补充.md)。
 <!-- dh:status
-汇报: RLT_02 已经用户口头确认收口；RLT_03 已开工建树，待 Terra High 施工
-现状: RLT-B-03 颗粒度优化已于 2026-09-10 确认落盘；RLT_02 light 两路复核和用户口头确认均已闭合；RLT_03 工作区与任务树已启动
+汇报: RLT-A-04 / RLT-B-04 已确认生效；RLT_03 进入新验收 ID 窄返工
+现状: 正式设计与 DevPlan 已对齐 122 条活动验收；RLT_03 第 4 批原规划阻塞解除，需同步规则 ID、注释、测试与验收矩阵
 进行到: P1 ▸ 第 1 批 ▸ RLT_03 施工
-下一步: Terra High 按 RLT_03 task_plan 分批 TDD 施工，Opus 按 heavy Recipe 完成独立复核
+下一步: OMP GLM-5.3-Flash 完成 RLT_03 施工第 4 批窄返工，再进入独立复核
 看什么: design/01-RelayLight-产品设计与验收.md + 本文件
 阻塞: 无
 -->
@@ -29,12 +38,13 @@
 - **用户确认**：**2026-09-09 用户明文「确认」**，B 计划与 A′ 增补同批生效。
 - **RLT-B-02 调整**：2026-09-10 用户确认仓内 skill 单源 v6；最终窄复审 P0/P1/P2 均为 0。新增 RLT_20，验收 119→121，卡数 19→20（RLT_20 后经 RLT-B-03 并入 RLT_12 首步）；证据见 [`design/evidence/03-交叉审核记录-RelayLight仓内skill单源.md`](../design/evidence/03-交叉审核记录-RelayLight仓内skill单源.md)。
 - **RLT-B-03 调整**：2026-09-10 用户确认颗粒度优化 v2.1；fresh 审核 P1=4/P2=1 → 主会话裁决 → v2 → 定向复审 P1=1 → v2.1；卡数 20→17、复核路径 76→63、验收 121 不变；证据见 [`design/evidence/04-交叉审核记录-RelayLight-B03颗粒度优化.md`](../design/evidence/04-交叉审核记录-RelayLight-B03颗粒度优化.md)。
+- **RLT-B-04 调整**：2026-09-10 用户明文「你来写入」；fresh Opus 三轮复核最终 `APPROVE`（P0=0、P1=0），把 parser/lint、完整 status、五阶段模板的验收 owner 分别对齐 RLT_03/RLT_05/RLT_07，活动总账 121→122；证据见 [`design/evidence/05-交叉审核记录-RLT03与RLT05验收边界.md`](../design/evidence/05-交叉审核记录-RLT03与RLT05验收边界.md)。
 
 ## 1. 概述
 
 - **交付什么**：Python 标准库单文件账本程序 `relay_log.py`（前四批 `add/status/lint`，第 5 批补 `watch`）、仓内单源的 relay-light skill 五件与两侧全量同步安装器、五阶段模板与 dev-harness 映射、仓内协议与测试登记、Windows/ThinkPad 四组合实跑及完整人验证据；`watch` 设计已冻结，**第 5 批必做**，独立成批以免前四批被它拖住。
 - **不含什么**：不改 dev-harness；不迁移或替换现役 dh-relay Runner/Ticket/Receipt；不做身份物理校验、停滞检测、锁、无 Herdr 退路、E11/E12/E13 接力；**前四批不依赖 `watch`**，各自可先验收，但 `watch` 本身不是可选项。
-- **承接设计**：唯一业务输入为 [`design/01-RelayLight-产品设计与验收.md`](../design/01-RelayLight-产品设计与验收.md)，承接其 106 条 `HC-RL-A*` 与 15 条 `HC-RL-H*`，共 121 条；README、`design/drafts/`、`evidence/` 只用于入口或形成史，不作业务输入。
+- **承接设计**：唯一业务输入为 [`design/01-RelayLight-产品设计与验收.md`](../design/01-RelayLight-产品设计与验收.md)，承接其 107 条 `HC-RL-A*` 与 15 条 `HC-RL-H*`，共 122 条；README、`design/drafts/`、`evidence/` 只用于入口或形成史，不作业务输入。
 - **实施策略一句话**：先用只读一致性对照钉住与现役 Runner 的有意差异，再形成可跑的最小账本与 skill，在第一批跑出 Windows Claude 真计划闭环，随后补主控互换、异常/改计划、Linux，第 5 批补 `watch`。
 - **任务前缀 / 模块 slug**：`RLT_`（从 `RLT_01` 起，全模块唯一）/ `relay-light`（verify scope=`relay-light`）。
 - **落点约束**：skill 五文件唯一源落 `tools/relay-light/skill/`；两个用户级目录只是安装器 `--all` 产出的派生副本，不得就地编辑或反向同步。运行时仍读当前 CLI 的用户级目录。
@@ -136,24 +146,23 @@
 #### RLT_03 — relay_plan 解析/lint 与纯追加账本/状态机
 
 - **目标**：实现 marker、固定双表、节点/agent/阶段实例/依赖/trigger/close 的 fail-closed 解析与 lint，使合法计划可机械读、非法计划带验收编号拒绝；并实现 `add` 的七字段 JSONL 纯追加、事件白名单、attempt 分配、agent 状态机、触发前置、退出码与统一错误输出。
-- **非目标**：不实现模板生成器；不写死下一阶段顺序；不加锁、不做临时文件替换、不做写入者身份真伪校验、不做产出质量判断。
+- **非目标**：不实现模板生成器；不写死下一阶段顺序；不加锁、不做临时文件替换、不做写入者身份真伪校验、不做产出质量判断；**不提前实现 RLT_09 的运行中改计划与 A120 的表尾追加放宽**（本卡只交付去 superseded 后的严格基础 lint）。
 - **验收口径**：
   - **解析/lint 组**：
   - **机器证**｜来源：design/01 + `HC-RL-A46`｜节点号含 superseded 在内全计划唯一。
   - **机器证**｜来源：design/01 + `HC-RL-A47`｜close 仅空或 `agent:<同节点已存在名字>`。
   - **机器证**｜来源：design/01 + `HC-RL-A48`｜depends_on 存在且无环。
   - **机器证**｜来源：design/01 + `HC-RL-A72`｜依赖 superseded 节点必拒。
-  - **机器证**｜来源：design/01 + `HC-RL-A64`｜status/lint 忽略 superseded 行。
-  - **机器证**｜来源：design/01 + `HC-RL-A73`｜superseded 不算 closed/pending。
+  - **机器证**｜来源：design/01 + `HC-RL-A128`｜**本卡核心**为 parser/lint 派生活跃计划时忽略 superseded（含/不含的结构与退出码对照），并逐项证明 A46 / A72 / A75 三个本卡例外；A120 仅作跨卡兼容引用，其新增表尾放宽与完整「两正四反」集成取证归 RLT_09，不作为本卡已实现能力；四项约束清单不增不减。
   - **机器证**｜来源：design/01 + `HC-RL-A75`｜空节点或 agent 全 superseded 必拒。
-  - **机器证**｜来源：design/01 + `HC-RL-A86`｜阶段枚举、分组连续与 stages 顺序正确。
+  - **机器证**｜来源：design/01 + `HC-RL-A129`｜stage 枚举与分组连续 lint 正确：基础边界**先忽略 superseded 行**——被 superseded 行隔开的重现当前即通过，被其他**活跃** stage 隔断的重现按基础规则拒绝。合法同 stage 表尾追加的放宽与完整运行中追加的终态承诺保留，由 RLT_09 / A120 实现取证（见 design §3.5、§4.3 阶段性交付注记）；本卡的临时拒绝不代表最终产品禁止运行中追加。
   - **机器证**｜来源：design/01 + `HC-RL-A104`｜stage_id 格式、card 前缀及 k 可解析。
   - **机器证**｜来源：design/01 + `HC-RL-A109`｜同卡阶段串行、跨卡并行。
   - **机器证**｜来源：design/01 + `HC-RL-A87`｜card 属于 marker cards，支持跨卡。
-  - **机器证**｜来源：design/01 + `HC-RL-A88`｜禁止 kickoff/verify-signoff，映射不含 E11~E13。
+  - **机器证**｜来源：design/01 + `HC-RL-A126`｜lint 拒绝 kickoff/verify-signoff node type。
   - **机器证**｜来源：design/01 + `HC-RL-A24`｜固定双表、禁竖线、agent.node/重名/默认依赖合同成立。
-  - **机器证**｜来源：design/01 + `HC-RL-A18`｜marker 五字段齐全，plan_loaded 带版本。
-  - **机器证**｜来源：design/01 + `HC-RL-A90`｜decision_mode 仅 auto/consult 且 status 可读。
+  - **机器证**｜来源：design/01 + `HC-RL-A18`｜marker 四个必需字段齐全，decision_mode 缺省为 auto，plan_loaded 带版本。
+  - **机器证**｜来源：design/01 + `HC-RL-A130`｜decision_mode parser/default 与 lint 规则编号正确。
   - **机器证**｜来源：design/01 + `HC-RL-A35`｜trigger 三态及引用校验成立。
   - **机器证**｜来源：design/01 + `HC-RL-A71`｜on:done 不能跨节点引用。
   - **账本/状态机组**：
@@ -164,7 +173,7 @@
   - **机器证**｜来源：design/01 + `HC-RL-A2`｜19 个事件词 fail closed。
   - **机器证**｜来源：design/01 + `HC-RL-A41`｜枚举严格区分大小写。
   - **机器证**｜来源：design/01 + `HC-RL-A42`｜无 lower/casefold 枚举归一。
-  - **机器证**｜来源：design/01 + `HC-RL-A5`｜plan 缺失/坏计划三命令退出 3。
+  - **机器证**｜来源：design/01 + `HC-RL-A5`｜**解析级**失败（缺文件 / 缺 marker / 缺表头或表结构不合法）三命令（add / status / lint）退 3；计划**已解析成功但违反 lint 规则**时 lint 退 2、add / status 退 3，且拒绝路径账本不增行；节点号重复改由 A46 负例取证；add 自身入参（node/agent/event/时序）非法仍退 2。
   - **机器证**｜来源：design/01 + `HC-RL-A45`｜坏账本 status 退出 4。
   - **机器证**｜来源：design/01 + `HC-RL-A84`｜空账本与首行 plan_loaded 语义正确。
   - **机器证**｜来源：design/01 + `HC-RL-A55`｜每行固定七字段、agent 格式正确。
@@ -172,7 +181,7 @@
   - **机器证**｜来源：design/01 + `HC-RL-A49`｜attempt 每节点从 1 起、跨节点不累计。
   - **机器证**｜来源：design/01 + `HC-RL-A58`｜attempt 跳号/重号拒绝。
   - **机器证**｜来源：design/01 + `HC-RL-A51`｜账本不含 pane ID。
-  - **机器证**｜来源：design/01 + `HC-RL-A59`｜node/agent/event 入参与三类豁免正确。
+  - **机器证**｜来源：design/01 + `HC-RL-A59`｜node/agent/event 入参与**四类**豁免正确，四成员并列 `orchestrator#` / `monitor#` / `planner-amend#` / `strategist#`；豁免**仅**限「agent 名属于该节点 agent 表」这一条，node 活跃且非 superseded、event 词表、写者一致、状态机与 attempt、各前置闸一律照常校验。
   - **机器证**｜来源：design/01 + `HC-RL-A60`｜agent 状态机与终态封口正确。
   - **机器证**｜来源：design/01 + `HC-RL-A68`｜node_start/node_close/monitor_restart 时序正确。
   - **机器证**｜来源：design/01 + `HC-RL-A69`｜控制事件分类与升级链 agent 归属正确。
@@ -212,13 +221,14 @@
   - **机器证**｜来源：design/01 + `HC-RL-A65`｜未触发 agent 不算悬空。
   - **机器证**｜来源：design/01 + `HC-RL-A61`｜当前节点与 pending/ready/open 派生正确。
   - **机器证**｜来源：design/01 + `HC-RL-A81`｜closed 只读 node_close，closable 独立计算。
-  - **机器证**｜来源：design/01 + `HC-RL-A62`｜status JSON 顶层字段按 §3.5 冻结键名齐全（`current_stage`/`last_stage_result`/`suggested_action`/`monitor_relaunch_count`/`pending_nodes`/`superseded_ignored`/`open_stages`）且空值语义正确、排序满足合同。
+  - **机器证**｜来源：design/01 + `HC-RL-A62`｜status JSON schema、排序与计数结构满足 §3.5；其中 `plan` 精确键含 `decision_mode`，本条不重复 A73 的 superseded 差分证明。
+  - **机器证**｜来源：design/01 + `HC-RL-A73`｜superseded 不产生状态、不进三列表；活跃 status 差分等价，唯一允许 `superseded_ignored` 不同。
   - **配置/Recipe/止损组**：
   - **机器证**｜来源：design/01 + `HC-RL-A107`｜attempt 与 X 轮数独立触发 strategist。
   - **机器证**｜来源：design/01 + `HC-RL-A116`｜recipe 三值及实际 reviewer 集合严格匹配配置。
   - **机器证**｜来源：design/01 + `HC-RL-A117`｜Recipe 只来自任务类型，缺失时停下问用户。
   - **机器证**｜来源：design/01 + `HC-RL-A91`｜roles.toml 全角色可加载，模板无硬编码模型。
-  - **机器证**｜来源：design/01 + `HC-RL-A92`｜映射承载阶段、Recipe、limits、on_exceed 四类内容。
+  - **机器证**｜来源：design/01 + `HC-RL-A92`｜映射承载阶段、Recipe、limits、on_exceed 四类内容，且 E11/E12/E13 不出现在任何阶段。
   - **机器证**｜来源：design/01 + `HC-RL-A115`｜heavy/normal/light reviewer 集合对齐 dev-harness 节点表。
   - **机器证**｜来源：design/01 + `HC-RL-A99`｜改 `limits.rework_max_rounds` 不改 relay_log 即改变规划出的 X 节点数；模板生成走 lint/skill 内部实现，对外子命令仍只有 add/status/lint。
   - **机器证**｜来源：design/01 + `HC-RL-A108`｜checker 默认有、删除后仍可 lint/status。
@@ -240,6 +250,7 @@
 - **非目标**：不改 dev-harness；不让流程文档硬编码模型；不实现 `watch`；不把运行计划放进任务工作区。
 - **验收口径**：
   - **机器证**｜来源：design/01 + `HC-RL-A12`｜skill 五件与核心小节齐全且落点正确。
+  - **机器证**｜来源：design/01 + `HC-RL-A127`｜五阶段模板不生成 kickoff 或 verify 签字节点。
   - **机器证**｜来源：design/01 + `HC-RL-A19`｜Linux 收口前直跑测试并原样记 progress 的硬规则存在。
   - **机器证**｜来源：design/01 + `HC-RL-A21`｜两 adapter/模板均写 wait 返回必须有接收者及三种方式。
   - **机器证**｜来源：design/01 + `HC-RL-A26`｜双平台命令、claude kind 起法与 stalled 处置冻结。
@@ -282,11 +293,11 @@
 
 #### RLT_09 — 运行中追加改计划与白名单守门
 
-- **目标**：实现 `plan_amend`、表尾追加/旧行 superseded、编排重读、stage_result amend 摘要，以及 planner-amend 输入四件/一次改完/lint 三次/禁区整份不落笔的提示词与可执行白名单校验。
+- **目标**：实现 `plan_amend`、表尾追加/旧行 superseded、编排重读、`stage_result` amend 摘要，以及 planner-amend 输入四件/一次改完/lint 三次/禁区整份不落笔的提示词与可执行白名单校验。**A120 的两项连续性放宽（同 stage 表尾追加、被 superseded 行隔开）由本卡交付**；RLT_03 交付的是去 superseded 后的**严格基础 lint**，本卡负责覆盖其临时限制。
 - **非目标**：不原地复用节点号；不允许 planner-amend 改 `design/`；不把白名单内部分先落笔；不借此改变正式验收 ID。
 - **验收口径**：
   - **机器证**｜来源：design/01 + `HC-RL-A119`｜plan_amend 写者、note、可重复与不进状态机正确。
-  - **机器证**｜来源：design/01 + `HC-RL-A120`｜两项连续性放宽通过，四项硬约束仍拒绝。
+  - **机器证**｜来源：design/01 + `HC-RL-A120`｜两项连续性放宽通过（同 stage 表尾追加、被 superseded 行隔开），四项硬约束仍拒绝并报有效编号。**承接 RLT_03 的交接断言**：①「被 superseded 行隔开」始终通过；②「其余条件合法的同 stage 表尾追加」在 RLT_09 前后按正式版本记录**拒绝→通过**；③四项硬约束全部保持拒绝及有效编号；④既有 A46 / A72 / A75 / 枚举与依赖回归保持；⑤运行中追加能力最终由 RLT_16 / RLT_19 实跑证明，交付方式仍按 §4.5——**当前阶段实例内**追加由当班监工直接接手、**后续阶段**由编排开到时按常规处理。取证须另造**满足全部其他规则、只有表尾位置差异**的合法追加正例；既有 `C1 → R1 → C2` 多违规 fixture 因 `C2.depends_on=R1` 同时违反硬约束，**不承诺原样翻绿**，必要时仅变更其实际负责的规则断言。
   - **机器证**｜来源：design/01 + `HC-RL-A121`｜仅追加计划后 status 重读出新阶段与非固定顺序。
   - **机器证**｜来源：design/01 + `HC-RL-A122`｜三类白名单、design 禁区与全有全无守门可执行。
   - **机器证**｜来源：design/01 + `HC-RL-A123`｜有/无 plan_amend 时 stage_result 摘要格式正确。
@@ -386,7 +397,7 @@
   - `docs/modules/relay-light/workspace/RLT_14/**`
 - **档位**：标准。
 - **任务类型**：常规 <!-- dh:task-type:v1 task=RLT_14 type=normal -->
-- **实施提示**：默认 auto 那一路的 marker **不写 `decision_mode=`**，用以实证「未写即 auto」（`HC-RL-A18`、`HC-RL-A90`）；consult 的用户决定必须是真实对话证据；auto 不得伪造 user_decision。
+- **实施提示**：默认 auto 那一路的 marker **不写 `decision_mode=`**，用以实证「未写即 auto」（`HC-RL-A18`、`HC-RL-A130`）；consult 的用户决定必须是真实对话证据；auto 不得伪造 user_decision。
 
 #### RLT_15 — 返工超限与 strategist 人闸实跑
 
@@ -533,19 +544,19 @@
 | HC-RL-A58 | RLT_03 | HC-RL-A59 | RLT_03 |
 | HC-RL-A60 | RLT_03 | HC-RL-A61 | RLT_05 |
 | HC-RL-A62 | RLT_05 | HC-RL-A63 | RLT_03 |
-| HC-RL-A64 | RLT_03 | HC-RL-A65 | RLT_05 |
+| HC-RL-A126 | RLT_03 | HC-RL-A65 | RLT_05 |
 | HC-RL-A66 | RLT_07 | HC-RL-A67 | RLT_07 |
 | HC-RL-A68 | RLT_03 | HC-RL-A69 | RLT_03 |
 | HC-RL-A70 | RLT_03 | HC-RL-A71 | RLT_03 |
-| HC-RL-A72 | RLT_03 | HC-RL-A73 | RLT_03 |
+| HC-RL-A72 | RLT_03 | HC-RL-A73 | RLT_05 |
 | HC-RL-A74 | RLT_03 | HC-RL-A75 | RLT_03 |
 | HC-RL-A77 | RLT_03 | HC-RL-A78 | RLT_03 |
 | HC-RL-A80 | RLT_10 | HC-RL-A81 | RLT_05 |
 | HC-RL-A82 | RLT_18 | HC-RL-A83 | RLT_18 |
 | HC-RL-A84 | RLT_03 | HC-RL-A85 | RLT_05 |
-| HC-RL-A86 | RLT_03 | HC-RL-A87 | RLT_03 |
-| HC-RL-A88 | RLT_03 | HC-RL-A89 | RLT_05 |
-| HC-RL-A90 | RLT_03 | HC-RL-A91 | RLT_05 |
+| HC-RL-A127 | RLT_07 | HC-RL-A87 | RLT_03 |
+| HC-RL-A128 | RLT_03 | HC-RL-A89 | RLT_05 |
+| HC-RL-A129 | RLT_03 | HC-RL-A91 | RLT_05 |
 | HC-RL-A92 | RLT_05 | HC-RL-A93 | RLT_05 |
 | HC-RL-A94 | RLT_10 | HC-RL-A95 | RLT_07 |
 | HC-RL-A96 | RLT_07 | HC-RL-A97 | RLT_05 |
@@ -563,6 +574,7 @@
 | HC-RL-A120 | RLT_09 | HC-RL-A121 | RLT_09 |
 | HC-RL-A122 | RLT_09 | HC-RL-A123 | RLT_09 |
 | HC-RL-A124 | RLT_01 | HC-RL-A125 | RLT_17 |
+| HC-RL-A130 | RLT_03 |  |  |
 | HC-RL-H1 | RLT_12 | HC-RL-H2 | RLT_13 |
 | HC-RL-H3 | RLT_17 | HC-RL-H4 | RLT_17 |
 | HC-RL-H5 | RLT_12 | HC-RL-H6 | RLT_14 |
@@ -572,7 +584,7 @@
 | HC-RL-H15 | RLT_15 | HC-RL-H16 | RLT_16 |
 | HC-RL-H17 | RLT_19 |  |  |
 
-> 退役 ID 不进入对照表、不复用。附录按活动 ID 排序；实际覆盖集合以正式输入 §11 的 106+15 条为准。
+> 退役 ID 不进入对照表、不复用。附录按活动 ID 排序；实际覆盖集合以正式输入 §11 的 107+15 条为准。
 
 ## 7. 正式输入回流与实施证据要求
 
@@ -602,13 +614,13 @@ A′ 增补的裁决过程见 [`design/evidence/01-交叉审核记录-RelayLight
 
 ### 8.1 覆盖关
 
-- 从正式输入 §11 机器解析得到活动验收 **106 条 AI + 15 条人验 = 121 条**。
-- 本文件任务卡与 §6 对照表均按活动 ID 建映射：**121 个唯一 ID、0 漏项、0 重复**；退役 ID 未纳入。全计划 **17 张卡**，首次安装安排已并入 RLT_12。
+- 从正式输入 §11 机器解析得到活动验收 **107 条 AI + 15 条人验 = 122 条**。
+- 本文件任务卡与 §6 对照表均按活动 ID 建映射：**122 个唯一 ID、0 漏项、0 重复**；退役 ID 未纳入。全计划 **17 张卡**，首次安装安排已并入 RLT_12。
 - §14 七个同步项全部落到 RLT_01/RLT_02/RLT_07/RLT_08/RLT_09/RLT_11/RLT_12/RLT_17，且第 4 项由 RLT_02 单独成卡。
 
 ### 8.2 颗粒度关
 
-- 每卡对应一个可一起实现、一起证明、一起签的验收单元：计划/lint 与账本写入状态机合并为 RLT_03，status 生命周期与配置 Recipe 合并为 RLT_05；skill 合同、治理入口、改计划、测试入口和各实跑场景仍不混签。
+- 每卡对应一个可一起实现、一起证明、一起签的验收单元：RLT_03 只签 parser/lint 与账本写入状态机，RLT_05 签完整 status 生命周期与配置 Recipe，RLT_07 签五阶段模板；A62/A73 不重复，治理入口、改计划、测试入口和各实跑场景仍不混签。
 - 大量断言集中在 RLT_03~RLT_07，是同一生产单元的合同矩阵，不再按单条断言碎卡；实跑人验按用户可一次判断的场景拆为 RLT_12~RLT_19，其中改计划按「卡内追加节点」（RLT_16）与「新增任务卡追加阶段」（RLT_19）分成两张，因为两者的验证动作、允许路径与用户判断点都不同。
 - 开工时持任务卡 + 唯一正式输入即可直接写 task_plan；本计划只写边界/验收/依赖，未写函数级动词顺序。
 
@@ -621,6 +633,6 @@ A′ 增补的裁决过程见 [`design/evidence/01-交叉审核记录-RelayLight
 ## 9. 计划完工
 
 - [ ] 17 张卡全部销户（RLT_20 号已并入 RLT_12），含第 5 批的 RLT_18（用户已裁决 watch 接着做）。
-- [ ] 前四批交付 103 条机器验收与 13 条人验；第 5 批 RLT_18 补齐 watch 的 3 条机器验收与 2 条人验，**总账 121 条全部有等价证据**。
+- [ ] 前四批交付 104 条机器验收与 13 条人验；第 5 批 RLT_18 补齐 watch 的 3 条机器验收与 2 条人验，**总账 122 条全部有等价证据**。
 - [ ] Windows/Linux × Claude Code/Codex 四组合证据齐全；用户完成全部 15 条人判，其中 watch 的 2 条在第 5 批完成。
 - [ ] `verify(relay-light):` 只能在用户查看证据并明确授权后提交；本方案确认不授权 verify、merge、push 或 deploy，各卡仍单独开工。
