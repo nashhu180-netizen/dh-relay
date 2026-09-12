@@ -3712,5 +3712,98 @@ class SkillTemplateTests(RelayCliTestCase):
         self.add_ok("resume", node="X1", agent="coder#1", note="引用 user_decision 继续")
 
 
+class SkillAdapterTests(unittest.TestCase):
+    """RLT_07 Batch 3 — HC-RL-A21/A26/A27/A136/A12 adapter 合同。"""
+
+    ADAPTER_SIDES = {
+        "adapter-claude-code.md": "~/.claude/skills/relay-light/",
+        "adapter-codex.md": "~/.codex/skills/relay-light/",
+    }
+
+    @classmethod
+    def _adapter_texts(cls) -> dict[str, str]:
+        return {
+            name: (SKILL_DIR / "references" / name).read_text(encoding="utf-8")
+            for name in cls.ADAPTER_SIDES
+        }
+
+    def test_a136_every_call_carries_side_config_dir(self) -> None:
+        """枚举两 adapter 全部 relay_log.py 调用（命令模板写作 <RELAY_LOG> 占位）：
+        每处显式带本侧 --config-dir；add/status/lint 三子命令各至少一次。"""
+        for name, side_dir in self.ADAPTER_SIDES.items():
+            text = self._adapter_texts()[name]
+            calls = [
+                ln
+                for ln in text.splitlines()
+                if "<RELAY_LOG>" in ln and "--plan" in ln
+            ]
+            with self.subTest(adapter=name):
+                self.assertTrue(calls, f"{name} has no relay_log.py invocations")
+                for line in calls:
+                    self.assertIn("--config-dir", line, line)
+                    self.assertIn(side_dir, line, line)
+                for sub in ("add", "status", "lint"):
+                    self.assertTrue(
+                        any(re.search(rf"<RELAY_LOG>\s+{sub}\b", ln) for ln in calls),
+                        f"{name} missing a {sub} invocation",
+                    )
+                # Windows python / Linux python3 双写法
+                self.assertIn("python3 <RELAY_LOG>", text)
+                self.assertIn("python <RELAY_LOG>", text)
+
+    def test_a21_wait_receiver_and_three_methods(self) -> None:
+        for name in self.ADAPTER_SIDES:
+            text = self._adapter_texts()[name]
+            with self.subTest(adapter=name):
+                self.assertIn("接收者", text)
+                self.assertIn("watch", text)
+                self.assertIn("前台", text)
+                self.assertIn("后台", text)
+                self.assertIn("--timeout", text)
+                # watch 未实现 → 前台 wait 回退必须写明
+                self.assertIn("未实现", text)
+                self.assertIn("空等", text)
+
+    def test_a26_command_forms_claude_kind_and_stalled(self) -> None:
+        for name in self.ADAPTER_SIDES:
+            text = self._adapter_texts()[name]
+            with self.subTest(adapter=name):
+                self.assertIn("bash -lc", text)
+                self.assertIn("pane run", text)
+                self.assertIn("rename", text)
+                self.assertIn("agent_prompt_stalled", text)
+                self.assertIn("send-keys", text)
+                self.assertIn("state_change_seq", text)
+                self.assertIn("agent_lost", text)
+
+    def test_a27_dispatch_template_credential_ban(self) -> None:
+        for name in self.ADAPTER_SIDES:
+            text = self._adapter_texts()[name]
+            with self.subTest(adapter=name):
+                self.assertIn("派活 prompt", text)
+                self.assertIn("凭据", text)
+                self.assertIn("永不", text)
+
+    def test_a12_five_files_filled_not_skeleton(self) -> None:
+        for rel in (
+            "SKILL.md",
+            "references/adapter-claude-code.md",
+            "references/adapter-codex.md",
+            "roles.toml",
+            "dh-mapping.toml",
+        ):
+            path = SKILL_DIR / rel
+            with self.subTest(file=rel):
+                self.assertTrue(path.is_file(), rel)
+                text = path.read_text(encoding="utf-8")
+                self.assertNotIn("骨架占位", text, rel)
+
+    def test_no_watch_subcommand_invoked(self) -> None:
+        for name in self.ADAPTER_SIDES:
+            text = self._adapter_texts()[name]
+            with self.subTest(adapter=name):
+                self.assertIsNone(re.search(r"relay_log\.py\s+watch", text))
+
+
 if __name__ == "__main__":
     unittest.main()
