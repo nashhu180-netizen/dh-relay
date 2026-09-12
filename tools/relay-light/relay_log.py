@@ -5,11 +5,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
+import tomllib
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import quote
 
 
 NODE_HEADER = ("node", "card", "stage", "type", "close", "depends_on", "note")
@@ -55,6 +58,35 @@ RELAUNCH_EXEMPT_AGENT_NAMES = frozenset(
 )
 DECISION_EVENTS = frozenset({"escalate", "decision", "user_decision", "resume"})
 DECISION_HELPER_NAMES = frozenset({"decider", "strategist"})
+DEFAULT_CONFIG_DIRS = (".claude/skills/relay-light", ".codex/skills/relay-light")
+CONFIG_PATH_SAFE = "/:~-._"
+RECIPE_TIERS = frozenset({"heavy", "normal", "light"})
+PROVENANCE_KEYS = ("config_dir", "plan")
+STAGE_RESULT_OUTCOMES = ("done", "blocked", "failed", "cancelled")
+SUGGESTED_ACTIONS = ("open_next_stage", "wait_user", "relaunch_monitor", "notify_user", "none")
+STAGE_ORDER = ("W", "C", "R", "X", "F")
+TERMINAL_RESULT_OUTCOMES = frozenset({"done", "cancelled"})
+# design §3.4/§3.5 + HC-RL-A85: each event has exactly one legal writer.
+CONTROL_WRITERS = {
+    "plan_loaded": "orchestrator",
+    "stage_start": "orchestrator",
+    "monitor_launch": "orchestrator",
+    "stage_close": "orchestrator",
+    "node_start": "monitor",
+    "node_close": "monitor",
+    "monitor_restart": "monitor",
+    "stage_result": "monitor",
+    "plan_amend": "monitor",
+}
+WRITER_BY_EVENT = {
+    **CONTROL_WRITERS,
+    **{event: "monitor" for event in AGENT_EVENTS},
+}
+# design §3.4: these four events are addressed by the note's `stage_id=`; every
+# other row belongs to the stage instance of its `node`.
+STAGE_NOTE_EVENTS = frozenset(
+    {"stage_start", "monitor_launch", "stage_result", "stage_close"}
+)
 
 
 class RelayError(Exception):
@@ -115,8 +147,177 @@ class Plan:
     agents: tuple[AgentSpec, ...]
 
 
+@dataclass(frozen=True)
+class RoleSpec:
+    name: str
+    model: str
+    launch: str
+
+
+@dataclass(frozen=True)
+class RelayLimits:
+    rework_max_rounds: int
+    attempt_max: int
+    on_exceed: str
+
+
+@dataclass(frozen=True)
+class RelayConfig:
+    """One resolved config directory with both TOML files loaded and frozen."""
+
+    config_dir: Path
+    roles: tuple[RoleSpec, ...]
+    stages: tuple[tuple[str, tuple[str, ...]], ...]
+    recipes: tuple[tuple[str, tuple[str, ...]], ...]
+    limits: RelayLimits
+
+    def recipe_reviewers(self, recipe: str) -> tuple[str, ...] | None:
+        for name, reviewers in self.recipes:
+            if name == recipe:
+                return reviewers
+        return None
+
+
 def _error(code: str, message: str, *, exit_code: int = 2) -> RelayError:
     return RelayError(exit_code, code, message)
+
+
+def _fail(exc: RelayError) -> int:
+    print(f"error: {exc.code} {exc.message}", file=sys.stderr)
+    return exc.exit_code
+
+
+def _expand_user(value: str, home: Path) -> Path:
+    if value == "~":
+        return home
+    if value.startswith("~/") or value.startswith("~\\"):
+        return home / value[2:]
+    return Path(value)
+
+
+def _normalized_dir(path: Path | str) -> Path:
+    return Path(os.path.abspath(os.path.normpath(str(path))))
+
+
+def resolve_config_dir(explicit: str | None, home: Path) -> Path:
+    """§6.2.1: an explicit dir wins; otherwise exactly one installed side must exist."""
+    if explicit:
+        directory = _normalized_dir(_expand_user(explicit, home))
+        if not directory.is_dir():
+            raise _error("HC-RL-A135", f"explicit config dir does not exist: {directory}", exit_code=3)
+        return directory
+    candidates = [_normalized_dir(home / relative) for relative in DEFAULT_CONFIG_DIRS]
+    installed = [candidate for candidate in candidates if candidate.is_dir()]
+    if len(installed) == 1:
+        return installed[0]
+    raise _error(
+        "HC-RL-A135",
+        f"found {len(installed)} installed relay-light config dirs out of "
+        f"{', '.join(str(candidate) for candidate in candidates)}; pass --config-dir",
+        exit_code=3,
+    )
+
+
+def _load_toml(path: Path, code: str) -> dict[str, object]:
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise _error(code, f"cannot read {path.name}: {exc}", exit_code=3) from exc
+    except UnicodeDecodeError as exc:
+        raise _error(code, f"invalid UTF-8 in {path.name}: {exc}", exit_code=3) from exc
+    try:
+        return tomllib.loads(text)
+    except tomllib.TOMLDecodeError as exc:
+        raise _error(code, f"invalid TOML in {path.name}: {exc}", exit_code=3) from exc
+
+
+def _string_tuple(value: object, code: str, what: str) -> tuple[str, ...]:
+    if not isinstance(value, list) or not value:
+        raise _error(code, f"{what} must be a non-empty list of strings", exit_code=3)
+    names = tuple(value)
+    if not all(isinstance(name, str) and name for name in names):
+        raise _error(code, f"{what} must be a non-empty list of strings", exit_code=3)
+    return names
+
+
+def _parse_roles(data: dict[str, object]) -> tuple[RoleSpec, ...]:
+    if not data:
+        raise _error("HC-RL-A131", "roles.toml must define at least one role", exit_code=3)
+    roles: list[RoleSpec] = []
+    for name, entry in data.items():
+        if not isinstance(entry, dict):
+            raise _error("HC-RL-A131", f"role {name} must be a table", exit_code=3)
+        model = entry.get("model")
+        launch = entry.get("launch")
+        if not isinstance(model, str) or not model or not isinstance(launch, str) or not launch:
+            raise _error("HC-RL-A131", f"role {name} must define non-empty model and launch", exit_code=3)
+        roles.append(RoleSpec(name=name, model=model, launch=launch))
+    return tuple(roles)
+
+
+def _parse_mapping(
+    data: dict[str, object],
+) -> tuple[tuple[tuple[str, tuple[str, ...]], ...], tuple[tuple[str, tuple[str, ...]], ...], RelayLimits]:
+    stages: list[tuple[str, tuple[str, ...]]] = []
+    recipes: list[tuple[str, tuple[str, ...]]] = []
+    for section, collected in (("stages", stages), ("recipes", recipes)):
+        table = data.get(section)
+        if not isinstance(table, dict) or not table:
+            raise _error("HC-RL-A92", f"dh-mapping.toml {section} must be a non-empty table", exit_code=3)
+        key = "dh_nodes" if section == "stages" else "reviewers"
+        for name, entry in table.items():
+            if not isinstance(entry, dict):
+                raise _error("HC-RL-A92", f"{section}.{name} must be a table", exit_code=3)
+            collected.append((name, _string_tuple(entry.get(key), "HC-RL-A92", f"{section}.{name}.{key}")))
+    limits = data.get("limits")
+    if not isinstance(limits, dict):
+        raise _error("HC-RL-A92", "dh-mapping.toml limits must be a table", exit_code=3)
+    counters: list[int] = []
+    for key in ("rework_max_rounds", "attempt_max"):
+        value = limits.get(key)
+        if not isinstance(value, int) or isinstance(value, bool):
+            raise _error("HC-RL-A92", f"limits.{key} must be an integer", exit_code=3)
+        counters.append(value)
+    on_exceed = limits.get("on_exceed")
+    if not isinstance(on_exceed, dict):
+        raise _error("HC-RL-A92", "dh-mapping.toml limits.on_exceed must be a table", exit_code=3)
+    action = on_exceed.get("action")
+    if not isinstance(action, str) or not action:
+        raise _error("HC-RL-A92", "limits.on_exceed.action must be a non-empty string", exit_code=3)
+    return tuple(stages), tuple(recipes), RelayLimits(counters[0], counters[1], action)
+
+
+def load_config(config_dir: str | Path) -> RelayConfig:
+    """HC-RL-A131/A92: load both TOML files from one resolved directory, fail closed."""
+    directory = Path(config_dir)
+    roles = _parse_roles(_load_toml(directory / "roles.toml", "HC-RL-A131"))
+    stages, recipes, limits = _parse_mapping(_load_toml(directory / "dh-mapping.toml", "HC-RL-A92"))
+    return RelayConfig(config_dir=directory, roles=roles, stages=stages, recipes=recipes, limits=limits)
+
+
+@dataclass(frozen=True)
+class XRound:
+    """One planned X rework round of a card: the coder fixes, the reviewer re-reviews (§6.1)."""
+
+    stage_id: str
+    card: str
+    k: int
+    dh_nodes: tuple[str, ...]
+
+
+def plan_x_rounds(card: str, config: RelayConfig) -> tuple[XRound, ...]:
+    """HC-RL-A99: round count comes only from the loaded limits.rework_max_rounds.
+
+    This stays the internal equivalent of template generation — it writes no files,
+    adds no subcommand, and shares its upper bound with the HC-RL-A97 lint rule.
+    """
+    dh_nodes = dict(config.stages).get("X")
+    if dh_nodes is None:
+        raise _error("HC-RL-A92", "dh-mapping.toml stages.X must define dh_nodes", exit_code=3)
+    return tuple(
+        XRound(stage_id=f"{card}:X#{k}", card=card, k=k, dh_nodes=dh_nodes)
+        for k in range(1, config.limits.rework_max_rounds + 1)
+    )
 
 
 def _parse_marker(line: str) -> tuple[str, dict[str, str]]:
@@ -284,7 +485,7 @@ def _assert_acyclic(dependencies: dict[str, tuple[str, ...]]) -> None:
                     stack.append((dependency, False))
 
 
-def lint_plan(path: str | Path) -> Plan:
+def lint_plan(path: str | Path, config: RelayConfig) -> Plan:
     """Return a parsed plan or raise a numbered fail-closed lint violation."""
     plan = parse_plan(path)
     if plan.decision_mode not in {"auto", "consult"}:
@@ -382,6 +583,19 @@ def lint_plan(path: str | Path) -> Plan:
         stages_by_card.setdefault(node.card, [])
         if node.stage_id not in stages_by_card[node.card]:
             stages_by_card[node.card].append(node.stage_id)
+    # HC-RL-A89: a dependency may only point at the same or an earlier stage of the card.
+    # Checked before A109 so a backward edge is never misreported as parallelism.
+    for node in active_nodes:
+        for dependency in node.depends_on:
+            target = active_by_name.get(dependency)
+            if target is None or target.card != node.card:
+                continue
+            if STAGE_ORDER.index(target.stage) > STAGE_ORDER.index(node.stage):
+                raise _error(
+                    "HC-RL-A89",
+                    f"line {node.line}: {node.node} depends on {dependency} of later stage "
+                    f"{target.stage_id}",
+                )
     for card, stages in stages_by_card.items():
         for index, stage_id in enumerate(stages[1:], start=1):
             earlier_stage = stages[index - 1]
@@ -389,26 +603,68 @@ def lint_plan(path: str | Path) -> Plan:
             earlier_nodes = {node.node for node in active_nodes if node.stage_id == earlier_stage}
             if not any(earlier_nodes & _ancestors(node.node, dependencies) for node in stage_nodes):
                 raise _error("HC-RL-A109", f"card {card} stage {stage_id} is parallel with {earlier_stage}")
+    # HC-RL-A97: an X round beyond limits.rework_max_rounds is rejected, exactly.
+    for node in active_nodes:
+        if node.stage == "X" and node.k > config.limits.rework_max_rounds:
+            raise _error(
+                "HC-RL-A97",
+                f"line {node.line}: {node.stage_id} exceeds "
+                f"rework_max_rounds={config.limits.rework_max_rounds}",
+            )
+    _lint_recipe_reviewers(plan, active_nodes, agents_by_node, config)
     return plan
 
 
-def _lint_command(plan_dir: str) -> int:
+def _lint_recipe_reviewers(
+    plan: Plan,
+    active_nodes: list[NodeSpec],
+    agents_by_node: dict[str, list[AgentSpec]],
+    config: RelayConfig,
+) -> None:
+    """HC-RL-A116: the marker recipe must be one of the frozen three tiers and every active R
+    instance must match the configured reviewer set for that tier."""
+    if plan.recipe not in RECIPE_TIERS:
+        raise _error(
+            "HC-RL-A116",
+            f"recipe {plan.recipe} must be one of {sorted(RECIPE_TIERS)}",
+        )
+    expected = config.recipe_reviewers(plan.recipe)
+    if expected is None:
+        raise _error("HC-RL-A116", f"recipe {plan.recipe} is not configured in dh-mapping.toml")
+    for stage_id in dict.fromkeys(node.stage_id for node in active_nodes if node.stage == "R"):
+        names = {
+            agent.agent
+            for node in active_nodes
+            if node.stage_id == stage_id
+            for agent in agents_by_node[node.node]
+            if agent.role == "reviewer"
+        }
+        if not names:
+            continue
+        if names != set(expected):
+            raise _error(
+                "HC-RL-A116",
+                f"{stage_id} reviewer set {sorted(names)} does not match recipe "
+                f"{plan.recipe} {sorted(expected)}",
+            )
+
+
+def _lint_command(plan_dir: str, config: RelayConfig) -> int:
     try:
-        lint_plan(Path(plan_dir) / "relay_plan.md")
+        lint_plan(Path(plan_dir) / "relay_plan.md", config)
     except RelayError as exc:
         if exc.exit_code == 3:
-            print(f"error: {exc.code} {exc.message}", file=sys.stderr)
-            return 3
+            return _fail(exc)
         print(f"lint: {exc.code} {exc.message}", file=sys.stderr)
         return exc.exit_code
     print("lint: ok")
     return 0
 
 
-def _runtime_plan(plan_dir: str) -> Plan:
+def _runtime_plan(plan_dir: str, config: RelayConfig) -> Plan:
     """Load a plan for add/status, where any invalid plan is an input failure."""
     try:
-        return lint_plan(Path(plan_dir) / "relay_plan.md")
+        return lint_plan(Path(plan_dir) / "relay_plan.md", config)
     except RelayError as exc:
         if exc.exit_code == 3:
             raise
@@ -623,6 +879,24 @@ def _validate_decision_ownership(
             )
 
 
+def _validate_strategist_conclusion(
+    entries: list[dict[str, object]], node: NodeSpec, event: str, agent: str
+) -> None:
+    """HC-RL-A97: a strategist-attributed chain closes only through user_decision — even in
+    decision_mode=auto (§4.5.1: strategist findings always go to the user first)."""
+    if event not in {"resume", "cancelled"}:
+        return
+    helper = _active_decision_owners(entries, node.node).get(agent)
+    if helper is None or helper.partition("#")[0] != "strategist":
+        return
+    latest = _latest_for_instance(entries, node.node, agent)
+    if latest is None or latest["event"] != "user_decision":
+        raise _error(
+            "HC-RL-A97",
+            f"{event} on {agent} requires a user_decision on the strategist chain",
+        )
+
+
 def _validate_agent_transition(
     plan: Plan, entries: list[dict[str, object]], node: NodeSpec, event: str, agent: str
 ) -> None:
@@ -699,8 +973,18 @@ def _validate_runtime_event(
 ) -> None:
     node = _active_node(plan, node_name)
     _authorize_agent(plan, node, event, agent)
+    _validate_writer(event, agent)
+    _validate_event_semantics(plan, entries, node, event, agent, note)
+    _validate_writer_handoff(plan, entries, node_name, event, note)
+
+
+def _validate_event_semantics(
+    plan: Plan, entries: list[dict[str, object]], node: NodeSpec, event: str, agent: str, note: str
+) -> None:
+    """Per-event contract: node gates, stage ordering, agent state machine."""
     if event == "plan_loaded":
         _validate_plan_loaded_note(note)
+        _require_sole_plan_loaded(entries)
         return
     if event == "node_start":
         if _node_started(entries, node.node) or any(
@@ -713,20 +997,202 @@ def _validate_runtime_event(
     if event == "node_close":
         _validate_node_close(plan, entries, node)
         return
+    if event in CONTROL_EVENTS:
+        _validate_stage_event(plan, entries, event, note)
+        return
     if event in AGENT_EVENTS:
         _validate_decision_ownership(entries, node, event, agent, note)
+        _validate_strategist_conclusion(entries, node, event, agent)
         _validate_agent_transition(plan, entries, node, event, agent)
 
 
-def append_event(plan_dir: str, node: str, event: str, agent: str, note: str) -> None:
+def _validate_writer(event: str, agent: str) -> None:
+    """HC-RL-A85: an event's writer must be its frozen owner (§3.4)."""
+    owner = WRITER_BY_EVENT[event]
+    actual = _writer_from_agent(agent)
+    if actual != owner:
+        raise _error("HC-RL-A85", f"{event} must be written by {owner}, not {actual}")
+
+
+def _stage_instances(plan: Plan) -> dict[str, tuple[NodeSpec, ...]]:
+    instances: dict[str, list[NodeSpec]] = {}
+    for node in plan.nodes:
+        if not node.superseded:
+            instances.setdefault(node.stage_id, []).append(node)
+    return {stage_id: tuple(nodes) for stage_id, nodes in instances.items()}
+
+
+def _active_node_map(plan: Plan) -> dict[str, NodeSpec]:
+    return {node.node: node for node in plan.nodes if not node.superseded}
+
+
+def _stage_entries(
+    entries: list[dict[str, object]], stage_id: str, nodes_by_name: dict[str, NodeSpec]
+) -> list[dict[str, object]]:
+    return [entry for entry in entries if _stage_of(entry, nodes_by_name) == stage_id]
+
+
+def _stage_id_from_note(note: str, event: str, code: str) -> str:
+    stage_id = _note_tokens(note).get("stage_id")
+    if not stage_id:
+        raise _error(code, f"{event} note must contain stage_id=<card>:<stage>#<k>")
+    return stage_id
+
+
+def latest_stage_result(
+    entries: list[dict[str, object]], stage_id: str, nodes_by_name: dict[str, NodeSpec]
+) -> dict[str, object] | None:
+    """The newest `stage_result` row of one instance (HC-RL-A105: latest wins)."""
+    latest: dict[str, object] | None = None
+    for entry in _stage_entries(entries, stage_id, nodes_by_name):
+        if entry["event"] == "stage_result":
+            latest = entry
+    return latest
+
+
+def _require_sole_plan_loaded(entries: list[dict[str, object]]) -> None:
+    """HC-RL-A89: plan_loaded is the first row and appears exactly once."""
+    if entries:
+        raise _error("HC-RL-A89", "plan_loaded must be the first and only plan_loaded row")
+
+
+def _stage_lifecycle_events(
+    entries: list[dict[str, object]], stage_id: str, nodes_by_name: dict[str, NodeSpec]
+) -> list[str]:
+    return [
+        entry["event"]
+        for entry in _stage_entries(entries, stage_id, nodes_by_name)
+        if entry["event"] in {"stage_start", "monitor_launch", "stage_close"}
+    ]
+
+
+def _validate_stage_event(
+    plan: Plan, entries: list[dict[str, object]], event: str, note: str
+) -> None:
+    """HC-RL-A89/A105/A112/A118: stage-level control events are ordered and note-typed."""
+    if event not in {"stage_start", "monitor_launch", "stage_result", "stage_close"}:
+        return  # monitor_restart / plan_amend carry no stage ordering rule (A93 covers races)
+    instances = _stage_instances(plan)
+    nodes_by_name = _active_node_map(plan)
+    if event == "stage_result":
+        tokens = _note_tokens(note)
+        stage_id = tokens.get("stage_id")
+        if not stage_id:
+            raise _error("HC-RL-A105", "stage_result note must contain stage_id=")
+        if stage_id not in instances:
+            raise _error("HC-RL-A105", f"stage_result names unknown stage instance {stage_id}")
+        outcome = tokens.get("outcome")
+        if outcome not in STAGE_RESULT_OUTCOMES:
+            raise _error(
+                "HC-RL-A105",
+                f"stage_result outcome must be one of {list(STAGE_RESULT_OUTCOMES)}, got {outcome!r}",
+            )
+        if outcome == "cancelled" and "user_decision" not in note:
+            raise _error("HC-RL-A118", "cancelled stage_result note must cite the user_decision")
+        unclosed = [node.node for node in instances[stage_id] if not _node_closed(entries, node.node)]
+        if unclosed:
+            raise _error(
+                "HC-RL-A112",
+                f"stage_result must follow the last node_close of {stage_id}; still open: {unclosed}",
+            )
+        return
+
+    code = "HC-RL-A89"
+    stage_id = _stage_id_from_note(note, event, code)
+    if stage_id not in instances:
+        raise _error(code, f"{event} names unknown stage instance {stage_id}")
+    seen = _stage_lifecycle_events(entries, stage_id, nodes_by_name)
+    if event == "stage_start":
+        if "stage_start" in seen:
+            raise _error(code, f"stage {stage_id} already started")
+        if "stage_close" in seen:
+            raise _error(code, f"stage {stage_id} already closed")
+        if "monitor_launch" in seen:
+            raise _error(code, f"stage_start must precede monitor_launch of {stage_id}")
+        return
+    if event == "monitor_launch":
+        if "stage_start" not in seen:
+            raise _error(code, f"monitor_launch must follow stage_start of {stage_id}")
+        return
+    if "stage_start" not in seen:
+        raise _error(code, f"stage_close requires stage_start of {stage_id}")
+    if "stage_close" in seen:
+        raise _error(code, f"stage {stage_id} already closed")
+    if "monitor_launch" not in seen:
+        raise _error(code, f"stage_close requires a monitor_launch of {stage_id}")
+    unclosed = [node.node for node in instances[stage_id] if not _node_closed(entries, node.node)]
+    if unclosed:
+        raise _error(code, f"stage_close requires every node closed; still open: {unclosed}")
+    result = latest_stage_result(entries, stage_id, nodes_by_name)
+    if result is None:
+        raise _error("HC-RL-A112", f"stage_close requires a stage_result for {stage_id}")
+    outcome = parse_stage_result_note(str(result["note"])).outcome
+    if outcome == "blocked":
+        raise _error("HC-RL-A118", f"stage_close cannot follow outcome=blocked for {stage_id}")
+    if outcome not in TERMINAL_RESULT_OUTCOMES:
+        raise _error("HC-RL-A112", f"stage_close needs outcome=done/cancelled, got {outcome!r}")
+
+
+def _validate_writer_handoff(
+    plan: Plan, entries: list[dict[str, object]], node_name: str, event: str, note: str
+) -> None:
+    """HC-RL-A93: a monitor's writes sit inside its instance's stage_start..stage_close window."""
+    nodes_by_name = _active_node_map(plan)
+    node = nodes_by_name.get(node_name)
+    note_stage = _note_tokens(note).get("stage_id")
+    if event in STAGE_NOTE_EVENTS:
+        stage_id = note_stage or (node.stage_id if node is not None else None)
+    else:
+        stage_id = node.stage_id if node is not None else None
+        if note_stage is not None and stage_id is not None and note_stage != stage_id:
+            raise _error(
+                "HC-RL-A93",
+                f"{event} on node {node_name} belongs to {stage_id}; note names {note_stage}",
+            )
+    if stage_id is None:
+        return
+    stage_rows = _stage_entries(entries, stage_id, nodes_by_name)
+    if WRITER_BY_EVENT[event] == "monitor" and not any(
+        row["event"] == "stage_start" for row in stage_rows
+    ):
+        raise _error("HC-RL-A93", f"{event} cannot precede stage_start of {stage_id}")
+    closes = [row for row in stage_rows if row["event"] == "stage_close"]
+    if closes:
+        raise _error(
+            "HC-RL-A93",
+            f"{stage_id} was closed at seq {closes[-1]['seq']}; {event} cannot follow it",
+        )
+
+
+def _encode_path(value: str | Path) -> str:
+    return quote(str(value).replace(os.sep, "/"), safe=CONFIG_PATH_SAFE)
+
+
+def _plan_loaded_note(note: str, plan_dir: str, config: RelayConfig) -> str:
+    """§6.2.1/A135: the ledger always records the config dir and plan dir actually used.
+
+    Caller-supplied ``config_dir=``/``plan=`` tokens are dropped rather than trusted: they
+    cannot prove which configuration was read. Every other note token is preserved in order.
+    """
+    kept = [token for token in note.split() if token.partition("=")[0] not in PROVENANCE_KEYS]
+    provenance = (
+        f"config_dir={_encode_path(config.config_dir)}",
+        f"plan={_encode_path(_normalized_dir(plan_dir))}",
+    )
+    return " ".join([*kept, *provenance])
+
+
+def append_event(plan_dir: str, node: str, event: str, agent: str, note: str, config: RelayConfig) -> None:
     """Append one validated JSONL event without changing earlier ledger bytes."""
-    plan = _runtime_plan(plan_dir)
+    plan = _runtime_plan(plan_dir, config)
     _validate_event(event, agent)
     ledger_path = Path(plan_dir) / "relay_log.jsonl"
     entries = read_ledger(ledger_path)
     if not entries and event != "plan_loaded":
         raise _error("HC-RL-A84", "first ledger event must be plan_loaded")
     _validate_runtime_event(plan, entries, node, event, agent, note)
+    if event == "plan_loaded":
+        note = _plan_loaded_note(note, plan_dir, config)
     entry = {
         "seq": len(entries) + 1,
         "ts": datetime.now().astimezone().isoformat(),
@@ -743,31 +1209,639 @@ def append_event(plan_dir: str, node: str, event: str, agent: str, note: str) ->
         raise _ledger_error(f"cannot append relay_log.jsonl: {exc}") from exc
 
 
-def _add_command(plan_dir: str, node: str, event: str, agent: str, note: str) -> int:
+def _add_command(plan_dir: str, node: str, event: str, agent: str, note: str, config: RelayConfig) -> int:
     try:
-        append_event(plan_dir, node, event, agent, note)
+        append_event(plan_dir, node, event, agent, note, config)
     except RelayError as exc:
-        print(f"error: {exc.code} {exc.message}", file=sys.stderr)
-        return exc.exit_code
+        return _fail(exc)
     return 0
 
 
-def _status_command(plan_dir: str, as_json: bool) -> int:
+@dataclass(frozen=True)
+class StageResultNote:
+    """Read-only reading of one `stage_result` note (§5.2.1)."""
+
+    stage_id: str | None
+    outcome: str | None
+    amend: str | None
+    nodes: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class StageResult:
+    stage_id: str
+    outcome: str
+    note: str
+    amend: str | None
+    nodes: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class StageState:
+    stage_id: str
+    stage: str
+    card: str
+    k: int
+    state: str
+    nodes: tuple[str, ...]
+    result: StageResult | None
+
+
+@dataclass(frozen=True)
+class NodeState:
+    node: str
+    card: str
+    stage_id: str
+    type: str
+    state: str
+    closable: bool
+    reasons: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class AgentState:
+    node: str
+    agent: str
+    last_event: str
+    last_ts: str
+    idle_seconds: int
+
+
+@dataclass(frozen=True)
+class Status:
+    """The full status projection. `last_writer` is text-only: §3.5 freezes thirteen JSON keys."""
+
+    plan: Plan
+    open_stages: tuple[str, ...]
+    current_stage: str | None
+    current_node: str | None
+    last_stage_result: StageResult | None
+    suggested_action: str
+    monitor_relaunch_count: int
+    pending_nodes: tuple[str, ...]
+    superseded_ignored: int
+    stages: tuple[StageState, ...]
+    nodes: tuple[NodeState, ...]
+    agents: tuple[AgentState, ...]
+    errors: tuple[str, ...]
+    last_writer: str | None
+    last_writer_stage: str | None
+
+
+def _note_tokens(note: str) -> dict[str, str]:
+    """Split one note into `key=value` tokens; the first occurrence of a key wins."""
+    tokens: dict[str, str] = {}
+    for token in note.split():
+        key, separator, value = token.partition("=")
+        if separator:
+            tokens.setdefault(key, value)
+    return tokens
+
+
+def parse_stage_result_note(note: str) -> StageResultNote:
+    """Read-only parse of a `stage_result` note; an unknown outcome stays None."""
+    tokens = _note_tokens(note)
+    outcome = tokens.get("outcome")
+    return StageResultNote(
+        stage_id=tokens.get("stage_id") or None,
+        outcome=outcome if outcome in STAGE_RESULT_OUTCOMES else None,
+        amend=tokens.get("amend") or None,
+        nodes=tuple(part for part in tokens.get("nodes", "").split(",") if part),
+    )
+
+
+def _stage_of(entry: dict[str, object], nodes_by_name: dict[str, NodeSpec]) -> str | None:
+    """Attribute one ledger row to a stage instance.
+
+    The four stage-level control events are addressed by the note's ``stage_id=``;
+    every other row belongs to the stage of its ``node``, so a ``stage_id=`` token
+    there cannot reattribute the row to a foreign instance.
+    """
+    if str(entry["event"]) in STAGE_NOTE_EVENTS:
+        stage_id = _note_tokens(str(entry["note"])).get("stage_id")
+        if stage_id:
+            return stage_id
+    node = nodes_by_name.get(str(entry["node"]))
+    return node.stage_id if node is not None else None
+
+
+def derive_last_writer(
+    entries: list[dict[str, object]], nodes_by_name: dict[str, NodeSpec]
+) -> tuple[str | None, str | None]:
+    """The on-duty writer is the newest row's recorded `by` (§3.2), not a decision."""
+    if not entries:
+        return None, None
+    return str(entries[-1]["by"]), _stage_of(entries[-1], nodes_by_name)
+
+
+def _unclosable_reasons(
+    entries: list[dict[str, object]], node: NodeSpec
+) -> tuple[str, ...]:
+    """§5.3 double criteria, reported in `_validate_node_close`'s own check order.
+
+    Condition 1 is never waived, so its reasons come first; condition 2 is only
+    surfaced once condition 1 holds, which is what the §10.3 sample shows.
+    """
+    launched: list[str] = []
+    for entry in entries:
+        if entry["node"] == node.node and entry["event"] == "agent_launch":
+            agent = str(entry["agent"])
+            if agent not in launched:
+                launched.append(agent)
+    reasons = [
+        f"{agent} 无终态事件"
+        for agent in launched
+        if (latest := _latest_for_instance(entries, node.node, agent)) is None
+        or latest["event"] not in TERMINAL_EVENTS
+    ]
+    if not reasons and node.close:
+        close_name = node.close.removeprefix("agent:")
+        latest = _latest_by_name(entries, node.node, close_name)
+        if latest is None or latest["event"] != "done":
+            reasons.append(f"{close_name} 无 done 终态")
+    return tuple(reasons)
+
+
+def _ledger_warnings(
+    entries: list[dict[str, object]],
+    nodes_by_name: dict[str, NodeSpec],
+    instances: dict[str, tuple[NodeSpec, ...]],
+    stage_starts: dict[str, int],
+    stage_closes: set[str],
+) -> list[str]:
+    """Read-only anomaly report (HC-RL-A85/A93/A111). `status` never rewrites or rejects."""
+    warnings: list[str] = []
+    for entry in entries:
+        event = str(entry["event"])
+        owner = WRITER_BY_EVENT[event]
+        actual = str(entry["by"])
+        if actual != owner:
+            warnings.append(
+                f"seq {entry['seq']}: HC-RL-A85 {event} must be written by {owner}, not {actual}"
+            )
+    closes: dict[str, int] = {}
+    starts: set[str] = set()
+    launches: dict[str, int] = {}
+    for entry in entries:
+        event = str(entry["event"])
+        stage_id = _stage_of(entry, nodes_by_name)
+        if stage_id is None:
+            continue
+        if event not in STAGE_NOTE_EVENTS:
+            note_stage = _note_tokens(str(entry["note"])).get("stage_id")
+            if note_stage and note_stage != stage_id:
+                warnings.append(
+                    f"seq {entry['seq']}: HC-RL-A93 {event} on node {entry['node']} belongs to "
+                    f"{stage_id}; note names {note_stage}"
+                )
+        if event == "stage_close":
+            closes[stage_id] = int(entry["seq"])
+            if not launches.get(stage_id):
+                warnings.append(
+                    f"seq {entry['seq']}: HC-RL-A89 stage_close of {stage_id} has no monitor_launch"
+                )
+            continue
+        if event == "stage_start":
+            starts.add(stage_id)
+        elif event == "monitor_launch":
+            launches[stage_id] = launches.get(stage_id, 0) + 1
+        if stage_id in closes:
+            warnings.append(
+                f"seq {entry['seq']}: HC-RL-A93 {event} for {stage_id} follows its "
+                f"stage_close at seq {closes[stage_id]}"
+            )
+            continue
+        if (
+            WRITER_BY_EVENT[event] == "monitor"
+            and stage_id in instances
+            and stage_id not in starts
+        ):
+            warnings.append(
+                f"seq {entry['seq']}: HC-RL-A93 {event} for {stage_id} precedes its stage_start"
+            )
+    open_by_card: dict[str, list[str]] = {}
+    for stage_id in stage_starts:
+        if stage_id in stage_closes or stage_id not in instances:
+            continue
+        open_by_card.setdefault(instances[stage_id][0].card, []).append(stage_id)
+    for card, stage_ids in open_by_card.items():
+        if len(stage_ids) > 1:
+            warnings.append(
+                f"HC-RL-A111 card {card} has {len(stage_ids)} open stage instances: {stage_ids}"
+            )
+    return warnings
+
+
+def _idle_seconds(ts: str, moment: datetime, errors: list[str], seq: object) -> int:
     try:
-        plan = _runtime_plan(plan_dir)
+        recorded = datetime.fromisoformat(ts)
+    except ValueError:
+        errors.append(f"seq {seq}: ts is not ISO 8601")
+        return 0
+    if (recorded.tzinfo is None) != (moment.tzinfo is None):
+        errors.append(f"seq {seq}: ts offset cannot be compared with the current time")
+        return 0
+    return max(0, int((moment - recorded).total_seconds()))
+
+
+def _suggested_action(result: StageResult | None, relaunches: int) -> str:
+    """§3.5/§2.1 routing table: a derived suggestion, never a command."""
+    if result is None:
+        return "none"
+    if result.outcome in {"done", "cancelled"}:
+        return "open_next_stage"
+    if result.outcome == "blocked":
+        return "wait_user"
+    return "relaunch_monitor" if relaunches == 0 else "notify_user"
+
+
+def derive_status(plan: Plan, entries: list[dict[str, object]], now: datetime | None = None) -> Status:
+    """Project the whole status document from one plan and its complete ledger.
+
+    `now` is injectable so clock and silence stay deterministic. This is a read-only
+    projection: it neither validates lifecycle order nor judges any produce.
+    """
+    moment = now if now is not None else datetime.now().astimezone()
+    active_nodes = tuple(node for node in plan.nodes if not node.superseded)
+    nodes_by_name = {node.node: node for node in active_nodes}
+    node_order = {node.node: index for index, node in enumerate(active_nodes)}
+    started = bool(entries)
+    errors: list[str] = []
+
+    closed = {node.node: _node_closed(entries, node.node) for node in active_nodes}
+    instances: dict[str, list[NodeSpec]] = {}
+    for node in active_nodes:
+        instances.setdefault(node.stage_id, []).append(node)
+
+    stage_starts: dict[str, int] = {}
+    stage_closes: set[str] = set()
+    results: dict[str, StageResult] = {}
+    latest_outcome: dict[str, str] = {}
+    relaunches: dict[str, int] = {}
+    for entry in entries:
+        event = str(entry["event"])
+        stage_id = _stage_of(entry, nodes_by_name)
+        if event == "stage_result":
+            parsed = parse_stage_result_note(str(entry["note"]))
+            if parsed.stage_id is None:
+                errors.append(f"seq {entry['seq']}: stage_result without stage_id=")
+                continue
+            if parsed.stage_id not in instances:
+                continue  # a superseded or unknown instance stays out of the projection (A73)
+            if parsed.outcome is None:
+                errors.append(
+                    f"seq {entry['seq']}: stage_result outcome must be one of {list(STAGE_RESULT_OUTCOMES)}"
+                )
+                continue
+            results[parsed.stage_id] = StageResult(
+                stage_id=parsed.stage_id,
+                outcome=parsed.outcome,
+                note=str(entry["note"]),
+                amend=parsed.amend,
+                nodes=parsed.nodes,
+            )
+            latest_outcome[parsed.stage_id] = parsed.outcome
+            continue
+        if event == "plan_amend" and "nodes" not in _note_tokens(str(entry["note"])):
+            errors.append(f"seq {entry['seq']}: plan_amend note must carry nodes=")
+        if stage_id is None or stage_id not in instances:
+            continue
+        if event == "stage_start":
+            stage_starts.setdefault(stage_id, int(entry["seq"]))
+        elif event == "stage_close":
+            stage_closes.add(stage_id)
+        elif event == "monitor_launch":
+            # A106/§3.5: only a launch while the instance's latest result is `failed`
+            # counts as a failed-caused relaunch; §7.3 crash recovery does not.
+            if latest_outcome.get(stage_id) == "failed":
+                relaunches[stage_id] = relaunches.get(stage_id, 0) + 1
+
+    stages = tuple(
+        StageState(
+            stage_id=stage_id,
+            stage=instance[0].stage,
+            card=instance[0].card,
+            k=instance[0].k,
+            state=(
+                "closed" if stage_id in stage_closes
+                else "open" if stage_id in stage_starts
+                else "pending"
+            ),
+            nodes=tuple(node.node for node in instance),
+            result=results.get(stage_id),
+        )
+        for stage_id, instance in instances.items()
+    )
+
+    if started:
+        node_states = {
+            node.node: (
+                "closed" if closed[node.node]
+                else "pending" if any(not closed.get(dependency, False) for dependency in node.depends_on)
+                else "open" if _node_started(entries, node.node)
+                else "ready"
+            )
+            for node in active_nodes
+        }
+    else:
+        node_states = {node.node: "pending" for node in active_nodes}
+
+    stage_instances = {stage_id: tuple(nodes) for stage_id, nodes in instances.items()}
+    open_ids = [stage_id for stage_id in stage_starts if stage_id not in stage_closes]
+    awaiting_close = [
+        stage_id
+        for stage_id in open_ids
+        if all(closed[node.node] for node in stage_instances[stage_id])
+    ]
+    current = next((node for node in active_nodes if not closed[node.node]), None) if started else None
+    if current is not None and (current.stage_id in stage_starts or not open_ids):
+        current_stage = current.stage_id
+    elif started:
+        # A merely pending node (its stage instance never started) must not shadow an
+        # open instance — first one whose result awaits stage_close, else the latest
+        # open one — so its last_stage_result/suggested_action stay routable (A106).
+        pool = awaiting_close or open_ids
+        current_stage = max(pool, key=lambda stage_id: stage_starts[stage_id]) if pool else None
+    else:
+        current_stage = None
+    last_stage_result = results.get(current_stage) if current_stage is not None else None
+    monitor_relaunch_count = relaunches.get(current_stage, 0) if current_stage is not None else 0
+    errors.extend(
+        _ledger_warnings(entries, nodes_by_name, stage_instances, stage_starts, stage_closes)
+    )
+
+    launches: dict[tuple[str, str], int] = {}
+    for entry in entries:
+        if entry["event"] != "agent_launch" or str(entry["node"]) not in nodes_by_name:
+            continue
+        launches.setdefault((str(entry["node"]), str(entry["agent"])), int(entry["seq"]))
+    agents: list[AgentState] = []
+    for (node_name, agent), _ in sorted(launches.items(), key=lambda item: (node_order[item[0][0]], item[1])):
+        latest = _latest_for_instance(entries, node_name, agent)
+        assert latest is not None
+        last_ts = str(latest["ts"])
+        agents.append(
+            AgentState(
+                node=node_name,
+                agent=agent,
+                last_event=str(latest["event"]),
+                last_ts=last_ts,
+                idle_seconds=_idle_seconds(last_ts, moment, errors, latest["seq"]),
+            )
+        )
+
+    nodes = tuple(
+        NodeState(
+            node=node.node,
+            card=node.card,
+            stage_id=node.stage_id,
+            type=node.type,
+            state=node_states[node.node],
+            closable=not (reasons := _unclosable_reasons(entries, node)),
+            reasons=reasons,
+        )
+        for node in active_nodes
+    )
+    last_writer, last_writer_stage = derive_last_writer(entries, nodes_by_name)
+    return Status(
+        plan=plan,
+        open_stages=tuple(stage.stage_id for stage in stages if stage.state == "open"),
+        current_stage=current_stage,
+        current_node=current.node if current is not None else None,
+        last_stage_result=last_stage_result,
+        suggested_action=_suggested_action(last_stage_result, monitor_relaunch_count),
+        monitor_relaunch_count=monitor_relaunch_count,
+        pending_nodes=tuple(node.node for node in active_nodes if node_states[node.node] == "pending"),
+        superseded_ignored=(
+            sum(1 for node in plan.nodes if node.superseded)
+            + sum(1 for agent in plan.agents if agent.superseded)
+        ),
+        stages=stages,
+        nodes=nodes,
+        agents=tuple(agents),
+        errors=tuple(errors),
+        last_writer=last_writer,
+        last_writer_stage=last_writer_stage,
+    )
+
+
+@dataclass(frozen=True)
+class LossStop:
+    """§7.3/A107: the two independent counters and which of them is spent.
+
+    ``attempts`` counts ``agent_launch`` rows per ``(node, agent name)``; a pair is
+    exhausted once it sits at ``limits.attempt_max`` while its latest row still calls
+    for a relaunch — the same causes HC-RL-A49 grants: ``agent_lost``/``cancelled`` or a
+    later ``stage_result outcome=failed`` on the node's stage. ``x_rounds`` holds, per
+    card, the highest opened ``X#k`` round; a card is exhausted once that round reaches
+    ``limits.rework_max_rounds`` and still fails. The counters never add up and never
+    reset each other: either one alone opens the strategist exit.
+    """
+
+    attempts: dict[tuple[str, str], int]
+    x_rounds: dict[str, int]
+    attempt_exhausted: tuple[tuple[str, str], ...]
+    x_exhausted: tuple[str, ...]
+
+    @property
+    def triggered(self) -> bool:
+        return bool(self.attempt_exhausted or self.x_exhausted)
+
+
+def loss_stop(plan: Plan, entries: list[dict[str, object]], config: RelayConfig) -> LossStop:
+    """HC-RL-A107: read-only evaluation of both loss-stop counters against the config."""
+    nodes_by_name = _active_node_map(plan)
+    attempts: dict[tuple[str, str], int] = {}
+    for entry in entries:
+        if entry["event"] != "agent_launch":
+            continue
+        node = nodes_by_name.get(str(entry["node"]))
+        if node is None:
+            continue
+        key = (node.node, _agent_parts(str(entry["agent"]))[0])
+        attempts[key] = attempts.get(key, 0) + 1
+    attempt_exhausted: list[tuple[str, str]] = []
+    for (node_name, name), count in sorted(attempts.items()):
+        if count < config.limits.attempt_max:
+            continue
+        latest = _latest_by_name(entries, node_name, name)
+        assert latest is not None
+        if latest["event"] in {"agent_lost", "cancelled"} or _stage_failed_after(
+            entries, nodes_by_name[node_name].stage_id, latest
+        ):
+            attempt_exhausted.append((node_name, name))
+    instances = _stage_instances(plan)
+    opened: dict[str, tuple[int, str]] = {}
+    for entry in entries:
+        if str(entry["event"]) != "stage_start":
+            continue
+        stage_id = _stage_of(entry, nodes_by_name)
+        if stage_id is None or stage_id not in instances:
+            continue
+        first = instances[stage_id][0]
+        if first.stage != "X":
+            continue
+        current = opened.get(first.card)
+        if current is None or first.k > current[0]:
+            opened[first.card] = (first.k, stage_id)
+    x_exhausted: list[str] = []
+    for card in sorted(opened):
+        k, stage_id = opened[card]
+        result = latest_stage_result(entries, stage_id, nodes_by_name)
+        outcome = (
+            parse_stage_result_note(str(result["note"])).outcome if result is not None else None
+        )
+        if k >= config.limits.rework_max_rounds and outcome == "failed":
+            x_exhausted.append(card)
+    return LossStop(
+        attempts=attempts,
+        x_rounds={card: k for card, (k, _) in opened.items()},
+        attempt_exhausted=tuple(attempt_exhausted),
+        x_exhausted=tuple(x_exhausted),
+    )
+
+
+def _result_document(result: StageResult | None) -> dict[str, object] | None:
+    """`stages[].result`: the full five-key shape, including the plan-amend projection."""
+    if result is None:
+        return None
+    return {
+        "stage_id": result.stage_id,
+        "outcome": result.outcome,
+        "note": result.note,
+        "amend": result.amend,
+        "nodes": list(result.nodes),
+    }
+
+
+def _last_result_document(result: StageResult | None) -> dict[str, object] | None:
+    """Top-level `last_stage_result`: §3.5 freezes exactly {stage_id, outcome, note}."""
+    if result is None:
+        return None
+    return {
+        "stage_id": result.stage_id,
+        "outcome": result.outcome,
+        "note": result.note,
+    }
+
+
+def status_document(status: Status) -> dict[str, object]:
+    """The frozen §3.5 document: exactly thirteen top-level keys."""
+    return {
+        "plan": {
+            "marker": status.plan.marker,
+            "cards": list(status.plan.cards),
+            "decision_mode": status.plan.decision_mode,
+        },
+        "open_stages": list(status.open_stages),
+        "current_stage": status.current_stage,
+        "current_node": status.current_node,
+        "last_stage_result": _last_result_document(status.last_stage_result),
+        "suggested_action": status.suggested_action,
+        "monitor_relaunch_count": status.monitor_relaunch_count,
+        "pending_nodes": list(status.pending_nodes),
+        "superseded_ignored": status.superseded_ignored,
+        "stages": [
+            {
+                "stage_id": stage.stage_id,
+                "stage": stage.stage,
+                "card": stage.card,
+                "k": stage.k,
+                "state": stage.state,
+                "nodes": list(stage.nodes),
+                "result": _result_document(stage.result),
+            }
+            for stage in status.stages
+        ],
+        "nodes": [
+            {
+                "node": node.node,
+                "card": node.card,
+                "stage": node.stage_id,
+                "type": node.type,
+                "state": node.state,
+                "closable": node.closable,
+                "reasons": list(node.reasons),
+            }
+            for node in status.nodes
+        ],
+        "agents": [
+            {
+                "node": agent.node,
+                "agent": agent.agent,
+                "last_event": agent.last_event,
+                "last_ts": agent.last_ts,
+                "idle_seconds": agent.idle_seconds,
+            }
+            for agent in status.agents
+        ],
+        "errors": list(status.errors),
+    }
+
+
+def _clock(ts: str) -> str:
+    try:
+        return datetime.fromisoformat(ts).strftime("%H:%M:%S")
+    except ValueError:
+        return ts
+
+
+def _duration(seconds: int) -> str:
+    hours, remainder = divmod(max(0, seconds), 3600)
+    minutes, secs = divmod(remainder, 60)
+    return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+
+
+def render_status_text(status: Status, plan_dir: str) -> str:
+    """The §10.3 text shape. Node detail is printed for open stage instances only."""
+    lines = [
+        f"计划：{plan_dir}   skill={status.plan.skill}   session={status.plan.session}",
+        f"卡：{', '.join(status.plan.cards)}      decision_mode={status.plan.decision_mode}",
+        (
+            "当班写入者：—" if status.last_writer is None
+            else f"当班写入者：{status.last_writer}（{status.last_writer_stage}）"
+        ),
+        "",
+    ]
+    for stage in status.stages:
+        if stage.state == "pending":  # §10.3: never-entered instances print no result token
+            line = f"阶段 {stage.stage_id}  {stage.state}"
+        else:
+            outcome = stage.result.outcome if stage.result is not None else "—"
+            line = f"阶段 {stage.stage_id}  {stage.state:<8} result={outcome}"
+        lines.append(line)
+        if stage.state != "open":
+            continue
+        for node in status.nodes:
+            if node.stage_id != stage.stage_id:
+                continue
+            lines.append(f"  节点 {node.node} {node.type}   {node.state}")
+            if node.state != "open":
+                continue
+            lines.extend(f"    不可关：{reason}" for reason in node.reasons)
+            if node.closable:
+                lines.append("    可关")
+            for agent in status.agents:
+                if agent.node != node.node:
+                    continue
+                lines.append(
+                    f"    在场 agent：{agent.agent}  最近 {agent.last_event} @ {_clock(agent.last_ts)}"
+                    f"（静默 {_duration(agent.idle_seconds)}）"
+                )
+    return "\n".join(lines) + "\n"
+
+
+def _status_command(plan_dir: str, as_json: bool, config: RelayConfig) -> int:
+    try:
+        plan = _runtime_plan(plan_dir, config)
         entries = read_ledger(Path(plan_dir) / "relay_log.jsonl")
     except RelayError as exc:
-        print(f"error: {exc.code} {exc.message}", file=sys.stderr)
-        return exc.exit_code
-    # Intentional RLT_05 placeholder (HC-RL-A61/A62): the full nonempty-ledger
-    # status lifecycle is deliberately NOT implemented in RLT_03. Only the
-    # empty-ledger pending_nodes projection required by HC-RL-A84 is live;
-    # superseded rows are excluded from it (HC-RL-A128/A84).
+        return _fail(exc)
+    status = derive_status(plan, entries)
     if as_json:
-        pending_nodes = [node.node for node in plan.nodes if not node.superseded] if not entries else []
-        print(json.dumps({"current_stage": None, "current_node": None, "pending_nodes": pending_nodes}))
+        print(json.dumps(status_document(status), ensure_ascii=False))
     else:
-        print("status: not started" if not entries else f"status: {len(entries)} ledger entries")
+        sys.stdout.write(render_status_text(status, plan_dir))
     return 0
 
 
@@ -780,22 +1854,28 @@ def main(argv: list[str] | None = None) -> int:
     add_parser.add_argument("--event", required=True)
     add_parser.add_argument("--agent", required=True)
     add_parser.add_argument("--note", default="")
+    add_parser.add_argument("--config-dir")
     status_parser = subparsers.add_parser("status")
     status_parser.add_argument("--plan", required=True)
     status_parser.add_argument("--json", action="store_true")
+    status_parser.add_argument("--config-dir")
     lint_parser = subparsers.add_parser("lint")
     lint_parser.add_argument("--plan", required=True)
+    lint_parser.add_argument("--config-dir")
     try:
         args = parser.parse_args(argv)
     except RelayError as exc:
-        print(f"error: {exc.code} {exc.message}", file=sys.stderr)
-        return exc.exit_code
+        return _fail(exc)
+    try:
+        config = load_config(resolve_config_dir(args.config_dir, Path.home()))
+    except RelayError as exc:
+        return _fail(exc)
     if args.command == "add":
-        return _add_command(args.plan, args.node, args.event, args.agent, args.note)
+        return _add_command(args.plan, args.node, args.event, args.agent, args.note, config)
     if args.command == "status":
-        return _status_command(args.plan, args.json)
+        return _status_command(args.plan, args.json, config)
     if args.command == "lint":
-        return _lint_command(args.plan)
+        return _lint_command(args.plan, config)
     raise AssertionError(f"unreachable command: {args.command}")
 
 

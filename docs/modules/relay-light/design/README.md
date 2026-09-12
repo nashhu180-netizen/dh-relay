@@ -18,3 +18,4 @@
 - [RLT-B-01 拆计划交叉审核、讲解与确认](./evidence/02-交叉审核记录-RelayLight-B拆计划.md)
 - [RLT-B-03 颗粒度优化：审核、裁决、讲解与确认（2026-09-10）](./evidence/04-交叉审核记录-RelayLight-B03颗粒度优化.md)
 - [RLT-B-03 颗粒度优化调整候选（B 形成史）](../dev_plan/drafts/RLT-B-03-颗粒度优化-调整候选.md)
+- [RLT-A-06 / RLT-B-06 合同缺口复核、裁决与 A06 整版确认](./evidence/07-交叉审核记录-RLT05合同缺口候选.md)

@@ -1,0 +1,43 @@
+[planner]
+model = "高档"
+launch = "claude opus"
+
+[orchestrator]
+model = "低档"
+launch = "herdr:codex"
+
+[monitor]
+model = "低档"
+launch = "herdr:codex"
+
+[builder]
+model = "低档"
+launch = "zcode"
+
+[plan-reviewer]
+model = "高档"
+launch = "claude opus"
+
+[coder]
+model = "高档"
+launch = "zcode"            # 额度尽则 codex gpt-5.6-terra high
+
+[scribe]
+model = "低档"
+launch = "zcode"
+
+[checker]
+model = "高档"
+launch = "claude opus"
+
+[decider]
+model = "高档"
+launch = "claude opus"
+
+[reviewer]
+model = "按档位"
+launch = "codex --sandbox read-only"
+
+[strategist]
+model = "高档"
+launch = "claude opus"
