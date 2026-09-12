@@ -11,6 +11,20 @@
 - 默认分支：master
 - dev-harness 模块：slug=`dh-relay`，模块根 `docs/modules/dh-relay/`（独立仓里只有这一个模块，但保留 `docs/modules/<slug>/` 这一层——`dh` 工具链按它解析模块）
 
+## GitHub 协作默认流程（可由用户明确豁免）
+
+> 2026-09-11 起生效。本仓直接使用 GitHub，不采用 wf-analytics-platform 的 ThinkPad→ThinkBook→GitLab 接力。本节只规范版本协作路径，不替代下文的 A/B/D/E、复核、verify、人验、发布与密钥闸。
+
+1. **Issue 先立户**：凡新增设计方案、开发方案或任务卡，在创建对应受跟踪工件前必须先建 GitHub Issue，写明目标、范围、验收、档位/风险与停止边界。同一工作项的设计、DevPlan、任务卡与实现可共用一个 Issue；目标或验收边界独立的工作项不得借用无关 Issue。设计、DevPlan 和 workspace 必须记录 Issue 号；除第 7 条的用户明确豁免外，无 Issue 时 fail closed，不先写文件后补号。
+2. **任务分支 / worktree**：Issue 建立后，从已核对的 `master` 基线创建与 Issue/任务 ID 关联的分支；任务卡施工仍严格执行“一卡一 worktree”。设计、计划、任务工作区、代码与测试的实质变更不得直接提交到 `master`。任务分支上的规划确认仍不等于 D-start。
+3. **PR 请求合入**：任务分支 push 到 GitHub `origin` 后，必须创建目标为 `master` 的 Pull Request。PR 必须关联 Issue（按收口条件使用 `Closes #N` 或 `Relates to #N`），并写明任务/卡号、最终差异、验证证据、风险、未完成闸与范围外发现。dev-harness 独立复核不替代 GitHub PR 检查。
+4. **CI 必须通过**：PR 必须等待 `.github/workflows/ci.yml` 完成；`relay-tests-pwsh` 的 Windows/Ubuntu matrix 与 `relay-light-python` 必须成功，失败不得合并。`relay-core` 在 dh-relay 模块暂停期按 workflow 中的 `continue-on-error` 只作观测；暂停解除并去掉该配置后自动恢复为硬门。本地测试、PR 列表中出现 workflow 或某个非必须 job 绿，都不能代替上述完整 CI 结论。
+5. **人工检查与合并**：CI 通过后仍须有权维护者检查并在 GitHub 合并。AI 只在用户对话明确点名授权“创建 Issue”、“commit”、“push”、“创建 PR”或“GitHub 服务端合并”后执行对应远端/版本动作；这些动作互不推定，可在一个精确授权包中逐项列明后一次确认。PR 合并不等于 verify、验收、部署、发布或清理。
+6. **故障与 Issue 关闭**：GitHub 不可达、鉴权失败、目标分支漂移或必需 CI 无法得出结论时，停在当前闸门并保留本地 WIP，不绕过、不伪造远端证据。普通任务只在 PR 合并已满足全部完成条件时可自动关联关闭；高危或仍需合入后 verify/人验的任务只写 `Relates to #N`，待出口闸真正闭合后再关 Issue。
+7. **用户可明确豁免**：用户可在对话中明确同意某一工作项不执行本节全部或指定的 GitHub 协作步骤（如 Issue、push、PR、Actions CI、服务端合并）；agent 必须按用户实际同意的范围执行，不得把单项豁免扩张为全流程豁免。豁免范围与日期须记入最近的设计、DevPlan、workspace 或进度工件；未建 Issue 时以 `GitHub-flow: user-waived (YYYY-MM-DD, scope=...)` 代替 Issue 号。该豁免只作用于本节，不授权 D-start、commit、复核代签、verify、验收、部署、发布或清理，也不取消“一卡一 worktree”等其他宪章硬规则。
+
+**存量边界**：本规则默认不追溯补造已完成或已在已登记合同下进行的旧工作。用户已在 2026-09-11 明确指定 **RLT_05 作为首个迁入的存量任务**：下一次 B06 正式落盘或 D-start 前，须先创建 GitHub Issue，或取得并记录第 7 条所述的 RLT_05 明确豁免；未豁免时把当前未提交工件完整保留、转入 Issue 关联的任务分支/worktree，后续经 PR + CI 合入。迁移或豁免本身都不是 B06 确认或 D-start。
+
 ## 不可违反的硬规则（宪章）
 
 > 与 dev-harness SKILL §硬规则同源；这里是常驻每轮的最小子集。少而硬。
