@@ -3395,5 +3395,322 @@ class SkillCoreDocTests(unittest.TestCase):
                     self.assertIsNone(re.search(pattern, text, re.IGNORECASE))
 
 
+class SkillTemplateTests(RelayCliTestCase):
+    """RLT_07 Batch 2 — HC-RL-A95/A133/A127/A102/A113/A103/A114/A96 模板与运行时合同。"""
+
+    NODE_TYPES = {"build", "construction", "review", "rework", "handoff"}
+    CARD = "DHR_90"
+    TEMPLATE_RE = re.compile(
+        r"###\s+([WCXRF]) 阶段模板.*?```markdown\n(.*?)```", re.S
+    )
+
+    @classmethod
+    def _template_rows(cls) -> dict[str, dict[str, list[str]]]:
+        """Split each `### <S> 阶段模板` fenced block into its node/agent row lists."""
+        text = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+        blocks: dict[str, dict[str, list[str]]] = {}
+        for stage, body in cls.TEMPLATE_RE.findall(text):
+            rows: dict[str, list[str]] = {"node": [], "agent": []}
+            current = None
+            for line in body.splitlines():
+                if re.match(r"^\|\s*node\s*\|\s*card\s*\|", line):
+                    current = "node"
+                    continue
+                if re.match(r"^\|\s*agent\s*\|\s*node\s*\|", line):
+                    current = "agent"
+                    continue
+                if not line.startswith("|") or line.startswith("|---"):
+                    continue
+                if current:
+                    rows[current].append(line)
+            blocks[stage] = rows
+        return blocks
+
+    @staticmethod
+    def _cells(row: str) -> list[str]:
+        return [cell.strip() for cell in row.strip().strip("|").split("|")]
+
+    @classmethod
+    def _fill(
+        cls, row: str, *, prev: str = "", n: str = "1", k: str = "1", path: str = "requirement"
+    ) -> str:
+        return (
+            row.replace("<card>", cls.CARD)
+            .replace("<prev>", prev)
+            .replace("<n>", n)
+            .replace("<k>", k)
+            .replace("<打回路>", path)
+        )
+
+    def _assembled_plan(
+        self, *, recipe: str = "normal", include_x: bool = False
+    ) -> tuple[list[str], list[str]]:
+        """Instantiate the SKILL.md stage templates into lint-able node/agent rows."""
+        blocks = self._template_rows()
+        order = ["W", "C", "R", "X"] if include_x else ["W", "C", "R", "F"]
+        node_rows: list[str] = []
+        agent_rows: list[str] = []
+        prev = ""
+        for stage in order:
+            nrows = [self._fill(row, prev=prev) for row in blocks[stage]["node"]]
+            arows: list[str] = []
+            for row in blocks[stage]["agent"]:
+                filled = self._fill(row, prev=prev)
+                if "<reviewer>" in filled:
+                    reviewers = repo_config().recipe_reviewers(recipe) or ()
+                    arows.extend(
+                        filled.replace("<reviewer>", name).replace("<路>", name)
+                        for name in reviewers
+                    )
+                else:
+                    arows.append(filled)
+            node_rows.extend(nrows)
+            agent_rows.extend(arows)
+            prev = self._cells(nrows[-1])[0]
+        return node_rows, agent_rows
+
+    def _write_template_plan(
+        self, *, recipe: str = "normal", decision_mode: str = "auto", include_x: bool = False
+    ) -> None:
+        node_rows, agent_rows = self._assembled_plan(recipe=recipe, include_x=include_x)
+        self.write_plan(
+            node_rows=node_rows,
+            agent_rows=agent_rows,
+            marker=(
+                "<!-- relay-light:plan v1 skill=0.1.0 generated=2026-09-12 session=app "
+                f"decision_mode={decision_mode} recipe={recipe} cards=DHR_90 -->"
+            ),
+        )
+
+    def add_ok(self, event: str, *, node: str, agent: str, note: str = "") -> None:
+        result = self.run_add(event, node=node, agent=agent, note=note)
+        self.assertEqual(0, result.returncode, result.stderr)
+
+    def assert_rejected(self, event: str, *, node: str, agent: str, note: str = "") -> None:
+        result = self.run_add(event, node=node, agent=agent, note=note)
+        self.assertEqual(2, result.returncode, result.stderr)
+
+    def ledger_rows(self) -> list[dict[str, object]]:
+        return [
+            json.loads(line)
+            for line in (self.plan_path.parent / "relay_log.jsonl").read_text(encoding="utf-8").splitlines()
+        ]
+
+    def _close_w_stage(self) -> None:
+        """plan_loaded → W#1 fully closed (builder + plan-reviewer), per W template."""
+        self.add_ok("plan_loaded", node="W1", agent="orchestrator#1", note="skill=0.1.0")
+        self.add_ok("stage_start", node="W1", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
+        self.add_ok("monitor_launch", node="W1", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
+        self.add_ok("node_start", node="W1", agent="monitor#1")
+        self.add_ok("agent_launch", node="W1", agent="builder#1")
+        self.add_ok("done", node="W1", agent="builder#1")
+        self.add_ok("agent_launch", node="W1", agent="plan-reviewer#1")
+        self.add_ok("done", node="W1", agent="plan-reviewer#1")
+        self.add_ok("node_close", node="W1", agent="monitor#1")
+        self.add_ok("stage_result", node="W1", agent="monitor#1", note="stage_id=DHR_90:W#1 outcome=done")
+        self.add_ok("stage_close", node="W1", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
+
+    def _open_c1(self) -> None:
+        self.add_ok("stage_start", node="C1", agent="orchestrator#1", note="stage_id=DHR_90:C#1")
+        self.add_ok("monitor_launch", node="C1", agent="orchestrator#1", note="stage_id=DHR_90:C#1")
+        self.add_ok("node_start", node="C1", agent="monitor#1")
+
+    def _close_stage(self, node: str, stage_id: str) -> None:
+        self.add_ok("node_close", node=node, agent="monitor#1")
+        self.add_ok("stage_result", node=node, agent="monitor#1", note=f"stage_id={stage_id} outcome=done")
+        self.add_ok("stage_close", node=node, agent="orchestrator#1", note=f"stage_id={stage_id}")
+
+    def _drive_to_x1(self) -> None:
+        """W closed → C closed → R closed → X#1 open. coder#1 is live in X1."""
+        self._close_w_stage()
+        self._open_c1()
+        self.add_ok("agent_launch", node="C1", agent="coder#1")
+        self.add_ok("agent_launch", node="C1", agent="checker#1")
+        self.add_ok("done", node="C1", agent="checker#1", note="round=1 通过")
+        self.add_ok("done", node="C1", agent="coder#1", note="本批完成")
+        self._close_stage("C1", "DHR_90:C#1")
+        self.add_ok("stage_start", node="R1", agent="orchestrator#1", note="stage_id=DHR_90:R#1")
+        self.add_ok("monitor_launch", node="R1", agent="orchestrator#1", note="stage_id=DHR_90:R#1")
+        self.add_ok("node_start", node="R1", agent="monitor#1")
+        for reviewer in ("requirement#1", "lesson#1"):
+            self.add_ok("agent_launch", node="R1", agent=reviewer)
+            self.add_ok("done", node="R1", agent=reviewer)
+        self.add_ok("agent_launch", node="R1", agent="scribe#1")
+        self.add_ok("done", node="R1", agent="scribe#1", note="review.md 已收敛")
+        self._close_stage("R1", "DHR_90:R#1")
+        self.add_ok("stage_start", node="X1", agent="orchestrator#1", note="stage_id=DHR_90:X#1")
+        self.add_ok("monitor_launch", node="X1", agent="orchestrator#1", note="stage_id=DHR_90:X#1")
+        self.add_ok("node_start", node="X1", agent="monitor#1")
+
+    # --- 结构合同 ---
+
+    def test_five_stage_templates_extract(self) -> None:
+        blocks = self._template_rows()
+        self.assertEqual({"W", "C", "R", "X", "F"}, set(blocks))
+        for stage, rows in blocks.items():
+            with self.subTest(stage=stage):
+                self.assertTrue(rows["node"], f"{stage} template has no node row")
+                self.assertTrue(rows["agent"], f"{stage} template has no agent row")
+
+    def test_templates_lint_clean(self) -> None:
+        """Assembled main chain and rework chain both pass lint for every recipe tier."""
+        for recipe in ("heavy", "normal", "light"):
+            with self.subTest(recipe=recipe):
+                self._write_template_plan(recipe=recipe)
+                lint_plan(self.plan_path, repo_config())
+        self._write_template_plan(include_x=True)
+        lint_plan(self.plan_path, repo_config())
+
+    def test_a127_no_kickoff_or_verify_node_types(self) -> None:
+        for stage, rows in self._template_rows().items():
+            for row in rows["node"]:
+                node_type = self._cells(row)[3]
+                with self.subTest(stage=stage, type=node_type):
+                    self.assertIn(node_type, self.NODE_TYPES)
+
+    def test_a95_a133_c_template_shape(self) -> None:
+        """A95/A133: C node carries coder+checker+scribe+decider with frozen triggers/close."""
+        blocks = self._template_rows()
+        node_cells = [self._cells(row) for row in blocks["C"]["node"]]
+        self.assertEqual(1, len(node_cells))
+        self.assertEqual("construction", node_cells[0][3])
+        self.assertEqual("agent:checker", node_cells[0][4])
+        agents = {self._cells(row)[0]: self._cells(row) for row in blocks["C"]["agent"]}
+        self.assertEqual({"coder", "checker", "scribe", "decider"}, set(agents))
+        self.assertEqual("", agents["coder"][5])
+        self.assertEqual("", agents["checker"][5])
+        self.assertEqual("on:done:coder", agents["scribe"][5])
+        self.assertEqual("on:blocked", agents["decider"][5])
+
+    # --- 运行时合同（模板驱动的行为断言） ---
+
+    def test_a102_checkpoint_round_trips_do_not_burn_attempts(self) -> None:
+        """A102: checkpoint 往返不消耗 attempt——lost 后重拉仍是 #2 而非更高号。"""
+        self._write_template_plan()
+        self._close_w_stage()
+        self._open_c1()
+        self.add_ok("agent_launch", node="C1", agent="coder#1")
+        self.add_ok("agent_launch", node="C1", agent="checker#1")
+        for round_ in (1, 2, 3):
+            self.add_ok("checkpoint", node="C1", agent="coder#1", note=f"round={round_} 小结")
+            self.add_ok("checkpoint", node="C1", agent="checker#1", note=f"round={round_} 方案")
+        self.add_ok("agent_lost", node="C1", agent="coder#1", note="pane 失联")
+        # checkpoint 若计 attempt，此处合法号会被推高；#2 被接受即证明往返不增
+        self.add_ok("agent_launch", node="C1", agent="coder#2", note="重拉 attempt=2")
+
+    def test_a113_attempt_only_after_lost_or_cancelled(self) -> None:
+        """A113: done 终态不允许重拉；agent_lost / cancelled 之后 attempt+1 合法。"""
+        self._write_template_plan()
+        self._close_w_stage()
+        self._open_c1()
+        self.add_ok("agent_launch", node="C1", agent="coder#1")
+        self.add_ok("agent_launch", node="C1", agent="checker#1")
+        self.add_ok("done", node="C1", agent="coder#1")
+        self.assert_rejected("agent_launch", node="C1", agent="coder#2")
+        # cancelled 支路：checker 取消后重拉 +1
+        self.add_ok("cancelled", node="C1", agent="checker#1", note="用户裁决取消")
+        self.add_ok("agent_launch", node="C1", agent="checker#2", note="重拉 attempt=2")
+
+    def test_a103_rework_node_starts_fresh_attempt(self) -> None:
+        """A103: X 是新节点实例——C 节点 coder 到 #2，X1 内 coder 仍从 #1 起且互不干扰。"""
+        self._write_template_plan(include_x=True)
+        self._close_w_stage()
+        self._open_c1()
+        self.add_ok("agent_launch", node="C1", agent="coder#1")
+        self.add_ok("agent_lost", node="C1", agent="coder#1", note="失联")
+        self.add_ok("agent_launch", node="C1", agent="coder#2")
+        self.add_ok("agent_launch", node="C1", agent="checker#1")
+        self.add_ok("done", node="C1", agent="checker#1")
+        self.add_ok("done", node="C1", agent="coder#2")
+        self._close_stage("C1", "DHR_90:C#1")
+        self.add_ok("stage_start", node="R1", agent="orchestrator#1", note="stage_id=DHR_90:R#1")
+        self.add_ok("monitor_launch", node="R1", agent="orchestrator#1", note="stage_id=DHR_90:R#1")
+        self.add_ok("node_start", node="R1", agent="monitor#1")
+        for reviewer in ("requirement#1", "lesson#1"):
+            self.add_ok("agent_launch", node="R1", agent=reviewer)
+            self.add_ok("done", node="R1", agent=reviewer)
+        self.add_ok("agent_launch", node="R1", agent="scribe#1")
+        self.add_ok("done", node="R1", agent="scribe#1")
+        self._close_stage("R1", "DHR_90:R#1")
+        self.add_ok("stage_start", node="X1", agent="orchestrator#1", note="stage_id=DHR_90:X#1")
+        self.add_ok("monitor_launch", node="X1", agent="orchestrator#1", note="stage_id=DHR_90:X#1")
+        self.add_ok("node_start", node="X1", agent="monitor#1")
+        self.add_ok("agent_launch", node="X1", agent="coder#1", note="新实例 attempt=1")
+        self.assert_rejected("agent_launch", node="X1", agent="coder#2")
+
+    def test_a96_a114_decider_chain_positive_legs(self) -> None:
+        """A96/A114 正例腿：两模式 resume 都记回原 coder#1，不新增 agent_launch。"""
+        for decision_mode in ("auto", "consult"):
+            with self.subTest(decision_mode=decision_mode):
+                self.reset_ledger()
+                self._write_template_plan(decision_mode=decision_mode)
+                self._close_w_stage()
+                self._open_c1()
+                self.add_ok("agent_launch", node="C1", agent="coder#1")
+                self.add_ok("agent_launch", node="C1", agent="checker#1")
+                self.add_ok("blocked", node="C1", agent="coder#1", note="表结构有二义")
+                self.add_ok("escalate", node="C1", agent="coder#1", note="decider=decider#1")
+                self.add_ok("agent_launch", node="C1", agent="decider#1")
+                self.add_ok("decision", node="C1", agent="coder#1", note="decider=decider#1 decision.1.md")
+                self.add_ok("done", node="C1", agent="decider#1")
+                if decision_mode == "consult":
+                    self.add_ok("user_decision", node="C1", agent="coder#1", note="用户同意方案")
+                self.add_ok("resume", node="C1", agent="coder#1", note="按 decision.1.md 继续")
+                launches = [
+                    row["agent"]
+                    for row in self.ledger_rows()
+                    if row["node"] == "C1"
+                    and row["event"] == "agent_launch"
+                    and str(row["agent"]).startswith("coder#")
+                ]
+                self.assertEqual(["coder#1"], launches)
+
+    @unittest.skip(
+        "F-002: consult 模式缺 user_decision 的 resume 负例腿需 relay_log.py 的 "
+        "decision_mode 分支，超出本卡 allowed-paths；实现补齐后去 skip 即活"
+    )
+    def test_a114_consult_resume_without_user_decision_rejected(self) -> None:
+        self._write_template_plan(decision_mode="consult")
+        self._close_w_stage()
+        self._open_c1()
+        self.add_ok("agent_launch", node="C1", agent="coder#1")
+        self.add_ok("agent_launch", node="C1", agent="checker#1")
+        self.add_ok("blocked", node="C1", agent="coder#1")
+        self.add_ok("escalate", node="C1", agent="coder#1", note="decider=decider#1")
+        self.add_ok("agent_launch", node="C1", agent="decider#1")
+        self.add_ok("decision", node="C1", agent="coder#1", note="decider=decider#1 decision.1.md")
+        self.assert_rejected("resume", node="C1", agent="coder#1")
+
+    @unittest.skip(
+        "F-002: auto 模式 decider 链上 user_decision 的拒收需 relay_log.py 的 "
+        "decision_mode 分支，超出本卡 allowed-paths；实现补齐后去 skip 即活"
+    )
+    def test_a114_auto_mode_rejects_user_decision_on_decider_chain(self) -> None:
+        self._write_template_plan(decision_mode="auto")
+        self._close_w_stage()
+        self._open_c1()
+        self.add_ok("agent_launch", node="C1", agent="coder#1")
+        self.add_ok("agent_launch", node="C1", agent="checker#1")
+        self.add_ok("blocked", node="C1", agent="coder#1")
+        self.add_ok("escalate", node="C1", agent="coder#1", note="decider=decider#1")
+        self.add_ok("agent_launch", node="C1", agent="decider#1")
+        self.add_ok("decision", node="C1", agent="coder#1", note="decider=decider#1 decision.1.md")
+        self.assert_rejected("user_decision", node="C1", agent="coder#1", note="auto 不该有")
+
+    def test_a114_strategist_chain_on_rework_template(self) -> None:
+        """A114 strategist 链：记在触发 coder 名下、user_decision 永必需、无 blocked 起头。"""
+        self._write_template_plan(include_x=True)
+        self._drive_to_x1()
+        self.add_ok("agent_launch", node="X1", agent="coder#1")
+        self.add_ok("escalate", node="X1", agent="coder#1", note="strategist=strategist#1 原因=rework 超限")
+        self.add_ok("agent_launch", node="X1", agent="strategist#1")
+        self.add_ok("decision", node="X1", agent="coder#1", note="strategist=strategist#1 strategy.1.md")
+        self.add_ok("done", node="X1", agent="strategist#1")
+        # strategist 链缺 user_decision 写 resume 必拒（A97，已实现，模板形状上钉住）
+        self.assert_rejected("resume", node="X1", agent="coder#1")
+        self.add_ok("user_decision", node="X1", agent="coder#1", note="approve: 继续")
+        self.add_ok("resume", node="X1", agent="coder#1", note="引用 user_decision 继续")
+
+
 if __name__ == "__main__":
     unittest.main()

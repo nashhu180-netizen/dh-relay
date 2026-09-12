@@ -39,7 +39,80 @@ relay-light 是一套接力编排协议：人拉起规划与编排，编排在�
 - **X**：coder 修 + reviewer 再审；轮数上限读 `dh-mapping.toml`，超限停 → strategist → 用户。
 - **F**：as-built、AI 提交区、交付汇报、证据展示区，全部由 scribe 备料。
 
-每阶段的节点表与 agent 表模板见下。
+模板占位符：`<card>` = 卡号；`<prev>` = 上一节点号（首节点留空）；`<n>` = 节点序号；`<k>` = 阶段实例/返工轮次；`<打回路>` = R 阶段打回的那条 reviewer 路名。
+
+### W 阶段模板
+
+```markdown
+| node | card | stage | type | close | depends_on | note |
+|---|---|---|---|---|---|---|
+| W<n> | <card> | <card>:W#<k> | build | agent:plan-reviewer | <prev> | |
+
+| agent | node | role | launch | output | trigger | note |
+|---|---|---|---|---|---|---|
+| builder | W<n> | builder | | 七件套与 task_plan.md | | |
+| plan-reviewer | W<n> | plan-reviewer | | review.plan.md | on:done:builder | |
+```
+
+### C 阶段模板
+
+每个施工批次一个节点；coder 与 checker 批内同时在场（trigger 留空），scribe 等 coder done 后拉起，decider 仅在 blocked 时拉起；`close=agent:checker`（checker 通过才进下一批）。
+
+```markdown
+| node | card | stage | type | close | depends_on | note |
+|---|---|---|---|---|---|---|
+| C<n> | <card> | <card>:C#<k> | construction | agent:checker | <prev> | |
+
+| agent | node | role | launch | output | trigger | note |
+|---|---|---|---|---|---|---|
+| coder | C<n> | coder | | 代码与 findings/lesson 行 | | |
+| checker | C<n> | checker | | check.C<n>.md | | |
+| scribe | C<n> | scribe | | progress.md | on:done:coder | |
+| decider | C<n> | decider | | decision.<k>.md | on:blocked | |
+```
+
+### R 阶段模板
+
+reviewer 行数与名字由 marker `recipe=` 经 `dh-mapping.toml` 的 `[recipes.<档>]` 展开——三档集合不同，模板不写死；每路一行、trigger 留空并行。scribe 在全部 reviewer `done` 后由监工拉起收敛 `review.md`。
+
+```markdown
+| node | card | stage | type | close | depends_on | note |
+|---|---|---|---|---|---|---|
+| R<n> | <card> | <card>:R#<k> | review | agent:scribe | <prev> | |
+
+| agent | node | role | launch | output | trigger | note |
+|---|---|---|---|---|---|---|
+| <reviewer> | R<n> | reviewer | | review.<路>.md | | 按 recipe 展开为并行多行 |
+| scribe | R<n> | scribe | | review.md | | 监工在全部 reviewer done 后拉起 |
+```
+
+### X 阶段模板
+
+节点级返工：开新的 coder 实例（attempt 从该节点 1 起），由被打回的那路 reviewer 再审。
+
+```markdown
+| node | card | stage | type | close | depends_on | note |
+|---|---|---|---|---|---|---|
+| X<n> | <card> | <card>:X#<k> | rework | agent:<打回路> | <prev> | |
+
+| agent | node | role | launch | output | trigger | note |
+|---|---|---|---|---|---|---|
+| coder | X<n> | coder | | rework.<k>.md | | 新实例，attempt 从 1 起 |
+| <打回路> | X<n> | reviewer | | review.rework.<k>.md | on:done:coder | |
+| decider | X<n> | decider | | decision.<k>.md | on:blocked | |
+```
+
+### F 阶段模板
+
+```markdown
+| node | card | stage | type | close | depends_on | note |
+|---|---|---|---|---|---|---|
+| F<n> | <card> | <card>:F#<k> | handoff | agent:scribe | <prev> | |
+
+| agent | node | role | launch | output | trigger | note |
+|---|---|---|---|---|---|---|
+| scribe | F<n> | scribe | | as-built、提交区、汇报与证据区 | | |
+```
 
 ## 账本用法
 
