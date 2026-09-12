@@ -15,12 +15,12 @@
 >
 > 七条 A/B 旧事件（含 design 侧 `RLT-A-02`~`RLT-A-04`）的完整字段、替换缘由与本次确认来源见 [`../design/evidence/06-交叉审核记录-RLT03阶段合同补充.md`](../design/evidence/06-交叉审核记录-RLT03阶段合同补充.md)。
 <!-- dh:status
-汇报: RLT_03 已完成并以 verify 提交验收；release_mode=full
-现状: RLT_03 的 parser/lint 与纯追加账本/状态机已由 PR #4 squash 合入 master，verify=8b67bbdb6f6dfc7881350804edd013d921e8cc2b
-进行到: P1 ▸ 第 1 批 ▸ RLT_03 已完成
-下一步: RLT_05 已获独立 D-start 授权，Batch 1 由 rlt05-build-deepseek 施工
+汇报: RLT_05 已由 PR #9 squash 合入 master；三硬门 CI 全绿，集成复验 108/108；verify 提交落盘中
+现状: RLT_05 status/生命周期/配置/Recipe/止损 已交付 master；heavy 五路全 APPROVE、双域有效 mutation、rework 定向复审闭合；verify SHA 待 docs 回填
+进行到: P1 ▸ 第 1 批 ▸ RLT_05 收口（verify 落盘）
+下一步: docs 回填 verify SHA 并把 RLT_05 行标已完成；RLT_07 未获开工授权前不得启动
 看什么: design/01-RelayLight-产品设计与验收.md + 本文件
-阻塞: 无；B06 合同缺口已闭合
+阻塞: 无
 -->
 
 > **本文件是 relay-light 的正式开发方案，已经用户确认。** 生效范围仅限任务定义与 `RLT_` 号段：**不授权任何任务开工、不授权改代码、verify、合并、推送或部署**，各卡仍按依赖与批次逐张走 D 开工的门。
