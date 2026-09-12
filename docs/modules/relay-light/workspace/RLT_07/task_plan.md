@@ -3,7 +3,7 @@
 
 ## 要读的上下文 (Context Packet) ★前置
 
-> **执行契约头（zero-context）**：你是 RLT_07 手动派活的 construction worker，只处理本次派单指定的一个 Batch。进入主控给定的精确 RLT_07 worktree 后，第一个 Git 动作是 `git rebase --autostash master`，并核对基线包含 RLT_05 完成提交（squash `a7ce13c` + verify `7d06678`）。先读本文件、`brief.md`、`progress.md`、`findings.md`、DevPlan RLT_07 卡和下列 Context。**本卡正式依赖 RLT_01 尚未交付，D-start 未授权**——施工只在派单明确开放的 Batch 与 allowed-paths 内进行；路线偏离只记 `progress.md`，不回写本文件。不改 DevPlan 状态，不自行复核、验证、验收、commit、merge、push 或 deploy。
+> **执行契约头（zero-context）**：你是 RLT_07 手动派活的 construction worker，只处理本次派单指定的一个 Batch。进入主控给定的精确 RLT_07 worktree 后，第一个 Git 动作是 `git rebase --autostash master`，并核对基线包含 RLT_01 合入提交（squash `25bdbcb`）。先读本文件、`brief.md`、`progress.md`、`findings.md`、DevPlan RLT_07 卡和下列 Context。施工只在派单明确开放的 Batch 与 allowed-paths 内进行；路线偏离只记 `progress.md`，不回写本文件。不改 DevPlan 状态，不自行复核、验证、验收、merge、push 或 deploy。
 
 | ID | 来源 | 为什么 |
 |---|---|---|
@@ -24,7 +24,7 @@
 
 允许修改/创建且仅允许以下路径：
 
-1. `tools/relay-light/skill/**`（新建 `SKILL.md`、`references/adapter-claude-code.md`、`references/adapter-codex.md`；`roles.toml`、`dh-mapping.toml` **只读不改**）
+1. `tools/relay-light/skill/**`（RLT_01 已建 `SKILL.md`、`references/adapter-claude-code.md`、`references/adapter-codex.md` 三件骨架，本卡向骨架填业务内容；`roles.toml`、`dh-mapping.toml` **只读不改**；安装器 `install_skill.py`/`test_install_skill.py` 属 RLT_01 禁改）
 2. `tools/relay-light/test_relay_log.py`
 3. `docs/modules/relay-light/workspace/RLT_07/**`
 
@@ -32,9 +32,9 @@
 
 ## 基线、依赖与跨卡守恒
 
-- 任务 worktree 基点为完整 SHA `77bde7006b3ef56b9e2b04a8717e462e221241fe`（master=origin/master，含 RLT_05 squash 合入 `a7ce13c` 与 verify `7d06678`）。
-- 正式依赖：RLT_01（**未开始**：仓内骨架 + 安装器，明确不写业务内容）、RLT_02（已完成）、RLT_05（已完成）。已登记 findings F-001，D-start 前由主控裁决消解方式。
-- 跨卡守恒：RLT_07 不创建/修改安装器与两 TOML；RLT_01 后开时先 rebase 含本卡的 master，只补骨架、安装器与其测试，不覆盖、不回退本卡业务内容。
+- 任务 worktree 已 rebase 到 `25bdbcb`（origin/master，含 RLT_01 squash 合入）；RLT_05 合入 `a7ce13c` + verify `7d06678` 在更早基线中。
+- 正式依赖：RLT_01（**已完成**，PR #13 合入 `25bdbcb`：三件骨架 + 安装器）、RLT_02（已完成）、RLT_05（已完成）。F-001 已按 2026-09-12 用户裁决闭合。
+- 跨卡守恒：RLT_07 不创建/修改安装器、其测试与两 TOML；三件骨架已存在，本卡只做内容填充（Modify），不覆盖安装器与 RLT_05 交付物。
 - 卡内 Batch 1 → 2 → 3 严格串行。每批是新的手动派单；批内固定「行为/结构断言红 → 最小实现 → 批内绿 → diff 边界 → progress 结构化 DONE → 立即停止」。批次小审由主控在 worker 停止后另派并决定是否开放下一批。
 
 ## 手动派活 durable signal（三批统一）
@@ -68,10 +68,10 @@ DONE task=RLT_07 batch=<1|2|3> status=<READY_FOR_REVIEW|BLOCKED|CONSTRUCTION_DON
 
 | 项 | 冻结内容 |
 |---|---|
-| Modify/Create/Test | Create `tools/relay-light/skill/SKILL.md`；Modify `tools/relay-light/test_relay_log.py`；Record RLT_07 workspace。 |
+| Modify/Create/Test | Modify `tools/relay-light/skill/SKILL.md`（向 RLT_01 骨架填核心内容）、`tools/relay-light/test_relay_log.py`；Record RLT_07 workspace。 |
 | 目标结构 | A12 小节闭集：角色表 / 五阶段模板 / 账本用法 / 拓扑布局 / 硬规则 / 放弃项；角色表与 roles.toml 的 11 个角色键对齐（引用不改写）。 |
 | 合同 | A117 Recipe 唯一来自任务卡 task_type、字段缺失停下问用户；A98 计划/账本落模块 relay 目录不落任务工作区；A19 Linux 收口前直跑测试并原样记 progress；A66 coder 四行小结缺项写「无」、scribe 三素材优先级与禁写边界；A67 findings/lesson→coder、progress→scribe 映射；A27 凭据值禁写进硬规则。 |
-| 先红断言 | SKILL.md 缺失、小节清点缺项、闭集模型名扫描命中、术语混用扫描命中、写入者映射断言未命中——均先红。 |
+| 先红断言 | SKILL.md 骨架缺核心小节（清点失败）、闭集模型名扫描命中、术语混用扫描命中、写入者映射断言未命中——均先红。 |
 | 实现约束 | 只写 Markdown 与测试；不创建 adapter、不填模板正文、不动 TOML/relay_log；措辞引用角色名不引用模型名。 |
 | 命令与预期 | focused 红后绿；全文件 unittest exit 0；`git diff --check` exit 0。 |
 | 边界 diff | 仅 `SKILL.md`、`test_relay_log.py`、RLT_07 workspace；不得含 adapter、TOML、relay_log 改动。 |
@@ -99,9 +99,9 @@ DONE task=RLT_07 batch=<1|2|3> status=<READY_FOR_REVIEW|BLOCKED|CONSTRUCTION_DON
 
 | 项 | 冻结内容 |
 |---|---|
-| Modify/Create/Test | Create `tools/relay-light/skill/references/adapter-claude-code.md`、`references/adapter-codex.md`；Modify `test_relay_log.py`；Record workspace。 |
+| Modify/Create/Test | Modify `tools/relay-light/skill/references/adapter-claude-code.md`、`references/adapter-codex.md`（向骨架填 adapter 内容）、`test_relay_log.py`；Record workspace。 |
 | 合同 | A21 两 adapter 均写 wait 返回必须有接收者及三种方式，含无 watch 的前台 wait 回退；A26 双平台命令、claude kind 起法与 stalled 处置按 design 冻结；A136 枚举两份 adapter 全部 add/status/lint 调用，每个显式带本侧默认副本 `--config-dir`（claude `~/.claude/skills/relay-light/`、codex `~/.codex/skills/relay-light/`），三子命令各至少一次、Windows/Linux 双写法；A27 派活模板凭据禁写；A12 五件齐、落点正确在本批收尾签署。 |
-| 先红断言 | adapter 文件缺失、命令模板枚举缺 `--config-dir` 或错侧、wait/接收者/三方式缺项、双平台与 stalled 小节清点缺项——均先红。 |
+| 先红断言 | adapter 仅骨架无业务小节、命令模板枚举缺 `--config-dir` 或错侧、wait/接收者/三方式缺项、双平台与 stalled 小节清点缺项——均先红。 |
 | 实现约束 | 只创建两 adapter 与测试；措辞不硬编码模型名（A132 扫描覆盖新增文件）；不引用 watch。 |
 | 命令与预期 | focused 红后绿；全文件 unittest exit 0；`git diff --check` exit 0。 |
 | 边界 diff | 仅两 adapter + 测试 + workspace。 |

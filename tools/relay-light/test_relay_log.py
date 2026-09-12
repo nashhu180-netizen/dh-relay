@@ -6,6 +6,7 @@ import hashlib
 import json
 import io
 import os
+import re
 import shutil
 import sys
 import subprocess
@@ -3301,6 +3302,97 @@ class RelayLimitsTests(RelayCliTestCase):
                 if token.split("=", 1)[0] == key
             ]
             self.assertEqual([expected], values)
+
+
+class SkillCoreDocTests(unittest.TestCase):
+    """RLT_07 Batch 1 — HC-RL-A12/A19/A27/A66/A67/A98/A100/A117/A132 SKILL.md 核心合同。"""
+
+    SKILL_MD = SKILL_DIR / "SKILL.md"
+    ADAPTERS = (
+        SKILL_DIR / "references" / "adapter-claude-code.md",
+        SKILL_DIR / "references" / "adapter-codex.md",
+    )
+    FIVE_FILES = (
+        SKILL_MD,
+        *ADAPTERS,
+        SKILL_DIR / "roles.toml",
+        SKILL_DIR / "dh-mapping.toml",
+    )
+    MODEL_NAMES = ("opus", "gpt-5.6-terra")
+
+    @classmethod
+    def skill_text(cls) -> str:
+        return cls.SKILL_MD.read_text(encoding="utf-8")
+
+    def test_a12_five_files_present(self) -> None:
+        missing = [p.name for p in self.FIVE_FILES if not p.is_file()]
+        self.assertEqual([], missing)
+
+    def test_a12_required_sections(self) -> None:
+        text = self.skill_text()
+        for section in ("角色表", "五阶段模板", "账本用法", "拓扑布局", "硬规则", "放弃项"):
+            with self.subTest(section=section):
+                self.assertRegex(text, rf"(?m)^##\s*{section}\b")
+
+    def test_a117_recipe_sourced_from_task_type_only(self) -> None:
+        text = self.skill_text()
+        self.assertIn("task_type", text)
+        self.assertIn("唯一来源", text)
+        # 字段缺失时必须问用户、不得自行默认
+        self.assertRegex(text, r"缺失.*问用户|问用户.*缺失|不得.{0,4}默认")
+
+    def test_a98_plan_ledger_live_in_module_relay_dir(self) -> None:
+        text = self.skill_text()
+        self.assertIn("docs/modules/<模块>/relay/<plan_id>/", text)
+        self.assertRegex(text, r"不.{0,4}任务工作区|不进.{0,4}工作区")
+
+    def test_a19_linux_direct_test_before_closeout(self) -> None:
+        text = self.skill_text()
+        self.assertIn("Linux", text)
+        self.assertRegex(text, r"直跑|直接.{0,4}跑")
+        self.assertRegex(text, r"原样.{0,6}progress|progress.{0,6}原样")
+
+    def test_a27_credential_values_never_written(self) -> None:
+        text = self.skill_text()
+        self.assertIn("凭据", text)
+        self.assertRegex(text, r"永不|禁写")
+
+    def test_a100_terminology_not_mixed(self) -> None:
+        text = self.skill_text()
+        self.assertIn("终端空间", text)
+        self.assertIn("任务工作区", text)
+        # 两词必须各有定义语境且文档明令不混用
+        self.assertRegex(text, r"不混用|不得混用|不是同一")
+
+    def test_a66_coder_four_line_summary(self) -> None:
+        text = self.skill_text()
+        self.assertIn("四行", text)
+        self.assertIn("无", text)  # 缺项写「无」
+
+    def test_a66_scribe_materials_and_boundary(self) -> None:
+        text = self.skill_text()
+        self.assertIn("素材", text)
+        self.assertIn("优先级", text)
+        self.assertRegex(text, r"不.{0,4}发明")
+        self.assertIn("findings", text)
+        self.assertIn("lesson_candidates", text)
+
+    def test_a67_writer_mapping(self) -> None:
+        text = self.skill_text()
+        self.assertRegex(text, r"findings\.md.{0,40}coder|coder.{0,40}findings\.md")
+        self.assertRegex(
+            text,
+            r"lesson_candidates\.md.{0,40}coder|coder.{0,40}lesson_candidates\.md",
+        )
+        self.assertRegex(text, r"progress\.md.{0,40}scribe|scribe.{0,40}progress\.md")
+
+    def test_a132_no_hardcoded_model_names(self) -> None:
+        for path in (self.SKILL_MD, *self.ADAPTERS):
+            text = path.read_text(encoding="utf-8")
+            for name in self.MODEL_NAMES:
+                with self.subTest(file=path.name, name=name):
+                    pattern = rf"(?<![A-Za-z0-9.\-_]){re.escape(name)}(?![A-Za-z0-9.\-_])"
+                    self.assertIsNone(re.search(pattern, text, re.IGNORECASE))
 
 
 if __name__ == "__main__":
