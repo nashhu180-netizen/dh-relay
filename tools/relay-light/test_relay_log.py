@@ -3349,7 +3349,7 @@ class SkillCoreDocTests(unittest.TestCase):
     def test_a19_linux_direct_test_before_closeout(self) -> None:
         text = self.skill_text()
         self.assertIn("Linux", text)
-        self.assertRegex(text, r"直跑|直接.{0,4}跑")
+        self.assertIn("直跑 python 测试", text)  # oracle 原文「直跑 python 测试」逐字钉住
         self.assertRegex(text, r"原样.{0,6}progress|progress.{0,6}原样")
 
     def test_a27_credential_values_never_written(self) -> None:
@@ -3363,6 +3363,16 @@ class SkillCoreDocTests(unittest.TestCase):
         self.assertIn("任务工作区", text)
         # 两词必须各有定义语境且文档明令不混用
         self.assertRegex(text, r"不混用|不得混用|不是同一")
+        # oracle：「workspace」一词在中文语境下不单独出现——三份文档全扫；
+        # <workspace> 占位符与 CJK 紧邻裸词两种形态都拒（协议标头 workspace=<…> 是英文字段名，不算裸词）
+        for path in (self.SKILL_MD, *self.ADAPTERS):
+            doc = path.read_text(encoding="utf-8")
+            with self.subTest(file=path.name):
+                self.assertNotIn("<workspace>", doc)
+                self.assertIsNone(
+                    re.search(r"[一-鿿]workspace|workspace[一-鿿]", doc),
+                    f"{path.name}: bare 'workspace' adjacent to Chinese",
+                )
 
     def test_a66_coder_four_line_summary(self) -> None:
         text = self.skill_text()
@@ -3385,6 +3395,24 @@ class SkillCoreDocTests(unittest.TestCase):
             r"lesson_candidates\.md.{0,40}coder|coder.{0,40}lesson_candidates\.md",
         )
         self.assertRegex(text, r"progress\.md.{0,40}scribe|scribe.{0,40}progress\.md")
+
+    def test_ledger_note_contract_documented(self) -> None:
+        """add 强制的 note 合同、控制事件写入者与决策归属必须在 SKILL.md 可查（一致性 P1 整改钉住）。"""
+        text = self.skill_text()
+        for token in (
+            "stage_id=",
+            "outcome=",
+            "decider=",
+            "strategist=",
+            "config_dir=",
+            "plan=",
+            "plan_amend",
+            "monitor_restart",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, text)
+        self.assertIn("恰含一个", text)  # helper token 数量闸
+        self.assertIn("被阻塞", text)  # 决策类事件记在触发 agent 名下
 
     def test_a132_no_hardcoded_model_names(self) -> None:
         for path in (self.SKILL_MD, *self.ADAPTERS):
@@ -3488,13 +3516,16 @@ class SkillTemplateTests(RelayCliTestCase):
         self.assertEqual(0, result.returncode, result.stderr)
         self.assertEqual("", result.stdout)
 
-    def assert_rejected(self, event: str, *, node: str, agent: str, note: str = "") -> None:
+    def assert_rejected(
+        self, event: str, *, node: str, agent: str, note: str = "", code: str | None = None
+    ) -> None:
         ledger_path = self.plan_path.parent / "relay_log.jsonl"
         before = ledger_path.read_bytes() if ledger_path.exists() else None
         result = self.run_add(event, node=node, agent=agent, note=note)
         self.assertEqual(2, result.returncode, result.stderr)
         self.assertEqual("", result.stdout)
-        self.assertRegex(result.stderr, r"^error: ")
+        expected = rf"^error: {re.escape(code)} " if code else r"^error: "
+        self.assertRegex(result.stderr, expected)
         after = ledger_path.read_bytes() if ledger_path.exists() else None
         self.assertEqual(before, after, "a rejected add must not touch ledger bytes")
 
@@ -3614,7 +3645,7 @@ class SkillTemplateTests(RelayCliTestCase):
         self.add_ok("agent_launch", node="C1", agent="coder#1")
         self.add_ok("agent_launch", node="C1", agent="checker#1")
         self.add_ok("done", node="C1", agent="coder#1")
-        self.assert_rejected("agent_launch", node="C1", agent="coder#2")
+        self.assert_rejected("agent_launch", node="C1", agent="coder#2", code="HC-RL-A49")
         # cancelled 支路：checker 取消后重拉 +1
         self.add_ok("cancelled", node="C1", agent="checker#1", note="用户裁决取消")
         self.add_ok("agent_launch", node="C1", agent="checker#2", note="重拉 attempt=2")
@@ -3644,7 +3675,7 @@ class SkillTemplateTests(RelayCliTestCase):
         self.add_ok("monitor_launch", node="X1", agent="orchestrator#1", note="stage_id=DHR_90:X#1")
         self.add_ok("node_start", node="X1", agent="monitor#1")
         self.add_ok("agent_launch", node="X1", agent="coder#1", note="新实例 attempt=1")
-        self.assert_rejected("agent_launch", node="X1", agent="coder#2")
+        self.assert_rejected("agent_launch", node="X1", agent="coder#2", code="HC-RL-A49")
 
     def test_a96_a114_decider_chain_positive_legs(self) -> None:
         """A96/A114 正例腿：两模式 resume 都记回原 coder#1，不新增 agent_launch。"""
@@ -3715,7 +3746,7 @@ class SkillTemplateTests(RelayCliTestCase):
         self.add_ok("decision", node="X1", agent="coder#1", note="strategist=strategist#1 strategy.1.md")
         self.add_ok("done", node="X1", agent="strategist#1")
         # strategist 链缺 user_decision 写 resume 必拒（A97，已实现，模板形状上钉住）
-        self.assert_rejected("resume", node="X1", agent="coder#1")
+        self.assert_rejected("resume", node="X1", agent="coder#1", code="HC-RL-A97")
         self.add_ok("user_decision", node="X1", agent="coder#1", note="approve: 继续")
         self.add_ok("resume", node="X1", agent="coder#1", note="引用 user_decision 继续")
         # 决策类事件逐条钉在触发 coder 名下，生命周期事件在 strategist 自己名下
@@ -3750,7 +3781,7 @@ class SkillTemplateTests(RelayCliTestCase):
         self.add_ok("agent_launch", node="X1", agent="strategist#1")
         self.add_ok("decision", node="X1", agent="coder#1", note="strategist=strategist#1 strategy.1.md")
         self.add_ok("done", node="X1", agent="strategist#1")
-        self.assert_rejected("cancelled", node="X1", agent="coder#1")
+        self.assert_rejected("cancelled", node="X1", agent="coder#1", code="HC-RL-A97")
         self.add_ok("user_decision", node="X1", agent="coder#1", note="reject: 停卡")
         self.add_ok("cancelled", node="X1", agent="coder#1", note="引用 user_decision 停卡")
 
@@ -3775,10 +3806,11 @@ class SkillAdapterTests(unittest.TestCase):
         每处显式带本侧 --config-dir；add/status/lint 三子命令各至少一次。"""
         for name, side_dir in self.ADAPTER_SIDES.items():
             text = self._adapter_texts()[name]
+            # 枚举面 = 全部 add/status/lint 调用行（不认 --plan 是否存在——不带 --plan 的调用也要过 --config-dir 检查）
             calls = [
                 ln
                 for ln in text.splitlines()
-                if ("<RELAY_LOG>" in ln or "relay_log.py" in ln) and "--plan" in ln
+                if re.search(r"(?:<RELAY_LOG>|relay_log\.py)\s+(?:add|status|lint)\b", ln)
             ]
             with self.subTest(adapter=name):
                 self.assertTrue(calls, f"{name} has no relay_log.py invocations")
@@ -3809,6 +3841,11 @@ class SkillAdapterTests(unittest.TestCase):
                 # watch 未实现 → 前台 wait 回退必须写明
                 self.assertIn("未实现", text)
                 self.assertIn("空等", text)
+                # A21 分句2：面向监工/编排的 prompt 片段必须含硬规则原文
+                self.assertIn("`wait` 返回时必须有接收者", text)
+                self.assertIn("拉起监工", text)
+                # blocked 返回必须走升级分路，不许被记成 done
+                self.assertRegex(text, r"blocked.{0,20}记.{0,4}blocked|blocked.{0,20}升级")
 
     def test_a26_command_forms_claude_kind_and_stalled(self) -> None:
         for name in self.ADAPTER_SIDES:
@@ -3829,6 +3866,16 @@ class SkillAdapterTests(unittest.TestCase):
                 self.assertIn("派活 prompt", text)
                 self.assertIn("凭据", text)
                 self.assertIn("永不", text)
+
+    def test_dispatch_template_header_and_completion(self) -> None:
+        """派活模板首行 = A34 冻结标头形态；relay-light 无 node_closed，完成即停。"""
+        for name in self.ADAPTER_SIDES:
+            text = self._adapter_texts()[name]
+            with self.subTest(adapter=name):
+                self.assertIn("[relay-light] worker", text)
+                self.assertRegex(text, r"node=.{0,8}·.{0,4}agent=.{0,12}#.{0,8}·.{0,4}workspace=", text)
+                self.assertNotIn("等 node_closed", text)
+                self.assertIn("完成即停", text)
 
     def test_a12_five_files_filled_not_skeleton(self) -> None:
         for rel in (

@@ -21,9 +21,9 @@ relay-light 是一套接力编排协议：人拉起规划与编排，编排在�
 | coder | 监工 | 批内持续在场，本批 checker 通过后才收工 | 写代码、提交；自己在 `findings.md` / `lesson_candidates.md` 追加一两行；每轮写完打四行小结 |
 | scribe | 监工 | 单节点 | 只写 `progress.md`；R/F 阶段还跑脚本与汇总 |
 | checker 方向评估 | 监工 | 批内持续在场，与 coder 同生共死 | 核对本批是否偏离 `task_plan`；不做复核 |
-| decider 决策 | 监工 | 按需 | 施工 `blocked` 时产出可落地方案；不改任何文件 |
+| decider 决策 | 监工 | 按需 | 施工 `blocked` 时产出可落地方案；不改任何文件，可在方案文件提出「需要改计划」并写明改动内容（改计划工作流归 RLT_09） |
 | reviewer | 监工 | 单路 | R 阶段各路复核，路数由 Recipe 决定 |
-| strategist 全局决策 | 监工 | 按需 | 返工到轮数上限仍不过时产出全局方案；不改任何文件 |
+| strategist 全局决策 | 监工 | 按需 | 返工到轮数上限仍不过时产出全局方案；不改任何文件，可同样提出「需要改计划」（归 RLT_09） |
 
 拉取顺序固定：**编排拉监工，监工拉其余**。编排不越级拉 agent；监工不跨阶段存活；规划不参与运行。checker / decider / strategist 都不写账本、不做复核、不改文件。
 
@@ -73,7 +73,7 @@ relay-light 是一套接力编排协议：人拉起规划与编排，编排在�
 
 ### R 阶段模板
 
-reviewer 行数与名字由 marker `recipe=` 经 `dh-mapping.toml` 的 `[recipes.<档>]` 展开——三档集合不同，模板不写死；每路一行、trigger 留空并行。scribe 在全部 reviewer `done` 后由监工拉起收敛 `review.md`。
+reviewer 行数与名字由 marker `recipe=` 经 `dh-mapping.toml` 的 `[recipes.<档>]` 展开——三档集合不同，模板不写死；每路一行、trigger 留空并行。机器体检、四道闸脚本与 miner 汇总不独占 agent 行——由 scribe 在同一节点内按「先体检、后收敛」执行（§6.1 允许一个 R 实例内分节点展开，展开时各自拆成独立节点行）。scribe 在全部 reviewer `done` 后由监工拉起收敛 `review.md`。
 
 ```markdown
 | node | card | stage | type | close | depends_on | note |
@@ -83,7 +83,7 @@ reviewer 行数与名字由 marker `recipe=` 经 `dh-mapping.toml` 的 `[recipes
 | agent | node | role | launch | output | trigger | note |
 |---|---|---|---|---|---|---|
 | <reviewer> | R<n> | reviewer | | review.<路>.md | | 按 recipe 展开为并行多行 |
-| scribe | R<n> | scribe | | review.md | | 监工在全部 reviewer done 后拉起 |
+| scribe | R<n> | scribe | | review.md（含体检/四道闸脚本与 miner 汇总） | | 空 trigger 是约定例外——trigger 词表表达不了「等全员 done」：监工在全部 reviewer done 后按本 note 拉起 |
 ```
 
 ### X 阶段模板
@@ -123,8 +123,10 @@ reviewer 行数与名字由 marker `recipe=` 经 `dh-mapping.toml` 的 `[recipes
 ```text
 relay_log.py add    --plan <dir> --node <n> --event <e> --agent <a> [--note <text>] [--config-dir <dir>]
 relay_log.py status --plan <dir> [--json] [--config-dir <dir>]
-relay_log.py lint   --plan <dir> [--json] [--config-dir <dir>]
+relay_log.py lint   --plan <dir> [--config-dir <dir>]
 ```
+
+`lint` 的 `--json` 输出结构（`{"ok","violations":[…]}`）随 RLT_10 落地——当前只 `status` 实现 `--json`，给 lint 传 `--json` 会报参数错。
 
 账本行固定七字段：`seq` / `ts` / `node` / `event` / `agent`（`<名字>#<attempt>`）/ `by` / `note`。
 
@@ -132,7 +134,7 @@ relay_log.py lint   --plan <dir> [--json] [--config-dir <dir>]
 - `status`：派生当前阶段、节点状态、在场 agent 与可关闭判定；不判产出合格，只判账本完整性。
 - `lint`：校验计划硬约束（表头、节点号唯一、stage_id 合法、同卡串行、depends_on 合法等）。
 
-**attempt** = 同一节点实例内同一 agent 名的 `agent_launch` 次数，只在该 agent `agent_lost` / `cancelled` / 阶段 `failed` 后重拉时 +1，上限读 `dh-mapping.toml`。批内 `checkpoint` 往返不增；节点级返工是新实例、从 1 起。attempt 与 X 轮数两套计数独立、不叠加、不互相重置，任一先到上限即停 → strategist → 用户裁决。
+**attempt**：`--agent` 传完整 `<名字>#<attempt>`，由监工分配 = 该 `(node, 名字)` 已有最大 attempt + 1；`add` 校验 `agent_launch` 的 attempt 必须恰等于最大值 + 1，否则退出 2。只在 `agent_lost` / `cancelled` / 阶段 `failed` 后重拉时 +1，上限读 `dh-mapping.toml`。批内 `checkpoint` 往返不增；节点级返工是新实例、从 1 起。attempt 与 X 轮数两套计数独立、不叠加、不互相重置，任一先到上限即停 → strategist → 用户裁决。
 
 事件状态机：
 
@@ -140,7 +142,28 @@ relay_log.py lint   --plan <dir> [--json] [--config-dir <dir>]
 agent_launch → checkpoint* → ( blocked → escalate → decision → [user_decision] → resume )* → (done | agent_lost | cancelled)
 ```
 
-decider 链按 `decision_mode` 决定要不要 `user_decision`（`auto` 没有，`consult` 必有）；strategist 链永远有 `user_decision`。
+**控制事件**（`agent` 字段只写 `orchestrator#<n>` / `monitor#<n>`，不进状态机；写入者不符即拒）：
+
+| 事件 | 写入者 | 时序与 note 强制 |
+|---|---|---|
+| `plan_loaded` | 编排 | 账本第 1 行且仅一次；`note` 必须含 `skill=`、`config_dir=<规范化并百分号编码的配置目录>` 与 `plan=<计划目录>` |
+| `stage_start` | 编排 | 每阶段实例仅一次，先于该实例 `monitor_launch`；`note` 带 `stage_id=` |
+| `monitor_launch` | 编排 | 每阶段实例至少一次（重拉监工可多次），在本实例 `stage_start` 后；`note` 带 `stage_id=` |
+| `node_start` | 监工 | 每节点仅一次，先于该节点任何 `agent_launch`；`depends_on` 未全 `closed` 退出 2 |
+| `node_close` | 监工 | 仅双判据成立才接受（全部在场 agent 有终态 + `close` 列 agent 已 `done`） |
+| `stage_result` | 监工 | 每阶段实例可多次，`status` 只认最新一条；`note` 必须含 `stage_id=` 与 `outcome=done / blocked / failed / cancelled` 及原因；本阶段发生过 `plan_amend` 时另补方案文件名与 `nodes=` |
+| `stage_close` | 编排 | 每阶段实例一次，前置 = 该实例最新 `stage_result` 的 `outcome ∈ {done, cancelled}`，否则退出 2 |
+| `monitor_restart` | 监工 | 任意位置不限次；`note` 列盘点结果 |
+| `plan_amend` | 监工 | 运行中改计划完成后写；`note` 必须含方案文件名与 `nodes=<新节点号,…>`（改计划工作流本身归 RLT_09，此处只冻结账本合同） |
+
+**agent 事件归属**：`escalate` / `decision` / `user_decision` / `resume` / `cancelled`（决策类）记在**被阻塞/被触发的那个 agent** 名下，决策 agent 的标识写进 `note`——`escalate` 与 `decision` 的 `note` 必须**恰含一个** helper token `decider=<名>#<n>` 或 `strategist=<名>#<n>`，且 `decision` 必须复述同一 helper，缺一/多一/不符即拒。decider 与 strategist 自己的 `agent_launch` / `done` 记它们自己名下。
+
+**决策链两条，顺序固定**：
+
+- **decider 链**（施工 `blocked` 触发）：`blocked` → `escalate` → `decision` → `resume`。`user_decision` 位置固定在 `decision` 与 `resume` 之间，有无由 `decision_mode` 决定——`auto` 没有（出现即拒），`consult` 必有（缺它写 `resume` 即拒）。
+- **strategist 链**（监工的 attempt / 返工轮数计数触发，**无 `blocked` 起头**——`escalate` 直接作链首）：`escalate`（coder 名下）→ `agent_launch` / `decision` / `done`（strategist 名下）→ `user_decision`（coder 名下，**永远出现、不看 mode**）→ `resume`（继续，不新增 attempt）或 `cancelled`（停卡）。
+
+`checkpoint` 是批内往返的唯一载体：可重复任意次，不新增 attempt、不新增 `agent_launch`。
 
 ## 拓扑布局
 
@@ -153,10 +176,10 @@ decider 链按 `decision_mode` 决定要不要 `user_decision`（`auto` 没有�
 ## 硬规则
 
 1. **凭据红线**：密钥 / 凭据值永不写入任何工件、账本、命令模板、派活文案或测试；证据先按白名单过滤。
-2. **档位唯一来源**：Recipe 档位（`heavy` / `normal` / `light`）的唯一来源是任务卡的 `task_type` 字段，写进 marker 的 `recipe=`。字段缺失时规划必须停下问用户，不得自行默认（A117）。
+2. **档位唯一来源**：Recipe 档位（`heavy` / `normal` / `light`）的唯一来源是 DevPlan 任务卡的 `任务类型`（`task_type`）字段，写进 marker 的 `recipe=`。字段缺失时规划必须停下问用户，不得自行默认（A117）。
 3. **落点**：`relay_plan.md` 与账本一律落 `docs/modules/<模块>/relay/<plan_id>/`，不进任务工作区（A98）。
 4. **Linux 直跑**：在 Linux 侧收口前必须直跑 python 测试，命令与输出原样记入 `progress.md`（A19）。
-5. **写入者唯一**：`findings.md` / `lesson_candidates.md` 的写入者是 coder；`progress.md` 的写入者是 scribe；reviewer 各写各的 `review.<路径>.md`。每份文件在一个节点内只有一个写入者（A67）。
+5. **写入者唯一**：`findings.md` / `lesson_candidates.md` 的写入者是 coder；`progress.md` 的写入者是 scribe；reviewer 各写各的 `review.<路>.md`。每份文件在一个节点内只有一个写入者（A67）。
 6. **coder 四行小结**：coder 每轮写完在 pane 打固定四行小结（做了什么 / 证据 / 偏离与 findings / 下一步），缺项写「无」（A66）。
 7. **scribe 素材边界**：scribe 写 `progress.md` 的素材来源按优先级为 ① 账本事件与 note（事实层）② 本批 diff 与 coder 四行小结 ③ checker / decider / 用户裁决的方案文件名与结论；素材里没有的不得发明，且不碰 `findings.md` / `lesson_candidates.md`（A66）。
 8. **等待必须有接收者**：`wait` 是阻塞式 CLI，返回那一刻必须有接收者（watch 推送、前台阻塞循环、或后台退出唤醒三种之一）；watch 未实现时不得结束回合空等。

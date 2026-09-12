@@ -46,12 +46,20 @@ bash -lc "python3 <RELAY_LOG> status --plan <plan_dir> --json --config-dir ~/.co
 ## 派活 prompt 模板（监工 → agent）
 
 ```text
-[relay-light] node=<n> role=<角色>
+[relay-light] worker · node=<n> · agent=<角色>#<实例> · workspace=<任务工作区>
 读：<repo>/AGENTS.md → <任务工作区>/brief.md、task_plan.md、progress.md、findings.md
 边界：<本节点 allowed-paths 一句话>
 硬规则：你是 worker 不是主控；不拉终端不派活；卡住写 blocked 信号不憋死；
 凭据/密钥值永不写进 note、progress、findings、decision 或任何工件与账本。
-完成：按节点要求写产出 → 打小结 → 等 node_closed。
+完成：按节点要求写产出 → 打小结 → 按任务工作区约定写完成信号即停；relay-light 无 node_closed，worker 完成即停、不等下一节点。
+```
+
+## 拉起监工 / 编排 的 prompt 片段
+
+编排拉起监工、人拉起编排时，派单文案必须原样含等待硬规则：
+
+```text
+硬规则：`wait` 返回时必须有接收者（watch 推送 / 前台阻塞循环 / 后台退出唤醒三选一）；watch 未实现时不得结束回合空等。
 ```
 
 ## 等待与接收者（硬规则）
@@ -59,7 +67,7 @@ bash -lc "python3 <RELAY_LOG> status --plan <plan_dir> --json --config-dir ~/.co
 `herdr agent wait` 是阻塞式 CLI、不是推送——**返回那一刻必须有接收者**，没人听信号就丢。三种满足方式：
 
 1. **watch 推送**（设计已冻结、尚未实现；实现后由它唤醒监听者，收到 `[relay-light] tick` 对账）
-2. **前台阻塞循环**：`herdr agent wait <agent> --timeout 1200000`（自带 20 分钟节拍）；返回 `idle`/`done`/`blocked` 后**先读产出判断是否合格**，再写账本的 `done`
+2. **前台阻塞循环**：`herdr agent wait <agent> --timeout 1200000`（自带 20 分钟节拍）；返回后按状态分路——`blocked` → 账本记 `blocked` 走升级链；`done`/`idle` → **先读产出判断是否合格**，合格才写账本的 `done`
 3. **后台挂起唤醒**（仅 Claude Code 侧 `run_in_background` 适用；Codex 侧无对应机制，不用）
 
 watch 未实现前 Codex 侧**一律走方式 2 前台阻塞循环**，不得结束回合空等。`agent wait --until blocked` 只作可选模式，不是默认。

@@ -29,3 +29,5 @@
 - 无 batch 小审闭合不得越到下一批；无 heavy 五路闭合不得进入验收备料。
 - 允许对既有正确行为补 late-added discriminator，但必须如实登记，不能伪造红。
 - 当前未授权任何 Batch 施工；未授权复核、verify、merge 或 deploy。DevPlan 仍标「未开始」，本七件套建立不代表 D-start。
+
+> 批注（2026-09-12）：本文件是 W 期冻结快照，按 RLT_05 先例不随施工推进改写；授权实况以 `progress.md` 日志为准（用户已明示授权开工、commit/push/PR 与复核合并链）。
