@@ -55,10 +55,12 @@
 ## 边界 (Boundaries)
 
 - In scope 闭集：`tools/relay-light/skill/**`（新建 `SKILL.md`、`references/adapter-claude-code.md`、`references/adapter-codex.md`；`roles.toml`、`dh-mapping.toml` 只读对齐）、`tools/relay-light/test_relay_log.py`、`docs/modules/relay-light/workspace/RLT_07/**`。
+  - 批注（2026-09-12，F-001 裁决后）：RLT_01 已合入并交付三份骨架文件，实际施工为**向骨架填业务内容**（见 task_plan.md 改写后版本）；上表「新建」为裁决前原始措辞，保留不改写。
 - Out of scope：不改 dev-harness；不硬编码模型名；不实现 `watch`；不把运行计划放进任务工作区；不改 `relay_log.py`、两份 TOML、安装器（RLT_01）与 AGENTS。
 - 本卡 task_type=`heavy`。施工完成不等于复核、验证、签收、verify、合并、push 或部署。
 - 施工路线冻结于 `task_plan.md`；跑偏只记 `progress.md`，不得回写计划。
 - 正式依赖 RLT_01（未开始）/ RLT_02 / RLT_05（均已完成）：D-start 前须由主控裁决 RLT_01 依赖消解方式；两 TOML 已存在部分直接利用，不重建。
+  - 批注（2026-09-12，F-001 resolved）：用户裁决 RLT_01 先行，已经 PR #13 以 `25bdbcb` 合入 master，`wt/RLT_07` 已 rebase 至该基点；三项依赖全部消解。
 - 本卡按手动派活运行：每批 worker 把结构化 `DONE` 追加到 `progress.md` 后立即停止，不等待 `node_closed`；后续批次由主控重新派发。
 
 ## 触及子系统

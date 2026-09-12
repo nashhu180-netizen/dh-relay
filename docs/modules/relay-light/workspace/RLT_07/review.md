@@ -8,10 +8,10 @@
 | 路径 | 时序/独立性 | 必审靶子 | reviewer | 证据 | 状态 |
 |---|---|---|---|---|---|
 | code-round1 | construction 完成后的第一道代码复核；fresh，非施工者 | 三批整卡 diff、A132 模型名扫描、A100 术语分域、模板与 lint/账本合同一致、20 ID test 映射、有效单测候选 | devin-sub（explore，fresh） | `reviews/code-round1-devin-sub.md`；P2×1+P3×9 全部整改或转需求路；tests_effective=yes | APPROVE_WITH_NITS（2026-09-12，整改已闭合） |
-| code-round2 | code-round1 P0/P1 闭合后，与后四路 Review Batch 并发；fresh 且不复用 round1 | 核 round1 闭合、增量 diff、选择并执行有效 mutation，改坏必须行为红且还原全绿 | 待主控指派 | — | 未开始 |
-| requirement | 同一 Review Batch 独立路径 | 逐字对齐 DevPlan 20 条；无 RLT_01/08/09/10/18 抢跑；术语与职责边界语义 | 待主控指派 | — | 未开始 |
-| consistency | 同一 Review Batch 独立路径 | design ↔ DevPlan ↔ TOML ↔ SKILL.md/双 adapter ↔ tests 的闭集比对 | 待主控指派 | — | 未开始 |
-| lesson | 同一 Review Batch 独立路径 | 核 `lesson_candidates.md` 证据、去重与可复用性；若 absent 形成可核查 N/A | 待主控指派 | — | 未开始 |
+| code-round2 | code-round1 P0/P1 闭合后，与后四路 Review Batch 并发；fresh 且不复用 round1 | 核 round1 闭合、增量 diff、选择并执行有效 mutation，改坏必须行为红且还原全绿 | devin-sub（general，fresh） | 进行中（Review Batch 2026-09-12 派出） | 进行中 |
+| requirement | 同一 Review Batch 独立路径 | 逐字对齐 DevPlan 20 条；无 RLT_01/08/09/10/18 抢跑；术语与职责边界语义 | devin-sub（explore，fresh） | 进行中（Review Batch 2026-09-12 派出） | 进行中 |
+| consistency | 同一 Review Batch 独立路径 | design ↔ DevPlan ↔ TOML ↔ SKILL.md/双 adapter ↔ tests 的闭集比对 | devin-sub（explore，fresh） | 进行中（Review Batch 2026-09-12 派出） | 进行中 |
+| lesson | 同一 Review Batch 独立路径 | 核 `lesson_candidates.md` 证据、去重与可复用性；若 absent 形成可核查 N/A | devin-sub（explore，fresh） | `reviews/lesson-devin-sub.md`；P3×3 全为登记/陈旧性质，主控已补登记 L-001/L-002 与 brief 批注 | APPROVE_WITH_NITS（2026-09-12，clerical 已闭合） |
 
 ## 批次小审登记
 
