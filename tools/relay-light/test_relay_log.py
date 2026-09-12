@@ -3413,6 +3413,11 @@ class SkillCoreDocTests(unittest.TestCase):
                 self.assertIn(token, text)
         self.assertIn("恰含一个", text)  # helper token 数量闸
         self.assertIn("被阻塞", text)  # 决策类事件记在触发 agent 名下
+        # strategist 链归属：decision 记触发 coder 名下、agent_launch/done 才记 strategist 名下
+        # （一致性复核整改引入的反例钉住——decision 若归 strategist 会被账本 A69 拒）
+        self.assertRegex(text, r"`decision`.{0,24}coder 名下")
+        self.assertNotRegex(text, r"`decision`.{0,24}strategist 名下")
+        self.assertIn("planner-amend", text)  # 四名豁免清单含改计划实例
 
     def test_a132_no_hardcoded_model_names(self) -> None:
         for path in (self.SKILL_MD, *self.ADAPTERS):

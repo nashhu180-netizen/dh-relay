@@ -146,22 +146,22 @@ agent_launch → checkpoint* → ( blocked → escalate → decision → [user_d
 
 | 事件 | 写入者 | 时序与 note 强制 |
 |---|---|---|
-| `plan_loaded` | 编排 | 账本第 1 行且仅一次；`note` 必须含 `skill=`、`config_dir=<规范化并百分号编码的配置目录>` 与 `plan=<计划目录>` |
+| `plan_loaded` | 编排 | 账本第 1 行且仅一次；`node` 填第一个非 superseded 节点号；`note` 必须含 `skill=`、`config_dir=<规范化并百分号编码的配置目录>` 与 `plan=<计划目录>` |
 | `stage_start` | 编排 | 每阶段实例仅一次，先于该实例 `monitor_launch`；`note` 带 `stage_id=` |
 | `monitor_launch` | 编排 | 每阶段实例至少一次（重拉监工可多次），在本实例 `stage_start` 后；`note` 带 `stage_id=` |
 | `node_start` | 监工 | 每节点仅一次，先于该节点任何 `agent_launch`；`depends_on` 未全 `closed` 退出 2 |
 | `node_close` | 监工 | 仅双判据成立才接受（全部在场 agent 有终态 + `close` 列 agent 已 `done`） |
-| `stage_result` | 监工 | 每阶段实例可多次，`status` 只认最新一条；`note` 必须含 `stage_id=` 与 `outcome=done / blocked / failed / cancelled` 及原因；本阶段发生过 `plan_amend` 时另补方案文件名与 `nodes=` |
-| `stage_close` | 编排 | 每阶段实例一次，前置 = 该实例最新 `stage_result` 的 `outcome ∈ {done, cancelled}`，否则退出 2 |
+| `stage_result` | 监工 | 每阶段实例可多次，`status` 只认最新一条；`note` 必须含 `stage_id=` 与 `outcome=done / blocked / failed / cancelled` 及原因，且在该实例全部节点 `closed` 之后；`outcome=cancelled` 的 `note` 须引用对应 `user_decision`；本阶段发生过 `plan_amend` 时另补 `amend=<方案文件名>` 与 `nodes=`（裸文件名会丢 status 的 `result.amend` 信号） |
+| `stage_close` | 编排 | 每阶段实例一次；`note` 带 `stage_id=`；前置 = 已见本实例 `stage_start`/`monitor_launch`、全部节点 `closed` 且最新 `stage_result` 的 `outcome ∈ {done, cancelled}`，否则退出 2 |
 | `monitor_restart` | 监工 | 任意位置不限次；`note` 列盘点结果 |
 | `plan_amend` | 监工 | 运行中改计划完成后写；`note` 必须含方案文件名与 `nodes=<新节点号,…>`（改计划工作流本身归 RLT_09，此处只冻结账本合同） |
 
-**agent 事件归属**：`escalate` / `decision` / `user_decision` / `resume` / `cancelled`（决策类）记在**被阻塞/被触发的那个 agent** 名下，决策 agent 的标识写进 `note`——`escalate` 与 `decision` 的 `note` 必须**恰含一个** helper token `decider=<名>#<n>` 或 `strategist=<名>#<n>`，且 `decision` 必须复述同一 helper，缺一/多一/不符即拒。decider 与 strategist 自己的 `agent_launch` / `done` 记它们自己名下。
+**agent 事件归属**：`escalate` / `decision` / `user_decision` / `resume` / `cancelled`（决策类）记在**被阻塞/被触发的那个 agent** 名下，决策 agent 的标识写进 `note`——`escalate` 与 `decision` 的 `note` 必须**恰含一个** helper token `decider=<名>#<n>` 或 `strategist=<名>#<n>`，且 `decision` 必须复述同一 helper，缺一/多一/不符即拒。decider 与 strategist 自己的 `agent_launch` / `done` 记它们自己名下。`orchestrator#<n>` / `monitor#<n>` / `planner-amend#<n>` / `strategist#<n>` 四名豁免「agent 名在该节点 agent 表中」校验（其余 agent 名必须在表中）；改计划实例 `planner-amend#<n>` 的生命周期事件记它自己名下（工作流归 RLT_09）。
 
 **决策链两条，顺序固定**：
 
 - **decider 链**（施工 `blocked` 触发）：`blocked` → `escalate` → `decision` → `resume`。`user_decision` 位置固定在 `decision` 与 `resume` 之间，有无由 `decision_mode` 决定——`auto` 没有（出现即拒），`consult` 必有（缺它写 `resume` 即拒）。
-- **strategist 链**（监工的 attempt / 返工轮数计数触发，**无 `blocked` 起头**——`escalate` 直接作链首）：`escalate`（coder 名下）→ `agent_launch` / `decision` / `done`（strategist 名下）→ `user_decision`（coder 名下，**永远出现、不看 mode**）→ `resume`（继续，不新增 attempt）或 `cancelled`（停卡）。
+- **strategist 链**（监工的 attempt / 返工轮数计数触发，**无 `blocked` 起头**——`escalate` 直接作链首）：`escalate`（coder 名下）→ `agent_launch`（strategist 名下）→ `decision`（coder 名下，`note` 复述同一 helper）→ `done`（strategist 名下）→ `user_decision`（coder 名下，**永远出现、不看 mode**）→ `resume`（coder 名下，继续，不新增 attempt）或 `cancelled`（coder 名下，停卡）。
 
 `checkpoint` 是批内往返的唯一载体：可重复任意次，不新增 attempt、不新增 `agent_launch`。
 
