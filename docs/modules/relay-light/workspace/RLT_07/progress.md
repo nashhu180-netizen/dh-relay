@@ -13,6 +13,8 @@
 | 2026-09-12 | 主控小审 B2 | diff 仅 SKILL.md/test_relay_log.py/workspace；五模板可抽取且三档 lint 干净；C 模板四 agent trigger/close 与 A95 逐格一致；A127 节点类型闭集过；行为断言全部对已实现的账本语义成立；F-002 两条腿如实阻塞登记 | focused 9 ok + 2 skipped、全量 130 OK、diff 边界干净 | PASS（带 F-002 open），派 Batch 3 |
 | 2026-09-12 | C batch-3 | 填 `references/adapter-claude-code.md` 与 `adapter-codex.md`：本侧 `--config-dir` 固定、add/status/lint 三子命令 × Windows `python`/Linux `python3`/远程 `bash -lc` 模板、claude kind `pane run`+`rename` 起法、`agent_prompt_stalled`→`send-keys enter`+seq 复验+`agent read` 终判、wait 接收者三方式与无 watch 前台回退、派活 prompt 模板含凭据禁写原文；新增 `SkillAdapterTests` 6 例覆盖 A21/A26/A27/A136/A12 五件非骨架/不调用 watch 子命令 | 红：骨架无业务内容时结构断言红；绿：focused 6/6 OK；全量 136 tests OK（274.9s）；commit `e80a520` 已推 #11 | 批次交主控小审 |
 | 2026-09-12 | 主控小审 B3 | diff 仅两 adapter + test + workspace；A136 枚举机检全部调用带本侧 --config-dir 且三子命令齐；A21 三方式+前台回退原文在；A26 双平台/claude kind/stalled 条目齐；A27 凭据禁令在派活模板；五件非骨架；`relay_log.py watch` 零调用 | focused 6/6、全量 136 OK、diff 边界干净 | PASS——整卡施工完成（CONSTRUCTION_DONE），待 heavy 五路复核 |
+| 2026-09-12 | R code-round1 | devin-sub（explore，fresh）复核整卡：APPROVE_WITH_NITS，tests_effective=yes；P2×1（`decision.<k>.md` 撞名覆盖）+ P3×9 | `reviews/code-round1-devin-sub.md` | 施工者按发现逐条整改 |
+| 2026-09-12 | X rework-1 | P2：`decision.<k>.md`→`decision.<d>.md`（`<d>`=卡内决策序号）+ 占位符清单补 `<d>`/`<reviewer>`/`<路>`；P3：A132 边界类去 `_`、adapter `<workspace>`→`<任务工作区>`、A136 枚举认 `<RELAY_LOG>` 与字面双形态+watch 断言双形态、A12 补「由 RLT_07 交付」断言、helper 强度对齐、新增 strategist cancelled 终例+决策事件归属断言、A19 原文「直跑 python 测试」；A21 分句转需求方向路终裁 | 整改后 focused 复核相关 29 tests 27 ok + 2 skipped；全量 137 tests OK（175.0s）；`git diff --check` 0；`git diff origin/master --name-only` 仅 11 个 allowed-paths 文件 | 轮 1 闭合；放行 Review Batch 四路并发 |
 
 ## 施工批次状态（预填，不代表已执行）
 

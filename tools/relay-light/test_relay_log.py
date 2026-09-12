@@ -3391,7 +3391,7 @@ class SkillCoreDocTests(unittest.TestCase):
             text = path.read_text(encoding="utf-8")
             for name in self.MODEL_NAMES:
                 with self.subTest(file=path.name, name=name):
-                    pattern = rf"(?<![A-Za-z0-9.\-_]){re.escape(name)}(?![A-Za-z0-9.\-_])"
+                    pattern = rf"(?<![A-Za-z0-9.-]){re.escape(name)}(?![A-Za-z0-9.-])"
                     self.assertIsNone(re.search(pattern, text, re.IGNORECASE))
 
 
@@ -3439,6 +3439,7 @@ class SkillTemplateTests(RelayCliTestCase):
             .replace("<prev>", prev)
             .replace("<n>", n)
             .replace("<k>", k)
+            .replace("<d>", "1")
             .replace("<打回路>", path)
         )
 
@@ -3485,10 +3486,17 @@ class SkillTemplateTests(RelayCliTestCase):
     def add_ok(self, event: str, *, node: str, agent: str, note: str = "") -> None:
         result = self.run_add(event, node=node, agent=agent, note=note)
         self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual("", result.stdout)
 
     def assert_rejected(self, event: str, *, node: str, agent: str, note: str = "") -> None:
+        ledger_path = self.plan_path.parent / "relay_log.jsonl"
+        before = ledger_path.read_bytes() if ledger_path.exists() else None
         result = self.run_add(event, node=node, agent=agent, note=note)
         self.assertEqual(2, result.returncode, result.stderr)
+        self.assertEqual("", result.stdout)
+        self.assertRegex(result.stderr, r"^error: ")
+        after = ledger_path.read_bytes() if ledger_path.exists() else None
+        self.assertEqual(before, after, "a rejected add must not touch ledger bytes")
 
     def ledger_rows(self) -> list[dict[str, object]]:
         return [
@@ -3710,6 +3718,41 @@ class SkillTemplateTests(RelayCliTestCase):
         self.assert_rejected("resume", node="X1", agent="coder#1")
         self.add_ok("user_decision", node="X1", agent="coder#1", note="approve: 继续")
         self.add_ok("resume", node="X1", agent="coder#1", note="引用 user_decision 继续")
+        # 决策类事件逐条钉在触发 coder 名下，生命周期事件在 strategist 自己名下
+        rows = [
+            row
+            for row in self.ledger_rows()
+            if row["node"] == "X1"
+            and row["event"] in {"escalate", "decision", "user_decision", "resume"}
+        ]
+        self.assertEqual(
+            ["escalate", "decision", "user_decision", "resume"],
+            [row["event"] for row in rows],
+        )
+        self.assertEqual(["coder#1"] * 4, [row["agent"] for row in rows])
+        lifecycle = [
+            row
+            for row in self.ledger_rows()
+            if row["node"] == "X1" and row["event"] in {"agent_launch", "done"}
+            and str(row["agent"]).startswith("strategist#")
+        ]
+        self.assertEqual(
+            [("agent_launch", "strategist#1"), ("done", "strategist#1")],
+            [(row["event"], row["agent"]) for row in lifecycle],
+        )
+
+    def test_a114_strategist_chain_cancelled_finale(self) -> None:
+        """A114 strategist 链终局之二：user_decision 后 cancelled 记回原 coder。"""
+        self._write_template_plan(include_x=True)
+        self._drive_to_x1()
+        self.add_ok("agent_launch", node="X1", agent="coder#1")
+        self.add_ok("escalate", node="X1", agent="coder#1", note="strategist=strategist#1 原因=rework 超限")
+        self.add_ok("agent_launch", node="X1", agent="strategist#1")
+        self.add_ok("decision", node="X1", agent="coder#1", note="strategist=strategist#1 strategy.1.md")
+        self.add_ok("done", node="X1", agent="strategist#1")
+        self.assert_rejected("cancelled", node="X1", agent="coder#1")
+        self.add_ok("user_decision", node="X1", agent="coder#1", note="reject: 停卡")
+        self.add_ok("cancelled", node="X1", agent="coder#1", note="引用 user_decision 停卡")
 
 
 class SkillAdapterTests(unittest.TestCase):
@@ -3735,7 +3778,7 @@ class SkillAdapterTests(unittest.TestCase):
             calls = [
                 ln
                 for ln in text.splitlines()
-                if "<RELAY_LOG>" in ln and "--plan" in ln
+                if ("<RELAY_LOG>" in ln or "relay_log.py" in ln) and "--plan" in ln
             ]
             with self.subTest(adapter=name):
                 self.assertTrue(calls, f"{name} has no relay_log.py invocations")
@@ -3744,7 +3787,10 @@ class SkillAdapterTests(unittest.TestCase):
                     self.assertIn(side_dir, line, line)
                 for sub in ("add", "status", "lint"):
                     self.assertTrue(
-                        any(re.search(rf"<RELAY_LOG>\s+{sub}\b", ln) for ln in calls),
+                        any(
+                            re.search(rf"(?:<RELAY_LOG>|relay_log\.py)\s+{sub}\b", ln)
+                            for ln in calls
+                        ),
                         f"{name} missing a {sub} invocation",
                     )
                 # Windows python / Linux python3 双写法
@@ -3797,12 +3843,14 @@ class SkillAdapterTests(unittest.TestCase):
                 self.assertTrue(path.is_file(), rel)
                 text = path.read_text(encoding="utf-8")
                 self.assertNotIn("骨架占位", text, rel)
+                self.assertNotIn("由 RLT_07 交付", text, rel)
 
     def test_no_watch_subcommand_invoked(self) -> None:
         for name in self.ADAPTER_SIDES:
             text = self._adapter_texts()[name]
             with self.subTest(adapter=name):
                 self.assertIsNone(re.search(r"relay_log\.py\s+watch", text))
+                self.assertIsNone(re.search(r"<RELAY_LOG>\s+watch", text))
 
 
 if __name__ == "__main__":

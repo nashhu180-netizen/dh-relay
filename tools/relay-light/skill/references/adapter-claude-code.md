@@ -48,7 +48,7 @@ bash -lc "python3 <RELAY_LOG> status --plan <plan_dir> --json --config-dir ~/.cl
 
 ```text
 [relay-light] node=<n> role=<角色>
-读：<repo>/AGENTS.md → <workspace>/brief.md、task_plan.md、progress.md、findings.md
+读：<repo>/AGENTS.md → <任务工作区>/brief.md、task_plan.md、progress.md、findings.md
 边界：<本节点 allowed-paths 一句话>
 硬规则：你是 worker 不是主控；不拉终端不派活；卡住写 blocked 信号不憋死；
 凭据/密钥值永不写进 note、progress、findings、decision 或任何工件与账本。

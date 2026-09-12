@@ -39,7 +39,7 @@ relay-light 是一套接力编排协议：人拉起规划与编排，编排在�
 - **X**：coder 修 + reviewer 再审；轮数上限读 `dh-mapping.toml`，超限停 → strategist → 用户。
 - **F**：as-built、AI 提交区、交付汇报、证据展示区，全部由 scribe 备料。
 
-模板占位符：`<card>` = 卡号；`<prev>` = 上一节点号（首节点留空）；`<n>` = 节点序号；`<k>` = 阶段实例/返工轮次；`<打回路>` = R 阶段打回的那条 reviewer 路名。
+模板占位符：`<card>` = 卡号；`<prev>` = 上一节点号（首节点留空）；`<n>` = 节点序号；`<k>` = 阶段实例/返工轮次；`<d>` = 卡内决策文件序号（`decision.<d>.md` 全卡递增）；`<reviewer>`/`<路>` = 按 recipe 展开的 reviewer 名与其路名；`<打回路>` = R 阶段打回的那条 reviewer 路名。
 
 ### W 阶段模板
 
@@ -68,7 +68,7 @@ relay-light 是一套接力编排协议：人拉起规划与编排，编排在�
 | coder | C<n> | coder | | 代码与 findings/lesson 行 | | |
 | checker | C<n> | checker | | check.C<n>.md | | |
 | scribe | C<n> | scribe | | progress.md | on:done:coder | |
-| decider | C<n> | decider | | decision.<k>.md | on:blocked | |
+| decider | C<n> | decider | | decision.<d>.md | on:blocked | |
 ```
 
 ### R 阶段模板
@@ -99,7 +99,7 @@ reviewer 行数与名字由 marker `recipe=` 经 `dh-mapping.toml` 的 `[recipes
 |---|---|---|---|---|---|---|
 | coder | X<n> | coder | | rework.<k>.md | | 新实例，attempt 从 1 起 |
 | <打回路> | X<n> | reviewer | | review.rework.<k>.md | on:done:coder | |
-| decider | X<n> | decider | | decision.<k>.md | on:blocked | |
+| decider | X<n> | decider | | decision.<d>.md | on:blocked | |
 ```
 
 ### F 阶段模板
@@ -155,7 +155,7 @@ decider 链按 `decision_mode` 决定要不要 `user_decision`（`auto` 没有�
 1. **凭据红线**：密钥 / 凭据值永不写入任何工件、账本、命令模板、派活文案或测试；证据先按白名单过滤。
 2. **档位唯一来源**：Recipe 档位（`heavy` / `normal` / `light`）的唯一来源是任务卡的 `task_type` 字段，写进 marker 的 `recipe=`。字段缺失时规划必须停下问用户，不得自行默认（A117）。
 3. **落点**：`relay_plan.md` 与账本一律落 `docs/modules/<模块>/relay/<plan_id>/`，不进任务工作区（A98）。
-4. **Linux 直跑**：在 Linux 侧收口前必须直跑测试，命令与输出原样记入 `progress.md`（A19）。
+4. **Linux 直跑**：在 Linux 侧收口前必须直跑 python 测试，命令与输出原样记入 `progress.md`（A19）。
 5. **写入者唯一**：`findings.md` / `lesson_candidates.md` 的写入者是 coder；`progress.md` 的写入者是 scribe；reviewer 各写各的 `review.<路径>.md`。每份文件在一个节点内只有一个写入者（A67）。
 6. **coder 四行小结**：coder 每轮写完在 pane 打固定四行小结（做了什么 / 证据 / 偏离与 findings / 下一步），缺项写「无」（A66）。
 7. **scribe 素材边界**：scribe 写 `progress.md` 的素材来源按优先级为 ① 账本事件与 note（事实层）② 本批 diff 与 coder 四行小结 ③ checker / decider / 用户裁决的方案文件名与结论；素材里没有的不得发明，且不碰 `findings.md` / `lesson_candidates.md`（A66）。
