@@ -49,7 +49,7 @@ DONE task=RLT_01 batch=1 status=<READY_FOR_REVIEW|BLOCKED|CONSTRUCTION_DONE> evi
 - Python ≥3.11、仅标准库；安装器不接受任意目标——生产路径只由 `--all` 从当前用户 home 派生两个固定目标，测试经注入 home 隔离。
 - 五件闭集冻结：`SKILL.md`、`references/adapter-claude-code.md`、`references/adapter-codex.md`、`roles.toml`、`dh-mapping.toml`；源缺任一件即 fail closed 非零退出，不同步半成品集。
 - 单向覆盖：只写目标侧，源目录字节不动；每目标复制五件后校验目标哈希=源哈希，全部通过才写该目标 manifest；任一目标失败即非零退出，不修另一边的半成品。
-- manifest 为可解析 JSON 单文件，字段固定六类：`source_head`、`source_dirty`、`files`（五件相对路径→sha256）、`installed_to`、`installed_at`；写目标目录内，下次成功覆盖。
+- manifest 为可解析 JSON 单文件，字段固定五组：`source_head`、`source_dirty`、`files`（五件相对路径→sha256）、`installed_to`、`installed_at`；写目标目录内，下次成功覆盖。
 - `source_head`/`source_dirty` 取仓内源所在 git 仓（`git -C` 查询），取不到时记 `null` 不阻断安装；`source_dirty` 以 skill 目录的 porcelain 为准。
 - 骨架三件只写最小占位（front-matter/标题 + 「内容由 RLT_07 交付」），不含任何业务规则文字。
 
