@@ -76,7 +76,7 @@
 
 ## AI 提交区 ⚠️ This is not human approval
 
-**当前状态**：RLT-A-06/RLT-B-06 已正式闭合；Batch 1–4 施工与小审均 `APPROVE`；heavy 五路全部闭合——代码轮1（E-089）/轮2（E-093，双域有效 mutation 已执行并回填上表）/需求（E-094）/一致性（E-095）/教训（E-092）全 `APPROVE`。decider 二轮裁决（E-097）唯一代码 rework 项 F-HR1-01/F-HRQ-05 已执行并经 fresh 定向复审 APPROVE open=0（E-098/E-099，`reviews/rework-fhr1-rereview-devin.md`）。open 项全部为登记/设计裁决/交接事项（明细见各审件与 findings.md「heavy 复核处置裁决登记」），**代码侧与复核侧无任何未闭合项**。需求境证据已汇编（上节）；as-built 快照已落盘（`as-built/RLT_05-实现快照.md`）。用户「1 2 3 都授权」（E-101）后：PR #9 三硬门 CI 全绿并 squash 合入 master（`a7ce13c`，E-102），master 集成复验 108/108 OK，`verify(relay-light)` 提交随本次落盘、真实 SHA 由随后 docs 回填补齐；人工验收依用户明文授权记录于下方签名区。
+**当前状态**：RLT-A-06/RLT-B-06 已正式闭合；Batch 1–4 施工与小审均 `APPROVE`；heavy 五路全部闭合——代码轮1（E-089）/轮2（E-093，双域有效 mutation 已执行并回填上表）/需求（E-094）/一致性（E-095）/教训（E-092）全 `APPROVE`。decider 二轮裁决（E-097）唯一代码 rework 项 F-HR1-01/F-HRQ-05 已执行并经 fresh 定向复审 APPROVE open=0（E-098/E-099，`reviews/rework-fhr1-rereview-devin.md`）。open 项全部为登记/设计裁决/交接事项（明细见各审件与 findings.md「heavy 复核处置裁决登记」），**代码侧与复核侧无任何未闭合项**。需求境证据已汇编（上节）；as-built 快照已落盘（`as-built/RLT_05-实现快照.md`）。用户「1 2 3 都授权」（E-101）后：PR #9 三硬门 CI 全绿并 squash 合入 master（`a7ce13c`，E-102），master 集成复验 108/108 OK，`verify(relay-light)` 已提交（SHA=`7d06678d80cf4265a339329ac04bd15405d72614`，E-103）；人工验收依用户明文授权记录于下方签名区。**RLT_05 出口闸闭合：已完成。**
 
 **材料齐没齐**：[x] 4 场批审 + heavy 五路 + rework 定向复审共 10 份审件在 `reviews/`；25 行 oracle 表 PASS、需求境证据、mutation 双域记录、findings 处置登记、lesson 候选更新全部就位（E-085~E-099）
 

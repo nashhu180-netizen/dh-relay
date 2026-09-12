@@ -346,3 +346,9 @@ DONE task=RLT_05 rework=F-HR1-01 status=DONE evidence=PYTHONDONTWRITEBYTECODE=1 
 
 DONE task=RLT_05 as-built=RLT_05-实现快照 status=DONE
 | E-102 | PR/CI/合并 + master 集成复验（主控） | `git push -u origin wt/RLT_05`（commit `c14cae0`，32 文件 +6862）；`gh pr create` → PR #9（Relates #8）；CI run `34680121977`；三硬门绿后 `gh pr merge 9 --squash`；主树 `git pull --ff-only` 至 `a7ce13c` 后跑 `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tools/relay-light/test_relay_log.py` | relay-light Python=SUCCESS(1m24s)、pwsh ubuntu=SUCCESS(1m8s)、pwsh windows=SUCCESS(1m19s)、relay-core Node=FAILURE（模块暂停期 continue-on-error 观测项，不阻塞）；PR #9 于 2026-09-12 squash 合入 master=`a7ce13c369124c4f7d696f168f00c18e04cfa17a`；**集成复验：master 上 `Ran 108 tests in 146.698s OK`** | 远端收口完成；verify 提交随本行落盘，真实 SHA 由下一笔 docs 回填；人验已由用户「1 2 3 都授权」明文确认（E-101） |
+| E-103 | verify 提交与 docs 回填（主控） | master 直接提交 `verify(relay-light): RLT_05 …验收`（Verified-By: hyf / Verified-Via: chat-confirm 用户「1 2 3 都授权」/ Evidence: 108/108 集成复验 + PR #9 三硬门 SUCCESS / Verification: full / Risk-Count: 0 / DoD 三勾）；随后本笔 docs 回填 verify SHA 与完成态 | verify SHA=`7d06678d80cf4265a339329ac04bd15405d72614`，提交标题命中 `^verify(relay-light):`；DevPlan RLT_05 行翻「已完成 · release_mode=full」、dh:status 头更新；review.md 状态行落实际 SHA | RLT_05 出口闸闭合；Issue #8 由本笔 `Closes #8` 关闭；worktree `wt/RLT_05`/`.dh-worktrees/RLT_05` 清理随本笔后进行 |
+
+## Node Signal
+COMPLETE verify=7d06678d80cf4265a339329ac04bd15405d72614 release_mode=full
+
+（E-103：verify 已合入 master，DevPlan 与 review 按实际 SHA 机械回填；RLT_05 全链收口完毕）
