@@ -15,17 +15,17 @@
 >
 > 七条 A/B 旧事件（含 design 侧 `RLT-A-02`~`RLT-A-04`）的完整字段、替换缘由与本次确认来源见 [`../design/evidence/06-交叉审核记录-RLT03阶段合同补充.md`](../design/evidence/06-交叉审核记录-RLT03阶段合同补充.md)。
 <!-- dh:status
-汇报: RLT_08 已完成并 squash 合入 master（PR #15，`5cf70b8`）；AGENTS 双模块身份与 relay-light 编排协议段生效
-现状: RLT_01（25bdbcb）/RLT_07（6f26c4a）/RLT_08（5cf70b8）均已合入；RLT_08 normal 三路复核（code-round1/requirement/lesson）全闭合、X1 收口复看 APPROVE、三硬门 CI 全绿；A29 双模块身份已落地，RLT_12 首次真实安装的前置已满足
-进行到: P1 ▸ 第 1 批 ▸ RLT_01/RLT_02/RLT_03/RLT_05/RLT_07/RLT_08 已完成
-下一步: RLT_10（unittest/PowerShell 薄壳/全量测试入口，RLT_12 准入门）依赖已齐，未获开工授权前不得启动
+汇报: RLT_10 已完成并 squash 合入 master（PR #17，`efb1a60`）；lint --json 合同、A94 规则全覆盖、A16 标准库静态检查、薄壳 `tools/tests/relay-light-log.ps1` 登记入全量 runner，三硬门 CI（Windows/Ubuntu runner + relay-light-python）全绿
+现状: RLT_01（25bdbcb）/RLT_07（6f26c4a）/RLT_08（5cf70b8）/RLT_10（efb1a60）均已合入；RLT_10 normal 三路复核全闭合、X1 复看 APPROVE、X2（Windows CI 修复）小审 PASS；RLT_12 准入证据（RLT_10 验收 + 全量 runner 绿）已具备
+进行到: P1 ▸ 第 1 批 ▸ RLT_01/RLT_02/RLT_03/RLT_05/RLT_07/RLT_08/RLT_10 已完成
+下一步: RLT_12（Windows Claude 主控首个真计划 demo，标准·高危）依赖已齐；高危开工须用户另取明确确认，开工首步为 install_skill --all 并展示两个绝对目标取得授权
 看什么: design/01-RelayLight-产品设计与验收.md + 本文件
-阻塞: F-002/F-003（decision_mode 模式门 + cancelled 归属闸实现缺口）排后续卡，见 workspace/RLT_07/findings.md；RLT_08 F-4（visual_map.md 沿先例不建、模块级 knowledge/ 归 RLT_11）见 workspace/RLT_08/findings.md
+阻塞: RLT_07 F-002/F-003（decision_mode 模式门 + cancelled 归属闸）排后续卡；RLT_08 F-4（visual_map.md 沿先例不建、模块级 knowledge/ 归 RLT_11）；RLT_10 F-002（仓根无 .gitignore 忽略 __pycache__）与 F-003（relay_log.py Windows 默认代码页下 status 中文输出 UnicodeEncodeError，直接影响 RLT_12 Windows 真跑，程序侧修复待裁决）见 workspace/RLT_10/findings.md
 -->
 
 > **本文件是 relay-light 的正式开发方案，已经用户确认。** 生效范围仅限任务定义与 `RLT_` 号段：**不授权任何任务开工、不授权改代码、verify、合并、推送或部署**，各卡仍按依赖与批次逐张走 D 开工的门。
 
-> **GitHub 关联**：RLT_05 / RLT-A-06 / RLT-B-06 共用 [Issue #8](https://github.com/nashhu180-netizen/dh-relay/issues/8)/PR #9；RLT_01=[Issue #12](https://github.com/nashhu180-netizen/dh-relay/issues/12)/PR #13（`25bdbcb`）；RLT_07=[Issue #10](https://github.com/nashhu180-netizen/dh-relay/issues/10)/PR #11（`6f26c4a`）；RLT_08=[Issue #14](https://github.com/nashhu180-netizen/dh-relay/issues/14)/PR #15（`5cf70b8`）。收口 worktree/分支均已删。
+> **GitHub 关联**：RLT_05 / RLT-A-06 / RLT-B-06 共用 [Issue #8](https://github.com/nashhu180-netizen/dh-relay/issues/8)/PR #9；RLT_01=[Issue #12](https://github.com/nashhu180-netizen/dh-relay/issues/12)/PR #13（`25bdbcb`）；RLT_07=[Issue #10](https://github.com/nashhu180-netizen/dh-relay/issues/10)/PR #11（`6f26c4a`）；RLT_08=[Issue #14](https://github.com/nashhu180-netizen/dh-relay/issues/14)/PR #15（`5cf70b8`）；RLT_10=[Issue #16](https://github.com/nashhu180-netizen/dh-relay/issues/16)/PR #17（`efb1a60`）。收口 worktree/分支均已删。
 
 ## 0. B 方案审核与理解确认
 
@@ -102,7 +102,7 @@
 | RLT_05 | status/生命周期与配置/Recipe/止损 | 标准 | 已完成 | 1 | RLT_03 | [workspace/RLT_05](../workspace/RLT_05/) | 2026-09-12 / **verify `7d06678d80cf4265a339329ac04bd15405d72614`** · `release_mode=full` | heavy；Issue #8；PR #9 squash 合入 |
 | RLT_07 | 编写仓内 skill、adapter 与五阶段模板 | 标准 | 已完成 | 1 | RLT_01、RLT_02、RLT_05 | [workspace/RLT_07](../workspace/RLT_07/) | 2026-09-13 / PR #11 squash 合入（`6f26c4a`） | heavy 五路复核全闭合；Issue #10；F-002/F-003 排后续卡 |
 | RLT_08 | 接入 AGENTS 判定、协议索引与双模块身份 | 标准 | 已完成 | 1 | RLT_07 | [workspace/RLT_08](../workspace/RLT_08/) | 2026-09-13 / PR #15 squash 合入（`5cf70b8`） | normal 三路复核全闭合；Issue #14；显式登记有意绕过 B-adjust |
-| RLT_10 | 建立 unittest、PowerShell 薄壳与全量测试入口 | 标准 | 未开始 | 1 | RLT_03、RLT_05、RLT_07 | — | — | RLT_12 准入门 |
+| RLT_10 | 建立 unittest、PowerShell 薄壳与全量测试入口 | 标准 | 已完成 | 1 | RLT_03、RLT_05、RLT_07 | [workspace/RLT_10](../workspace/RLT_10/) | 2026-09-13 / PR #17 squash 合入（`efb1a60`） | normal 三路复核全闭合；Issue #16；decision.1 选项 A 追加 `relay_log.py` 仅补 `lint --json`；Windows runner 首接入暴露 F-003（status 中文输出 cp1252 崩溃，薄壳以 PYTHONUTF8 兜底，程序侧待后续卡）；RLT_12 准入门已过 |
 | RLT_12 | Windows Claude 主控跑首个真计划闭环 | 标准 | 未开始 | 1 | RLT_03、RLT_05、RLT_07、RLT_08、RLT_10 | — | — | 高危；首步承接 A32，**第一个端到端 demo** |
 | RLT_11 | 回流三条教训并核对持久化退场合同 | 轻 | 未开始 | 2 | RLT_07、RLT_12 | — | — | — |
 | RLT_13 | Windows Codex 主控复跑并验证纯配置换协作 | 标准 | 未开始 | 2 | RLT_12 | — | — | — |
