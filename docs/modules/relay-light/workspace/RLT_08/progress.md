@@ -11,6 +11,7 @@
 | 2026-09-13 | C batch-1 补记账 (`rlt08-exec`) | 按 `check.C1.md` 可整改项补登 B1 证据：新增「证据账本」节，E-001～E-004 分别登记 RED / dev-harness baseline / GREEN / 四集合 scope，含命令、关键输出与退出码并关联 `e4c8592`；不改 `AGENTS.md`、不改写历史信号 | E-001～E-004；`check.C1.md` | 发更正 `READY_FOR_REVIEW`（evidence 只引 E-ID + commit）；交 audit 重审 B1 |
 | 2026-09-13 | C batch-2 (`rlt08-exec`) | B2 relay-light 编排协议段与冻结分流：在 Runner「编排协议段」前插入并列 `## relay-light 编排协议段`（判定=adapter 标头四字段 + oracle 逐字判定句；分工=编排管阶段/监工管节点/worker 只完成当前节点、写完信号即停无 node_closed；计划例外=白名单追加有意绕过 B-adjust、只覆盖任务卡/开发方案任务行/接力计划追加、设计与验收仍走 dev-harness）；Runner 通用铁律第 2 条追加窄句「有 RELAY_RECEIPT 即冻结 Runner 流水，不交叉执行 relay-light」，原条款未删；登记 F-3（冻结句两读，取 P6 冻结标记义）、LC-2（-F 锁定句禁加反引号） | rebase=up to date；E-005（RED 四条零命中）· E-006（adapter 两首行逐字节一致）· E-007（GREEN 四条全中+diff 纯增量）· E-008（四集合闭集）；commit `59d7d22` | 发 `READY_FOR_REVIEW`；交 audit 小审 B2 |
 | 2026-09-13 | C batch-3 (`rlt08-exec`) | B3 阅读矩阵索引 + 整卡机检：矩阵表尾新增一行 relay-light 索引指向仓内 `tools/relay-light/skill/SKILL.md` 与双 adapter；跑通整卡机检脚本（exit=0）；`dh relay-light` 首行命中 `=== dh-check: relay-light ===`（25 条存量失败单独登记 F-4，不冒充解析失败、不越界修）；dev-harness 三摘要与 B1 baseline 逐项 cmp 全同；登记 LC-3（`rg -c` 空命中输出为空串） | rebase=up to date；E-009（RED 矩阵 0 命中）· E-010（矩阵恰 1 行）· E-011（dh 解析证据）· E-012（baseline cmp 3/3）· E-013（整卡机检 exit=0）· E-014（四集合终态闭集）；commit `f3af14e` | 发 `READY_FOR_REVIEW`（不打 CONSTRUCTION_DONE）；交 audit 小审 B3 |
+| 2026-09-13 | C 收口 (`rlt08-exec`) | 整卡施工完成：B1 双模块身份+`dh` 入口（`e4c8592`）、B2 relay-light 编排协议段+Runner 冻结分流+B-adjust 窄例外（`59d7d22`）、B3 矩阵索引+整卡机检+`dh` 解析+baseline 复比（`f3af14e`）；三批小审全部 PASS（check.C1/C2/C3）；证据账本 E-001～E-014 齐；findings F-1～F-4、lesson LC-1～LC-3 已登记 | E-001～E-014；commits `e4c8592`/`59d7d22`/`f3af14e`；check.C1.md/check.C2.md/check.C3.md | 发 `CONSTRUCTION_DONE`；等 orchestrator 另派 normal 三路复核，施工者不自审 |
 
 ## 施工批次状态（预填，不代表已执行）
 
@@ -53,3 +54,4 @@ DONE task=RLT_08 role=exec batch=2 status=READY_FOR_REVIEW evidence=E-005,E-006,
 DONE task=RLT_08 role=audit batch=2 status=PASS evidence=check.C2.md next=orchestrator
 DONE task=RLT_08 role=exec batch=3 status=READY_FOR_REVIEW evidence=E-009,E-010,E-011,E-012,E-013,E-014,commit=f3af14e next=orchestrator
 DONE task=RLT_08 role=audit batch=3 status=PASS evidence=check.C3.md next=orchestrator
+DONE task=RLT_08 role=exec batch=3 status=CONSTRUCTION_DONE evidence=E-001,E-002,E-003,E-004,E-005,E-006,E-007,E-008,E-009,E-010,E-011,E-012,E-013,E-014,commit=e4c8592,commit=59d7d22,commit=f3af14e next=orchestrator
