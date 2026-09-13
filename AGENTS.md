@@ -9,7 +9,7 @@
 - 技术栈：PowerShell 7 脚本 + Markdown 工件；终端后端默认 psmux（PATH 命令，不在本仓）
 - 仓库形态：单仓 · 独立仓（2026-08-17 从 `dh-crew` 用 `git filter-repo` 拆出，保留全部 31 笔历史；拆分始末见 [docs/modules/dh-relay/backlog.md](docs/modules/dh-relay/backlog.md) `DHR-BL-5`）
 - 默认分支：master
-- dev-harness 模块：slug=`dh-relay`，模块根 `docs/modules/dh-relay/`（独立仓里只有这一个模块，但保留 `docs/modules/<slug>/` 这一层——`dh` 工具链按它解析模块）
+- dev-harness 模块：slug=`dh-relay`，模块根 `docs/modules/dh-relay/`；slug=`relay-light`，模块根 `docs/modules/relay-light/`（本仓两个现役模块，均保留 `docs/modules/<slug>/` 这一层——`dh` 工具链按它解析模块）
 
 ## GitHub 协作默认流程（可由用户明确豁免）
 
@@ -85,14 +85,16 @@
 - 模块工件归 `docs/modules/dh-relay/`：`design/` 设计与验收、`dev_plan/` 计划与状态、`workspace/<卡>/` 任务工作区、`as-built/` 实现快照、`knowledge/` 教训、`backlog.md` 需求池。**与拆分前同路径**——历史留痕里的 doc 路径引用继续有效。
 - 生产代码落点 `tools/`（拆仓时由 `tools/relay/` **提级一层**，独立仓里只有 relay 一份代码，再套 `relay/` 是冗余）；测试入口 `tools/tests/run-relay-tests.ps1`（本仓自带，与任何外部 run-all 无关）。
 - verify scope = `dh-relay`；状态以 `docs/modules/dh-relay/dev_plan/` 为权威，本文件只登记不抄状态。
+- relay-light 模块：slug=`relay-light`，文档根 `docs/modules/relay-light/`，代码根 `tools/relay-light/`，verify scope = `relay-light`。
 - **运行现场不入业务仓**：P1 的 `.dh-runtime/relay/` 与历史 `<repo>/.dh-relay/<run_id>/` 仅作 legacy 读取，不原地迁移。新正式根统一为独立 PlanHome `D:/MyFiles/ai-workflow/02-agent-workspace/dh-relay-workspace`：tracked `plans/<plan_id>/plan.yaml`、`registry/projects.yaml`、`archive/`，ignored `runtime/<run_id>/`、`local/`；但 resolver 迁移验收前禁止初始化或 start。跨仓 run 索引仍在用户级 `~/.dh-relay/`，只做定位。
 
 ### `dh` 命令
 
-`dh` 全局装在 `AppData\Roaming\npm\dh.cmd`（指向 `D:\MyFiles\ai-workflow\dev-harness\tools\dh-check.mjs`，两个仓都不在）。本仓保留了 `docs/modules/dh-relay/` 这一层，所以它的模块解析正常：
+`dh` 全局装在 `AppData\Roaming\npm\dh.cmd`（指向 `D:\MyFiles\ai-workflow\dev-harness\tools\dh-check.mjs`，两个仓都不在）。本仓保留了 `docs/modules/<slug>/` 这一层，所以它的模块解析正常：
 
-- `dh dh-relay` —— 按 slug 解析
-- `dh` —— 不给参数，本仓只有一个模块，自动选中
+- `dh dh-relay` —— 按 dh-relay slug 解析
+- `dh relay-light` —— 按 relay-light slug 解析
+- `dh` —— 不给参数时，本仓有多个模块，须显式指定
 
 体检报出的存量失败项与拆分前在 dh-crew 里跑的结果一致（不是拆仓引入的）。
 

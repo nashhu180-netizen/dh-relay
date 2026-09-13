@@ -7,3 +7,4 @@
 
 | ID | 触发现场 | 可复用规则候选 | 状态 |
 |---|---|---|---|
+| LC-1 | B1 红命令在 Linux worktree 首次执行时 `rg: 未找到命令`（环境错误不算 RED） | oracle 机检脚本假定 `rg` 在 PATH；worker 环境缺失时先免 root 补装（`apt download ripgrep && dpkg -x` → `~/.local/bin`），再重跑取红 | 候选 |
