@@ -43,3 +43,4 @@ DONE task=RLT_08 role=audit batch=1 status=FAIL evidence=check.C1.md next=orches
 DONE task=RLT_08 role=exec batch=1 status=READY_FOR_REVIEW evidence=E-001,E-002,E-003,E-004,commit=e4c8592 next=orchestrator
 DONE task=RLT_08 role=audit batch=1 status=PASS evidence=check.C1.md next=orchestrator
 DONE task=RLT_08 role=exec batch=2 status=READY_FOR_REVIEW evidence=E-005,E-006,E-007,E-008,commit=59d7d22 next=orchestrator
+DONE task=RLT_08 role=audit batch=2 status=PASS evidence=check.C2.md next=orchestrator
