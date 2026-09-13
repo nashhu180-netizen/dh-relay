@@ -21,13 +21,13 @@
 
 ## 批次与 durable signal
 
-B1 → audit PASS → B2 → audit PASS → B3 → audit PASS，严格串行。每批由新派单开放，worker 在 `progress.md` 追加日志与一行信号后立即停止：
+B1 → audit PASS → B2 → audit PASS → B3 → audit PASS → orchestrator 再派收束信号，严格串行。每批由新派单开放，worker 在 `progress.md` 追加日志与一行信号后立即停止：
 
 ```text
-DONE task=RLT_08 role=exec batch=<1|2|3> status=<READY_FOR_REVIEW|CONSTRUCTION_DONE|BLOCKED> evidence=<E-ID,...> next=orchestrator
+DONE task=RLT_08 role=exec batch=<1|2|3> status=<READY_FOR_REVIEW|BLOCKED> evidence=<E-ID,...> next=orchestrator
 ```
 
-B1/B2 正常用 `READY_FOR_REVIEW`，B3 正常用 `CONSTRUCTION_DONE`。任一批不得越过 audit 小审自行续批。
+B1/B2/B3 正常均先用 `READY_FOR_REVIEW`。B3 audit PASS 后，orchestrator 必须再次明确派令，exec 才单独追加 `DONE task=RLT_08 role=exec batch=3 status=CONSTRUCTION_DONE evidence=<B3-audit-PASS-E-ID> next=orchestrator`并停止。任一批不得越过 audit 小审自行续批，B3 worker 也不得在同一次派单中预写 `CONSTRUCTION_DONE`。
 
 ## 施工共通约束
 
@@ -35,10 +35,30 @@ B1/B2 正常用 `READY_FOR_REVIEW`，B3 正常用 `CONSTRUCTION_DONE`。任一�
 - 所有文本用 `rg -F` 锁定 oracle 原文；结构检查同时限定所在小节，避免全文假阳性。
 - 每批运行 `git diff --check`、`git diff --name-only` 和针对命令；证据原样摘要写入 progress，不放凭据值。
 - 施工者只改 AGENTS 和 progress/findings/lesson，不改 `review.md` 结论；audit 只读 diff 并写独立小审证据，不修文本。
+- 允许路径总检必须分别覆盖 `master...HEAD` 已提交历史、working tree、index 和 untracked 四个集合；任一集合出现 `AGENTS.md` / RLT_08 workspace 之外的路径即失败。
 
 ## 施工步骤 (Steps)
 
 ### Batch 1 — 双模块身份与 `dh` 入口（HC-RL-A29）
+
+**动笔前 dev-harness 基线（HC-RL-A33）**
+
+在修改 `AGENTS.md` 前执行下列命令，把外部仓的 HEAD、tracked diff 和 untracked 路径集合分别冻结为无凭据内容的摘要文件。`tracked.sha256` 对 `git diff --binary HEAD` 取哈希，同时覆盖 staged + unstaged tracked 改动；`untracked-paths.sha256` 只对 NUL 分隔的路径列表取哈希，不把外部内容或路径写入业务仓。
+
+```bash
+set -euo pipefail
+dh_base=/home/nash/work/dev-harness
+baseline_dir=docs/modules/relay-light/workspace/RLT_08/evidence/dev-harness-baseline
+mkdir -p "$baseline_dir"
+git -C "$dh_base" rev-parse HEAD > "$baseline_dir/head.txt"
+git -C "$dh_base" diff --binary HEAD | sha256sum | cut -d' ' -f1 > "$baseline_dir/tracked.sha256"
+git -C "$dh_base" ls-files --others --exclude-standard -z | sha256sum | cut -d' ' -f1 > "$baseline_dir/untracked-paths.sha256"
+test "$(wc -l < "$baseline_dir/head.txt")" -eq 1
+test "$(wc -l < "$baseline_dir/tracked.sha256")" -eq 1
+test "$(wc -l < "$baseline_dir/untracked-paths.sha256")" -eq 1
+```
+
+三个基线文件随 B1 提交，并在 progress 以 E-ID 登记；任一命令失败即 `BLOCKED`，不开始改 AGENTS。
 
 **改动位置**
 
@@ -114,7 +134,7 @@ RED：协议段/判定句/两句例外文字缺失。GREEN：四项全命中，a
 1. `AGENTS.md` “任务类型阅读矩阵”增加一行，将 relay-light 规划/编排/账本/三层执行定位到仓内 `tools/relay-light/skill/SKILL.md` 及按主控侧选用的 adapter。
 2. 运行本批索引红绿检查，再运行下方整卡机检脚本。
 3. 执行 `dh relay-light`，单独记录首行模块解析证据。存量 `dh-check` 失败不冒充解析失败，也不由本卡越界修复。
-4. 检查 `/home/nash/work/dev-harness` 工作树为空；如进场前已有用户改动，只记录 baseline 并用进场前后对比证明本卡无新改动，不清理用户改动。
+4. 重算 `/home/nash/work/dev-harness` 的 HEAD / tracked diff / untracked 路径三项摘要，与 B1 提交的 baseline 逐项 `cmp`。三项完全一致才证明本卡没有给 dev-harness 增加改动；不要求外部仓原本 clean，也不清理用户改动。
 
 **样板文本**
 
@@ -125,16 +145,22 @@ RED：协议段/判定句/两句例外文字缺失。GREEN：四项全命中，a
 **红 → 绿命令**
 
 ```bash
-rg -n -F 'tools/relay-light/skill/SKILL.md' AGENTS.md
+matrix="$({ awk '/^## 任务类型阅读矩阵/{inside=1; next} /^## / && inside{exit} inside{print}' AGENTS.md; })"
+index_count="$(printf '%s\n' "$matrix" | rg -F -c 'tools/relay-light/skill/SKILL.md' || true)"
+test "$index_count" -eq 1
+printf '%s\n' "$matrix" | rg -n -F 'tools/relay-light/skill/SKILL.md'
 ```
 
-RED：阅读矩阵中零命中。GREEN：矩阵中精确一行命中，链接指向仓内唯一源。
+RED：阅读矩阵边界内命中数不等于 1（缺失、重复或放错小节均红）。GREEN：矩阵中精确一行命中，链接指向仓内唯一源。
 
 **整卡机检脚本**
 
 ```bash
 set -euo pipefail
-rg -n -F 'tools/relay-light/skill/SKILL.md' AGENTS.md
+matrix="$({ awk '/^## 任务类型阅读矩阵/{inside=1; next} /^## / && inside{exit} inside{print}' AGENTS.md; })"
+index_count="$(printf '%s\n' "$matrix" | rg -F -c 'tools/relay-light/skill/SKILL.md' || true)"
+test "$index_count" -eq 1
+printf '%s\n' "$matrix" | rg -n -F 'tools/relay-light/skill/SKILL.md'
 rg -n -F '## relay-light 编排协议段' AGENTS.md
 rg -n -F '见此标头即完成即停不等 node_closed，有 RELAY_RECEIPT 即冻结 Runner 流水' AGENTS.md
 rg -n -F '有意绕过 B-adjust' AGENTS.md
@@ -144,14 +170,41 @@ rg -n -F 'docs/modules/relay-light/' AGENTS.md
 rg -n -F 'tools/relay-light/' AGENTS.md
 rg -n -F 'verify scope = `relay-light`' AGENTS.md
 if rg -n '本仓只有一个模块|只有这一个模块|本仓只有一个模块，自动选中' AGENTS.md; then exit 1; fi
+expected='[relay-light] worker · node=<n> · agent=<角色>#<实例> · workspace=<任务工作区>'
+adapter_count=0
 for f in tools/relay-light/skill/references/adapter-*.md; do
-  sed -n '/^```text$/,/^```$/p' "$f" | sed -n '2p' | rg -F '[relay-light] worker · node='
+  actual="$(sed -n '/^```text$/,/^```$/p' "$f" | sed -n '2p')"
+  test "$actual" = "$expected"
+  adapter_count=$((adapter_count + 1))
 done
+test "$adapter_count" -eq 2
 dh relay-light > /tmp/rlt08-dh-relay-light.txt 2>&1 || true
 rg -n -F '=== dh-check: relay-light ===' /tmp/rlt08-dh-relay-light.txt
-git -C /home/nash/work/dev-harness status --short
+
+dh_base=/home/nash/work/dev-harness
+baseline_dir=docs/modules/relay-light/workspace/RLT_08/evidence/dev-harness-baseline
+current_dir="$(mktemp -d)"
+scope_dir="$(mktemp -d)"
+trap 'rm -rf "$current_dir" "$scope_dir"' EXIT
+git -C "$dh_base" rev-parse HEAD > "$current_dir/head.txt"
+git -C "$dh_base" diff --binary HEAD | sha256sum | cut -d' ' -f1 > "$current_dir/tracked.sha256"
+git -C "$dh_base" ls-files --others --exclude-standard -z | sha256sum | cut -d' ' -f1 > "$current_dir/untracked-paths.sha256"
+cmp "$baseline_dir/head.txt" "$current_dir/head.txt"
+cmp "$baseline_dir/tracked.sha256" "$current_dir/tracked.sha256"
+cmp "$baseline_dir/untracked-paths.sha256" "$current_dir/untracked-paths.sha256"
+
 git diff --check
-test "$(git diff --name-only master...HEAD -- . ':!AGENTS.md' ':!docs/modules/relay-light/workspace/RLT_08/**' | wc -l)" -eq 0
+scope_re='^(AGENTS\.md$|docs/modules/relay-light/workspace/RLT_08/)'
+git diff --name-only master...HEAD > "$scope_dir/committed.txt"
+git diff --name-only > "$scope_dir/working-tree.txt"
+git diff --cached --name-only > "$scope_dir/index.txt"
+git ls-files --others --exclude-standard > "$scope_dir/untracked.txt"
+for list in "$scope_dir"/*.txt; do
+  if rg -n -v "$scope_re" "$list"; then
+    printf 'out-of-scope path set: %s\n' "$list" >&2
+    exit 1
+  fi
+done
 ```
 
 GREEN 判据：所有正向结构命中，单模块旧句零命中，两 adapter 首行形状通过，`dh relay-light` 模块标头命中，dev-harness 无本卡新改动，diff 无空白错且路径闭集。
@@ -163,4 +216,4 @@ GREEN 判据：所有正向结构命中，单模块旧句零命中，两 adapter
 1. `progress.md` 有 B1–B3 行为 RED、GREEN、diff 边界、audit 结论与 E-ID。
 2. `findings.md` 仅登记真实冲突/存量缺口；`lesson_candidates.md` 仅登记可复用候选，不预判结论。
 3. 整卡机检证据与 `git diff --check` 成功，name-only 仅 `AGENTS.md` + RLT_08 workspace。
-4. B3 写 `CONSTRUCTION_DONE` 后停止；normal 三路复核由主控另派，施工者不自审。
+4. B3 先写 `READY_FOR_REVIEW` 并停止；audit B3 PASS 后，orchestrator 再次明确派令，exec 才单独写 `CONSTRUCTION_DONE` 并停止。normal 三路复核由主控另派，施工者不自审。

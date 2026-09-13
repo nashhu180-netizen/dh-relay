@@ -28,12 +28,26 @@
 > 仓内 `AGENTS.md` 阅读矩阵含指向 relay-light skill 的索引行；dev-harness 未被改动
 
 ```bash
-rg -n -F 'tools/relay-light/skill/SKILL.md' AGENTS.md
-git -C /home/nash/work/dev-harness status --short
-git diff --name-only master...HEAD -- AGENTS.md docs/modules/relay-light/workspace/RLT_08
+matrix="$({ awk '/^## 任务类型阅读矩阵/{inside=1; next} /^## / && inside{exit} inside{print}' AGENTS.md; })"
+index_count="$(printf '%s\n' "$matrix" | rg -F -c 'tools/relay-light/skill/SKILL.md' || true)"
+test "$index_count" -eq 1
+printf '%s\n' "$matrix" | rg -n -F 'tools/relay-light/skill/SKILL.md'
+baseline_dir=docs/modules/relay-light/workspace/RLT_08/evidence/dev-harness-baseline
+test -s "$baseline_dir/head.txt"
+test -s "$baseline_dir/tracked.sha256"
+test -s "$baseline_dir/untracked-paths.sha256"
+dh_base=/home/nash/work/dev-harness
+current_dir="$(mktemp -d)"
+trap 'rm -rf "$current_dir"' EXIT
+git -C "$dh_base" rev-parse HEAD > "$current_dir/head.txt"
+git -C "$dh_base" diff --binary HEAD | sha256sum | cut -d' ' -f1 > "$current_dir/tracked.sha256"
+git -C "$dh_base" ls-files --others --exclude-standard -z | sha256sum | cut -d' ' -f1 > "$current_dir/untracked-paths.sha256"
+cmp "$baseline_dir/head.txt" "$current_dir/head.txt"
+cmp "$baseline_dir/tracked.sha256" "$current_dir/tracked.sha256"
+cmp "$baseline_dir/untracked-paths.sha256" "$current_dir/untracked-paths.sha256"
 ```
 
-判据：第一条在“任务类型阅读矩阵”命中唯一索引行；第二条无输出；第三条只有本卡 allowed-paths。
+判据：索引在“任务类型阅读矩阵”小节边界内恰命中 1 行；B1 动笔前的 dev-harness HEAD / tracked diff / untracked 路径三项摘要文件均存在，B3 按 `task_plan.md` 重算并逐项 `cmp` 一致。
 
 ### HC-RL-A28
 
@@ -53,11 +67,18 @@ rg -n -F '设计与验收仍走 dev-harness' AGENTS.md
 > 流水判定：监工 prompt 模板首行含 `[relay-light] worker · node … · agent …#… · workspace …` 标头；AGENTS 段含「见此标头即完成即停不等 node_closed，有 RELAY_RECEIPT 即冻结 Runner 流水」判定句
 
 ```bash
-for f in tools/relay-light/skill/references/adapter-*.md; do sed -n '/^```text$/,/^```$/p' "$f" | sed -n '2p'; done
+expected='[relay-light] worker · node=<n> · agent=<角色>#<实例> · workspace=<任务工作区>'
+adapter_count=0
+for f in tools/relay-light/skill/references/adapter-*.md; do
+  actual="$(sed -n '/^```text$/,/^```$/p' "$f" | sed -n '2p')"
+  test "$actual" = "$expected"
+  adapter_count=$((adapter_count + 1))
+done
+test "$adapter_count" -eq 2
 rg -n -F '见此标头即完成即停不等 node_closed，有 RELAY_RECEIPT 即冻结 Runner 流水' AGENTS.md
 ```
 
-判据：两份 adapter 的派活 prompt 首行均符合 `[relay-light] worker · node=<n> · agent=<角色>#<实例> · workspace=<任务工作区>`，AGENTS 原文命中判定句。
+判据：恰有两份 adapter，其派活 prompt 首行均与 `[relay-light] worker · node=<n> · agent=<角色>#<实例> · workspace=<任务工作区>` 整行字节一致，AGENTS 原文命中判定句。
 
 ### HC-RL-A29
 

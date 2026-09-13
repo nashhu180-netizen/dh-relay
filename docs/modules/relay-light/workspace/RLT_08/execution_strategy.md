@@ -23,12 +23,14 @@ W builder DONE(W_READY)
   → audit(W) PASS
   → B1 exec DONE(READY_FOR_REVIEW) → audit(B1) PASS
   → B2 exec DONE(READY_FOR_REVIEW) → audit(B2) PASS
-  → B3 exec DONE(CONSTRUCTION_DONE) → audit(B3) PASS
+  → B3 exec DONE(READY_FOR_REVIEW) → audit(B3) PASS
+  → orchestrator 明确再派 → exec DONE(CONSTRUCTION_DONE)
   → normal review：code-round1 / requirement / lesson
 ```
 
 - 批内单写者，不并行修 `AGENTS.md`。
 - audit 未 PASS 不得开下一批；BLOCKED 必须先经 decide 并由 orchestrator 重新开放。
+- B3 首次派单只能发 `READY_FOR_REVIEW`；仅当 audit B3 PASS 且 orchestrator 再次明确派令后，exec 才可单独发 `CONSTRUCTION_DONE`。
 - W_READY 不是 D-start；CONSTRUCTION_DONE 不是 review/verify/验收/merge。
 
 ## 结构化信号
