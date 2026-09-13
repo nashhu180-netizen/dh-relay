@@ -37,6 +37,14 @@
 6. **【密钥红线】** 密钥 / 凭据值永不入任何工件（findings / progress / 设计文档 / commit）。进仓的窗口枚举、截图类证据先按白名单过滤，不能事后靠扫描凭据兜底。
 7. **【worktree 纪律】** 一个任务卡 = 一个 worktree，收口 squash 合并即删树；禁止长命 worktree。worker 进场第一动作自 rebase master。
 
+## relay-light 编排协议段
+
+> 被 relay-light 监工派进本仓的 agent 读本段；与下方 Runner「编排协议段（worker 铁律）」并列、互不隶属，两套流水不交叉执行。
+
+- 判定：监工派活 prompt 首行必须是 `[relay-light] worker · node=<n> · agent=<角色>#<实例> · workspace=<任务工作区>`（四字段样式：node、agent 角色、agent 实例、workspace）。见此标头即完成即停不等 node_closed，有 RELAY_RECEIPT 即冻结 Runner 流水。
+- 分工：编排管阶段，监工管本阶段节点，worker 只完成当前节点；写完完成信号即停，无 node_closed，不越位派活、不回头问用户、不自行续节点。
+- 计划例外：relay-light 运行中的白名单追加有意绕过 B-adjust；例外只覆盖任务卡、开发方案任务行与接力计划追加，设计与验收仍走 dev-harness。
+
 ## 编排协议段（worker 铁律 · 被派进本仓的 agent 必读）
 
 > **谁读**：任何被派进本仓的 worker（Claude / Codex / …），无论施工还是复核——包括被 relay 自举流水拉起的每一棒。
@@ -46,7 +54,7 @@
 ### 通用铁律（施工 / 复核都适用）
 
 1. **你是 worker，不是主控**：禁止再拉终端 / 派活 / 起 watcher，禁止调 AskUserQuestion 或以任何方式回头问用户。relay流水下只完成Work Item Ticket指向的当前Node；手动派活下只完成brief/review-brief指向的这一件事。
-2. **Ticket 定位，workspace 给业务合同**：收到Ticket时，先按Ticket进入精确worktree，读仓根AGENTS，再读Ticket指向的workspace `brief.md` / `task_plan.md` / `progress.md` / `findings.md`与Handoff；Ticket不重抄业务全文，workspace才是节点工作内容的权威来源。尚未启用Ticket的手动派活继续以brief/review-brief作为完整指令集。两种模式下都别自己加载dev-harness skill，也别满仓库寻找额外“流程框架”。
+2. **Ticket 定位，workspace 给业务合同**：收到Ticket时，先按Ticket进入精确worktree，读仓根AGENTS，再读Ticket指向的workspace `brief.md` / `task_plan.md` / `progress.md` / `findings.md`与Handoff；Ticket不重抄业务全文，workspace才是节点工作内容的权威来源。尚未启用Ticket的手动派活继续以brief/review-brief作为完整指令集。两种模式下都别自己加载dev-harness skill，也别满仓库寻找额外“流程框架”。棒次协议归属先看标记：有 RELAY_RECEIPT 即冻结 Runner 流水，不交叉执行 relay-light（其标头判定见上段）。
 3. **硬节点边界**：施工、复核、验证、诊断是不同 Node。当前 Node durable 收口并收到 `node_closed` 后立即停止；不得自行调用 `continue`、启动下一 Worker、把施工会话变成复核会话，或把测试通过解释为复核开始。
 4. **卡住必须落信号、不许憋死**：遇到阻塞 / 有疑问 / 缺信息，不要停在原地等——按 Ticket/workspace 规定的方式把 `blocked` 写出去（relay 流水下 = 写 checkpoint / result；手动派活下 = 写结构化 DONE）。单向憋在交互态里不写任何文件 = 主控在超时前完全看不见你。
 5. **范围外新想法记 findings/backlog，不顺手做**——哪怕看起来只是顺手一行改动。
