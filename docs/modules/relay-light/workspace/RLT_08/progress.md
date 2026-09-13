@@ -57,3 +57,4 @@ DONE task=RLT_08 role=audit batch=3 status=PASS evidence=check.C3.md next=orches
 DONE task=RLT_08 role=exec batch=3 status=CONSTRUCTION_DONE evidence=E-001,E-002,E-003,E-004,E-005,E-006,E-007,E-008,E-009,E-010,E-011,E-012,E-013,E-014,commit=e4c8592,commit=59d7d22,commit=f3af14e next=orchestrator
 DONE task=RLT_08 role=review batch=R status=APPROVE_WITH_NITS evidence=reviews/code-round1-rlt08-review.md next=orchestrator
 DONE task=RLT_08 role=review batch=R status=APPROVE evidence=reviews/requirement-rlt08-review.md next=orchestrator
+DONE task=RLT_08 role=review batch=R status=APPROVE_WITH_NITS evidence=reviews/lesson-rlt08-review.md next=orchestrator
