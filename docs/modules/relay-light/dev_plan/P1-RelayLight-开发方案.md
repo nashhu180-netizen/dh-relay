@@ -15,17 +15,17 @@
 >
 > 七条 A/B 旧事件（含 design 侧 `RLT-A-02`~`RLT-A-04`）的完整字段、替换缘由与本次确认来源见 [`../design/evidence/06-交叉审核记录-RLT03阶段合同补充.md`](../design/evidence/06-交叉审核记录-RLT03阶段合同补充.md)。
 <!-- dh:status
-汇报: RLT_01/RLT_07 已完成并 squash 合入 master；RLT_07 两条实现缺口裁决排后续卡
-现状: RLT_01 仓内 skill 单源与安装器由 PR #13 合入（25bdbcb）；RLT_07 skill 核心/双 adapter/五阶段模板由 PR #11 合入（6f26c4a）；RLT_07 heavy 五路复核全闭合、三硬门 CI 全绿
-进行到: P1 ▸ 第 1 批 ▸ RLT_01/RLT_07 已完成
-下一步: RLT_08（AGENTS 判定/协议索引/双模块身份）依赖已齐，未获开工授权前不得启动
+汇报: RLT_08 已完成并 squash 合入 master（PR #15，`5cf70b8`）；AGENTS 双模块身份与 relay-light 编排协议段生效
+现状: RLT_01（25bdbcb）/RLT_07（6f26c4a）/RLT_08（5cf70b8）均已合入；RLT_08 normal 三路复核（code-round1/requirement/lesson）全闭合、X1 收口复看 APPROVE、三硬门 CI 全绿；A29 双模块身份已落地，RLT_12 首次真实安装的前置已满足
+进行到: P1 ▸ 第 1 批 ▸ RLT_01/RLT_02/RLT_03/RLT_05/RLT_07/RLT_08 已完成
+下一步: RLT_10（unittest/PowerShell 薄壳/全量测试入口，RLT_12 准入门）依赖已齐，未获开工授权前不得启动
 看什么: design/01-RelayLight-产品设计与验收.md + 本文件
-阻塞: F-002/F-003（decision_mode 模式门 + cancelled 归属闸实现缺口）排后续卡，见 workspace/RLT_07/findings.md
+阻塞: F-002/F-003（decision_mode 模式门 + cancelled 归属闸实现缺口）排后续卡，见 workspace/RLT_07/findings.md；RLT_08 F-4（visual_map.md 沿先例不建、模块级 knowledge/ 归 RLT_11）见 workspace/RLT_08/findings.md
 -->
 
 > **本文件是 relay-light 的正式开发方案，已经用户确认。** 生效范围仅限任务定义与 `RLT_` 号段：**不授权任何任务开工、不授权改代码、verify、合并、推送或部署**，各卡仍按依赖与批次逐张走 D 开工的门。
 
-> **GitHub 关联**：RLT_05 / RLT-A-06 / RLT-B-06 共用 [Issue #8](https://github.com/nashhu180-netizen/dh-relay/issues/8)/PR #9；RLT_01=[Issue #12](https://github.com/nashhu180-netizen/dh-relay/issues/12)/PR #13（`25bdbcb`）；RLT_07=[Issue #10](https://github.com/nashhu180-netizen/dh-relay/issues/10)/PR #11（`6f26c4a`）。收口 worktree/分支均已删。
+> **GitHub 关联**：RLT_05 / RLT-A-06 / RLT-B-06 共用 [Issue #8](https://github.com/nashhu180-netizen/dh-relay/issues/8)/PR #9；RLT_01=[Issue #12](https://github.com/nashhu180-netizen/dh-relay/issues/12)/PR #13（`25bdbcb`）；RLT_07=[Issue #10](https://github.com/nashhu180-netizen/dh-relay/issues/10)/PR #11（`6f26c4a`）；RLT_08=[Issue #14](https://github.com/nashhu180-netizen/dh-relay/issues/14)/PR #15（`5cf70b8`）。收口 worktree/分支均已删。
 
 ## 0. B 方案审核与理解确认
 
@@ -101,7 +101,7 @@
 | RLT_03 | 计划解析/lint 与纯追加账本/状态机 | 标准 | 已完成 | 1 | RLT_02 | [workspace/RLT_03](../workspace/RLT_03/) | 2026-09-10 / **verify `8b67bbdb6f6dfc7881350804edd013d921e8cc2b`** · `release_mode=full` | heavy；合并原 03/04 |
 | RLT_05 | status/生命周期与配置/Recipe/止损 | 标准 | 已完成 | 1 | RLT_03 | [workspace/RLT_05](../workspace/RLT_05/) | 2026-09-12 / **verify `7d06678d80cf4265a339329ac04bd15405d72614`** · `release_mode=full` | heavy；Issue #8；PR #9 squash 合入 |
 | RLT_07 | 编写仓内 skill、adapter 与五阶段模板 | 标准 | 已完成 | 1 | RLT_01、RLT_02、RLT_05 | [workspace/RLT_07](../workspace/RLT_07/) | 2026-09-13 / PR #11 squash 合入（`6f26c4a`） | heavy 五路复核全闭合；Issue #10；F-002/F-003 排后续卡 |
-| RLT_08 | 接入 AGENTS 判定、协议索引与双模块身份 | 标准 | 未开始 | 1 | RLT_07 | — | — | 显式登记有意绕过 B-adjust |
+| RLT_08 | 接入 AGENTS 判定、协议索引与双模块身份 | 标准 | 已完成 | 1 | RLT_07 | [workspace/RLT_08](../workspace/RLT_08/) | 2026-09-13 / PR #15 squash 合入（`5cf70b8`） | normal 三路复核全闭合；Issue #14；显式登记有意绕过 B-adjust |
 | RLT_10 | 建立 unittest、PowerShell 薄壳与全量测试入口 | 标准 | 未开始 | 1 | RLT_03、RLT_05、RLT_07 | — | — | RLT_12 准入门 |
 | RLT_12 | Windows Claude 主控跑首个真计划闭环 | 标准 | 未开始 | 1 | RLT_03、RLT_05、RLT_07、RLT_08、RLT_10 | — | — | 高危；首步承接 A32，**第一个端到端 demo** |
 | RLT_11 | 回流三条教训并核对持久化退场合同 | 轻 | 未开始 | 2 | RLT_07、RLT_12 | — | — | — |
