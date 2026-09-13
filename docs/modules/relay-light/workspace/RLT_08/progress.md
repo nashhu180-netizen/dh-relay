@@ -12,6 +12,7 @@
 | 2026-09-13 | C batch-2 (`rlt08-exec`) | B2 relay-light 编排协议段与冻结分流：在 Runner「编排协议段」前插入并列 `## relay-light 编排协议段`（判定=adapter 标头四字段 + oracle 逐字判定句；分工=编排管阶段/监工管节点/worker 只完成当前节点、写完信号即停无 node_closed；计划例外=白名单追加有意绕过 B-adjust、只覆盖任务卡/开发方案任务行/接力计划追加、设计与验收仍走 dev-harness）；Runner 通用铁律第 2 条追加窄句「有 RELAY_RECEIPT 即冻结 Runner 流水，不交叉执行 relay-light」，原条款未删；登记 F-3（冻结句两读，取 P6 冻结标记义）、LC-2（-F 锁定句禁加反引号） | rebase=up to date；E-005（RED 四条零命中）· E-006（adapter 两首行逐字节一致）· E-007（GREEN 四条全中+diff 纯增量）· E-008（四集合闭集）；commit `59d7d22` | 发 `READY_FOR_REVIEW`；交 audit 小审 B2 |
 | 2026-09-13 | C batch-3 (`rlt08-exec`) | B3 阅读矩阵索引 + 整卡机检：矩阵表尾新增一行 relay-light 索引指向仓内 `tools/relay-light/skill/SKILL.md` 与双 adapter；跑通整卡机检脚本（exit=0）；`dh relay-light` 首行命中 `=== dh-check: relay-light ===`（25 条存量失败单独登记 F-4，不冒充解析失败、不越界修）；dev-harness 三摘要与 B1 baseline 逐项 cmp 全同；登记 LC-3（`rg -c` 空命中输出为空串） | rebase=up to date；E-009（RED 矩阵 0 命中）· E-010（矩阵恰 1 行）· E-011（dh 解析证据）· E-012（baseline cmp 3/3）· E-013（整卡机检 exit=0）· E-014（四集合终态闭集）；commit `f3af14e` | 发 `READY_FOR_REVIEW`（不打 CONSTRUCTION_DONE）；交 audit 小审 B3 |
 | 2026-09-13 | C 收口 (`rlt08-exec`) | 整卡施工完成：B1 双模块身份+`dh` 入口（`e4c8592`）、B2 relay-light 编排协议段+Runner 冻结分流+B-adjust 窄例外（`59d7d22`）、B3 矩阵索引+整卡机检+`dh` 解析+baseline 复比（`f3af14e`）；三批小审全部 PASS（check.C1/C2/C3）；证据账本 E-001～E-014 齐；findings F-1～F-4、lesson LC-1～LC-3 已登记 | E-001～E-014；commits `e4c8592`/`59d7d22`/`f3af14e`；check.C1.md/check.C2.md/check.C3.md | 发 `CONSTRUCTION_DONE`；等 orchestrator 另派 normal 三路复核，施工者不自审 |
+| 2026-09-13 | C X1 收口返工 (`rlt08-exec`) | 按编排裁决整改三路复核 nits：F-1 L95 陈旧句改历史叙述+指向 `tools/relay-light/`；F-3 Runner 铁律 2 冻结句后追加括注（oracle 逐字未动，L44/L57 两处命中不变）；LC-4/LC-5/LC-6 按 lesson 轮 P2-1/P2-2/P2-3 补登；review.md 补独立复核区/AI 提交区/需求对齐证据表/人类签名区（R4/R12）并回填路径与小审登记表；findings F-1/F-3→X1 已整改、F-2→记录、F-4→收口裁决；B3 整卡机检复跑 exit=0，`dh relay-light` 存量失败 25→22；四集合终态零越界 | E-015（AGENTS 整改+oracle 保全）· E-016（机检复跑 exit=0，dh 25→22）· E-017（四集合终态）；commit `ae38e65` | 发 `READY_FOR_REVIEW`（batch=X1）；停止 |
 
 ## 施工批次状态（预填，不代表已执行）
 
@@ -41,6 +42,7 @@
 | E-014 | 四集合 allowed-paths 终态（`f3af14e` 落账后） | 同 E-004 四集合命令 | committed=21 全在界内（B1–B3 全部工件+信号提交）、working tree=空、index=空、untracked=空 | 整卡边界成立：分支累计变更只含 `AGENTS.md` 与 RLT_08 workspace |
 | E-015 | X1 AGENTS 定向整改 + oracle 逐字保全核验 | `git diff AGENTS.md`；`rg -n -F '有 RELAY_RECEIPT 即冻结 Runner 流水' AGENTS.md`；`rg -n -F '见此标头即完成即停不等 node_closed，有 RELAY_RECEIPT 即冻结 Runner 流水' AGENTS.md` | diff 恰两 hunk：L95 陈旧句改「彼时独立仓只有 relay 一份代码…relay-light 代码根见下行 `tools/relay-light/`」（F-1）；Runner 铁律 2 冻结句后追加括注「Runner 体系冻结在 P6 现状、不删不迁；本句是流水归属判定，不是让本棒停摆」（F-3）；冻结句 `rg -F` 仍两处命中 L44/L57、A34 判定句整句 L44 逐字未动 | X1 两项 AGENTS 整改命中目标且 oracle 原文零字节改动 |
 | E-016 | X1 后整卡机检复跑（同 E-013 脚本逐字） | `bash /tmp/rlt08-b3-fullcheck.sh`（task_plan B3「整卡机检脚本」原文）；`dh relay-light` 输出 `/tmp/rlt08-dh-relay-light.txt` | 脚本 exit=0：矩阵恰 1 行、协议段/判定句/两句例外/四项身份全命中、旧单模块三变体零命中、`adapter_count=2`、dh 首行标头命中、dev-harness 三摘要 `cmp` 全同、`git diff --check` rc=0、四集合零越界；dh 存量失败 25→22（R4 三区、R12 表已补齐；余 RLT_08 项为 R15 `visual_map.md` 沿裁决不建、R16/R14/R5 存量提示） | 四条 HC 机器证在 X1 整改后仍全绿；R4/R12 缺口已消，未冒充存量全清 |
+| E-017 | 四集合 allowed-paths 终态（X1 commit `ae38e65` 落账后） | 同 E-004 四集合命令；`git diff master --name-only`；`git status --short` | committed=25 全在界内；working tree/index/untracked 三集合均空；`git status` 干净 | X1 后分支累计变更仍只含 `AGENTS.md` 与 RLT_08 workspace |
 
 ## 信号
 DONE task=RLT_08 role=builder batch=W status=W_READY evidence=brief.md,task_plan.md,execution_strategy.md,progress.md,findings.md,lesson_candidates.md,review.md,commit=f790a1d next=orchestrator
@@ -60,3 +62,4 @@ DONE task=RLT_08 role=exec batch=3 status=CONSTRUCTION_DONE evidence=E-001,E-002
 DONE task=RLT_08 role=review batch=R status=APPROVE_WITH_NITS evidence=reviews/code-round1-rlt08-review.md next=orchestrator
 DONE task=RLT_08 role=review batch=R status=APPROVE evidence=reviews/requirement-rlt08-review.md next=orchestrator
 DONE task=RLT_08 role=review batch=R status=APPROVE_WITH_NITS evidence=reviews/lesson-rlt08-review.md next=orchestrator
+DONE task=RLT_08 role=exec batch=X1 status=READY_FOR_REVIEW evidence=E-015,E-016,E-017,commit=ae38e65 next=orchestrator
