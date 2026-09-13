@@ -7,12 +7,13 @@
 |---|---|---|---|---|
 | 2026-09-13 | W builder (`rlt10-build`) | 读取 AGENTS、DevPlan RLT_10/交付物矩阵、design §3.5/§3.8 与五条 oracle、现状程序/两份 Python 测试/全量 runner、RLT_08 七件套；rebase master；建立 RLT_10 七件套和 B1–B3 红→绿/audit 计划；盘点并登记 `lint --json` 越界实现缺口 | Issue #16；worktree `wt/RLT_10`；master `73947ac`；rebase=up to date；W-BL-001；W-BL-002；F-001；七件套 | 发 `W_READY`；等 orchestrator 派 W audit，不进入施工 |
 | 2026-09-13 | exec (`rlt10-exec`) | B1：rebase master（up to date）；机械抄 §3.5 二十行映射为盘点矩阵并逐行对出现有触发（按规则行差集为空）；新增唯一冻结入口 `test_lint_cli_exit_stderr_and_json_contract`（exit 0/2/3、stderr 行形、§11 首列 111 ID 白名单、`--json` 成功/失败逐字段断言）；运行取得有效行为 RED——`--json` 两分支红于 argparse exit 2 / `error: arguments unrecognized arguments: --json`（F-001 触发），其余三分支绿；97 测试四类别跑仅该测试两分支红 | E-B1-001～E-B1-005；F-001；见下「B1 §3.5 规则映射盘点矩阵」 | 按 task_plan 停止边界发 `status=BLOCKED`，等 decide/orchestrator 裁决，不续批 |
+| 2026-09-13 | exec (`rlt10-exec`) | B1 恢复（decision.1 选项 A 用户批准）：rebase master（up to date）；`relay_log.py` 最小实现 `lint --json`——`lint_parser` 注册 `--json`、分发透传、`_lint_violation` 产出 `{rule,message,line}`（line 取违规消息 `line <n>:` 前缀真实行号，无前缀为 null）、`--json` 成功出 `{"ok":true,"violations":[]}`；不改 lint 规则语义、不复用 status schema、exit-3 `error:` 合同不变；冻结入口五分支全绿，A94 四类别 97 项 OK，两文件回归 147 项 OK | E-B1-006～E-B1-010；决策=decision.1/A（progress 末尾 DECISION 行）；`relay_log.py` diff 仅限 `--json` | 发 `status=READY_FOR_REVIEW`，等 audit B1 小审，不续批 |
 
 ## 施工批次状态（预填，不代表已执行）
 
 | Batch | 功能单元 | 红 | 绿 | 小审 | 状态 |
 |---|---|---|---|---|---|
-| 1 | lint 0/2/3、stderr/JSON、§3.5 20 行规则映射 | 已取得：`--json` 分支 argparse exit 2 / `error: arguments ...`（E-B1-002/003） | 待裁决后执行 | 待执行 | BLOCKED（F-001，待 decide/orchestrator） |
+| 1 | lint 0/2/3、stderr/JSON、§3.5 20 行规则映射 | 已取得：`--json` 分支 argparse exit 2 / `error: arguments ...`（E-B1-002/003） | 已转绿：decision.1/A 落地 `lint --json`，冻结入口五分支 + A94 97 项 + 回归 147 项全绿（E-B1-007/009/010） | 待执行 | READY_FOR_REVIEW |
 | 2 | `relay_log.py` import AST 标准库检查 | 待执行（临时 AST 变异） | 待执行 | 待执行 | PLANNED |
 | 3 | PowerShell 薄壳 + `$suites` 登记 + 全量入口 | 待执行（suite 名缺席/隔离透传） | 待执行 | 待执行 | PLANNED |
 
@@ -27,6 +28,11 @@
 | E-B1-003 | `lint --json` 原始 CLI 探针 | `python3 tools/relay-light/relay_log.py lint --plan <valid_plan_dir> --json --config-dir tools/relay-light/skill` | exit 2；stdout 空；stderr 一行 `error: arguments unrecognized arguments: --json` | F-001 坐实：`lint_parser` 未注册 `--json`，argparse 按 `error: arguments` 退 2；与 task_plan 预测一致，属有效行为 RED |
 | E-B1-004 | A94 四类别基线 | `python3 -m unittest -v tools.relay-light.test_relay_log.RelayPlanLintTests tools.relay-light.test_relay_log.RelayConfigTests tools.relay-light.test_relay_log.RelayLifecycleTests tools.relay-light.test_relay_log.RelayLimitsTests` | Ran 97 tests in 123.742s；`FAILED (failures=1, errors=1)`；唯一失败=新增合同测试的两个 `--json` 分支，其余 96 项全绿 | 既有 20 行规则反例全部仍按其映射 ID 触发；B1 唯一回归缺口即 F-001 |
 | E-B1-005 | 边界四集合 + whitespace | `git diff --check`; `git status --short`; `git diff --name-only master...HEAD`; `git ls-files --others --exclude-standard` | `diff --check` exit 0；master...HEAD 仅 `docs/modules/relay-light/workspace/RLT_10/**`；working tree/index 仅 `test_relay_log.py` + RLT_10 施工账；untracked 仅测试运行副产品 `__pycache__`（已删除）；`relay_log.py`/`install_skill.py` 零 diff | 本批全部改动落在 allowed-paths 闭集内 |
+| E-B1-006 | Git 基线（B1 恢复进场） | `git rebase --autostash master`; `git status`; `git branch --show-current` | rebase=`当前分支 wt/RLT_10 是最新的`；工作区干净；分支=`wt/RLT_10`；HEAD=`91d9fe6` | 恢复施工在 decision.1/A 已同步的基线上开始 |
+| E-B1-007 | A80 冻结入口转绿 | `python3 -m unittest -v tools.relay-light.test_relay_log.RelayPlanLintTests.test_lint_cli_exit_stderr_and_json_contract` | exit 0；`OK`；1 test（五个 subTest 分支全过） | A80 合同经唯一冻结入口完整通过 |
+| E-B1-008 | `lint --json` 原始 CLI 取证 | `relay_log.py lint --plan <dir> --json --config-dir tools/relay-light/skill` | 违规计划→`{"ok": false, "violations": [{"rule": "HC-RL-A46", "message": "line 7: duplicate node W1", "line": 7}]}` exit 2；合法计划→`{"ok": true, "violations": []}` exit 0；文本模式仍 `lint: ok` exit 0；缺计划+`--json`→`error: HC-RL-A18 ...` exit 3 | 字段完整真实（rule/message/line），exit 0/2/3 与 stderr 合同保持；exit-3 不伪造 lint 违反项 |
+| E-B1-009 | A94 四类别基线转绿 | `python3 -m unittest -v tools.relay-light.test_relay_log.RelayPlanLintTests tools.relay-light.test_relay_log.RelayConfigTests tools.relay-light.test_relay_log.RelayLifecycleTests tools.relay-light.test_relay_log.RelayLimitsTests` | exit 0；Ran 97 tests in 123.076s；`OK` | A94 命令组全绿，含新合同测试 |
+| E-B1-010 | 两份 Python 全量回归（A15 旁证） | `python3 -m unittest tools/relay-light/test_relay_log.py tools/relay-light/test_install_skill.py -v` | exit 0；Ran 147 tests in 159.256s；`OK (skipped=2)` | 整仓 Python 回归绿；两项 skip 为既有 A114/relay_log.py 范围缺口，非本批引入 |
 
 ## B1 §3.5 规则映射盘点矩阵（exec 机械抄表 + 读码对出触发方）
 
