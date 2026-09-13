@@ -16,7 +16,8 @@ $suites = @(
   'relay-host-loop.ps1',
   'relay-agent-tool.ps1',
   'relay-policy.ps1',
-  'relay-contract-reason-coverage.ps1'
+  'relay-contract-reason-coverage.ps1',
+  'relay-light-log.ps1'
 )
 $failed = 0
 $skipped = 0

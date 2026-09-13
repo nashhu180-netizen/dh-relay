@@ -9,6 +9,7 @@
 | 2026-09-13 | exec (`rlt10-exec`) | B1：rebase master（up to date）；机械抄 §3.5 二十行映射为盘点矩阵并逐行对出现有触发（按规则行差集为空）；新增唯一冻结入口 `test_lint_cli_exit_stderr_and_json_contract`（exit 0/2/3、stderr 行形、§11 首列 111 ID 白名单、`--json` 成功/失败逐字段断言）；运行取得有效行为 RED——`--json` 两分支红于 argparse exit 2 / `error: arguments unrecognized arguments: --json`（F-001 触发），其余三分支绿；97 测试四类别跑仅该测试两分支红 | E-B1-001～E-B1-005；F-001；见下「B1 §3.5 规则映射盘点矩阵」 | 按 task_plan 停止边界发 `status=BLOCKED`，等 decide/orchestrator 裁决，不续批 |
 | 2026-09-13 | exec (`rlt10-exec`) | B1 恢复（decision.1 选项 A 用户批准）：rebase master（up to date）；`relay_log.py` 最小实现 `lint --json`——`lint_parser` 注册 `--json`、分发透传、`_lint_violation` 产出 `{rule,message,line}`（line 取违规消息 `line <n>:` 前缀真实行号，无前缀为 null）、`--json` 成功出 `{"ok":true,"violations":[]}`；不改 lint 规则语义、不复用 status schema、exit-3 `error:` 合同不变；冻结入口五分支全绿，A94 四类别 97 项 OK，两文件回归 147 项 OK | E-B1-006～E-B1-010；决策=decision.1/A（progress 末尾 DECISION 行）；`relay_log.py` diff 仅限 `--json` | 发 `status=READY_FOR_REVIEW`，等 audit B1 小审，不续批 |
 | 2026-09-13 | exec (`rlt10-exec`) | B2（B1 audit PASS=check.C1.md 后派单）：rebase master（up to date）；新增 `test_relay_log_imports_are_stdlib_only`——`ast.parse` 解析仓内 `relay_log.py`（不 import 被测模块），`Import`/`ImportFrom` 收集顶层模块，`__future__` 单列，差集须全在 `sys.stdlib_module_names`，断言非空防假绿、失败列排序越界名；先注入 `rlt10_fake_third_party` 变异取 RED 再撤销（未提交），现状 import 集合 GREEN | E-B2-001～E-B2-005；collected={__future__,argparse,dataclasses,datetime,json,os,pathlib,re,sys,tomllib,urllib} | 发 `status=READY_FOR_REVIEW`，等 audit B2 小审，不续批 |
+| 2026-09-13 | exec (`rlt10-exec`) | B3（B2 audit PASS=check.C2.md 后派单）：rebase master（up to date）；登记前全量 runner 证 `relay-light-log` 零命中（入口缺席 RED）；新建薄壳 `tools/tests/relay-light-log.ps1`——`python`→`python3` 顺序 Get-Command 取首命中 `.Source`、两者皆缺时恰一行 `SUITE SKIP relay-light-log (python/python3 missing)` exit 0、经 `$PSScriptRoot` 上溯仓根顺序跑两份 unittest、原样透传输出与 `$LASTEXITCODE`；首跑暴露 `Get-Command` 双命中（`/usr/bin/python3` 与 `/bin/python3`）数组化 bug，改 `Select-Object -First 1).Source` 修复；`run-relay-tests.ps1` 仅在 `$suites` 末尾追加一项；隔离证 fake python exit 7 透传、无解释器单行 SKIP；薄壳独立、全量、Python 直跑三证全绿 | E-B3-001～E-B3-007；Linux pwsh 7.6.6 本地兼容证，不冒充 Windows 真机 | 发 `status=READY_FOR_REVIEW`，等 audit B3 小审，不打 CONSTRUCTION_DONE |
 
 ## 施工批次状态（预填，不代表已执行）
 
@@ -16,7 +17,7 @@
 |---|---|---|---|---|---|
 | 1 | lint 0/2/3、stderr/JSON、§3.5 20 行规则映射 | 已取得：`--json` 分支 argparse exit 2 / `error: arguments ...`（E-B1-002/003） | 已转绿：decision.1/A 落地 `lint --json`，冻结入口五分支 + A94 97 项 + 回归 147 项全绿（E-B1-007/009/010） | 待执行 | READY_FOR_REVIEW |
 | 2 | `relay_log.py` import AST 标准库检查 | 已取得：临时注入 `rlt10_fake_third_party` 变异使断言 FAIL 且消息列出越界名（E-B2-002） | 已转绿：变异撤销后冻结入口 + 两文件回归全绿（E-B2-003/004） | 待执行 | READY_FOR_REVIEW |
-| 3 | PowerShell 薄壳 + `$suites` 登记 + 全量入口 | 待执行（suite 名缺席/隔离透传） | 待执行 | 待执行 | PLANNED |
+| 3 | PowerShell 薄壳 + `$suites` 登记 + 全量入口 | 已取得：登记前全量 runner `relay-light-log` 零命中；隔离证 exit 7 透传与单行 SKIP（E-B3-002/003） | 已转绿：薄壳 exit 0、全量 `RELAY ALL PASS`、Python 直跑 148 项 OK（E-B3-004/005/006） | 待执行 | READY_FOR_REVIEW |
 
 ## 证据账本 (Evidence Ledger)
 
@@ -39,6 +40,13 @@
 | E-B2-003 | A16 冻结入口 GREEN | `python3 -m unittest -v tools.relay-light.test_relay_log.RelayPlanLintTests.test_relay_log_imports_are_stdlib_only`（正式版） | exit 0；`OK`；0.052s；另立独立收集脚本复核：collected={__future__,argparse,dataclasses,datetime,json,os,pathlib,re,sys,tomllib,urllib}，越界集=[] | `relay_log.py` 顶层 import 全部属标准库；收集非空断言防止空文件假绿 |
 | E-B2-004 | 两份 Python 全量回归（A15 旁证） | `python3 -m unittest tools/relay-light/test_relay_log.py tools/relay-light/test_install_skill.py -v` | exit 0；Ran 148 tests in 155.371s；`OK (skipped=2)` | 新用例并入后整仓 Python 回归绿；两项 skip 仍为既有 A114 缺口 |
 | E-B2-005 | 边界四集合 + whitespace（B2） | `git diff --check`; `git status --short`; `git ls-files --others --exclude-standard` | `diff --check` exit 0；本批 working tree 仅 `test_relay_log.py`（`import ast` + 一个测试方法）；`relay_log.py` 本批零 diff；untracked 仅测试副产品 `__pycache__`（已删除） | B2 全部改动落在 allowed-paths；B1 已审 `lint --json` 改动未被本批触碰 |
+| E-B3-001 | Git 基线（B3 进场） | `git rebase --autostash master`; `git status`; `git branch --show-current` | rebase=`当前分支 wt/RLT_10 是最新的`；工作区干净；分支=`wt/RLT_10`；B2 audit PASS 信号与 check.C2.md 已在位 | B3 施工在正确任务树、已核对基线与已闭合 B2 小审上开始 |
+| E-B3-002 | 入口缺席 RED | `pwsh -NoProfile -File tools/tests/run-relay-tests.ps1`（登记前） | exit 0；`RELAY ALL PASS (SKIPPED: 1)`；输出中 `relay-light-log` 命中 0 次 | 登记前 suite 名确实缺席，构成有效入口缺席 RED |
+| E-B3-003 | 薄壳隔离行为证（最终版复验） | 临时目录复制壳 + 假 `python`（`#!/bin/sh exit 7`）；空 PATH 目录 | 假解释器：壳 exit 7；无解释器：stdout 恰 1 行 `SUITE SKIP relay-light-log (python/python3 missing)`、stderr 0 字节、exit 0 | 非零透传与缺解释器 SKIP 两条合同在最终版本上成立；临时文件不入提交 |
+| E-B3-004 | 薄壳独立运行 GREEN | `pwsh -NoProfile -File tools/tests/relay-light-log.ps1` | exit 0；输出为两份 unittest 原始 `-v` 流（test_relay_log 148 项 + test_install_skill 4 项 OK） | A11：薄壳独立 exit 0 且原样展示 Python 输出 |
+| E-B3-005 | 全量 runner 登记 GREEN | `pwsh -NoProfile -File tools/tests/run-relay-tests.ps1` | exit 0；第 740 行 `=== relay-light-log.ps1 ===` 后随 unittest 原始输出；第 1000 行 `RELAY ALL PASS (SKIPPED: 1)` | A11：suite 名出现在全量入口且最终 exit 0 |
+| E-B3-006 | 两份 Python 直跑（A15 旁证） | `python3 -m unittest tools/relay-light/test_relay_log.py tools/relay-light/test_install_skill.py -v` | exit 0；Ran 148 tests in 155.692s；`OK (skipped=2)` | Linux 直跑同两文件绿；仅旁证，不冒充 pwsh/Windows runner 验收 |
+| E-B3-007 | 边界四集合 + whitespace（B3） | `git diff --check`; `git status --short`; `git ls-files --others --exclude-standard`; `git diff tools/tests/run-relay-tests.ps1` | `diff --check` exit 0；改动仅新文件 `relay-light-log.ps1` 与 runner `$suites` 末尾一行追加；`relay_log.py`/`install_skill.py` 本批零 diff；untracked 副产品已清 | runner foreach/计数/总结架构未动；B3 全部改动落在 allowed-paths |
 
 ## B1 §3.5 规则映射盘点矩阵（exec 机械抄表 + 读码对出触发方）
 
