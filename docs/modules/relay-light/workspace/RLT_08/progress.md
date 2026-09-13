@@ -20,3 +20,4 @@
 DONE task=RLT_08 role=builder batch=W status=W_READY evidence=brief.md,task_plan.md,execution_strategy.md,progress.md,findings.md,lesson_candidates.md,review.md,commit=f790a1d next=orchestrator
 DONE task=RLT_08 role=audit batch=W status=FAIL evidence=review.plan.md next=orchestrator
 DONE task=RLT_08 role=builder batch=W2 status=W_READY evidence=commit=1d77159 next=orchestrator
+DONE task=RLT_08 role=audit batch=W2 status=FAIL evidence=review.plan.md next=orchestrator
