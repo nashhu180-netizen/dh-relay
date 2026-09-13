@@ -16,3 +16,4 @@
 | 3 | skill 阅读索引 + 整卡机检 + `dh relay-light` 解析证据 | 待执行 | 待执行 | 待执行 | 未开始 |
 
 ## 信号
+DONE task=RLT_08 role=builder batch=W status=W_READY evidence=brief.md,task_plan.md,execution_strategy.md,progress.md,findings.md,lesson_candidates.md,review.md,commit=f790a1d next=orchestrator
