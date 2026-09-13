@@ -41,3 +41,29 @@
 ## 裁决
 
 **FAIL**。薄壳实现、runner 登记、循环保护、允许路径、缺 Python 分支、非零透传和真实全量运行均通过；仅 E-B3-004 的分项测试数与原始输出不一致。按上述两项更正证据并重新发 READY_FOR_REVIEW 后，可作定向复审。
+
+---
+
+## 定向复审
+
+- 审核对象：整改 commit `3209efb`；施工仍为 `3db8ad8`
+- 审核范围：仅核 E-B3-008 分项计数与新 READY_FOR_REVIEW 信号；其余结论不重审
+- 结论：**PASS**
+
+### 可整改项 1 — CLOSED
+
+E-B3-008 追加记录薄壳复跑的原始分项：`test_relay_log.py` Ran 141 tests、OK (skipped=2)；`test_install_skill.py` Ran 7 tests、OK；合计 148，薄壳 exit 0。该分项与审核者首轮独立复跑取得的 141 + 7 结构一致，已明确更正 E-B3-004 的 148 + 4 误记；历史证据未被改写。
+
+### 可整改项 2 — CLOSED
+
+历史 READY_FOR_REVIEW 信号保持原样，其后已追加新信号：
+
+```text
+DONE task=RLT_10 role=exec batch=3 status=READY_FOR_REVIEW evidence=E-B3-008,E-B3-003,E-B3-005,E-B3-007,commit=3db8ad8 next=orchestrator
+```
+
+新信号正确引用更正证据 E-B3-008、缺解释器/非零透传 E-B3-003、全量 runner E-B3-005、边界 E-B3-007，以及原施工 commit `3db8ad8`。
+
+### 复审裁决
+
+**PASS**。两项可整改项均已闭合；本轮未重开 Batch 3 其他已通过结论。
