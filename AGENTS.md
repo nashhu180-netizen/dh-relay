@@ -54,7 +54,7 @@
 ### 通用铁律（施工 / 复核都适用）
 
 1. **你是 worker，不是主控**：禁止再拉终端 / 派活 / 起 watcher，禁止调 AskUserQuestion 或以任何方式回头问用户。relay流水下只完成Work Item Ticket指向的当前Node；手动派活下只完成brief/review-brief指向的这一件事。
-2. **Ticket 定位，workspace 给业务合同**：收到Ticket时，先按Ticket进入精确worktree，读仓根AGENTS，再读Ticket指向的workspace `brief.md` / `task_plan.md` / `progress.md` / `findings.md`与Handoff；Ticket不重抄业务全文，workspace才是节点工作内容的权威来源。尚未启用Ticket的手动派活继续以brief/review-brief作为完整指令集。两种模式下都别自己加载dev-harness skill，也别满仓库寻找额外“流程框架”。棒次协议归属先看标记：有 RELAY_RECEIPT 即冻结 Runner 流水，不交叉执行 relay-light（其标头判定见上段）。
+2. **Ticket 定位，workspace 给业务合同**：收到Ticket时，先按Ticket进入精确worktree，读仓根AGENTS，再读Ticket指向的workspace `brief.md` / `task_plan.md` / `progress.md` / `findings.md`与Handoff；Ticket不重抄业务全文，workspace才是节点工作内容的权威来源。尚未启用Ticket的手动派活继续以brief/review-brief作为完整指令集。两种模式下都别自己加载dev-harness skill，也别满仓库寻找额外“流程框架”。棒次协议归属先看标记：有 RELAY_RECEIPT 即冻结 Runner 流水（Runner 体系冻结在 P6 现状、不删不迁；本句是流水归属判定，不是让本棒停摆），不交叉执行 relay-light（其标头判定见上段）。
 3. **硬节点边界**：施工、复核、验证、诊断是不同 Node。当前 Node durable 收口并收到 `node_closed` 后立即停止；不得自行调用 `continue`、启动下一 Worker、把施工会话变成复核会话，或把测试通过解释为复核开始。
 4. **卡住必须落信号、不许憋死**：遇到阻塞 / 有疑问 / 缺信息，不要停在原地等——按 Ticket/workspace 规定的方式把 `blocked` 写出去（relay 流水下 = 写 checkpoint / result；手动派活下 = 写结构化 DONE）。单向憋在交互态里不写任何文件 = 主控在超时前完全看不见你。
 5. **范围外新想法记 findings/backlog，不顺手做**——哪怕看起来只是顺手一行改动。
@@ -92,7 +92,7 @@
 ## dev-harness 落点 / slug
 
 - 模块工件归 `docs/modules/dh-relay/`：`design/` 设计与验收、`dev_plan/` 计划与状态、`workspace/<卡>/` 任务工作区、`as-built/` 实现快照、`knowledge/` 教训、`backlog.md` 需求池。**与拆分前同路径**——历史留痕里的 doc 路径引用继续有效。
-- 生产代码落点 `tools/`（拆仓时由 `tools/relay/` **提级一层**，独立仓里只有 relay 一份代码，再套 `relay/` 是冗余）；测试入口 `tools/tests/run-relay-tests.ps1`（本仓自带，与任何外部 run-all 无关）。
+- 生产代码落点 `tools/`（拆仓时由 `tools/relay/` **提级一层**——彼时独立仓只有 relay 一份代码，再套 `relay/` 是冗余；relay-light 代码根见下行 `tools/relay-light/`）；测试入口 `tools/tests/run-relay-tests.ps1`（本仓自带，与任何外部 run-all 无关）。
 - verify scope = `dh-relay`；状态以 `docs/modules/dh-relay/dev_plan/` 为权威，本文件只登记不抄状态。
 - relay-light 模块：slug=`relay-light`，文档根 `docs/modules/relay-light/`，代码根 `tools/relay-light/`，verify scope = `relay-light`。
 - **运行现场不入业务仓**：P1 的 `.dh-runtime/relay/` 与历史 `<repo>/.dh-relay/<run_id>/` 仅作 legacy 读取，不原地迁移。新正式根统一为独立 PlanHome `D:/MyFiles/ai-workflow/02-agent-workspace/dh-relay-workspace`：tracked `plans/<plan_id>/plan.yaml`、`registry/projects.yaml`、`archive/`，ignored `runtime/<run_id>/`、`local/`；但 resolver 迁移验收前禁止初始化或 start。跨仓 run 索引仍在用户级 `~/.dh-relay/`，只做定位。
