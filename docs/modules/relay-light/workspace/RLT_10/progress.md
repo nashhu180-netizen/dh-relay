@@ -80,3 +80,4 @@ DECISION task=RLT_10 batch=1 decision=decision.1 choice=A by=user(2026-09-13, or
 DONE task=RLT_10 role=exec batch=1 status=READY_FOR_REVIEW evidence=E-B1-006,E-B1-007,E-B1-008,E-B1-009,E-B1-010,commit=542e2df next=orchestrator
 DONE task=RLT_10 role=audit batch=1 status=PASS evidence=check.C1.md next=orchestrator
 DONE task=RLT_10 role=exec batch=2 status=READY_FOR_REVIEW evidence=E-B2-001,E-B2-002,E-B2-003,E-B2-004,E-B2-005,commit=0746c64 next=orchestrator
+DONE task=RLT_10 role=audit batch=2 status=PASS evidence=check.C2.md next=orchestrator
