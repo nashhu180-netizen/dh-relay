@@ -115,3 +115,21 @@ A34 现对 adapter 派活 prompt 首行做整行字节比较，并断言 adapter
 ### 第二轮裁决
 
 **FAIL**。首轮五项均已闭合；只需闭合新增 P1-4 后再审。未发现其它阻断项。
+
+---
+
+## 第三轮
+
+- 审核对象：最新提交 `4f45232` 中 `dispatch/exec.md` 第 1 步
+- 审核范围：仅定向核验 P1-4，不重开其他结论
+- 结论：**PASS**
+
+### P1-4 — CLOSED
+
+`dispatch/exec.md:6` 现将命令顺序冻结为：进入精确 worktree → `git rebase --autostash master` → `git status` → `git branch --show-current`，因此该 worker 的第一个 Git 动作已与仓根 AGENTS 铁律 7、`task_plan.md:6` 一致。
+
+同一行还明确：rebase 冲突或失败时立即执行 `git rebase --abort`、写 `status=BLOCKED` 信号并停止；没有继续进入读计划、施工或后续批次的路径。P1-4 整改完整。
+
+### 第三轮裁决
+
+**PASS**。P1-4 已闭合；本轮定向审核无新增发现。
