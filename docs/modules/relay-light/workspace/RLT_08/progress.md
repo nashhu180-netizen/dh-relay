@@ -24,3 +24,4 @@ DONE task=RLT_08 role=builder batch=W2 status=W_READY evidence=commit=1d77159 ne
 DONE task=RLT_08 role=audit batch=W2 status=FAIL evidence=review.plan.md next=orchestrator
 DONE task=RLT_08 role=audit batch=W3 status=PASS evidence=review.plan.md next=orchestrator
 DONE task=RLT_08 role=exec batch=1 status=READY_FOR_REVIEW evidence=red:old2hit+new0of5,green:old0hit+new5of5,baseline:dev-harness-baseline,scope:4set-ok,commit=e4c8592 next=orchestrator
+DONE task=RLT_08 role=audit batch=1 status=FAIL evidence=check.C1.md next=orchestrator
