@@ -23,3 +23,7 @@
 | W-BL-002 | Python 现状基线（A15 旁证，不是 A11） | `python3 -m unittest tools/relay-light/test_relay_log.py tools/relay-light/test_install_skill.py -v` | exit 0；Ran 146 tests in 157.687s；OK (skipped=2)；两项为既有 A114/relay_log.py 范围缺口 skip | 两份现状测试可在本 Linux 环境直接运行；不冒充 pwsh/Windows runner 验收 |
 
 ## 信号
+DONE task=RLT_10 role=builder batch=W status=W_READY evidence=brief.md,task_plan.md,execution_strategy.md,progress.md,findings.md,lesson_candidates.md,review.md,commit=0d1520f next=orchestrator
+DONE task=RLT_10 role=audit batch=W status=FAIL evidence=review.plan.md next=orchestrator
+DONE task=RLT_10 role=builder batch=W2 status=W_READY evidence=commit=0fc505a next=orchestrator
+DONE task=RLT_10 role=audit batch=W2 status=PASS evidence=review.plan.md next=orchestrator
