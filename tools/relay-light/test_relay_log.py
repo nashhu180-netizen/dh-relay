@@ -1779,7 +1779,10 @@ class RelayConfigTests(RelayCliTestCase):
                 self.assertEqual([encoded_path(resolved)], self.note_values(recorded, "config_dir"))
                 self.assertEqual([actual_plan], self.note_values(recorded, "plan"))
                 self.assertEqual(resolved.as_posix(), unquote(self.note_fields(recorded)["config_dir"]))
-                self.assertEqual(plan_dir, unquote(self.note_fields(recorded)["plan"]))
+                self.assertEqual(
+                    plan_dir.replace(os.sep, "/"),
+                    unquote(self.note_fields(recorded)["plan"]),
+                )
                 self.assertNotIn(forged_config, recorded)
                 self.assertNotIn(forged_plan, recorded)
                 self.assertEqual("0.1.0", self.note_fields(recorded)["skill"])
@@ -1846,8 +1849,8 @@ class RelayConfigTests(RelayCliTestCase):
         self.assertEqual(encoded_path(expected), fields["config_dir"])
         self.assertIn("%20", fields["config_dir"])
         self.assertIn("%C3%B4", fields["config_dir"])
-        self.assertEqual(expected, unquote(fields["config_dir"]))
-        self.assertEqual(plan_dir, unquote(fields["plan"]))
+        self.assertEqual(expected.replace(os.sep, "/"), unquote(fields["config_dir"]))
+        self.assertEqual(plan_dir.replace(os.sep, "/"), unquote(fields["plan"]))
         self.assertEqual("0.1.0", fields["skill"])
 
         self.reset_ledger()
