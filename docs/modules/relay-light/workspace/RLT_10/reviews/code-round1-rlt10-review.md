@@ -71,3 +71,35 @@
 ```text
 DONE task=RLT_10 role=review batch=R status=APPROVE_WITH_NITS evidence=reviews/code-round1-rlt10-review.md next=orchestrator
 ```
+
+---
+
+## X1 复看（定向复审 · 2026-09-13）
+
+- 复核对象：X1 整改 `40d9996` + 信号 `d46aa38`（另含编排 `bdde365` 移除 `.pyc`）；HEAD `d46aa38`。
+- 范围：只核新增 subTest 是否真锁 P3-1/2/3、`relay_log.py` 行为是否未变（自跑冻结方法与全量 runner）、`__pycache__` 是否已退出 `git diff master --name-only`、lesson/findings/review.md 回填是否齐。
+
+### 逐项核对
+
+- **P3-1 → 已锁**：新 subTest `"--json parse failure keeps error contract"` 跑 `lint --plan <缺失目录> --json`，断言 exit 3、stdout 空、stderr `^error: HC-RL-A18 `、`assertNotIn("lint:")`。本人独立探针（`relay_log.py lint --plan /tmp/nonexistent-rlt10 --json`）实得 exit 3 + `error: HC-RL-A18 ...`、stdout 空，断言与真实行为一致。
+- **P3-2 → 已锁**：`--json` valid 与 `--json` semantic violation 两分支各补 `assertEqual("", result.stderr)`；两个新分支同样钉 stderr 空。四处组合均覆盖。
+- **P3-3 → 已锁**：新 subTest `"--json violation without a line keeps null"` 用 `decision_mode=manual` marker 触发 A130（`lint_plan` 第 491 行先于节点检查抛出，保证其为唯一违规），断言 exit 2、stderr 空、精确键集、`rule=="HC-RL-A130"`、`assertIsNone(line)`。fixture 选择正确——`"invalid decision_mode: manual"` 无 `line <n>:` 前缀，经 `LINT_VIOLATION_LINE_RE` 落 `None`→JSON `null`。
+- **`relay_log.py` 行为未变**：`git diff b796991...HEAD -- tools/relay-light/relay_log.py` 为 0 行，程序零改动。
+- **`__pycache__` 已出 diff**：`bdde365` 删除两个 `.pyc`；`git diff --name-only master...HEAD` 中 pycache 命中 0；P2-1 关闭。`findings.md` 新增 F-002 登记该事件并注明 `.gitignore` 不在闭集不建，且正确辨析了与 skip 装饰器引用的 RLT_07 F-002 不同源——登记准确。
+- **回填齐**：`lesson_candidates.md` 补登 LC-1/2/3，逐条对应 lesson 复核 L-1/2/3；`review.md` 三路路径表、批次小审表、变异候选核对、独立复核区、需求对齐证据与完成条件表全部回填；`progress.md` 有 X1 日志行、E-X1-001~006 账本与 `batch=X1 READY_FOR_REVIEW` 信号。E-X1-002 变异 RED（反转三断言期望得 3 失败）为 exec 侧证据，本人以独立探针复核锁点咬合面，未重放变异。
+
+### 复核者复跑（X1 后实测）
+
+| 命令 | 退出码 | 结果 |
+|---|---|---|
+| `python3 -m unittest -v ...test_lint_cli_exit_stderr_and_json_contract` | **0** | Ran 1 test in 1.642s，OK（冻结入口现 8 个 subTest 分支全过） |
+| `python3 tools/relay-light/relay_log.py lint --plan /tmp/nonexistent-rlt10 --json --config-dir tools/relay-light/skill` | **3** | stdout 空，stderr `error: HC-RL-A18 cannot read relay_plan.md: ...` |
+| `pwsh -NoProfile -File tools/tests/run-relay-tests.ps1` | **0** | 第 740 行 `=== relay-light-log.ps1 ===`（内 141+7 全绿），第 1000 行 `RELAY ALL PASS (SKIPPED: 1)` |
+
+### X1 结论
+
+**APPROVE**。三条 P3 边角已由冻结方法内新 subTest 真实锁定且经本人复跑转绿；`relay_log.py` 零 diff；`.pyc` 已退出卡片 diff（P2-1 关闭）；lesson/findings/review.md 回填完整一致。无新发现。
+
+```text
+DONE task=RLT_10 role=review batch=X1 status=APPROVE evidence=reviews/code-round1-rlt10-review.md next=orchestrator
+```
