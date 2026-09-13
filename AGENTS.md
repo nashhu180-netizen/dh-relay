@@ -9,7 +9,7 @@
 - 技术栈：PowerShell 7 脚本 + Markdown 工件；终端后端默认 psmux（PATH 命令，不在本仓）
 - 仓库形态：单仓 · 独立仓（2026-08-17 从 `dh-crew` 用 `git filter-repo` 拆出，保留全部 31 笔历史；拆分始末见 [docs/modules/dh-relay/backlog.md](docs/modules/dh-relay/backlog.md) `DHR-BL-5`）
 - 默认分支：master
-- dev-harness 模块：slug=`dh-relay`，模块根 `docs/modules/dh-relay/`（独立仓里只有这一个模块，但保留 `docs/modules/<slug>/` 这一层——`dh` 工具链按它解析模块）
+- dev-harness 模块：slug=`dh-relay`，模块根 `docs/modules/dh-relay/`；slug=`relay-light`，模块根 `docs/modules/relay-light/`（本仓两个现役模块，均保留 `docs/modules/<slug>/` 这一层——`dh` 工具链按它解析模块）
 
 ## GitHub 协作默认流程（可由用户明确豁免）
 
@@ -37,6 +37,14 @@
 6. **【密钥红线】** 密钥 / 凭据值永不入任何工件（findings / progress / 设计文档 / commit）。进仓的窗口枚举、截图类证据先按白名单过滤，不能事后靠扫描凭据兜底。
 7. **【worktree 纪律】** 一个任务卡 = 一个 worktree，收口 squash 合并即删树；禁止长命 worktree。worker 进场第一动作自 rebase master。
 
+## relay-light 编排协议段
+
+> 被 relay-light 监工派进本仓的 agent 读本段；与下方 Runner「编排协议段（worker 铁律）」并列、互不隶属，两套流水不交叉执行。
+
+- 判定：监工派活 prompt 首行必须是 `[relay-light] worker · node=<n> · agent=<角色>#<实例> · workspace=<任务工作区>`（四字段样式：node、agent 角色、agent 实例、workspace）。见此标头即完成即停不等 node_closed，有 RELAY_RECEIPT 即冻结 Runner 流水。
+- 分工：编排管阶段，监工管本阶段节点，worker 只完成当前节点；写完完成信号即停，无 node_closed，不越位派活、不回头问用户、不自行续节点。
+- 计划例外：relay-light 运行中的白名单追加有意绕过 B-adjust；例外只覆盖任务卡、开发方案任务行与接力计划追加，设计与验收仍走 dev-harness。
+
 ## 编排协议段（worker 铁律 · 被派进本仓的 agent 必读）
 
 > **谁读**：任何被派进本仓的 worker（Claude / Codex / …），无论施工还是复核——包括被 relay 自举流水拉起的每一棒。
@@ -46,7 +54,7 @@
 ### 通用铁律（施工 / 复核都适用）
 
 1. **你是 worker，不是主控**：禁止再拉终端 / 派活 / 起 watcher，禁止调 AskUserQuestion 或以任何方式回头问用户。relay流水下只完成Work Item Ticket指向的当前Node；手动派活下只完成brief/review-brief指向的这一件事。
-2. **Ticket 定位，workspace 给业务合同**：收到Ticket时，先按Ticket进入精确worktree，读仓根AGENTS，再读Ticket指向的workspace `brief.md` / `task_plan.md` / `progress.md` / `findings.md`与Handoff；Ticket不重抄业务全文，workspace才是节点工作内容的权威来源。尚未启用Ticket的手动派活继续以brief/review-brief作为完整指令集。两种模式下都别自己加载dev-harness skill，也别满仓库寻找额外“流程框架”。
+2. **Ticket 定位，workspace 给业务合同**：收到Ticket时，先按Ticket进入精确worktree，读仓根AGENTS，再读Ticket指向的workspace `brief.md` / `task_plan.md` / `progress.md` / `findings.md`与Handoff；Ticket不重抄业务全文，workspace才是节点工作内容的权威来源。尚未启用Ticket的手动派活继续以brief/review-brief作为完整指令集。两种模式下都别自己加载dev-harness skill，也别满仓库寻找额外“流程框架”。棒次协议归属先看标记：有 RELAY_RECEIPT 即冻结 Runner 流水（Runner 体系冻结在 P6 现状、不删不迁；本句是流水归属判定，不是让本棒停摆），不交叉执行 relay-light（其标头判定见上段）。
 3. **硬节点边界**：施工、复核、验证、诊断是不同 Node。当前 Node durable 收口并收到 `node_closed` 后立即停止；不得自行调用 `continue`、启动下一 Worker、把施工会话变成复核会话，或把测试通过解释为复核开始。
 4. **卡住必须落信号、不许憋死**：遇到阻塞 / 有疑问 / 缺信息，不要停在原地等——按 Ticket/workspace 规定的方式把 `blocked` 写出去（relay 流水下 = 写 checkpoint / result；手动派活下 = 写结构化 DONE）。单向憋在交互态里不写任何文件 = 主控在超时前完全看不见你。
 5. **范围外新想法记 findings/backlog，不顺手做**——哪怕看起来只是顺手一行改动。
@@ -79,20 +87,23 @@
 | 未排期的需求与已知坑 | [docs/modules/dh-relay/backlog.md](docs/modules/dh-relay/backlog.md) |
 | 踩过的坑 | [docs/modules/dh-relay/knowledge/教训库-候选.md](docs/modules/dh-relay/knowledge/教训库-候选.md) |
 | 主控派活（Windows 默认走 Herdr 拉交互式终端；claude kind 有 PATH shim 坑） | [docs/modules/dh-relay/knowledge/herdr-派活操作.md](docs/modules/dh-relay/knowledge/herdr-派活操作.md)（2026-08-28 用户指示 + 实测） |
+| relay-light 规划 / 编排 / 账本 / 三层执行 | [tools/relay-light/skill/SKILL.md](tools/relay-light/skill/SKILL.md) + 按主控侧选 `references/adapter-claude-code.md` / `adapter-codex.md` |
 
 ## dev-harness 落点 / slug
 
 - 模块工件归 `docs/modules/dh-relay/`：`design/` 设计与验收、`dev_plan/` 计划与状态、`workspace/<卡>/` 任务工作区、`as-built/` 实现快照、`knowledge/` 教训、`backlog.md` 需求池。**与拆分前同路径**——历史留痕里的 doc 路径引用继续有效。
-- 生产代码落点 `tools/`（拆仓时由 `tools/relay/` **提级一层**，独立仓里只有 relay 一份代码，再套 `relay/` 是冗余）；测试入口 `tools/tests/run-relay-tests.ps1`（本仓自带，与任何外部 run-all 无关）。
+- 生产代码落点 `tools/`（拆仓时由 `tools/relay/` **提级一层**——彼时独立仓只有 relay 一份代码，再套 `relay/` 是冗余；relay-light 代码根见下行 `tools/relay-light/`）；测试入口 `tools/tests/run-relay-tests.ps1`（本仓自带，与任何外部 run-all 无关）。
 - verify scope = `dh-relay`；状态以 `docs/modules/dh-relay/dev_plan/` 为权威，本文件只登记不抄状态。
+- relay-light 模块：slug=`relay-light`，文档根 `docs/modules/relay-light/`，代码根 `tools/relay-light/`，verify scope = `relay-light`。
 - **运行现场不入业务仓**：P1 的 `.dh-runtime/relay/` 与历史 `<repo>/.dh-relay/<run_id>/` 仅作 legacy 读取，不原地迁移。新正式根统一为独立 PlanHome `D:/MyFiles/ai-workflow/02-agent-workspace/dh-relay-workspace`：tracked `plans/<plan_id>/plan.yaml`、`registry/projects.yaml`、`archive/`，ignored `runtime/<run_id>/`、`local/`；但 resolver 迁移验收前禁止初始化或 start。跨仓 run 索引仍在用户级 `~/.dh-relay/`，只做定位。
 
 ### `dh` 命令
 
-`dh` 全局装在 `AppData\Roaming\npm\dh.cmd`（指向 `D:\MyFiles\ai-workflow\dev-harness\tools\dh-check.mjs`，两个仓都不在）。本仓保留了 `docs/modules/dh-relay/` 这一层，所以它的模块解析正常：
+`dh` 全局装在 `AppData\Roaming\npm\dh.cmd`（指向 `D:\MyFiles\ai-workflow\dev-harness\tools\dh-check.mjs`，两个仓都不在）。本仓保留了 `docs/modules/<slug>/` 这一层，所以它的模块解析正常：
 
-- `dh dh-relay` —— 按 slug 解析
-- `dh` —— 不给参数，本仓只有一个模块，自动选中
+- `dh dh-relay` —— 按 dh-relay slug 解析
+- `dh relay-light` —— 按 relay-light slug 解析
+- `dh` —— 不给参数时，本仓有多个模块，须显式指定
 
 体检报出的存量失败项与拆分前在 dh-crew 里跑的结果一致（不是拆仓引入的）。
 
