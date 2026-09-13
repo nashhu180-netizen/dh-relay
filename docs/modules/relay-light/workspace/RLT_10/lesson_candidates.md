@@ -11,3 +11,4 @@
 
 B1（exec）：本批无。F-001 合同冲突按约定留在 findings.md，不在此重复包装成教训。
 B1 恢复（exec，decision.1/A 后）：本批无。
+B2（exec）：本批无。

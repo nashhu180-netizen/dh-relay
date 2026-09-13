@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 import io
@@ -691,6 +692,25 @@ class RelayPlanLintTests(RelayCliTestCase):
                 self.assertFalse(isinstance(violation["line"], bool))
             self.assertEqual("HC-RL-A46", document["violations"][0]["rule"])
             self.assertEqual(7, document["violations"][0]["line"])
+
+    def test_relay_log_imports_are_stdlib_only(self) -> None:
+        """HC-RL-A16: every top-level import in relay_log.py is stdlib."""
+        source_path = Path(__file__).with_name("relay_log.py")
+        tree = ast.parse(
+            source_path.read_text(encoding="utf-8"), filename=str(source_path)
+        )
+        modules: set[str] = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                modules.update(alias.name.split(".")[0] for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                modules.add(node.module.split(".")[0])
+        self.assertTrue(modules, "no imports collected; source path or parse is wrong")
+        modules.discard("__future__")
+        foreign = sorted(modules - sys.stdlib_module_names)
+        self.assertFalse(
+            foreign, f"non-stdlib top-level imports in relay_log.py: {foreign}"
+        )
 
     def test_help_lists_exactly_the_three_frozen_subcommands(self) -> None:
         result = self.run_cli("--help")
