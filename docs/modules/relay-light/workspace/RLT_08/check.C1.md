@@ -38,3 +38,29 @@
 ## 裁决
 
 **FAIL**。代码/文档改动、路径边界和 B1 红绿均通过；补齐 task_plan 要求的 E-ID 证据登记及更正信号后，可重审 Batch 1。
+
+---
+
+## 复审
+
+- 审核对象：最新提交 `cbea9a6`
+- 审核范围：仅核可整改项 1、2
+- 结论：**PASS**
+
+### 可整改项 1 — CLOSED
+
+`progress.md` 已新增“证据账本”，以稳定 ID `E-001`～`E-004` 分别登记 B1 RED、dev-harness baseline、B1 GREEN、四集合 allowed-paths。每项均包含命令/路径、关键输出与退出码、支撑结论，并关联施工 commit `e4c8592`；B1 日志行也已改为引用这些 E-ID。
+
+### 可整改项 2 — CLOSED
+
+历史 READY 信号保持原样；其后已追加更正信号：
+
+```text
+DONE task=RLT_08 role=exec batch=1 status=READY_FOR_REVIEW evidence=E-001,E-002,E-003,E-004,commit=e4c8592 next=orchestrator
+```
+
+`evidence=` 只引用已登记 E-ID 与对应 commit，满足整改要求。
+
+### 复审裁决
+
+**PASS**。两项可整改项均已闭合；本轮未重开 Batch 1 其他已通过结论。
