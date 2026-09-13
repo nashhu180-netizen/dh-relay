@@ -649,15 +649,35 @@ def _lint_recipe_reviewers(
             )
 
 
-def _lint_command(plan_dir: str, config: RelayConfig) -> int:
+LINT_VIOLATION_LINE_RE = re.compile(r"^line (?P<line>[1-9][0-9]*): ")
+
+
+def _lint_violation(exc: RelayError) -> dict[str, object]:
+    """HC-RL-A80: one violation row; `line` is the real plan line or null."""
+    match = LINT_VIOLATION_LINE_RE.match(exc.message)
+    return {
+        "rule": exc.code,
+        "message": exc.message,
+        "line": int(match.group("line")) if match else None,
+    }
+
+
+def _lint_command(plan_dir: str, as_json: bool, config: RelayConfig) -> int:
     try:
         lint_plan(Path(plan_dir) / "relay_plan.md", config)
     except RelayError as exc:
         if exc.exit_code == 3:
             return _fail(exc)
-        print(f"lint: {exc.code} {exc.message}", file=sys.stderr)
+        if as_json:
+            document = {"ok": False, "violations": [_lint_violation(exc)]}
+            print(json.dumps(document, ensure_ascii=False))
+        else:
+            print(f"lint: {exc.code} {exc.message}", file=sys.stderr)
         return exc.exit_code
-    print("lint: ok")
+    if as_json:
+        print(json.dumps({"ok": True, "violations": []}, ensure_ascii=False))
+    else:
+        print("lint: ok")
     return 0
 
 
@@ -1861,6 +1881,7 @@ def main(argv: list[str] | None = None) -> int:
     status_parser.add_argument("--config-dir")
     lint_parser = subparsers.add_parser("lint")
     lint_parser.add_argument("--plan", required=True)
+    lint_parser.add_argument("--json", action="store_true")
     lint_parser.add_argument("--config-dir")
     try:
         args = parser.parse_args(argv)
@@ -1875,7 +1896,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "status":
         return _status_command(args.plan, args.json, config)
     if args.command == "lint":
-        return _lint_command(args.plan, config)
+        return _lint_command(args.plan, args.json, config)
     raise AssertionError(f"unreachable command: {args.command}")
 
 
