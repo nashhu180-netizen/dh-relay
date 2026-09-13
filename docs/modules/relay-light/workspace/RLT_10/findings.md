@@ -8,3 +8,4 @@
 | ID | 发现 | 影响 | 状态 |
 |---|---|---|---|
 | F-001 | design §11 HC-RL-A80 明确要求 `lint --json` 输出 `{"ok","violations":[{"rule","message","line"}]}`；但 W 现场读取 `relay_log.py` 发现只有 `status_parser.add_argument("--json", ...)`，`lint_parser` 未注册 `--json`，`_lint_command` 也只输出文本。DevPlan/dispatch allowed-paths 明确排除 `relay_log.py` | B1 可以在允许路径内新增准确测试并取得有效 RED，但无法在本卡当前写权限内恢复 GREEN；不得用 `status --json` 冒充 | 已裁决落地：decision.1 选项 A（用户 2026-09-13 批准）把 `relay_log.py` 纳入允许路径、仅限 `lint --json`；exec 恢复 B1 后实现转绿，冻结入口五分支 + A94 97 项 + 回归 147 项全过（E-B1-007/009/010），发 `READY_FOR_REVIEW` 待 audit |
+| F-002 | 仓根缺 `.gitignore` 忽略 `__pycache__`：复核期 `70d68b8` 把 `tools/relay-light/__pycache__/*.pyc` 两个二进制副产品提交进树（code-round1 P2-1），编排已于 `bdde365` 移除；`.gitignore` 不在本卡 allowed-paths 内，本卡不建 | Python 测试副产品有再入树风险，合入 master 前需保持清理纪律；建议后续卡在仓根 `.gitignore` 加 `__pycache__/`（注：测试文件 skip 装饰器引用的「F-002」为 RLT_07 findings 命名空间的 decision_mode 缺口，与本 ID 不同源） | 已登记，不改代码；待编排裁决归属卡 |

@@ -661,12 +661,25 @@ class RelayPlanLintTests(RelayCliTestCase):
             self.assertRegex(bad_config.stderr, r"^error: HC-RL-A135 ")
             self.assertNotIn("lint:", bad_config.stderr)
 
+        with self.subTest(branch="--json parse failure keeps error contract"):
+            missing = self.run_cli(
+                "lint",
+                "--plan",
+                str(self.plan_path.parent / "missing"),
+                "--json",
+            )
+            self.assertEqual(3, missing.returncode)
+            self.assertEqual("", missing.stdout)
+            self.assertRegex(missing.stderr, r"^error: HC-RL-A18 ")
+            self.assertNotIn("lint:", missing.stderr)
+
         with self.subTest(branch="--json valid plan"):
             self.write_plan()
             result = self.run_cli(
                 "lint", "--plan", str(self.plan_path.parent), "--json"
             )
             self.assertEqual(0, result.returncode)
+            self.assertEqual("", result.stderr)
             document = json.loads(result.stdout)
             self.assertEqual({"ok", "violations"}, set(document))
             self.assertIs(document["ok"], True)
@@ -678,6 +691,7 @@ class RelayPlanLintTests(RelayCliTestCase):
                 "lint", "--plan", str(self.plan_path.parent), "--json"
             )
             self.assertEqual(2, result.returncode)
+            self.assertEqual("", result.stderr)
             document = json.loads(result.stdout)
             self.assertEqual({"ok", "violations"}, set(document))
             self.assertIs(document["ok"], False)
@@ -692,6 +706,28 @@ class RelayPlanLintTests(RelayCliTestCase):
                 self.assertFalse(isinstance(violation["line"], bool))
             self.assertEqual("HC-RL-A46", document["violations"][0]["rule"])
             self.assertEqual(7, document["violations"][0]["line"])
+
+        with self.subTest(branch="--json violation without a line keeps null"):
+            self.write_plan(
+                marker=(
+                    "<!-- relay-light:plan v1 skill=0.1.0 session=app recipe=normal "
+                    "cards=DHR_90 decision_mode=manual -->"
+                )
+            )
+            result = self.run_cli(
+                "lint", "--plan", str(self.plan_path.parent), "--json"
+            )
+            self.assertEqual(2, result.returncode)
+            self.assertEqual("", result.stderr)
+            document = json.loads(result.stdout)
+            self.assertEqual({"ok", "violations"}, set(document))
+            self.assertIs(document["ok"], False)
+            self.assertTrue(document["violations"])
+            for violation in document["violations"]:
+                self.assertEqual({"rule", "message", "line"}, set(violation))
+                self.assertIn(violation["rule"], acceptance_ids)
+            self.assertEqual("HC-RL-A130", document["violations"][0]["rule"])
+            self.assertIsNone(document["violations"][0]["line"])
 
     def test_relay_log_imports_are_stdlib_only(self) -> None:
         """HC-RL-A16: every top-level import in relay_log.py is stdlib."""
