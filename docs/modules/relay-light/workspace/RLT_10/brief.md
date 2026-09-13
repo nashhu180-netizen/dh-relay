@@ -33,6 +33,8 @@ python3 -m unittest -v \
   tools.relay-light.test_relay_log.RelayPlanLintTests.test_lint_cli_exit_stderr_and_json_contract
 ```
 
+冻结入口：必须保留且只以这个精确方法名承载 A80，不得用同名前缀的多个方法替换；方法内部用 `subTest` 覆盖各分支，确保上述命令一次运行完整合同。
+
 判据：有效计划 exit 0；语义违规 exit 2 且 stderr 每个非空行匹配 `^lint: HC-RL-A[0-9]+ .+`；输入/配置失败 exit 3；`lint --json` 的顶层键恰为 `ok,violations`，每个 violation 的键恰为 `rule,message,line`，类型和值逐字段断言。若 `--json` 的行为 RED 需要修改 `relay_log.py` 才能转绿，按 F-001 发 `BLOCKED`。
 
 ### HC-RL-A94

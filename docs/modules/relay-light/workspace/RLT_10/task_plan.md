@@ -61,7 +61,7 @@ B3 audit PASS 后，只有 orchestrator 再次明确派令，exec 才追加 `sta
 
 **新增/调整用例**
 
-- 新增 `test_lint_cli_exit_stderr_and_json_contract`（可按单一职责拆为同名前缀的多个方法）：
+- 新增并始终保留唯一精确入口 `test_lint_cli_exit_stderr_and_json_contract`；不得拆分、改名或用同名前缀的多个方法替换，以下分支全部在该方法内用 `subTest` 隔离：
   - valid plan：exit 0，stdout 为 `lint: ok`，stderr 空；
   - semantic violation：exit 2，stdout 空，每条 stderr 非空行严格匹配 `lint: <HC ID> <message>`，并断言 ID 在 §11 验收 ID 白名单；
   - parse/config input failure：exit 3，维持 `error: <ID> <message>`，不可误断成 lint violation；
@@ -84,6 +84,8 @@ python3 -m unittest -v \
   tools.relay-light.test_relay_log.RelayLifecycleTests \
   tools.relay-light.test_relay_log.RelayLimitsTests
 ```
+
+首条命令是 A80 冻结入口；RED、GREEN 与整卡收束都必须逐字运行这个精确方法，不得改成 discovery、前缀约定或拆分后的方法集合。
 
 RED：新增合同断言因产品行为不满足而失败，failure 精确落在 exit/stderr/JSON 字段之一。GREEN：新增合同与全部映射反例通过，且 20 行盘点无缺口。任何环境/fixture/setup 失败均无效，先修测试再取红。
 
@@ -152,7 +154,14 @@ GREEN：薄壳独立 exit 0；全量入口包含 suite 名并 exit 0；Python �
 
 ## 整卡收束（仅 orchestrator 在 B3 audit PASS 后另派）
 
-1. 复跑四条完成条件命令与两份 Python 全量，登记最终 E-ID；复核 `git diff --check`。
+1. 先逐字复跑 A80 冻结入口，不得以 discovery 或同名前缀多方法替换：
+
+   ```bash
+   python3 -m unittest -v \
+     tools.relay-light.test_relay_log.RelayPlanLintTests.test_lint_cli_exit_stderr_and_json_contract
+   ```
+
+   再复跑 brief 中 A94/A11/A16 三条完成条件命令与两份 Python 全量，登记最终 E-ID；复核 `git diff --check`。
 2. 检查 `git diff --name-only master...HEAD`、working tree、index、untracked 四集合均无 allowed-paths 外路径；特别断言 `relay_log.py`、`install_skill.py` 零 diff。
 3. 确认 B1/B2/B3 小审均 PASS、证据账无悬空 ID、findings/lessons 状态准确。
 4. 先发 B3 `READY_FOR_REVIEW` 并停止；只有 audit PASS 后新派单才发 `CONSTRUCTION_DONE`。normal 三路由 orchestrator 另派，施工者不自审。
