@@ -62,3 +62,4 @@ DONE task=RLT_10 role=builder batch=W status=W_READY evidence=brief.md,task_plan
 DONE task=RLT_10 role=audit batch=W status=FAIL evidence=review.plan.md next=orchestrator
 DONE task=RLT_10 role=builder batch=W2 status=W_READY evidence=commit=0fc505a next=orchestrator
 DONE task=RLT_10 role=audit batch=W2 status=PASS evidence=review.plan.md next=orchestrator
+DONE task=RLT_10 role=exec batch=1 status=BLOCKED evidence=E-B1-001,E-B1-002,E-B1-003,E-B1-004,E-B1-005,F-001,commit=5b79d03 next=orchestrator
