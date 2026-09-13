@@ -22,6 +22,7 @@
 | 2026-09-12 | R consistency-rereview | devin-sub（explore，fresh）整改确认：P1/P2/P3 前轮全闭合，但 rework-2 **引入一处新错（P2）**——strategist 链行把 `decision` 错划进 strategist 名下组（应为 coder 名下，否则账本 A69 拒）；另 P3：控制事件表仍漏 `stage_close` 的 `stage_id=`+全节点 closed 前置、`stage_result` 的 cancelled→user_decision 引用与 `amend=` token、`plan_loaded` 的首非 superseded 节点、`planner-amend#<n>` 豁免名落点 | 复核报告见会话回传（未落盘文件）；逐条已对照 relay_log.py:1090-1130/§3.4:238/§3.5:295 实证属实 | 施工者 rework-3 整改 |
 | 2026-09-12 | X rework-3 | strategist 链 `decision` 归位 coder 名下（design §3.4:268-276 逐字对齐）；控制事件表四漏项补齐；`test_ledger_note_contract_documented` 加归属断言（decision→coder 名下、禁 decision→strategist 名下、planner-amend 在场）钉住反例 | focused SkillCoreDocTests 12/12 OK；全量 139 tests OK（158.0s，2 skipped=F-002）；`git diff --check` 0；触碰面仅 SKILL.md+test+workspace | rework-3 完成，二次确认复核在途 |
 | 2026-09-12 | R consistency-rereview-2 | devin-sub（explore，fresh）二次确认：**APPROVE_WITH_NITS**——P2-新/P3-新均 closed，归属断言推演有效（回退形态真红）；余 P3×2 nit：正向断言缺左边界可被 `user_decision` 虚满足（已修：加前导反引号）、stage_close 行缺 stage_start/monitor_launch 前置（已补）；观察项 `cancelled` 不在 DECISION_EVENTS（归属闸空隙）登记为 F-003 | 复核回传；nit 即修即验 | **一致性路闭合**——五路复核全部收敛 |
+| 2026-09-13 | 主控收口 | PR #11 squash 合入 master（`6f26c4a`）；F-002/F-003 主控裁决排后续卡（`2838a8b` 起随 PR 入仓）；worktree/分支 `wt/RLT_07` 已删 | merge=`6f26c4a`；CI run 34701980270 三硬门绿（relay-light 1m38s / pwsh ubuntu 1m17s / windows 1m30s；relay-core 暂停期 continue-on-error 观测项） | 卡闭合，Issue #10 随簿记提交关闭 |
 
 ## 施工批次状态（预填，不代表已执行）
 
