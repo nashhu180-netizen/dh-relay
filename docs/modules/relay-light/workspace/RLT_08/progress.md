@@ -63,3 +63,4 @@ DONE task=RLT_08 role=review batch=R status=APPROVE_WITH_NITS evidence=reviews/c
 DONE task=RLT_08 role=review batch=R status=APPROVE evidence=reviews/requirement-rlt08-review.md next=orchestrator
 DONE task=RLT_08 role=review batch=R status=APPROVE_WITH_NITS evidence=reviews/lesson-rlt08-review.md next=orchestrator
 DONE task=RLT_08 role=exec batch=X1 status=READY_FOR_REVIEW evidence=E-015,E-016,E-017,commit=ae38e65 next=orchestrator
+DONE task=RLT_08 role=review batch=X1 status=APPROVE evidence=reviews/code-round1-rlt08-review.md next=orchestrator

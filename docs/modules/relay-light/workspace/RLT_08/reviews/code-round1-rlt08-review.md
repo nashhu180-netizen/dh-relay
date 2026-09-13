@@ -45,3 +45,34 @@ L12 与 L97 双处登记 slug / 文档根 / 代码根 / 英文 verify scope；`d
 **APPROVE_WITH_NITS**
 
 四条 HC 机检复核者复跑全绿（exit=0）；改动精确、纯增量，现役铁律零弱化；判定句/标头与 adapter、oracle 逐字一致且可单行 grep；B-adjust 例外边界忠实于 §4.5.2/§4.5.3、未延伸 design/验收；双模块描述与 `dh relay-light` 解析证据真实可复放。P2/P3 三项均已由 exec 登记 findings，留收口裁决；本路只写事实与级别，不做验收裁决。
+
+## X1 复看（定向，commit `ae38e65`）
+
+- **身份**：rlt08-review（同 code-round1 复核者）· Devin CLI / SWE-2 Max · 2026-09-13
+- **范围**：编排点名的四项——`git diff a755143 ae38e65 -- AGENTS.md` 两处措辞不破 oracle 原文（四条 HC 机检自跑）、`review.md` 三区与需求对齐表引用属实、`LC-4~6` 与 lesson 路 P2-1~3 对应、diff 不出允许路径。
+
+### ① AGENTS.md 两 hunk + 四条 HC 复跑 — 通过
+
+`a755143..ae38e65` 对 AGENTS.md 恰两 hunk：L57（Runner 铁律 2）在逐字冻结句「有 RELAY_RECEIPT 即冻结 Runner 流水」**之后**插入括注「Runner 体系冻结在 P6 现状、不删不迁；本句是流水归属判定，不是让本棒停摆」——oracle 子串逐字保留、`rg -F` 连续命中不破，括注取 §0.3 原义消解 F-3 误读（F-3 闭合）；L95 改「彼时独立仓只有 relay 一份代码…relay-light 代码根见下行 `tools/relay-light/`」——历史叙述锚定 + 前向指针（F-1 闭合），该行无 oracle 原文。B3 整卡机检脚本复核者复跑 exit=0：矩阵恰 1、协议段/判定句/两句例外/四项身份全中、旧句零命中、`adapter_count=2`、dh 标头命中、baseline cmp 3/3、`diff --check`=0、四集合零越界。
+
+### ② review.md 引用属实性 — 通过
+
+独立复核区三路汇总与实际报告一致：code-round1 `APPROVE_WITH_NITS`（P2×1+P3×2，路径正确）、requirement `APPROVE`、lesson `rlt08-review2` `APPROVE_WITH_NITS`（P2×3+P3×2）。需求对齐证据表四行 HC→E-ID 引用（E-005/006/009~013/016 等）均在证据账本市真实存在、路径描述准确；AI 提交区 Confidence Challenge 只述事实不冒称验收。R4 三区（独立复核区/AI 提交区/人类签名区）与 R12 需求对齐表已补齐——`dh` 复跑中 RLT_08 的 R4/R12 失败行消失，证实属实。人类签名区结果列空白、明记「AI 不得预勾」——**未勾**。
+
+### ③ LC-4~6 ↔ lesson P2-1~3 — 通过
+
+LC-4=P2-1（task_plan B3 直接 `CONSTRUCTION_DONE` vs `exec.md` audit 后再派令的合同漂移 + exec.md 缺 rebase 第一动作；引 review.plan.md P1-1/P1-4）、LC-5=P2-2（P1-4 首轮漏、次轮全量复看逮出；引 review.plan.md L96-101）、LC-6=P2-3（B1 信号 `evidence=` 悬空引用，补记 `cbea9a6` 后 PASS；引 check.C1.md）。三条均逐字复述 lesson 报告证据链并标注对应 P2 号，对应关系属实。
+
+### ④ 允许路径 — 通过
+
+`ae38e65` 单提交触及：`AGENTS.md` + `findings.md`/`lesson_candidates.md`/`progress.md`/`review.md`（均 RLT_08 workspace 内）；`master...HEAD` 反选零越界，工作树/index/untracked 干净。
+
+### 观察（不阻断）
+
+- **P3 — E-016 计数时点性**：E-016 记 dh 存量失败「25→22」；复核者此刻复跑为「21」。差额方向为进一步好转（R4/R12 确已消），推测 E-016 记数于整改中途或后续 progress 更新又灭一项；实质声明「R4/R12 已补齐」属实，仅计数为时点值、不可逐字复放。
+
+### X1 结论
+
+**APPROVE**
+
+编排裁决的四项整改全部落实且无副作用：oracle 逐字零字节改动、四条 HC 机检仍全绿；review.md 三区补齐且引用全部属实、人类签名区未勾；LC-4~6 与 P2-1~3 一一对应；diff 仍在允许路径闭集内。
