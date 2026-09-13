@@ -1,0 +1,22 @@
+<!-- dh:v1 · progress.md -->
+# progress — RLT_09
+
+> 事实与证据账本。施工期由 scribe 按账本/diff/四行小结追加；W builder 只写初始化行与预留结构。
+
+## 日志
+
+| 日期 | 阶段 / 批次 | 动作 | 结果 | 证据 |
+|---|---|---|---|---|
+| 2026-09-13 | W / builder | 读取 dispatch 与冻结输入，建立 RLT_09 七件套，拆 B1～B5（含 RLT_10 F-003）并冻结 heavy 五路复核 | 待 plan-reviewer 审核 | `brief.md`、`task_plan.md`、`execution_strategy.md`、`findings.md`、`lesson_candidates.md`、`review.md` |
+
+## 证据账本
+
+| E-ID | 批次 | 命令 / 操作 | 原始结果摘要 | 支撑结论 |
+|---|---|---|---|---|
+
+## 批次 Handoff
+
+| 批次 | candidate SHA | RED / GREEN | audit | 下一步 |
+|---|---|---|---|---|
+
+## 信号
