@@ -585,6 +585,113 @@ class RelayPlanLintTests(RelayCliTestCase):
         self.assertEqual("", malformed.stdout)
         self.assertRegex(malformed.stderr, r"^error: HC-RL-A18 ")
 
+    def test_lint_cli_exit_stderr_and_json_contract(self) -> None:
+        """HC-RL-A80: lint signature, exit codes 0/2/3, stderr shape, --json document."""
+        # Acceptance-ID whitelist frozen from the §11 first column (design/01).
+        acceptance_ids = frozenset(
+            """
+            HC-RL-A2 HC-RL-A5 HC-RL-A11 HC-RL-A12 HC-RL-A13 HC-RL-A14 HC-RL-A15
+            HC-RL-A16 HC-RL-A17 HC-RL-A18 HC-RL-A19 HC-RL-A21 HC-RL-A24 HC-RL-A26
+            HC-RL-A27 HC-RL-A28 HC-RL-A29 HC-RL-A30 HC-RL-A31 HC-RL-A32 HC-RL-A33
+            HC-RL-A34 HC-RL-A35 HC-RL-A37 HC-RL-A38 HC-RL-A39 HC-RL-A40 HC-RL-A41
+            HC-RL-A42 HC-RL-A43 HC-RL-A44 HC-RL-A45 HC-RL-A46 HC-RL-A47 HC-RL-A48
+            HC-RL-A49 HC-RL-A50 HC-RL-A51 HC-RL-A55 HC-RL-A56 HC-RL-A58 HC-RL-A59
+            HC-RL-A60 HC-RL-A61 HC-RL-A62 HC-RL-A63 HC-RL-A65 HC-RL-A66 HC-RL-A67
+            HC-RL-A68 HC-RL-A69 HC-RL-A70 HC-RL-A71 HC-RL-A72 HC-RL-A73 HC-RL-A74
+            HC-RL-A75 HC-RL-A77 HC-RL-A78 HC-RL-A80 HC-RL-A81 HC-RL-A82 HC-RL-A83
+            HC-RL-A84 HC-RL-A85 HC-RL-A87 HC-RL-A89 HC-RL-A92 HC-RL-A93 HC-RL-A94
+            HC-RL-A95 HC-RL-A96 HC-RL-A97 HC-RL-A98 HC-RL-A99 HC-RL-A100
+            HC-RL-A101 HC-RL-A102 HC-RL-A103 HC-RL-A104 HC-RL-A105 HC-RL-A106
+            HC-RL-A107 HC-RL-A109 HC-RL-A110 HC-RL-A111 HC-RL-A112 HC-RL-A113
+            HC-RL-A114 HC-RL-A115 HC-RL-A116 HC-RL-A117 HC-RL-A118 HC-RL-A119
+            HC-RL-A120 HC-RL-A121 HC-RL-A122 HC-RL-A123 HC-RL-A124 HC-RL-A125
+            HC-RL-A126 HC-RL-A127 HC-RL-A128 HC-RL-A129 HC-RL-A130 HC-RL-A131
+            HC-RL-A132 HC-RL-A133 HC-RL-A134 HC-RL-A135 HC-RL-A136
+            """.split()
+        )
+        lint_line = re.compile(r"^lint: (HC-RL-A[0-9]+) .+$")
+        # Second W1 row sits at file line 7 and is the sole violation (A46).
+        violation_rows = [
+            "| W1 | DHR_90 | DHR_90:W#1 | build | | | |",
+            "| W1 | DHR_90 | DHR_90:W#2 | build | | | |",
+            "| C1 | DHR_90 | DHR_90:C#1 | construction | | W1 | |",
+        ]
+
+        with self.subTest(branch="valid plan exits 0"):
+            self.write_plan()
+            result = self.run_lint_cli(self.plan_path.parent)
+            self.assertEqual(0, result.returncode)
+            self.assertEqual("lint: ok\n", result.stdout)
+            self.assertEqual("", result.stderr)
+
+        with self.subTest(branch="semantic violation exits 2"):
+            self.write_plan(node_rows=violation_rows)
+            result = self.run_lint_cli(self.plan_path.parent)
+            self.assertEqual(2, result.returncode)
+            self.assertEqual("", result.stdout)
+            lines = [line for line in result.stderr.splitlines() if line.strip()]
+            self.assertTrue(lines)
+            for line in lines:
+                match = lint_line.fullmatch(line)
+                self.assertIsNotNone(match, f"stderr line escapes contract: {line}")
+                self.assertIn(match.group(1), acceptance_ids)
+
+        with self.subTest(branch="parse or config failure exits 3"):
+            missing = self.run_lint_cli(self.plan_path.parent / "missing")
+            self.assertEqual(3, missing.returncode)
+            self.assertEqual("", missing.stdout)
+            self.assertRegex(missing.stderr, r"^error: HC-RL-A18 ")
+            self.assertNotIn("lint:", missing.stderr)
+            self.plan_path.write_text("not a relay plan\n", encoding="utf-8")
+            malformed = self.run_lint_cli(self.plan_path.parent)
+            self.assertEqual(3, malformed.returncode)
+            self.assertEqual("", malformed.stdout)
+            self.assertRegex(malformed.stderr, r"^error: HC-RL-A18 ")
+            self.assertNotIn("lint:", malformed.stderr)
+            bad_config = self.run_cli(
+                "lint",
+                "--plan",
+                str(self.plan_path.parent),
+                "--config-dir",
+                str(self.plan_path.parent / "missing-config"),
+            )
+            self.assertEqual(3, bad_config.returncode)
+            self.assertEqual("", bad_config.stdout)
+            self.assertRegex(bad_config.stderr, r"^error: HC-RL-A135 ")
+            self.assertNotIn("lint:", bad_config.stderr)
+
+        with self.subTest(branch="--json valid plan"):
+            self.write_plan()
+            result = self.run_cli(
+                "lint", "--plan", str(self.plan_path.parent), "--json"
+            )
+            self.assertEqual(0, result.returncode)
+            document = json.loads(result.stdout)
+            self.assertEqual({"ok", "violations"}, set(document))
+            self.assertIs(document["ok"], True)
+            self.assertEqual([], document["violations"])
+
+        with self.subTest(branch="--json semantic violation"):
+            self.write_plan(node_rows=violation_rows)
+            result = self.run_cli(
+                "lint", "--plan", str(self.plan_path.parent), "--json"
+            )
+            self.assertEqual(2, result.returncode)
+            document = json.loads(result.stdout)
+            self.assertEqual({"ok", "violations"}, set(document))
+            self.assertIs(document["ok"], False)
+            self.assertTrue(document["violations"])
+            for violation in document["violations"]:
+                self.assertEqual({"rule", "message", "line"}, set(violation))
+                self.assertIsInstance(violation["rule"], str)
+                self.assertIn(violation["rule"], acceptance_ids)
+                self.assertIsInstance(violation["message"], str)
+                self.assertTrue(violation["message"])
+                self.assertIsInstance(violation["line"], int)
+                self.assertFalse(isinstance(violation["line"], bool))
+            self.assertEqual("HC-RL-A46", document["violations"][0]["rule"])
+            self.assertEqual(7, document["violations"][0]["line"])
+
     def test_help_lists_exactly_the_three_frozen_subcommands(self) -> None:
         result = self.run_cli("--help")
         self.assertEqual(0, result.returncode)
