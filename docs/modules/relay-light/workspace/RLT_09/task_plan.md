@@ -11,6 +11,12 @@
 4. 每批完成后 coder 在终端打印四行小结（做了什么 / 证据 / 偏离与 findings / 下一步）；scribe 只据事实追加 `progress.md`。coder 可追加 `findings.md` / `lesson_candidates.md`，不得让 scribe 代写。
 5. 每批 commit scope 为英文 `relay-light`；commit 后发 `DONE ... READY_FOR_REVIEW`，audit 未 PASS 不开始下一批。B5 PASS 后由 orchestrator 重派 exec 才能发 `CONSTRUCTION_DONE`。
 
+## W audit 待裁决项
+
+- **P1-01：待 `decision.1` 裁决后重写。** 当前 B4 关于三类白名单与方案文件写「超出范围」的合同取向不变；builder W2 不选边、不删任一要求。裁决同步权威 oracle 后，必须重写 B4 对应的程序、skill 模板、正反例与 actual 集合判据，再交 plan-review。
+- **P1-03：待 `decision.1` 裁决后重写。** 当前 B3 的 A121 措辞及“节点表和 agent 表追加”fixture 不变；builder W2 不解释“节点行”范围。裁决同步权威 oracle 后，必须重写 B3 场景动作与验证判据，再交 plan-review。
+- **本次 W2 只闭合 P1-02。** 下述 B4 快照算法独立于 P1-01 的白名单取向；P1-01/P1-03 未裁决前整份 W 计划仍不具备 PASS 条件。
+
 ## B1 — A119 + A123 账本合同
 
 ### 改动点
@@ -111,13 +117,14 @@ python3 -m unittest -v tools.relay-light.test_relay_log.RelayStatusProjectionTes
 
 ### 落地形态裁决
 
-采用现有 `lint` 的 planner-amend 校验模式（新增 lint 下属 flags/内部 helper），**不新增顶层子命令**，故 A135 的命令集仍为 `add/status/lint`。建议接口由 exec 依现有 argparse 风格冻结为等价的：
+采用现有 `lint` 的 planner-amend 校验模式（新增 lint 下属 flags/内部 helper），**不新增顶层子命令**，故 A135 的命令集仍为 `add/status/lint`。W2 将两阶段接口冻结为：
 
 ```text
-relay_log.py lint --plan <plan_dir> --amend-check --repo <repo> --base <tree-ish> [--proposed-path <path> ...]
+relay_log.py lint --plan <plan_dir> --amend-check before --repo <repo> --snapshot-out <repo外临时JSON> --proposed-path <path> [--proposed-path <path> ...]
+relay_log.py lint --plan <plan_dir> --amend-check after  --repo <repo> --snapshot <同一临时JSON>
 ```
 
-`--proposed-path` 用于动笔前整份方案预检；`--base` 后的 `git diff --name-only` 用于动笔后核实际集合。参数可在实现时做不改变语义的命名调整，但必须同步 skill 与测试，且普通 lint 合同不变。
+`before` 完成 proposed 全量预检、双采样稳定检查并把 repo root、HEAD、真实 index tree、before tree、before marker cards 与规范化 proposed 写入 repo 外新文件（存在即拒绝覆盖）；成功后才准动笔。`after` 读取同一快照、复核身份/HEAD/index，构造 after tree 并比较 actual。上述 flag 名、阶段值和快照字段是 P1-02 冻结接口，不再留给 exec 改名；临时文件不得进入 Git，普通 lint 合同不变。
 
 **F-001 前置闸**：design §4.5.2 同时要求“可碰文件只有三类 / 禁区命中整份不落笔”和“碰禁区时在方案文件写『超出范围』”；方案文件通常是 `workspace/<卡>/decision.<n>.md` 或 strategist 文件，不在三类白名单内，若用全仓 `git diff --name-only` 会出现第四类路径。exec 在 B4 动代码前必须发 `BLOCKED` 交 decider/orchestrator 裁决，二选一后才能继续：
 
@@ -126,14 +133,66 @@ relay_log.py lint --plan <plan_dir> --amend-check --repo <repo> --base <tree-ish
 
 builder 不选边；未裁决时 B1～B3 可依序完成，B4 停在前置闸，B5 是否先行由 orchestrator 明确重排，exec 不自行越批。
 
+### P1-02 冻结：改前快照、洁净前提与改后取集
+
+本节是 B4 实现和测试的固定算法；不得退回 `git diff <长期 tree-ish>`，也不得用改前 `git status` 的路径集合做减法，因为两者都会漏掉“原本 dirty 的同一路径再次变化”。
+
+#### 1. 洁净前提不是“全仓必须 clean”
+
+- 允许入场前存在 tracked dirty、staged 状态和 untracked 非忽略文件；它们必须被 before 快照原样吸收，不能混入本次 actual。
+- 守门窗口必须是单写者静默区：从 before 采样开始到 after 采样结束，除当前 planner-amend 外无其他进程写业务仓。
+- 记录 `repo_root = git rev-parse --show-toplevel`、`head_before = git rev-parse HEAD`、`real_index_before = git write-tree`。真实 index 只读，planner-amend 在守门窗口内禁止 `git add/reset/commit`；after 再取 `head_after` 与 `real_index_after`，任一不等即 A122 fail closed，actual 不作通过结论。
+- before 快照连续构造两次，两次 tree id、HEAD、真实 index tree id 必须一致才允许动笔；不一致说明现场仍在变化，A122 fail closed。临时 index 文件必须由安全临时目录新建，不能复用真实 `.git/index`，结束后删除。
+
+#### 2. before / after tree 构造（tracked + untracked）
+
+对 before 的两次稳定性采样和 after 采样都执行同一算法，所有 Git 命令固定 `-C <repo_root>`，且只为该子进程设置 `GIT_INDEX_FILE=<全新临时 index>`：
+
+```bash
+git -C <repo_root> read-tree <head_before>
+git -C <repo_root> add -A -- .
+git -C <repo_root> write-tree
+```
+
+- `read-tree` 从同一 HEAD 初始化临时 index；`add -A -- .` 把采样时的 tracked 修改/删除以及 untracked 非忽略文件写入临时 index，不改变真实 index和工作树；`write-tree` 返回该时刻完整可复现 tree id。
+- untracked 非忽略文件的新建、内容修改和删除均被树差捕获；tracked 文件无论原来 clean、unstaged dirty 或 staged dirty，均以采样时工作树 bytes/mode 为准。ignored untracked、`.git/` 内部对象、空目录不进入 Git tree，明确不属于 A122 路径观察面；proposed 若指向这些不可观察路径则预检拒绝。
+- 路径按 Git 的 NUL 协议处理，禁止按换行切分；symlink/mode/blob 都由 tree 记录。遇到无法 add/read 的文件、submodule 工作树内路径、Git 命令非零或解码失败一律 A122 fail closed。
+
+#### 3. proposed 与 actual 的精确算法
+
+1. 从方案抽取完整 proposed 列表，先转成 repo-relative POSIX 路径；拒绝绝对路径、空路径、`.`/`..` 穿越、NUL、repo 外路径、重复项和 Git ignored 路径。
+2. 以 **before tree 内的 relay_plan marker cards** 做授权判断；不得读改后的 marker 给新卡 task_plan 反向授权。P1-01 裁决前仍按现有两案停在前置闸，不改变白名单取向。
+3. 全量 proposed 预检必须在任何目标文件写入前完成；任一非法则整组拒绝，不调用写入动作。
+4. 预检通过后才一次修改；构造 `after_tree`，并取：
+
+   ```bash
+   git -C <repo_root> diff --name-only -z --no-renames <before_tree> <after_tree>
+   ```
+
+   输出按 NUL 分隔解码、统一为 repo-relative POSIX 路径、去重排序，得到 `actual`。`--no-renames` 固定 rename 为 delete+add 两个路径，避免相似度启发式改变集合。
+5. 成功的唯一集合判据是 `actual == proposed`：actual 多路径表示越界，少路径表示 proposed 中有未真正变化/no-op 的目标；两者都 A122 fail closed。随后再核 HEAD/真实 index 未变，最后运行普通 plan lint。
+
+临时 tree/blob 只作为 Git 对象证据，不改真实 index；测试与证据要登记 before/after tree id、proposed/actual 的 JSON 或 NUL 安全转写，不登记文件正文或凭据。
+
+#### 4. 必做回归矩阵
+
+- **已有 dirty 不混入**：改前路径 A 已 dirty，proposed 只含 B；before 吸收 A，after 只改 B，断言 actual 恰 `{B}`。
+- **同路径二次修改不漏报**：允许路径 A 改前已 dirty（相对 HEAD 为 v1），before tree 固化 v1；planner-amend 再改为 v2，断言 actual 恰 `{A}`，证明不是用“改前 dirty 路径集合相减”。
+- **tracked 三态**：对 clean tracked 修改、tracked 删除、原 staged/unstaged dirty 后二次修改分别断言 actual；并断言真实 index tree id 前后相同。
+- **untracked 三态**：改前已有 untracked 非忽略文件后再改、运行中新建、运行中删除分别进入 actual；ignored proposed 在预检拒绝。
+- **成功精确相等**：proposed 含两个允许路径且两者都产生净变化，断言排序后 `actual == proposed`；再加一个 proposed no-op，断言因 actual 少项而拒绝。
+- **越界多项**：proposed 只含允许 A，但写入同时碰 B，断言 actual 多出 B 并拒绝。
+- **禁区混合零变化**：proposed 同时含允许目标 A 与 design 禁区 D，预检即拒绝，不调用写入 callback；重新采 after tree，断言 `actual == ∅`，并逐个断言 A、D 的 before/after tree blob 与工作树 bytes 均相等。
+- **静默/真实 index 破坏**：before 双采样不一致、HEAD 改变或真实 index tree id 改变各一例 fail closed，不把污染后的集合报成成功。
+
 ### 改动点
 
 - `relay_log.py`：
-  - 解析改动前 `relay_plan.md` marker 的 module/cards；路径全规范化为 repo-relative POSIX 格式，拒绝绝对路径、`..`、repo 外路径。
+  - 按上节临时 Git index/tree 算法实现 before/after 快照；解析 **before tree** 中 `relay_plan.md` marker 的 module/cards；路径全规范化为 repo-relative POSIX 格式，拒绝绝对路径、`..`、repo 外路径。
   - 白名单仅三类：该 plan 的 `relay_plan.md`；同模块 `dev_plan/P<N>-*.md`；改动前 cards 中现有卡的 `workspace/<card>/task_plan.md`。
   - `docs/modules/<module>/design/` 前缀和其他路径一律 A122；新加到 marker 的 card 不得反向授权其 task_plan。
-  - 预检集合任一非法则整体失败，调用方未写任何文件；改后用 `git diff --name-only <base>` 取得精确实际集合并再次全量判定。普通 `lint --plan` 不启用 git 检查。
-- `test_relay_log.py`：新增 `RelayPlanAmendGuardTests`，覆盖三类逐项/组合正例、旧 card/new card、design、混合集合全有全无、repo 外路径、普通 lint 与顶层三命令回归。
+  - 预检集合任一非法则整体失败，调用方未写任何文件；改后固定用 `git diff --name-only -z --no-renames <before_tree> <after_tree>` 取得 actual，并要求 `actual == proposed`。普通 `lint --plan` 不启用 git 检查。
+- `test_relay_log.py`：新增 `RelayPlanAmendGuardTests`，覆盖三类逐项/组合正例、旧 card/new card、design、混合集合全有全无、repo 外路径、普通 lint、顶层三命令，以及本节 tracked/untracked/dirty/静默/集合相等完整矩阵。
 - `tools/relay-light/skill/SKILL.md`：补 `planner-amend` 专节/提示词模板，输入恰含方案文件、当前 relay_plan、开发方案、涉及的已有卡 task_plan；先从方案列出完整 proposed paths 并跑预检，命中禁区只向方案文件追加「超出范围」说明后停止；通过才一次改完，改后跑精确 diff 守门与普通 lint，失败最多修三次，第 3 次仍失败按超出范围收尾。明确不 blocked/escalate、不建新卡七件套、agent_launch→done。
 - 两份 adapter 若只需链接到核心模板则不复制模板；若当前派活入口必须增加引用，两份保持同构并加结构测试。
 
@@ -146,12 +205,12 @@ python3 -m unittest -v tools.relay-light.test_relay_log.RelayConfigTests.test_ea
 ```
 
 - RED：F-001 已裁决并同步权威合同后，校验模式/模板当前缺失；有效 RED 是预期 API/文本合同未实现，不接受 argparse 方法名写错或 fixture 仓库未初始化。
-- GREEN：三类允许集合通过；新卡 task_plan/design/混合集合 A122；design 混合反例前后 `git diff --name-only` 为空；实际 diff 集精确复核；普通 lint 不回归；顶层命令仍三个。
+- GREEN：P1-02 矩阵全部通过；成功例 `actual == proposed`；改前 dirty 同路径二次修改仍进入 actual；tracked/untracked 处理符合冻结算法；新卡 task_plan/design/混合集合 A122；design 混合反例 `actual == ∅` 且目标 blob/bytes 零变化；普通 lint 不回归；顶层命令仍三个。P1-01 的最终白名单集合按 `decision.1` 重写后执行。
 
 ### audit 小审输入
 
-- CLI/help 与 helper 契约、改前 cards 快照证明、所有正反例的 path set/exit/rule。
-- design 混合反例的前后 `git diff --name-only` 原文；成功例的 proposed/actual 集合相等证明。
+- CLI/help 与 helper 契约、HEAD/真实 index/before 双采样稳定证明、before cards 快照、before/after tree id、所有正反例的 path set/exit/rule。
+- tracked/untracked/改前 dirty 同路径二次修改矩阵；design 混合反例的 `actual == ∅` 与目标 blob/bytes 零变化；成功例的 proposed/actual 精确相等证明。
 - SKILL 模板逐项映射；两 adapter 是否改动及同构证据；B4 commit、边界四集合。
 
 ## B5 — F-003 UTF-8 输出防护

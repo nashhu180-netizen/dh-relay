@@ -76,6 +76,8 @@ python3 -m unittest -v tools.relay-light.test_relay_log.SkillCoreDocTests.test_p
 
 判据：现有 `lint` 顶层子命令下的 planner-amend 校验模式以改动前 marker cards 为基准，三类路径分别通过；新卡 task_plan、任意 design 路径和混合允许/禁止集合全部 exit 2 且 A122。design 反例必须在预检阶段失败，随后 `git diff --name-only` 证明白名单文件也零改动；成功写入后再次以 `git diff --name-only` 精确复核实际集合。skill 模板含输入四件、一次改完、最多 lint 三次、禁区写「超出范围」、改前/改后两道校验。`main` 的顶层命令集合仍恰为 `add/status/lint`，不与 A135 冲突。
 
+W2 冻结 P1-02 的归因算法：不要求 planner-amend 入场时全仓无 dirty，而要求单写者静默、HEAD 与真实 index 在守门窗口内不变；用两个全新的临时 `GIT_INDEX_FILE` 分别从同一 HEAD `read-tree`，再以 `git add -A -- .` 把当时 tracked 工作树状态和 untracked 非忽略文件写成 before/after tree。actual 集合固定取 `git diff --name-only -z --no-renames <before_tree> <after_tree>`，按 NUL 解码、转 repo-relative POSIX 路径、去重排序。这样改前已有 dirty 会进入 before tree，同一路径二次修改仍因 before/after blob 不同被报告；新建/修改/删除 untracked 非忽略文件同样进入 actual，ignored 文件与空目录不属于合同观察面，真实 index 的 tree id 改变则 fail closed。成功例必须 `actual == proposed`，不是子集；禁区混合 proposed 在任何业务文件写入前整体拒绝，并以 `actual == ∅` 及每个目标文件 before/after blob 相等双证证明零变化。完整步骤与测试矩阵见 `task_plan.md` B4。
+
 ### HC-RL-A123
 
 > `stage_result` 改动摘要格式：本阶段有 `plan_amend` 时 `note` 必须含 `amend=<方案文件名>` 与 `nodes=<节点号,节点号>`，缺则退出 2；无 `plan_amend` 时不得出现 `amend=`
