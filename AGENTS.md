@@ -87,6 +87,7 @@
 | 未排期的需求与已知坑 | [docs/modules/dh-relay/backlog.md](docs/modules/dh-relay/backlog.md) |
 | 踩过的坑 | [docs/modules/dh-relay/knowledge/教训库-候选.md](docs/modules/dh-relay/knowledge/教训库-候选.md) |
 | 主控派活（Windows 默认走 Herdr 拉交互式终端；claude kind 有 PATH shim 坑） | [docs/modules/dh-relay/knowledge/herdr-派活操作.md](docs/modules/dh-relay/knowledge/herdr-派活操作.md)（2026-08-28 用户指示 + 实测） |
+| relay-light 规划 / 编排 / 账本 / 三层执行 | [tools/relay-light/skill/SKILL.md](tools/relay-light/skill/SKILL.md) + 按主控侧选 `references/adapter-claude-code.md` / `adapter-codex.md` |
 
 ## dev-harness 落点 / slug
 
