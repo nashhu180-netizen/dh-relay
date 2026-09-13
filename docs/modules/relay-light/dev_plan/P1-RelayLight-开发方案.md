@@ -331,6 +331,7 @@
   - **机器证**｜来源：design/01 + `HC-RL-A16`｜relay_log 仅导入标准库。
 - **变更范围**：单测、薄壳与 suite 登记。
 - **允许路径**：<!-- dh:allowed-paths:v1 task=RLT_10 -->
+  - `tools/relay-light/relay_log.py`（2026-09-13 用户对话裁决 decision.1 选项 A 追加，relay-light 运行中白名单追加、有意绕过 B-adjust；用途仅限实现 A80 的 `lint --json` 参数注册、分发与 JSON 输出，不得重写 lint 规则语义、status/add、installer 或 runner）
   - `tools/relay-light/test_relay_log.py`
   - `tools/relay-light/test_install_skill.py`
   - `tools/tests/relay-light-log.ps1`

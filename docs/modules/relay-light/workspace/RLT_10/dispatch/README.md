@@ -3,7 +3,7 @@
 
 - **Issue**：https://github.com/nashhu180-netizen/dh-relay/issues/16 · **worktree**：`/home/nash/work/dh-relay/.dh-worktrees/RLT_10`（`wt/RLT_10`，基线 master `73947ac`）
 - **任务卡**：`docs/modules/relay-light/dev_plan/P1-RelayLight-开发方案.md` §RLT_10（目标 / 非目标 / 四条验收 / 允许路径 / 实施提示）
-- **允许路径（闭集）**：`tools/relay-light/test_relay_log.py`、`tools/relay-light/test_install_skill.py`、`tools/tests/relay-light-log.ps1`、`tools/tests/run-relay-tests.ps1`、`docs/modules/relay-light/workspace/RLT_10/**`。**`relay_log.py` 与 `install_skill.py` 不在允许路径内**——若测试暴露程序缺陷，只记 findings 并打 BLOCKED，不顺手改。
+- **允许路径（闭集）**：`tools/relay-light/relay_log.py`（**2026-09-13 用户裁决 decision.1 选项 A 追加，仅限实现 `lint --json`**）、`tools/relay-light/test_relay_log.py`、`tools/relay-light/test_install_skill.py`、`tools/tests/relay-light-log.ps1`、`tools/tests/run-relay-tests.ps1`、`docs/modules/relay-light/workspace/RLT_10/**`。**`relay_log.py` 只允许 `lint --json` 相关改动；`install_skill.py` 不在允许路径内**——其它程序缺陷只记 findings 并打 BLOCKED，不顺手改。
 - **oracle**：`docs/modules/relay-light/design/01-RelayLight-产品设计与验收.md` §11 的 HC-RL-A80 / A94 / A11 / A16 逐字（另 A15 是 Linux 直跑同一文件，本卡只作旁证不冒充）；§3.5 账本合同（lint 规则编号映射表）。
 - **模式**：手动派活（relay-light 账本尚未启用）。每个 agent 只做自己那一件事，完成后把结构化信号追加到 `../progress.md` 并**立即停止**，不等 node_closed、不越位派活、不回头问用户；有疑问写 `BLOCKED` 信号。
 - **信号格式**（追加到 `../progress.md` 「信号」节末尾一行，独占一行）：

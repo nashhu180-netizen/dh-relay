@@ -2,7 +2,7 @@
 # decision.1 — B1 lint --json 实现缺口
 
 - 日期：2026-09-13；角色：`rlt10-decide`；Issue：#16。
-- `kind=consult`；`status=PENDING_USER`；推荐 A，尚未批准任何选项。
+- `kind=consult`；`status=APPROVED_A`；推荐 A。**用户 2026-09-13 在编排会话点选 A**（扩本卡允许路径、只补 lint --json），编排已同步 DevPlan §RLT_10 allowed-paths 与 dispatch/README.md。
 - 现场：`wt/RLT_10`，读取时 HEAD `91d9fe6`；`git rebase master` 返回 up to date，工作区干净。
 - 输入：[F-001](findings.md)、[progress](progress.md) 最后一条 exec B1 BLOCKED（施工提交 `5b79d03`，E-B1-001～005）；权限依据：[dispatch/decide.md](dispatch/decide.md)。
 
