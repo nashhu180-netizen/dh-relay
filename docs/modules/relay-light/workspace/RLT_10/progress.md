@@ -71,3 +71,4 @@ DONE task=RLT_10 role=audit batch=W2 status=PASS evidence=review.plan.md next=or
 DONE task=RLT_10 role=exec batch=1 status=BLOCKED evidence=E-B1-001,E-B1-002,E-B1-003,E-B1-004,E-B1-005,F-001,commit=5b79d03 next=orchestrator
 DONE task=RLT_10 role=decide batch=1 status=CONSULT evidence=decision.1.md next=orchestrator
 DECISION task=RLT_10 batch=1 decision=decision.1 choice=A by=user(2026-09-13, orchestrator session) scope=relay_log.py:lint --json only next=exec-B1-resume
+DONE task=RLT_10 role=exec batch=1 status=READY_FOR_REVIEW evidence=E-B1-006,E-B1-007,E-B1-008,E-B1-009,E-B1-010,commit=542e2df next=orchestrator
