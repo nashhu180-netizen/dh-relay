@@ -97,3 +97,5 @@ DONE task=RLT_10 role=audit batch=3 status=FAIL evidence=check.C3.md next=orches
 DONE task=RLT_10 role=exec batch=3 status=READY_FOR_REVIEW evidence=E-B3-008,E-B3-003,E-B3-005,E-B3-007,commit=3db8ad8 next=orchestrator
 DONE task=RLT_10 role=audit batch=3 status=PASS evidence=check.C3.md next=orchestrator
 DONE task=RLT_10 role=exec batch=3 status=CONSTRUCTION_DONE evidence=E-B1-001~010,E-B2-001~005,E-B3-001~008,commits=5b79d03,542e2df,0746c64,3db8ad8,3209efb next=orchestrator
+DONE task=RLT_10 role=review batch=R status=APPROVE_WITH_NITS evidence=reviews/requirement-rlt10-review.md next=orchestrator
+DONE task=RLT_10 role=review batch=R status=APPROVE_WITH_NITS evidence=reviews/lesson-rlt10-review.md next=orchestrator
