@@ -105,7 +105,7 @@
 | RLT_08 | 接入 AGENTS 判定、协议索引与双模块身份 | 标准 | 已完成 | 1 | RLT_07 | [workspace/RLT_08](../workspace/RLT_08/) | 2026-09-13 / PR #15 squash 合入（`5cf70b8`） | normal 三路复核全闭合；Issue #14；显式登记有意绕过 B-adjust |
 | RLT_10 | 建立 unittest、PowerShell 薄壳与全量测试入口 | 标准 | 已完成 | 1 | RLT_03、RLT_05、RLT_07 | [workspace/RLT_10](../workspace/RLT_10/) | 2026-09-13 / PR #17 squash 合入（`efb1a60`） | normal 三路复核全闭合；Issue #16；decision.1 选项 A 追加 `relay_log.py` 仅补 `lint --json`；Windows runner 首接入暴露 F-003（status 中文输出 cp1252 崩溃，薄壳以 PYTHONUTF8 兜底，程序侧待后续卡）；RLT_12 准入门已过 |
 | RLT_12 | Windows Claude 主控跑首个真计划闭环 | 标准 | 未开始 | 1 | RLT_03、RLT_05、RLT_07、RLT_08、RLT_10 | — | — | 高危；首步承接 A32，**第一个端到端 demo**；RLT_21 非依赖，若先于 RLT_21 开工，同次确认须写明接受 A112/NOT_RUN 已知缺口并冻结证据口径 |
-| RLT_21 | 回流 Linux 预演发现：监工异常出口、启动修正记账、静默超时与派活纪律、决策模式门 | 标准 | 未开始 | 1 | RLT_07、RLT_09、RLT_10 | — | — | RLT-B-07 新增；Linux 可做；并入 RLT_07 F-002/F-003；输入 `workspace/RLT_12/evidence/linux-dry-run/README.md` DR-F-001～006 |
+| RLT_21 | 回流 Linux 预演发现：监工异常出口、启动修正记账、静默超时与派活纪律、决策模式门 | 标准 | 进行中 | 1 | RLT_07、RLT_09、RLT_10 | [workspace/RLT_21](../workspace/RLT_21/) | — | RLT-B-07 新增；Issue #21；D-start 2026-09-14；Linux 可做；并入 RLT_07 F-002/F-003；输入 `workspace/RLT_12/evidence/linux-dry-run/README.md` DR-F-001～006 |
 | RLT_11 | 回流三条教训并核对持久化退场合同 | 轻 | 未开始 | 2 | RLT_07、RLT_12 | — | — | — |
 | RLT_13 | Windows Codex 主控复跑并验证纯配置换协作 | 标准 | 未开始 | 2 | RLT_12 | — | — | — |
 | RLT_09 | 实现运行中追加改计划与白名单守门 | 标准 | 已完成 | 3 | RLT_03、RLT_05、RLT_07 | [workspace/RLT_09](../workspace/RLT_09/) | 2026-09-14 / PR #19 squash 合入（`c72f124`） | heavy 五路复核全闭合（code-round2 REQUEST_CHANGES→X1 修复复看 APPROVE）；Issue #18；并入 RLT_10 F-003 UTF-8 输出防护；含 RLT-A-07 最小 A-adjust（decision.1：F-001 选 B、A121 澄清）；A120 承接 RLT_03 交接断言已闭合 |
