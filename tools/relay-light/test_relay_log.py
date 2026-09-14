@@ -438,8 +438,10 @@ class RelayPlanLintTests(RelayCliTestCase):
                 "| scribe | F1 | scribe | | progress.md | | |",
             ],
         )
+        # HC-RL-A120: C#1 reappearing at the table tail is a legal append; the
+        # fixture's remaining real violation is the C2.depends_on=R1 A89 back-edge.
         self.assert_rule(
-            "HC-RL-A129",
+            "HC-RL-A89",
             node_rows=[
                 "| C1 | DHR_90 | DHR_90:C#1 | construction | | | |",
                 "| R1 | DHR_90 | DHR_90:R#1 | review | | C1 | |",
@@ -451,6 +453,120 @@ class RelayPlanLintTests(RelayCliTestCase):
                 "| checker | C2 | checker | | check.md | | |",
             ],
         )
+
+    def test_a120_allows_append_and_superseded_separation(self) -> None:
+        """HC-RL-A120: same-stage tail append and superseded separation pass lint."""
+        # Tail append: every other rule holds; only C#1's second run sits at the tail.
+        with self.subTest(case="tail-append"):
+            self.write_plan(
+                node_rows=[
+                    "| W1 | DHR_90 | DHR_90:W#1 | build | | | |",
+                    "| C1 | DHR_90 | DHR_90:C#1 | construction | | W1 | |",
+                    "| R1 | DHR_90 | DHR_90:R#1 | review | | C1 | |",
+                    "| C2 | DHR_90 | DHR_90:C#1 | construction | | C1 | |",
+                ],
+                agent_rows=[
+                    "| builder | W1 | builder | | task_plan.md | | |",
+                    "| coder | C1 | coder | | code.md | | |",
+                    "| scribe | R1 | scribe | | review.md | | |",
+                    "| checker | C2 | checker | | check.md | | |",
+                ],
+            )
+            result = self.run_lint_cli(self.plan_path.parent)
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertEqual("lint: ok\n", result.stdout)
+            plan = lint_plan(self.plan_path, repo_config())
+            self.assertEqual("DHR_90:C#1", plan.nodes[3].stage_id)
+
+        # RLT_03 handoff: same-stage reoccurrence separated only by a superseded
+        # row stays legal before and after the A120 relaxation.
+        with self.subTest(case="superseded-separation"):
+            self.write_plan(
+                node_rows=[
+                    "| C1 | DHR_90 | DHR_90:C#1 | construction | | | |",
+                    "| R1 | DHR_90 | DHR_90:R#1 | review | | C1 | superseded-by:R2 |",
+                    "| C2 | DHR_90 | DHR_90:C#1 | construction | | | |",
+                    "| R2 | DHR_90 | DHR_90:R#1 | review | | C2 | |",
+                ],
+                agent_rows=[
+                    "| coder | C1 | coder | | code.md | | |",
+                    "| checker | C2 | checker | | check.md | | |",
+                    "| scribe | R2 | scribe | | review.md | | |",
+                ],
+            )
+            result = self.run_lint_cli(self.plan_path.parent)
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertEqual("lint: ok\n", result.stdout)
+
+    def test_a120_keeps_four_hard_constraints(self) -> None:
+        """HC-RL-A120: a legal tail append does not relax A46/A72/A89/A109."""
+        agents = [
+            "| builder | W1 | builder | | task_plan.md | | |",
+            "| coder | C1 | coder | | code.md | | |",
+            "| scribe | R1 | scribe | | review.md | | |",
+            "| checker | C2 | checker | | check.md | | |",
+        ]
+        cases = [
+            (
+                "A46-duplicate-node-number",
+                "HC-RL-A46",
+                [
+                    "| W1 | DHR_90 | DHR_90:W#1 | build | | | |",
+                    "| C1 | DHR_90 | DHR_90:C#1 | construction | | W1 | |",
+                    "| R1 | DHR_90 | DHR_90:R#1 | review | | C1 | |",
+                    "| C2 | DHR_90 | DHR_90:C#1 | construction | | C1 | superseded-by:C3 |",
+                    "| C3 | DHR_90 | DHR_90:C#1 | construction | | C1 | |",
+                    "| C2 | DHR_90 | DHR_90:C#1 | construction | | C1 | |",
+                ],
+                [*agents, "| checker | C3 | checker | | check.md | | |"],
+            ),
+            (
+                "A72-depends-on-superseded",
+                "HC-RL-A72",
+                [
+                    "| W1 | DHR_90 | DHR_90:W#1 | build | | | |",
+                    "| C1 | DHR_90 | DHR_90:C#1 | construction | | W1 | |",
+                    "| R1 | DHR_90 | DHR_90:R#1 | review | | C1 | superseded-by:R2 |",
+                    "| R2 | DHR_90 | DHR_90:R#1 | review | | C1 | |",
+                    "| C2 | DHR_90 | DHR_90:C#1 | construction | | R1 | |",
+                ],
+                [
+                    "| builder | W1 | builder | | task_plan.md | | |",
+                    "| coder | C1 | coder | | code.md | | |",
+                    "| scribe | R2 | scribe | | review.md | | |",
+                    "| checker | C2 | checker | | check.md | | |",
+                ],
+            ),
+            (
+                "A89-dependency-on-later-stage",
+                "HC-RL-A89",
+                [
+                    "| W1 | DHR_90 | DHR_90:W#1 | build | | | |",
+                    "| C1 | DHR_90 | DHR_90:C#1 | construction | | W1 | |",
+                    "| R1 | DHR_90 | DHR_90:R#1 | review | | C1 | |",
+                    "| C2 | DHR_90 | DHR_90:C#1 | construction | | R1 | |",
+                ],
+                agents,
+            ),
+            (
+                "A109-same-card-parallel",
+                "HC-RL-A109",
+                [
+                    "| W1 | DHR_90 | DHR_90:W#1 | build | | | |",
+                    "| C1 | DHR_90 | DHR_90:C#1 | construction | | W1 | |",
+                    "| R1 | DHR_90 | DHR_90:R#1 | review | | W1 | |",
+                    "| C2 | DHR_90 | DHR_90:C#1 | construction | | C1 | |",
+                ],
+                agents,
+            ),
+        ]
+        for name, rule, node_rows, agent_rows in cases:
+            with self.subTest(case=name):
+                self.write_plan(node_rows=node_rows, agent_rows=agent_rows)
+                result = self.run_lint_cli(self.plan_path.parent)
+                self.assertEqual(2, result.returncode)
+                self.assertEqual("", result.stdout)
+                self.assertRegex(result.stderr, rf"^lint: {rule} ")
 
     def test_stage_id_card_and_instance_are_structural(self) -> None:
         self.assert_rule(
@@ -1818,7 +1934,9 @@ class RelayConfigTests(RelayCliTestCase):
         )
         lint = self.run_lint_cli(self.plan_path.parent)
         self.assertEqual(2, lint.returncode)
-        self.assertRegex(lint.stderr, r"^lint: HC-RL-A129 ")
+        # HC-RL-A120: C#1's tail reappearance is a legal append, so the first
+        # structural rule to fire is the A89 back-edge — still ahead of A116.
+        self.assertRegex(lint.stderr, r"^lint: HC-RL-A89 ")
 
     def test_each_subcommand_help_exposes_config_dir(self) -> None:
         """HC-RL-A135: add/status/lint each advertise --config-dir; the command set stays three."""

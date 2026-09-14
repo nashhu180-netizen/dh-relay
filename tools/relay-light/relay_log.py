@@ -526,7 +526,10 @@ def lint_plan(path: str | Path, config: RelayConfig) -> Plan:
     for node in active_nodes:
         if not stage_runs or stage_runs[-1] != node.stage_id:
             stage_runs.append(node.stage_id)
-    if len(stage_runs) != len(set(stage_runs)):
+    # HC-RL-A120: a stage instance may reappear only as a table-tail append —
+    # every run before the last must be distinct; the last run may repeat an
+    # earlier stage_id. All other hard constraints stay unchanged.
+    if len(stage_runs[:-1]) != len(set(stage_runs[:-1])):
         raise _error("HC-RL-A129", "nodes for a stage instance are not grouped contiguously")
 
     dependencies = {node.node: node.depends_on for node in active_nodes}

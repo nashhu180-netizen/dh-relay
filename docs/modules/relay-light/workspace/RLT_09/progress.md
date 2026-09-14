@@ -19,6 +19,11 @@
 | E-B1-03 | B1 | `python3 -m unittest tools/relay-light/test_relay_log.py` | exit 0，`Ran 143 tests in 167.868s OK (skipped=2)` | Python 全量回归绿（2 skipped 为既有 F-002 标记用例） |
 | E-B1-04 | B1 | `pwsh -NoProfile -File tools/tests/run-relay-tests.ps1` | exit 0，末行 `RELAY ALL PASS (SKIPPED: 1)` | PowerShell 全量绿（relay-light 薄壳重跑 Python 143 + install_skill 7） |
 | E-B1-05 | B1 | `rm -rf tools/relay-light/__pycache__`；`git diff --check`；`git diff master --name-only`；`git status --short --untracked-files=all` | __pycache__ 已删；`--check` 无输出；name-only 仅含允许路径（design/dev_plan 为已授权 W 阶段提交，非本批改动） | 边界与 whitespace 洁净 |
+| E-B2-01 | B2 | `git show b6b7d66:tools/relay-light/relay_log.py > tools/relay-light/relay_log.py`（正式基线语义）后 `python3 -m unittest -v tools.relay-light.test_relay_log.RelayPlanLintTests.test_a120_allows_append_and_superseded_separation`；随后 `git checkout HEAD -- tools/relay-light/relay_log.py` 还原 | exit 1，`FAILED (failures=1)`：`case='tail-append'` 得 `AssertionError: 0 != 2 : lint: HC-RL-A129 nodes for a stage instance are not grouped contiguously`；`case='superseded-separation'` 未列入失败（基线即通过） | RED：正式基线 b6b7d66 拒绝表尾追加（exit 2/A129），superseded 隔开保持通过 |
+| E-B2-02 | B2 | task_plan B2 七用例命令（两新用例 + A46/A72/A75/A129/A89 既有回归） | exit 0，`Ran 7 tests in 1.450s`，`OK` | GREEN：两正例通过；四硬约束各报 A46/A72/A89/A109；编号不漂 |
+| E-B2-03 | B2 | `python3 -m unittest tools/relay-light/test_relay_log.py` | exit 0，`Ran 145 tests in 169.846s`，`OK (skipped=2)` | Python 全量回归绿；中途曾捕到 `test_structural_lint_precedes_the_recipe_check` fixture 漂移（A129→A89），已按 dev_plan「仅变更其实际负责的规则断言」收窄后复绿 |
+| E-B2-04 | B2 | `pwsh -NoProfile -File tools/tests/run-relay-tests.ps1` | exit 0，末行 `RELAY ALL PASS (SKIPPED: 1)` | PowerShell 全量绿（relay-light Python 145 + install_skill 7） |
+| E-B2-05 | B2 | `rm -rf tools/relay-light/__pycache__`；`git diff --check`；`git diff --name-only`；`git status --short --untracked-files=all` | __pycache__ 已删；`--check` 无输出；name-only 仅 `relay_log.py` + `test_relay_log.py` 两份允许路径 | 边界与 whitespace 洁净 |
 
 ## 批次 Handoff
 
