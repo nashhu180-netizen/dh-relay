@@ -805,6 +805,10 @@ def _authorize_agent(plan: Plan, node: NodeSpec, event: str, agent: str) -> None
     name, _ = _agent_parts(agent)
     if event in CONTROL_EVENTS:
         if name not in CONTROL_AGENT_NAMES:
+            if event == "plan_amend":
+                raise _error(
+                    "HC-RL-A119", f"plan_amend must be written by monitor#<n>: {agent}"
+                )
             raise _error("HC-RL-A69", f"control event requires orchestrator or monitor: {event}")
         return
     if name in RELAUNCH_EXEMPT_AGENT_NAMES:
@@ -873,6 +877,15 @@ def _validate_plan_loaded_note(note: str) -> None:
         if token.startswith("skill=") and token[len("skill=") :]:
             return
     raise _error("HC-RL-A18", "plan_loaded note must contain a non-empty skill=<version>")
+
+
+def _validate_plan_amend_note(note: str) -> None:
+    """HC-RL-A119: a plan_amend note carries the proposal filename plus nodes=<node,…>."""
+    if not any("=" not in token for token in note.split()):
+        raise _error("HC-RL-A119", "plan_amend note must carry the proposal filename")
+    nodes = _note_tokens(note).get("nodes")
+    if nodes is None or not nodes or any(not item for item in nodes.split(",")):
+        raise _error("HC-RL-A119", "plan_amend note must carry nodes=<node,node>")
 
 
 def _validate_decision_ownership(
@@ -1018,6 +1031,8 @@ def _validate_event_semantics(
         _validate_node_close(plan, entries, node)
         return
     if event in CONTROL_EVENTS:
+        if event == "plan_amend":
+            _validate_plan_amend_note(note)
         _validate_stage_event(plan, entries, event, note)
         return
     if event in AGENT_EVENTS:
@@ -1114,6 +1129,28 @@ def _validate_stage_event(
             raise _error(
                 "HC-RL-A112",
                 f"stage_result must follow the last node_close of {stage_id}; still open: {unclosed}",
+            )
+        # HC-RL-A123: the amend summary mirrors this instance's own plan_amend history.
+        stage_amends = any(
+            entry["event"] == "plan_amend"
+            for entry in _stage_entries(entries, stage_id, nodes_by_name)
+        )
+        if stage_amends:
+            if not tokens.get("amend"):
+                raise _error(
+                    "HC-RL-A123",
+                    f"stage_result for {stage_id} must carry amend=<proposal> after plan_amend",
+                )
+            nodes = tokens.get("nodes", "")
+            if not nodes or any(not item for item in nodes.split(",")):
+                raise _error(
+                    "HC-RL-A123",
+                    f"stage_result for {stage_id} must carry nodes=<node,node> after plan_amend",
+                )
+        elif "amend" in tokens:
+            raise _error(
+                "HC-RL-A123",
+                f"stage_result for {stage_id} carries amend= without a stage plan_amend",
             )
         return
 

@@ -3067,6 +3067,88 @@ class RelayLifecycleTests(RelayCliTestCase):
         self.assertEqual(0, forward.returncode, forward.stderr)
         self.assertEqual("lint: ok\n", forward.stdout)
 
+    def test_plan_amend_requires_monitor_and_complete_note_and_is_repeatable(self) -> None:
+        """HC-RL-A119: monitor#<n> writes it, note carries filename + nodes=, repeats freely."""
+        self.write_stage_plan()
+        self.drive_closed_w_stage()
+        self.drive_open_c_instance()
+        self.add_ok("node_start", node="C2")
+        self.add_ok("agent_launch", node="C2", agent="coder#1")
+        cases = (
+            ("coder#1", "decision.2.md nodes=C3"),            # not monitor#<n>
+            ("monitor#1", "nodes=C3,C4"),                     # no proposal filename token
+            ("monitor#1", "decision.2.md"),                   # missing nodes=
+            ("monitor#1", "decision.2.md nodes="),            # empty nodes list
+            ("monitor#1", "decision.2.md nodes=C3,,C4"),      # empty list item
+        )
+        for agent, note in cases:
+            with self.subTest(agent=agent, note=note):
+                self.assert_rejected(
+                    "plan_amend", code="HC-RL-A119", node="C2", agent=agent, note=note
+                )
+        before = self.status_payload()
+        for _ in range(2):
+            self.add_ok("plan_amend", node="C2", note="decision.2.md nodes=C3,C4")
+        after = self.status_payload()
+        volatile = {"agents", "errors"}
+        self.assertEqual(
+            {key: value for key, value in before.items() if key not in volatile},
+            {key: value for key, value in after.items() if key not in volatile},
+        )
+        self.assertEqual([], before["errors"])
+        self.assertEqual([], after["errors"])
+        self.assertEqual(
+            [{k: v for k, v in agent.items() if k != "idle_seconds"} for agent in before["agents"]],
+            [{k: v for k, v in agent.items() if k != "idle_seconds"} for agent in after["agents"]],
+        )
+        self.add_ok("done", node="C2", agent="coder#1", note="交付")
+        self.add_ok("node_close", node="C2")
+        payload = self.status_payload()
+        coder = next(
+            agent
+            for agent in payload["agents"]
+            if agent["node"] == "C2" and agent["agent"] == "coder#1"
+        )
+        self.assertEqual("done", coder["last_event"])
+        self.assertEqual("closed", payload["nodes"][2]["state"])
+        self.assertEqual("open", payload["stages"][1]["state"])
+
+    def test_stage_result_amend_summary_matches_stage_history(self) -> None:
+        """HC-RL-A123: the amend summary is required iff this instance recorded a plan_amend."""
+        self.write_stage_plan()
+        self.add_ok("plan_loaded", agent="orchestrator#1", note="skill=0.1.0")
+        self.add_ok("stage_start", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
+        self.add_ok("monitor_launch", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
+        self.add_ok("node_start", node="W1")
+        self.add_ok("agent_launch", node="W1", agent="builder#1")
+        self.add_ok("done", node="W1", agent="builder#1")
+        self.add_ok("plan_amend", node="W1", note="decision.2.md nodes=C3,C4")
+        self.add_ok("node_close", node="W1")
+        for note in (
+            "stage_id=DHR_90:W#1 outcome=done nodes=C3,C4",
+            "stage_id=DHR_90:W#1 outcome=done amend=decision.2.md",
+        ):
+            with self.subTest(note=note):
+                self.assert_rejected("stage_result", code="HC-RL-A123", note=note)
+        self.add_ok(
+            "stage_result",
+            note="stage_id=DHR_90:W#1 outcome=done amend=decision.2.md nodes=C3,C4 计划已追加两节点",
+        )
+        self.add_ok("stage_close", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
+        # C#1 records no plan_amend: a bare amend= token is A123 while a plain
+        # result passes — W#1's plan_amend must not bleed into this instance.
+        self.drive_open_c_instance()
+        self.close_node("C2")
+        with self.subTest(note="amend-without-plan_amend"):
+            self.assert_rejected(
+                "stage_result",
+                code="HC-RL-A123",
+                note="stage_id=DHR_90:C#1 outcome=done amend=decision.9.md nodes=C9",
+            )
+        self.add_ok("stage_result", note="stage_id=DHR_90:C#1 outcome=done 收尾")
+        self.add_ok("stage_close", agent="orchestrator#1", note="stage_id=DHR_90:C#1")
+        self.assertEqual("closed", self.status_payload()["stages"][1]["state"])
+
 
 class RelayLimitsTests(RelayCliTestCase):
     """Batch 4 (HC-RL-A97/A99/A107): config-driven X planning and the two loss stops."""
