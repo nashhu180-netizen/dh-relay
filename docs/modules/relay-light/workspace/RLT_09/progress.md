@@ -25,6 +25,11 @@
 | E-B2-03 | B2 | `python3 -m unittest tools/relay-light/test_relay_log.py` | exit 0，`Ran 145 tests in 169.846s`，`OK (skipped=2)` | Python 全量回归绿；中途曾捕到 `test_structural_lint_precedes_the_recipe_check` fixture 漂移（A129→A89），已按 dev_plan「仅变更其实际负责的规则断言」收窄后复绿 |
 | E-B2-04 | B2 | `pwsh -NoProfile -File tools/tests/run-relay-tests.ps1` | exit 0，末行 `RELAY ALL PASS (SKIPPED: 1)` | PowerShell 全量绿（relay-light Python 145 + install_skill 7） |
 | E-B2-05 | B2 | `rm -rf tools/relay-light/__pycache__`；`git diff --check`；`git diff --name-only`；`git status --short --untracked-files=all` | __pycache__ 已删；`--check` 无输出；name-only 仅 `relay_log.py` + `test_relay_log.py` 两份允许路径 | 边界与 whitespace 洁净 |
+| E-B3-01 | B3 | `python3 -m unittest -v tools.relay-light.test_relay_log.RelayStatusProjectionTests.test_status_rereads_appended_stage_in_plan_order`（断言变异：期望未追加的 `DHR_90:F#1`） | exit 1，`FAILED (failures=1)`：`First differing element 3: 'DHR_90:F#1' / 'DHR_90:X#2'`——第二次 status 实际返回追加的 X#2 实例且按节点表首次出现序 | 断言变异 RED：测试咬住 `stages` 精确顺序；`relay_log.py` 零改动（`_status_command`→`_runtime_plan`→`lint_plan` 每次重读），不伪称实现前失败 |
+| E-B3-02 | B3 | 同上命令（断言改回 `DHR_90:X#2` 后） | exit 0，`OK`，1 test | GREEN：两次 status 均 exit 0；第二次恰多 `DHR_90:X#2`（pending，nodes=[X2]），顺序=计划首次出现序（非 WCRF：`W,C,X#1,X#2`）；首 payload 前缀不变；两次间 `relay_log.py`/`relay_log.jsonl` sha256 不变、plan 目录仅 `relay_plan.md` 变化；A75 空节点追加仍 exit 3 |
+| E-B3-03 | B3 | `python3 -m unittest tools/relay-light/test_relay_log.py` | exit 0，`Ran 146 tests in 169.368s`，`OK (skipped=2)` | Python 全量回归绿（2 skipped 为既有 F-002 标记用例） |
+| E-B3-04 | B3 | `pwsh -NoProfile -File tools/tests/run-relay-tests.ps1` | exit 0，末行 `RELAY ALL PASS (SKIPPED: 1)` | PowerShell 全量绿（relay-light Python 146 + install_skill 7） |
+| E-B3-05 | B3 | `rm -rf tools/relay-light/__pycache__`；`git diff --check`；`git diff --name-only`；`git status --short --untracked-files=all` | __pycache__ 已删；`--check` 无输出；name-only 仅 `test_relay_log.py` 一份允许路径 | 边界与 whitespace 洁净；实现零改动 |
 
 ## 批次 Handoff
 

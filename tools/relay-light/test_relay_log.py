@@ -2602,6 +2602,109 @@ class RelayStatusProjectionTests(RelayCliTestCase):
         self.assertIn("最近 checkpoint @ 10:31:12（静默 00:12:40）", rendered)
         self.assertIn("不可关：coder#1 无终态事件", rendered)
 
+    def test_status_rereads_appended_stage_in_plan_order(self) -> None:
+        """HC-RL-A121: status re-reads the same plan; an appended X instance lands in plan order."""
+        # 非 WCRF 计划（W → C → X#1，无 R/F）：两次 status 之间只改同一
+        # relay_plan.md，追加 X#2 节点行及 A75/A24 所需的 agent 行。
+        self.write_plan(
+            node_rows=[
+                "| W1 | DHR_90 | DHR_90:W#1 | build | agent:builder | | |",
+                "| C1 | DHR_90 | DHR_90:C#1 | construction | agent:coder | W1 | |",
+                "| X1 | DHR_90 | DHR_90:X#1 | rework | | C1 | |",
+            ],
+            agent_rows=[
+                "| builder | W1 | builder | | task_plan.md | | |",
+                "| coder | C1 | coder | | code.md | | |",
+                "| coder | X1 | coder | | rework.1.md | | |",
+            ],
+        )
+        ledger_path = self.write_ledger_rows(
+            (
+                ("2026-09-14T09:00:00+08:00", "W1", "plan_loaded", "orchestrator#1", "skill=0.1.0"),
+                ("2026-09-14T09:01:00+08:00", "W1", "stage_start", "orchestrator#1", "stage_id=DHR_90:W#1"),
+                ("2026-09-14T09:02:00+08:00", "W1", "monitor_launch", "orchestrator#1", "stage_id=DHR_90:W#1"),
+                ("2026-09-14T09:03:00+08:00", "W1", "node_start", "monitor#1", ""),
+                ("2026-09-14T09:04:00+08:00", "W1", "agent_launch", "builder#1", ""),
+                ("2026-09-14T09:05:00+08:00", "W1", "done", "builder#1", ""),
+                ("2026-09-14T09:06:00+08:00", "W1", "node_close", "monitor#1", ""),
+                ("2026-09-14T09:07:00+08:00", "W1", "stage_result", "monitor#1", "stage_id=DHR_90:W#1 outcome=done"),
+                ("2026-09-14T09:08:00+08:00", "W1", "stage_close", "orchestrator#1", "stage_id=DHR_90:W#1"),
+                ("2026-09-14T09:09:00+08:00", "C1", "stage_start", "orchestrator#1", "stage_id=DHR_90:C#1"),
+                ("2026-09-14T09:10:00+08:00", "C1", "monitor_launch", "orchestrator#1", "stage_id=DHR_90:C#1"),
+                ("2026-09-14T09:11:00+08:00", "C1", "node_start", "monitor#1", ""),
+                ("2026-09-14T09:12:00+08:00", "C1", "agent_launch", "coder#1", ""),
+            )
+        )
+        first = self.status_payload()
+        self.assertEqual(
+            ["DHR_90:W#1", "DHR_90:C#1", "DHR_90:X#1"],
+            [stage["stage_id"] for stage in first["stages"]],
+        )
+        self.assertEqual("DHR_90:C#1", first["current_stage"])
+        self.assertEqual([], first["errors"])
+
+        module = Path(relay_log.__file__)
+        code_hash = hashlib.sha256(module.read_bytes()).hexdigest()
+        ledger_hash = hashlib.sha256(ledger_path.read_bytes()).hexdigest()
+        plan_dir_hashes = {
+            path.name: hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in self.plan_path.parent.iterdir()
+            if path.is_file()
+        }
+
+        # Between the two status calls: same plan file only — append the X#2 node
+        # row to the node-table tail and its agent row to the agent-table tail.
+        plan_text = self.plan_path.read_text(encoding="utf-8")
+        node_row = "| X2 | DHR_90 | DHR_90:X#2 | rework | | X1 | |"
+        agent_row = "| coder | X2 | coder | | rework.2.md | | |"
+        self.assertIn("\n\n## agent 表\n", plan_text)
+        plan_text = plan_text.replace(
+            "\n\n## agent 表\n", f"\n{node_row}\n\n## agent 表\n", 1
+        )
+        plan_text = plan_text.rstrip("\n") + f"\n{agent_row}\n"
+        self.plan_path.write_text(plan_text, encoding="utf-8")
+
+        second = self.status_payload()
+        self.assertEqual(
+            ["DHR_90:W#1", "DHR_90:C#1", "DHR_90:X#1", "DHR_90:X#2"],
+            [stage["stage_id"] for stage in second["stages"]],
+        )
+        self.assertEqual(first["stages"], second["stages"][: len(first["stages"])])
+        self.assertEqual(
+            {
+                "stage_id": "DHR_90:X#2", "stage": "X", "card": "DHR_90", "k": 2,
+                "state": "pending", "nodes": ["X2"], "result": None,
+            },
+            second["stages"][-1],
+        )
+        self.assertIn("X2", second["pending_nodes"])
+        self.assertEqual([], second["errors"])
+
+        self.assertEqual(code_hash, hashlib.sha256(module.read_bytes()).hexdigest())
+        self.assertEqual(ledger_hash, hashlib.sha256(ledger_path.read_bytes()).hexdigest())
+        after_hashes = {
+            path.name: hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in self.plan_path.parent.iterdir()
+            if path.is_file()
+        }
+        self.assertEqual(set(plan_dir_hashes), set(after_hashes))
+        changed = {
+            name for name in plan_dir_hashes if plan_dir_hashes[name] != after_hashes[name]
+        }
+        self.assertEqual({"relay_plan.md"}, changed)
+
+        # A75 regression: an appended node without an active agent is still rejected.
+        plan_text = self.plan_path.read_text(encoding="utf-8")
+        orphan_row = "| F1 | DHR_90 | DHR_90:F#1 | handoff | | X2 | |"
+        plan_text = plan_text.replace(
+            "\n\n## agent 表\n", f"\n{orphan_row}\n\n## agent 表\n", 1
+        )
+        self.plan_path.write_text(plan_text, encoding="utf-8")
+        result = self.run_cli("status", "--plan", str(self.plan_path.parent), "--json")
+        self.assertEqual(3, result.returncode)
+        self.assertEqual("", result.stdout)
+        self.assertRegex(result.stderr, r"^error: HC-RL-A75 ")
+
 
 DESIGN_10_2_ADDS = (
     ("W1", "plan_loaded", "orchestrator#1", "skill=0.1.0"),
