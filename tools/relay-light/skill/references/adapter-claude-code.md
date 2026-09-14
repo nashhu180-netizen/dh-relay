@@ -81,4 +81,5 @@ watch 未实现前**一律走方式 2 或 3**，不得结束回合空等。`agen
 
 - 凭据 / 密钥值永不进 prompt、note、工件、账本（A27）。
 - 不硬编码模型名；角色 → 发起方式查 `roles.toml`（A132）。
+- `planner-amend` 改计划实例的白名单、守门流程与账本规则以 `SKILL.md` 的「planner-amend 改计划模板」为准，adapter 不重复展开。
 - 本 adapter 只描述 Claude Code 侧；另一侧见 `adapter-codex.md`。

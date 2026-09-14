@@ -31,6 +31,11 @@
 | E-B3-03 | B3 | `python3 -m unittest tools/relay-light/test_relay_log.py` | exit 0，`Ran 146 tests in 169.368s`，`OK (skipped=2)` | Python 全量回归绿（2 skipped 为既有 F-002 标记用例） |
 | E-B3-04 | B3 | `pwsh -NoProfile -File tools/tests/run-relay-tests.ps1` | exit 0，末行 `RELAY ALL PASS (SKIPPED: 1)` | PowerShell 全量绿（relay-light Python 146 + install_skill 7） |
 | E-B3-05 | B3 | `rm -rf tools/relay-light/__pycache__`；`git diff --check`；`git diff --name-only`；`git status --short --untracked-files=all` | __pycache__ 已删；`--check` 无输出；name-only 仅 `test_relay_log.py` 一份允许路径 | 边界与 whitespace 洁净；实现零改动 |
+| E-B4-01 | B4 | `python3 -m unittest -v` 对 RED stub 跑五名 guard 用例 + allowlist/lint-failure/external-mutation/normal-lint/snapshot-dir 用例 + lifecycle/template/adapter 三用例 | exit 1，`FAILED (failures=40, errors=1)`：`HC-RL-A122 amend-check snapshot-not-implemented`、恢复未还原原始 bytes、snapshot 目录 0755 非 0700、混合禁区预检未拒、done.note 结构未校验、模板/adapter 指针缺失 | RED：目标行为断言失败，非未知旗标/fixture 错 |
+| E-B4-02 | B4 | `python3 -m unittest -v tools.relay-light.test_relay_log.RelayPlanAmendGuardTests` + `RelayLifecycleTests.test_planner_amend_out_of_scope_lifecycle_contract` + `SkillCoreDocTests.test_planner_amend_template_contract` + `SkillAdapterTests.test_planner_amend_reference_isomorphic` + `RelayConfigTests.test_each_subcommand_help_exposes_config_dir` | exit 0，`Ran 10 tests ... OK`（guard 类）+ 4 用例 OK | GREEN：三类闭集逐项通过、design/新卡/越界/绝对/穿越/重复/目录整份拒、actual==proposed 唯一判据、raw 恢复 bytes/mode/symlink、静默区四类破坏 fail closed、敏感 untracked 不入 object database/输出、普通 lint 合同不变、planner-amend 生命周期 + 结构化 done.note + 模板 + 同构 adapter 全绿 |
+| E-B4-03 | B4 | `python3 -m unittest tools/relay-light/test_relay_log.py` | exit 0，`Ran 159 tests in 227.561s`，`OK (skipped=2)` | Python 全量回归绿；首轮曾三红灯——`test_static_forbidden_primitive_and_pane_guards` 禁表命中 tempfile/mkstemp/os.replace，改写为 O_EXCL 顺序号副本 + unlink-重建恢复后复绿 |
+| E-B4-04 | B4 | `pwsh -NoProfile -File tools/tests/run-relay-tests.ps1` | exit 0，末行 `RELAY ALL PASS (SKIPPED: 1)` | PowerShell 全量绿（relay-light Python 159 + install_skill 7） |
+| E-B4-05 | B4 | `rm -rf tools/relay-light/__pycache__`；`git diff --check`；`git status --porcelain` | __pycache__ 已删；`--check` 无输出；改动仅 `relay_log.py`、`test_relay_log.py`、`SKILL.md`、两 adapter 五份允许路径 | 边界与 whitespace 洁净 |
 
 ## 批次 Handoff
 

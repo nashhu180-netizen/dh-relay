@@ -21,9 +21,9 @@ relay-light 是一套接力编排协议：人拉起规划与编排，编排在�
 | coder | 监工 | 批内持续在场，本批 checker 通过后才收工 | 写代码、提交；自己在 `findings.md` / `lesson_candidates.md` 追加一两行；每轮写完打四行小结 |
 | scribe | 监工 | 单节点 | 只写 `progress.md`；R/F 阶段还跑脚本与汇总 |
 | checker 方向评估 | 监工 | 批内持续在场，与 coder 同生共死 | 核对本批是否偏离 `task_plan`；不做复核 |
-| decider 决策 | 监工 | 按需 | 施工 `blocked` 时产出可落地方案；不改任何文件，可在方案文件提出「需要改计划」并写明改动内容（改计划工作流归 RLT_09） |
+| decider 决策 | 监工 | 按需 | 施工 `blocked` 时产出可落地方案；不改任何文件，可在方案文件提出「需要改计划」并写明改动内容（改计划工作流见「planner-amend 改计划模板」） |
 | reviewer | 监工 | 单路 | R 阶段各路复核，路数由 Recipe 决定 |
-| strategist 全局决策 | 监工 | 按需 | 返工到轮数上限仍不过时产出全局方案；不改任何文件，可同样提出「需要改计划」（归 RLT_09） |
+| strategist 全局决策 | 监工 | 按需 | 返工到轮数上限仍不过时产出全局方案；不改任何文件，可同样提出「需要改计划」（见「planner-amend 改计划模板」） |
 
 拉取顺序固定：**编排拉监工，监工拉其余**。编排不越级拉 agent；监工不跨阶段存活；规划不参与运行。checker / decider / strategist 都不写账本、不做复核、不改文件。
 
@@ -154,9 +154,9 @@ agent_launch → checkpoint* → ( blocked → escalate → decision → [user_d
 | `stage_result` | 监工 | 每阶段实例可多次，`status` 只认最新一条；`note` 必须含 `stage_id=` 与 `outcome=done / blocked / failed / cancelled` 及原因，且在该实例全部节点 `closed` 之后；`outcome=cancelled` 的 `note` 须引用对应 `user_decision`；本阶段发生过 `plan_amend` 时另补 `amend=<方案文件名>` 与 `nodes=`（裸文件名会丢 status 的 `result.amend` 信号） |
 | `stage_close` | 编排 | 每阶段实例一次；`note` 带 `stage_id=`；前置 = 已见本实例 `stage_start`/`monitor_launch`、全部节点 `closed` 且最新 `stage_result` 的 `outcome ∈ {done, cancelled}`，否则退出 2 |
 | `monitor_restart` | 监工 | 任意位置不限次；`note` 列盘点结果 |
-| `plan_amend` | 监工 | 运行中改计划完成后写；`note` 必须含方案文件名与 `nodes=<新节点号,…>`（改计划工作流本身归 RLT_09，此处只冻结账本合同） |
+| `plan_amend` | 监工 | 运行中改计划完成后写；`note` 必须含方案文件名与 `nodes=<新节点号,…>`（改计划工作流本身见「planner-amend 改计划模板」，此处只冻结账本合同） |
 
-**agent 事件归属**：`escalate` / `decision` / `user_decision` / `resume` / `cancelled`（决策类）记在**被阻塞/被触发的那个 agent** 名下，决策 agent 的标识写进 `note`——`escalate` 与 `decision` 的 `note` 必须**恰含一个** helper token `decider=<名>#<n>` 或 `strategist=<名>#<n>`，且 `decision` 必须复述同一 helper，缺一/多一/不符即拒。decider 与 strategist 自己的 `agent_launch` / `done` 记它们自己名下。`orchestrator#<n>` / `monitor#<n>` / `planner-amend#<n>` / `strategist#<n>` 四名豁免「agent 名在该节点 agent 表中」校验（其余 agent 名必须在表中）；改计划实例 `planner-amend#<n>` 的生命周期事件记它自己名下（工作流归 RLT_09）。
+**agent 事件归属**：`escalate` / `decision` / `user_decision` / `resume` / `cancelled`（决策类）记在**被阻塞/被触发的那个 agent** 名下，决策 agent 的标识写进 `note`——`escalate` 与 `decision` 的 `note` 必须**恰含一个** helper token `decider=<名>#<n>` 或 `strategist=<名>#<n>`，且 `decision` 必须复述同一 helper，缺一/多一/不符即拒。decider 与 strategist 自己的 `agent_launch` / `done` 记它们自己名下。`orchestrator#<n>` / `monitor#<n>` / `planner-amend#<n>` / `strategist#<n>` 四名豁免「agent 名在该节点 agent 表中」校验（其余 agent 名必须在表中）；改计划实例 `planner-amend#<n>` 的生命周期事件记它自己名下（工作流见「planner-amend 改计划模板」）。
 
 **决策链两条，顺序固定**：
 
@@ -164,6 +164,34 @@ agent_launch → checkpoint* → ( blocked → escalate → decision → [user_d
 - **strategist 链**（监工的 attempt / 返工轮数计数触发，**无 `blocked` 起头**——`escalate` 直接作链首）：`escalate`（coder 名下）→ `agent_launch`（strategist 名下）→ `decision`（coder 名下，`note` 复述同一 helper）→ `done`（strategist 名下）→ `user_decision`（coder 名下，**永远出现、不看 mode**）→ `resume`（coder 名下，继续，不新增 attempt）或 `cancelled`（coder 名下，停卡）。
 
 `checkpoint` 是批内往返的唯一载体：可重复任意次，不新增 attempt、不新增 `agent_launch`。
+
+## planner-amend 改计划模板
+
+改计划实例 `planner-amend#<n>` 由当班监工在过门后按需拉起，复用 planner 角色档，不发明新角色。输入恰四件：方案文件（decider / strategist 产出，**只读不改**）、当前 `relay_plan.md`、开发方案 `dev_plan/P<N>-*.md`、涉及的已有卡 `docs/modules/<模块>/workspace/<卡号>/task_plan.md`。
+
+**白名单三类闭集**（一律仓相对 POSIX 路径）：
+
+1. 本计划的 `docs/modules/<模块>/relay/<plan_id>/relay_plan.md`（含 marker `cards=`）；
+2. 同模块 `docs/modules/<模块>/dev_plan/P<N>-*.md`；
+3. 改动前 marker `cards=` **已存在**卡的 `docs/modules/<模块>/workspace/<卡号>/task_plan.md`——新卡的 task_plan 由该卡 W 阶段 builder 建，改计划实例写它即判失败，不得在改计划里反向授权。
+
+`docs/modules/<模块>/design/` 整个目录是禁区；禁区或其它路径命中即整份拒绝，**不做部分执行**。
+
+**执行流**（守门挂在现有 `lint` 子命令下，不新增顶层子命令）：
+
+```text
+relay_log.py lint --plan <plan_dir> --amend-check before --repo <repo> \
+    --snapshot-dir <运行现场新目录（绝对路径，仓与 .git 之外）> \
+    --proposed-path <仓相对路径> [--proposed-path <仓相对路径> ...]
+relay_log.py lint --plan <plan_dir> --amend-check after  --repo <repo> --snapshot-dir <同一目录>
+```
+
+1. planner-amend 先从方案文件列出**完整** proposed paths；监工跑 `before` 做全量预检 + 原始工作树快照。
+2. 预检不过（含命中 `design/` 禁区、新卡 task_plan、其它任何路径）：**任何文件都不改**——全部计划目标与输入方案文件零变化，planner-amend 只以普通 `done.note` 写 `outcome=out-of-scope proposal=<方案文件名> reason=<原因>` 后停止，由当班监工写 `stage_result outcome=blocked` 交用户。planner-amend 不写 `blocked` / `escalate` / `plan_amend`。
+3. 预检通过才**一次改完**全部 proposed 目标。
+4. 监工跑 `after`：before/after 原始快照精确 diff，成功唯一判据 `actual == proposed`；再核 HEAD/真实 index/object database 未变并跑普通 plan lint。任一失败即从仓外原始副本恢复 `actual ∪ proposed` 的 bytes/mode/symlink/存在性，planner-amend 最多修三次；第三次仍失败按同一条「零文件变化 + 结构化 done.note」路径收尾。
+
+`--snapshot-dir` 是运行现场目录（0700/0600），不是 durable evidence，完成或验证恢复后由守门器安全删除。改计划实例不建新卡七件套；敏感 untracked 的正文、文件名与哈希不进入证据。
 
 ## 拓扑布局
 

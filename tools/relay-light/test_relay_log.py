@@ -9,6 +9,7 @@ import io
 import os
 import re
 import shutil
+import stat
 import sys
 import subprocess
 import tempfile
@@ -3370,6 +3371,68 @@ class RelayLifecycleTests(RelayCliTestCase):
         self.add_ok("stage_close", agent="orchestrator#1", note="stage_id=DHR_90:C#1")
         self.assertEqual("closed", self.status_payload()["stages"][1]["state"])
 
+    def launch_planner_amend(self) -> None:
+        """Open `DHR_90:W#1` and launch one planner-amend instance the ordinary way."""
+        self.start_ledger()
+        self.add_ok("node_start", node="W1")
+        self.add_ok("agent_launch", node="W1", agent="planner-amend#1")
+
+    def test_planner_amend_out_of_scope_lifecycle_contract(self) -> None:
+        """HC-RL-A122: planner-amend 只走 agent_launch → done；out-of-scope done.note
+        三 token 齐全；其名下 blocked / escalate / plan_amend 一律拒绝；monitor 随后
+        写 stage_result outcome=blocked。"""
+        self.write_plan()
+        # 正例：结构化 out-of-scope done.note；普通成功 done.note 也合法。
+        for note in (
+            "outcome=out-of-scope proposal=decision.1.md reason=需新增验收条目",
+            "task_plan 已改；relay_plan 追加 C3；lint 通过",
+        ):
+            with self.subTest(note=note):
+                self.reset_ledger()
+                self.launch_planner_amend()
+                self.add_ok("done", node="W1", agent="planner-amend#1", note=note)
+        # 反例：blocked / escalate / plan_amend 不由 planner-amend 写。
+        for event, code in (("blocked", "HC-RL-A122"), ("escalate", "HC-RL-A122"), ("plan_amend", "HC-RL-A119")):
+            with self.subTest(event=event):
+                self.reset_ledger()
+                self.launch_planner_amend()
+                self.assert_rejected(
+                    event, node="W1", agent="planner-amend#1", code=code,
+                    note="outcome=out-of-scope proposal=decision.1.md reason=x" if event != "plan_amend" else "decision.1.md nodes=C3",
+                )
+        # 反例：done.note 带了 outcome= 就必须是完整的 out-of-scope 形态。
+        for note in (
+            "outcome=success proposal=decision.1.md reason=x",
+            "outcome=out-of-scope proposal=decision.1.md",
+            "outcome=out-of-scope reason=需要改设计",
+            "outcome=out-of-scope proposal=dir/decision.1.md reason=x",
+        ):
+            with self.subTest(note=note):
+                self.reset_ledger()
+                self.launch_planner_amend()
+                self.assert_rejected("done", node="W1", agent="planner-amend#1", code="HC-RL-A122", note=note)
+        # monitor 交接：planner-amend done(out-of-scope) 后 monitor 写 blocked stage_result。
+        self.reset_ledger()
+        self.start_ledger()
+        self.add_ok("node_start", node="W1")
+        self.add_ok("agent_launch", node="W1", agent="builder#1")
+        self.add_ok("done", node="W1", agent="builder#1")
+        self.add_ok("agent_launch", node="W1", agent="planner-amend#1")
+        self.add_ok(
+            "done", node="W1", agent="planner-amend#1",
+            note="outcome=out-of-scope proposal=decision.1.md reason=需新增验收条目",
+        )
+        self.add_ok("node_close", node="W1")
+        self.add_ok(
+            "stage_result", agent="monitor#1",
+            note="stage_id=DHR_90:W#1 outcome=blocked proposal=decision.1.md 超出白名单",
+        )
+        forbidden = [
+            row for row in self.ledger_rows()
+            if row["agent"] == "planner-amend#1" and row["event"] in {"blocked", "escalate", "plan_amend"}
+        ]
+        self.assertEqual([], forbidden)
+
 
 class RelayLimitsTests(RelayCliTestCase):
     """Batch 4 (HC-RL-A97/A99/A107): config-driven X planning and the two loss stops."""
@@ -3773,6 +3836,483 @@ class RelayLimitsTests(RelayCliTestCase):
             self.assertEqual([expected], values)
 
 
+class RelayPlanAmendGuardTests(RelayCliTestCase):
+    """RLT_09 B4 — HC-RL-A122: planner-amend 三类白名单守门（P1-02 原始快照算法）。"""
+
+    MODULE = "tmod"
+    PLAN_ID = "PLAN1"
+    CARD = "TCD_1"
+    PLAN_REL = f"docs/modules/{MODULE}/relay/{PLAN_ID}"
+    PLAN_FILE = f"{PLAN_REL}/relay_plan.md"
+    DEV_PLAN = f"docs/modules/{MODULE}/dev_plan/P1-main.md"
+    DEV_PLAN_NEW = f"docs/modules/{MODULE}/dev_plan/P2-new.md"
+    DEV_PLAN_UNTRACKED = f"docs/modules/{MODULE}/dev_plan/P3-scratch.md"
+    TASK_PLAN = f"docs/modules/{MODULE}/workspace/{CARD}/task_plan.md"
+    PROPOSAL = f"docs/modules/{MODULE}/workspace/{CARD}/decision.1.md"
+    DESIGN = f"docs/modules/{MODULE}/design/01-design.md"
+    NEW_CARD_TASK = f"docs/modules/{MODULE}/workspace/TCD_9/task_plan.md"
+    DIRTY = "notes-dirty.txt"
+    UNTRACKED = "scratch-untracked.txt"
+
+    def setUp(self) -> None:
+        super().setUp()
+        if shutil.which("git") is None:
+            self.skipTest("git is required for the A122 guard tests")
+        self.repo = Path(self.tempdir.name) / "repo"
+        self.runtime = Path(self.tempdir.name) / "runtime"
+        self.runtime.mkdir()
+        self._init_repo()
+
+    def _git(self, *args: str, input_bytes: bytes | None = None) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            ["git", "-C", str(self.repo), *args],
+            input=input_bytes, capture_output=True, check=False,
+        )
+
+    def _write(self, rel: str, content: str | bytes) -> Path:
+        path = self.repo / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if isinstance(content, bytes):
+            path.write_bytes(content)
+        else:
+            path.write_text(content, encoding="utf-8")
+        return path
+
+    def _plan_text(self) -> str:
+        return "\n".join(
+            [
+                f"<!-- relay-light:plan v1 skill=0.1.0 generated=2026-09-10 session=app recipe=normal cards={self.CARD} -->",
+                "",
+                "## 节点表",
+                NODE_HEADER,
+                SEPARATOR,
+                f"| W1 | {self.CARD} | {self.CARD}:W#1 | build | agent:builder | | |",
+                "",
+                "## agent 表",
+                AGENT_HEADER,
+                SEPARATOR,
+                "| builder | W1 | builder | | task_plan.md | | |",
+                "",
+            ]
+        )
+
+    def _init_repo(self) -> None:
+        self.repo.mkdir()
+        self._git("init")
+        self._git("config", "user.email", "guard@test")
+        self._git("config", "user.name", "guard")
+        self._write(self.PLAN_FILE, self._plan_text())
+        self._write(self.DEV_PLAN, "# dev plan\n")
+        self._write(self.TASK_PLAN, "# task plan\n")
+        self._write(self.PROPOSAL, "# proposal input\n")
+        self._write(self.DESIGN, "# design forbidden\n")
+        self._write(self.DIRTY, "v0\n")
+        commit = self._git("add", "-A")
+        self.assertEqual(0, commit.returncode, commit.stderr)
+        commit = self._git("commit", "-m", "init")
+        self.assertEqual(0, commit.returncode, commit.stderr)
+        # 入场前现场：一份 tracked dirty 与一份未跟踪文件，都交由 before 快照吸收。
+        self._write(self.DIRTY, "v1 dirty\n")
+        self._write(self.UNTRACKED, "untracked u1\n")
+
+    def run_amend(
+        self, phase: str, snap: Path, proposed: tuple[str, ...] = ()
+    ) -> subprocess.CompletedProcess[str]:
+        argv = [
+            "lint",
+            "--plan", str(self.repo / self.PLAN_REL),
+            "--amend-check", phase,
+            "--repo", str(self.repo),
+            "--snapshot-dir", str(snap),
+        ]
+        for path in proposed:
+            argv.extend(["--proposed-path", path])
+        return self.run_cli(*argv)
+
+    def _objects_listing(self) -> tuple[tuple[str, int, str], ...]:
+        objects = self.repo / ".git" / "objects"
+        entries = []
+        for path in sorted(objects.rglob("*")):
+            if path.is_file():
+                entries.append(
+                    (
+                        path.relative_to(objects).as_posix(),
+                        path.stat().st_size,
+                        hashlib.sha256(path.read_bytes()).hexdigest(),
+                    )
+                )
+        return tuple(entries)
+
+    def _count_objects(self) -> str:
+        result = self._git("count-objects", "-v")
+        self.assertEqual(0, result.returncode)
+        return result.stdout.decode()
+
+    @staticmethod
+    def _state(path: Path) -> tuple[object, ...]:
+        try:
+            info = path.lstat()
+        except FileNotFoundError:
+            return ("absent",)
+        if stat.S_ISLNK(info.st_mode):
+            return ("symlink", os.readlink(path))
+        if stat.S_ISREG(info.st_mode):
+            return (
+                "regular",
+                stat.S_IMODE(info.st_mode),
+                hashlib.sha256(path.read_bytes()).hexdigest(),
+            )
+        return ("special", stat.S_IMODE(info.st_mode))
+
+    def test_snapshot_diff_captures_tracked_untracked_and_dirty_same_path_without_git_objects(self) -> None:
+        """P1-02 矩阵：改前 dirty 不混入、同路径二次修改不漏报、tracked/untracked 三态、
+        真实 index 与 object database 在守门窗口零变化。"""
+        # staged 状态也允许入场：先把 dev_plan 改成 staged。
+        self._write(self.DEV_PLAN, "# dev plan staged v1\n")
+        self._git("add", self.DEV_PLAN)
+        self._write(self.DEV_PLAN_UNTRACKED, "scratch u1\n")
+        objects_before = self._objects_listing()
+        count_before = self._count_objects()
+        index_before = (self.repo / ".git" / "index").read_bytes()
+
+        snap = self.runtime / "snap1"
+        proposed = (self.DEV_PLAN, self.TASK_PLAN, self.DEV_PLAN_NEW, self.DEV_PLAN_UNTRACKED)
+        result = self.run_amend("before", snap, proposed)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self._write(self.DEV_PLAN, "# dev plan v2\n")           # staged dirty 后二次修改
+        (self.repo / self.TASK_PLAN).unlink()                    # tracked 删除
+        self._write(self.DEV_PLAN_NEW, "# new dev plan\n")       # absent → regular
+        self._write(self.DEV_PLAN_UNTRACKED, "scratch u2\n")     # 既有 untracked 再改
+        result = self.run_amend("after", snap)
+        self.assertEqual(0, result.returncode, result.stderr)    # actual == proposed 精确相等
+        self.assertFalse(snap.exists())
+        self.assertEqual(objects_before, self._objects_listing())
+        self.assertEqual(count_before, self._count_objects())
+        self.assertEqual(index_before, (self.repo / ".git" / "index").read_bytes())
+        # DIRTY / UNTRACKED 全程未动却被 before 吸收：actual 恰为 proposed 即证明未混入。
+
+        # 同路径二次修改：task_plan 改前相对 HEAD 已 dirty（v1），再改为 v2 仍进入 actual。
+        self._write(self.TASK_PLAN, "# task v1\n")
+        snap2 = self.runtime / "snap2"
+        result = self.run_amend("before", snap2, (self.TASK_PLAN,))
+        self.assertEqual(0, result.returncode, result.stderr)
+        self._write(self.TASK_PLAN, "# task v2\n")
+        result = self.run_amend("after", snap2)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertFalse(snap2.exists())
+
+        # untracked 运行中删除也进入 actual。
+        snap3 = self.runtime / "snap3"
+        result = self.run_amend("before", snap3, (self.DEV_PLAN_UNTRACKED,))
+        self.assertEqual(0, result.returncode, result.stderr)
+        (self.repo / self.DEV_PLAN_UNTRACKED).unlink()
+        result = self.run_amend("after", snap3)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertFalse(snap3.exists())
+        self.assertEqual(objects_before, self._objects_listing())
+        self.assertEqual(count_before, self._count_objects())
+
+    def test_failed_amend_restores_raw_bytes_mode_and_symlink_across_clean_eol_filter(self) -> None:
+        """clean/EOL filter 不参与快照与恢复：失败时还原的是工作树原始 bytes/mode/target。"""
+        self._git("config", "filter.upcase.clean", "tr a-z A-Z")
+        self._write(".gitattributes", "data.flt filter=upcase eol=crlf\n")
+        self._write("data.flt", "lower v0\n")
+        self.assertEqual(0, self._git("add", ".gitattributes", "data.flt").returncode)
+        self.assertEqual(0, self._git("commit", "-m", "filter fixture").returncode)
+        link_rel = "data.link"
+        try:
+            os.symlink("data.flt", self.repo / link_rel)
+        except (OSError, NotImplementedError):
+            link_rel = None
+        if link_rel is not None:
+            self.assertEqual(0, self._git("add", link_rel).returncode)
+            self.assertEqual(0, self._git("commit", "-m", "link fixture").returncode)
+        raw_bytes = b"raw-v1-bytes\x00\x01\xff\n"
+        target = self.repo / "data.flt"
+        target.write_bytes(raw_bytes)
+        if os.name == "posix":
+            os.chmod(target, 0o640)
+        snap = self.runtime / "snap"
+        result = self.run_amend("before", snap, (self.DEV_PLAN,))
+        self.assertEqual(0, result.returncode, result.stderr)
+        self._write(self.DEV_PLAN, "# dev plan v2\n")
+        target.write_bytes(b"tampered v2\n")
+        if os.name == "posix":
+            os.chmod(target, 0o600)
+        if link_rel is not None:
+            (self.repo / link_rel).unlink()
+            os.symlink("other-target", self.repo / link_rel)
+        result = self.run_amend("after", snap)
+        self.assertEqual(2, result.returncode, result.stderr)
+        self.assertIn("HC-RL-A122", result.stderr)
+        # 恢复断言全部直接读工作树/lstat，不经 git show/checkout。
+        self.assertEqual(raw_bytes, target.read_bytes())
+        if os.name == "posix":
+            self.assertEqual(0o640, stat.S_IMODE(target.lstat().st_mode))
+        if link_rel is not None:
+            self.assertEqual("data.flt", os.readlink(self.repo / link_rel))
+        self.assertEqual("# dev plan\n", (self.repo / self.DEV_PLAN).read_text(encoding="utf-8"))
+        self.assertFalse(snap.exists())
+
+    def test_sensitive_untracked_stays_out_of_object_database_and_durable_evidence(self) -> None:
+        """敏感 untracked 的正文/文件名/哈希不进 object database，也不回显到进程输出。"""
+        canary_rel = "canary-QZ9-s3cret.key"
+        canary_bytes = b"CANARY-BYTES-QZ9-\x00\xff-unique"
+        canary_sha = hashlib.sha256(canary_bytes).hexdigest()
+        canary = self._write(canary_rel, canary_bytes)
+
+        outputs: list[str] = []
+        snap_fail = self.runtime / "snap-fail"
+        result = self.run_amend("before", snap_fail, (self.DEV_PLAN,))
+        outputs.extend([result.stdout, result.stderr])
+        self.assertEqual(0, result.returncode, result.stderr)
+        if os.name == "posix":
+            self.assertEqual(0o700, stat.S_IMODE(snap_fail.lstat().st_mode))
+            for path in snap_fail.rglob("*"):
+                expected = 0o700 if path.is_dir() else 0o600
+                self.assertEqual(expected, stat.S_IMODE(path.lstat().st_mode), path.name)
+        # 越界改动包含敏感 untracked：失败输出也不得回显其文件名。
+        self._write(self.DEV_PLAN, "# dev plan v2\n")
+        canary.write_bytes(b"tampered\n")
+        result = self.run_amend("after", snap_fail)
+        outputs.extend([result.stdout, result.stderr])
+        self.assertEqual(2, result.returncode, result.stderr)
+        self.assertIn("HC-RL-A122", result.stderr)
+        self.assertEqual(canary_bytes, canary.read_bytes())
+        self.assertFalse(snap_fail.exists())
+
+        snap_ok = self.runtime / "snap-ok"
+        result = self.run_amend("before", snap_ok, (self.DEV_PLAN,))
+        outputs.extend([result.stdout, result.stderr])
+        self.assertEqual(0, result.returncode, result.stderr)
+        self._write(self.DEV_PLAN, "# dev plan v3\n")
+        result = self.run_amend("after", snap_ok)
+        outputs.extend([result.stdout, result.stderr])
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertFalse(snap_ok.exists())
+
+        # 证据面（进程输出）不回显 canary 文件名或其逐文件哈希。
+        for output in outputs:
+            self.assertNotIn("QZ9", output)
+            self.assertNotIn(canary_sha, output)
+        for path in (self.repo / ".git" / "objects").rglob("*"):
+            self.assertNotIn("QZ9", path.name)
+            if path.is_file():
+                data = path.read_bytes()
+                self.assertNotIn(canary_bytes, data)
+                self.assertNotIn(canary_sha.encode(), data)
+
+    def test_success_requires_actual_equal_proposed(self) -> None:
+        """成功的唯一判据 actual == proposed：多路径=越界、少路径=no-op 都 fail closed。"""
+        snap = self.runtime / "s1"
+        result = self.run_amend("before", snap, (self.DEV_PLAN, self.TASK_PLAN))
+        self.assertEqual(0, result.returncode, result.stderr)
+        self._write(self.DEV_PLAN, "# dev v2\n")
+        self._write(self.TASK_PLAN, "# task v2\n")
+        result = self.run_amend("after", snap)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertFalse(snap.exists())
+
+        # proposed 含 no-op → actual 少项 → 拒绝并恢复已写目标。
+        snap = self.runtime / "s2"
+        result = self.run_amend("before", snap, (self.DEV_PLAN, self.TASK_PLAN))
+        self.assertEqual(0, result.returncode, result.stderr)
+        self._write(self.DEV_PLAN, "# dev v3\n")
+        result = self.run_amend("after", snap)
+        self.assertEqual(2, result.returncode, result.stderr)
+        self.assertIn("HC-RL-A122", result.stderr)
+        self.assertEqual("# dev v2\n", (self.repo / self.DEV_PLAN).read_text(encoding="utf-8"))
+        self.assertFalse(snap.exists())
+
+        # proposed 只含 A，实际同时碰 B → actual 多项 → 拒绝并恢复两处。
+        snap = self.runtime / "s3"
+        result = self.run_amend("before", snap, (self.DEV_PLAN,))
+        self.assertEqual(0, result.returncode, result.stderr)
+        self._write(self.DEV_PLAN, "# dev v4\n")
+        self._write(self.TASK_PLAN, "# task v3\n")
+        result = self.run_amend("after", snap)
+        self.assertEqual(2, result.returncode, result.stderr)
+        self.assertEqual("# dev v2\n", (self.repo / self.DEV_PLAN).read_text(encoding="utf-8"))
+        self.assertEqual("# task v2\n", (self.repo / self.TASK_PLAN).read_text(encoding="utf-8"))
+        self.assertFalse(snap.exists())
+
+    def test_mixed_forbidden_proposal_leaves_targets_and_proposal_unchanged(self) -> None:
+        """禁区混合：预检整份拒绝，全部计划目标与输入方案文件原始状态零变化。"""
+        watched = (self.PLAN_FILE, self.DESIGN, self.TASK_PLAN, self.PROPOSAL)
+        before_states = {rel: self._state(self.repo / rel) for rel in watched}
+        objects_before = self._objects_listing()
+        snap = self.runtime / "snap"
+        result = self.run_amend("before", snap, (self.PLAN_FILE, self.DESIGN))
+        self.assertEqual(2, result.returncode, result.stderr)
+        self.assertIn("HC-RL-A122", result.stderr)
+        self.assertIn("design", result.stderr)
+        after_states = {rel: self._state(self.repo / rel) for rel in watched}
+        self.assertEqual(before_states, after_states)
+        self.assertEqual(objects_before, self._objects_listing())
+        self.assertFalse(snap.exists())
+
+    def test_allowlist_classes_and_precheck_rejections(self) -> None:
+        """三类白名单逐项通过；design/新卡/越界/绝对/穿越/重复/目录各例拒绝。"""
+        cases = [
+            ((self.PLAN_FILE,), 0),
+            ((self.DEV_PLAN,), 0),
+            ((self.TASK_PLAN,), 0),
+            ((self.DESIGN,), 2),
+            ((self.NEW_CARD_TASK,), 2),                      # 新卡 task_plan 不被 before-cards 反向授权
+            (("docs/modules/other/dev_plan/P1-x.md",), 2),   # 跨模块 dev_plan
+            ((str((self.repo / self.PLAN_FILE).resolve()),), 2),
+            (("../escape.md",), 2),
+            ((f"{self.PLAN_REL}/extra.md",), 2),             # 计划目录内也只有 relay_plan.md 本身可写
+            ((self.DEV_PLAN, self.DEV_PLAN), 2),             # 重复项
+            ((f"{self.DIRTY}/inner.md",), 2),                # 祖先是 tracked 文件（submodule 内部同类拒绝）
+            ((f"docs/modules/{self.MODULE}/workspace/{self.CARD}",), 2),
+        ]
+        for index, (proposed, expected) in enumerate(cases):
+            with self.subTest(proposed=proposed):
+                snap = self.runtime / f"case-{index}"
+                result = self.run_amend("before", snap, proposed)
+                self.assertEqual(expected, result.returncode, result.stderr)
+                if expected:
+                    self.assertIn("HC-RL-A122", result.stderr)
+                    self.assertFalse(snap.exists())
+                else:
+                    # 零改动的 after 仍按 actual != proposed 收口并清理现场。
+                    result = self.run_amend("after", snap)
+                    self.assertEqual(2, result.returncode, result.stderr)
+                    self.assertFalse(snap.exists())
+        # Git ignored 路径在预检拒绝。
+        self._write(".gitignore", f"docs/modules/{self.MODULE}/dev_plan/P9-ign.md\n")
+        ignored = f"docs/modules/{self.MODULE}/dev_plan/P9-ign.md"
+        self._write(ignored, "x\n")
+        snap = self.runtime / "ignored"
+        result = self.run_amend("before", snap, (ignored,))
+        self.assertEqual(2, result.returncode, result.stderr)
+        self.assertIn("HC-RL-A122", result.stderr)
+        self.assertFalse(snap.exists())
+
+    def test_amend_after_lint_failure_restores_plan(self) -> None:
+        """actual == proposed 但普通 lint 失败 → 从仓外副本恢复，lint 规则号透传。"""
+        original = (self.repo / self.PLAN_FILE).read_bytes()
+        snap = self.runtime / "snap"
+        result = self.run_amend("before", snap, (self.PLAN_FILE,))
+        self.assertEqual(0, result.returncode, result.stderr)
+        (self.repo / self.PLAN_FILE).write_text("garbage without marker\n", encoding="utf-8")
+        result = self.run_amend("after", snap)
+        self.assertNotEqual(0, result.returncode, result.stderr)
+        self.assertIn("HC-RL-A18", result.stderr)
+        self.assertEqual(original, (self.repo / self.PLAN_FILE).read_bytes())
+        self.assertFalse(snap.exists())
+
+    def test_external_mutation_between_phases_fails_closed(self) -> None:
+        """静默区破坏：HEAD/index/object database 任一变化与 before 双采样不一致都 fail closed。"""
+        # HEAD 改变
+        snap = self.runtime / "m1"
+        self.assertEqual(0, self.run_amend("before", snap, (self.DEV_PLAN,)).returncode)
+        self._write(self.DEV_PLAN, "# dev v9\n")
+        self._git("add", "-A")
+        self.assertEqual(0, self._git("commit", "-m", "external").returncode)
+        result = self.run_amend("after", snap)
+        self.assertEqual(2, result.returncode, result.stderr)
+        self.assertIn("HC-RL-A122", result.stderr)
+        self.assertTrue(snap.exists())  # git 元数据不可验证 → 保留现场供人工接管
+        # index 改变
+        snap = self.runtime / "m2"
+        self.assertEqual(0, self.run_amend("before", snap, (self.TASK_PLAN,)).returncode)
+        self._write(self.TASK_PLAN, "# task external\n")
+        self.assertEqual(0, self._git("add", self.TASK_PLAN).returncode)
+        result = self.run_amend("after", snap)
+        self.assertEqual(2, result.returncode, result.stderr)
+        self.assertTrue(snap.exists())
+        # object database 改变（不动 HEAD/index 工作树）
+        snap = self.runtime / "m3"
+        self.assertEqual(0, self.run_amend("before", snap, (self.DEV_PLAN,)).returncode)
+        self.assertEqual(
+            0, self._git("hash-object", "-w", "--stdin", input_bytes=b"external-object").returncode
+        )
+        result = self.run_amend("after", snap)
+        self.assertEqual(2, result.returncode, result.stderr)
+        self.assertTrue(snap.exists())
+        # before 双采样不一致（第二次采到不同 object 指纹）→ 拒绝且不产生业务文件写入
+        real_fingerprint = relay_log._object_database_fingerprint
+        calls = [0]
+
+        def flaky(repo_root: Path) -> relay_log.ObjectDbFingerprint:
+            calls[0] += 1
+            fingerprint = real_fingerprint(repo_root)
+            if calls[0] == 2:
+                fingerprint = relay_log.ObjectDbFingerprint(
+                    fingerprint.entries + (("zz.fake", "regular", 1, 0, "0" * 64),),
+                    fingerprint.count_objects,
+                )
+            return fingerprint
+
+        snap = self.runtime / "m4"
+        argv = [
+            "lint", "--plan", str(self.repo / self.PLAN_REL),
+            "--amend-check", "before", "--repo", str(self.repo),
+            "--snapshot-dir", str(snap), "--proposed-path", self.DEV_PLAN,
+            "--config-dir", str(SKILL_DIR),
+        ]
+        stderr = io.StringIO()
+        with (
+            mock.patch.object(relay_log, "_object_database_fingerprint", flaky),
+            redirect_stderr(stderr),
+        ):
+            result_code = main(argv)
+        self.assertEqual(2, result_code)
+        self.assertIn("HC-RL-A122", stderr.getvalue())
+        self.assertFalse(snap.exists())
+
+    def test_normal_lint_and_argument_contract(self) -> None:
+        """普通 lint 合同不变；amend-check 缺件按参数错误收口；顶层子命令仍三个。"""
+        result = self.run_lint_cli(self.repo / self.PLAN_REL)
+        self.assertEqual(0, result.returncode, result.stderr)
+        plan_dir = str(self.repo / self.PLAN_REL)
+        for argv in (
+            ("lint", "--plan", plan_dir, "--amend-check", "before"),
+            ("lint", "--plan", plan_dir, "--amend-check", "after", "--repo", str(self.repo)),
+            (
+                "lint", "--plan", plan_dir, "--amend-check", "before",
+                "--repo", str(self.repo), "--snapshot-dir", str(self.runtime / "x"),
+            ),
+            (
+                "lint", "--plan", plan_dir, "--amend-check", "after",
+                "--repo", str(self.repo), "--snapshot-dir", str(self.runtime / "x"),
+                "--proposed-path", self.DEV_PLAN,
+            ),
+            ("lint", "--plan", plan_dir, "--proposed-path", self.DEV_PLAN),
+        ):
+            with self.subTest(argv=argv):
+                result = self.run_cli(*argv)
+                self.assertEqual(2, result.returncode, result.stderr)
+        result = self.run_cli("amend", "--plan", plan_dir)
+        self.assertEqual(2, result.returncode)
+
+    def test_before_rejects_bad_snapshot_dir(self) -> None:
+        """snapshot-dir：必须绝对、未存在、无 symlink 父链、在仓与 git 元数据之外。"""
+        existing = self.runtime / "exists"
+        existing.mkdir()
+        inside_repo = self.repo / "snap-inside"
+        inside_git = self.repo / ".git" / "snap"
+        for snap in (existing, inside_repo, inside_git):
+            with self.subTest(snap=str(snap)):
+                result = self.run_amend("before", snap, (self.DEV_PLAN,))
+                self.assertEqual(2, result.returncode, result.stderr)
+                self.assertIn("HC-RL-A122", result.stderr)
+        argv = [
+            "lint", "--plan", str(self.repo / self.PLAN_REL),
+            "--amend-check", "before", "--repo", str(self.repo),
+            "--snapshot-dir", "relative-snap", "--proposed-path", self.DEV_PLAN,
+        ]
+        result = self.run_cli(*argv)
+        self.assertEqual(2, result.returncode, result.stderr)
+        if os.name == "posix":
+            link = self.runtime / "linked"
+            os.symlink(self.repo, link)
+            result = self.run_amend("before", link / "snap", (self.DEV_PLAN,))
+            self.assertEqual(2, result.returncode, result.stderr)
+
+
 class SkillCoreDocTests(unittest.TestCase):
     """RLT_07 Batch 1 — HC-RL-A12/A19/A27/A66/A67/A98/A100/A117/A132 SKILL.md 核心合同。"""
 
@@ -3895,6 +4435,45 @@ class SkillCoreDocTests(unittest.TestCase):
                 with self.subTest(file=path.name, name=name):
                     pattern = rf"(?<![A-Za-z0-9.-]){re.escape(name)}(?![A-Za-z0-9.-])"
                     self.assertIsNone(re.search(pattern, text, re.IGNORECASE))
+
+    def test_planner_amend_template_contract(self) -> None:
+        """RLT_09 B4 / HC-RL-A122：SKILL.md 必须给出可执行的 planner-amend 模板——
+        输入四件、三类闭集白名单、design/ 禁区、预检整份拒绝、一次改完、
+        after 精确 diff + 普通 lint、最多修三次、结构化 out-of-scope done.note、
+        monitor 写 blocked stage_result、不写 blocked/escalate/plan_amend、不建新卡七件套。"""
+        text = self.skill_text()
+        for token in (
+            "planner-amend",
+            "--amend-check",
+            "before",
+            "after",
+            "--proposed-path",
+            "--snapshot-dir",
+            "outcome=out-of-scope",
+            "proposal=",
+            "reason=",
+            "stage_result",
+            "outcome=blocked",
+            "relay_plan.md",
+            "dev_plan/P<N>-",
+            "task_plan.md",
+            "design/",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, text)
+        # 输入恰四件：方案文件、当前 relay_plan、开发方案、已有卡 task_plan。
+        for token in ("方案文件", "relay_plan", "开发方案", "task_plan"):
+            with self.subTest(input=token):
+                self.assertIn(token, text)
+        # 一次改完 + 最多修三次 + 第三次零文件变化收尾。
+        self.assertIn("一次改完", text)
+        self.assertRegex(text, r"最多.{0,4}修.{0,2}三次|最多.{0,4}三次")
+        self.assertIn("零文件变化", text)
+        # 禁区命中：任何文件都不改，只写结构化 done.note 后停止。
+        self.assertRegex(text, r"禁区.{0,30}不改|任何文件都不改|零变化")
+        # 禁写事件与七件套边界。
+        self.assertRegex(text, r"不写.{0,12}`?blocked`?.{0,12}`?escalate`?|禁.{0,4}blocked")
+        self.assertIn("七件套", text)
 
 
 class SkillTemplateTests(RelayCliTestCase):
@@ -4372,6 +4951,19 @@ class SkillAdapterTests(unittest.TestCase):
             with self.subTest(adapter=name):
                 self.assertIsNone(re.search(r"relay_log\.py\s+watch", text))
                 self.assertIsNone(re.search(r"<RELAY_LOG>\s+watch", text))
+
+    def test_planner_amend_reference_isomorphic(self) -> None:
+        """RLT_09 B4 / A122：两 adapter 只保留指向 SKILL.md 核心模板的同构引用行。"""
+        texts = self._adapter_texts()
+        pointer_lines = {}
+        for name, text in texts.items():
+            with self.subTest(adapter=name):
+                lines = [ln for ln in text.splitlines() if "planner-amend" in ln]
+                self.assertTrue(lines, f"{name} lacks a planner-amend pointer")
+                pointer_lines[name] = lines
+        self.assertEqual(
+            pointer_lines["adapter-claude-code.md"], pointer_lines["adapter-codex.md"]
+        )
 
 
 if __name__ == "__main__":
