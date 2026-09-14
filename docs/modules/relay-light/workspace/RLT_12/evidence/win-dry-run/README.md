@@ -7,6 +7,7 @@
 - 目标：仓根 `.gitignore` 追加忽略 `__pycache__/` 与 `*.pyc`（承接 RLT_10 findings F-002）。
 - 允许路径：`.gitignore`、`docs/modules/relay-light/workspace/DRILL_02/**`。
 - 档位：轻。**任务类型**：轻量 <!-- dh:task-type:v1 task=DRILL_02 type=light -->（Recipe 档位来源；DevPlan 无此卡，以本 stub 代替）
+- `GitHub-flow: user-waived (2026-09-14, scope=dryrun-win-01 全部预演工件与 DRILL_02)`——授权依据：编排派单硬边界明示「commit 只打 `dryrun/rlt12-win`，不 push、不建 PR、不合 master」，即用户对本工作项的 GitHub 协作步骤（Issue/push/PR/CI/服务端合并）整体豁免；本卡与预演工件均不离开本地分支。
 - 验收：`git check-ignore -v tools/relay-light/__pycache__/x.pyc` 命中 `.gitignore`；跑完 `pwsh tools/tests/relay-light-log.ps1` 后 `git status --short` 不出现 `__pycache__`。
 - 基线实测：`.gitignore` 已存在（906B）但不覆盖 `__pycache__`——`git check-ignore` exit 1，`tools/relay-light/__pycache__/` 为 untracked。
 
