@@ -103,3 +103,4 @@ DONE task=RLT_09 role=exec batch=X1 status=READY_FOR_REVIEW evidence=E-X1-01,E-X
 DONE task=RLT_09 role=audit batch=X1 status=PASS evidence=check.X1.md next=orchestrator
 DONE task=RLT_09 role=review batch=X1 status=APPROVE evidence=reviews/code-round2-rlt09-review.md next=orchestrator
 DONE task=RLT_09 role=exec batch=X2 status=READY_FOR_REVIEW evidence=E-X2-01,E-X2-02,E-X2-03,E-X2-04,E-X2-05,E-X2-06,commit=0323498 next=orchestrator
+DONE task=RLT_09 role=audit batch=X2 status=PASS evidence=check.X2.md next=orchestrator
