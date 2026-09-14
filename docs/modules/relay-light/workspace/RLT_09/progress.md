@@ -28,3 +28,6 @@ DONE task=RLT_09 role=builder batch=W2 status=W_READY evidence=commit=ce14890 ne
 DONE task=RLT_09 role=decide batch=1 status=CONSULT evidence=decision.1.md next=orchestrator
 DECISION task=RLT_09 decision=decision.1 choice=F-001:B,P1-03:A,A-adjust:authorized by=user(2026-09-13,orchestrator-session) evidence=design/evidence/08,RLT-A-07 next=builder-W3
 DONE task=RLT_09 role=builder batch=W3 status=W_READY evidence=commits=bdd6cc2,e201158 next=orchestrator
+DONE task=RLT_09 role=audit batch=W3 status=FAIL evidence=review.plan.md next=orchestrator
+DONE task=RLT_09 role=builder batch=W4 status=W_READY evidence=commit=0898ab9 next=orchestrator
+DONE task=RLT_09 role=audit batch=W4 status=PASS evidence=review.plan.md next=orchestrator
