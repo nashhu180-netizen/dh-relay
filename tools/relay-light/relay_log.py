@@ -4,9 +4,13 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
+import shutil
+import stat
+import subprocess
 import sys
 import tomllib
 from dataclasses import dataclass
@@ -185,6 +189,23 @@ def _error(code: str, message: str, *, exit_code: int = 2) -> RelayError:
 def _fail(exc: RelayError) -> int:
     print(f"error: {exc.code} {exc.message}", file=sys.stderr)
     return exc.exit_code
+
+
+def _configure_utf8_stdio() -> None:
+    """F-003: keep CLI stdout/stderr UTF-8 under ASCII or legacy locale encodings.
+
+    Only streams that actually support `reconfigure` are touched; test doubles
+    and already-closed streams are left as-is — the original objects are never
+    closed or replaced.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8")
+        except (OSError, ValueError, AttributeError):
+            continue
 
 
 def _expand_user(value: str, home: Path) -> Path:
@@ -526,7 +547,10 @@ def lint_plan(path: str | Path, config: RelayConfig) -> Plan:
     for node in active_nodes:
         if not stage_runs or stage_runs[-1] != node.stage_id:
             stage_runs.append(node.stage_id)
-    if len(stage_runs) != len(set(stage_runs)):
+    # HC-RL-A120: a stage instance may reappear only as a table-tail append —
+    # every run before the last must be distinct; the last run may repeat an
+    # earlier stage_id. All other hard constraints stay unchanged.
+    if len(stage_runs[:-1]) != len(set(stage_runs[:-1])):
         raise _error("HC-RL-A129", "nodes for a stage instance are not grouped contiguously")
 
     dependencies = {node.node: node.depends_on for node in active_nodes}
@@ -662,9 +686,809 @@ def _lint_violation(exc: RelayError) -> dict[str, object]:
     }
 
 
-def _lint_command(plan_dir: str, as_json: bool, config: RelayConfig) -> int:
+# ── HC-RL-A122 planner-amend allowlist guard (P1-02 frozen algorithm) ──────────
+#
+# `lint --amend-check before|after` snapshots the business worktree as raw
+# bytes/mode/symlink state — never through Git index, clean/smudge or EOL filters —
+# into a caller-chosen 0700 runtime directory outside the repo and all git metadata.
+# `after` recomputes the exact change set; success requires actual == proposed.
+
+
+@dataclass(frozen=True)
+class RawPathState:
+    """One observed worktree path: regular / symlink / absent / special."""
+
+    kind: str
+    mode: int | None = None
+    size: int | None = None
+    sha256: str | None = None
+    symlink_target: str | None = None
+    raw_id: str | None = None
+
+    def diff_tuple(self) -> tuple[object, ...]:
+        return (self.kind, self.sha256, self.mode, self.symlink_target)
+
+
+_ABSENT_PATH = RawPathState("absent")
+
+
+@dataclass(frozen=True)
+class IndexState:
+    exists: bool
+    sha256: str | None = None
+    mode: int | None = None
+
+    def diff_tuple(self) -> tuple[object, ...]:
+        return (self.exists, self.sha256, self.mode)
+
+
+@dataclass(frozen=True)
+class ObjectDbFingerprint:
+    """Recursive listing of the real object directory plus `count-objects -v`."""
+
+    entries: tuple[tuple[str, str, int | None, int | None, str | None], ...]
+    count_objects: str
+
+
+@dataclass(frozen=True)
+class WorktreeSnapshot:
+    repo_root: str
+    head: str | None
+    index: IndexState
+    porcelain_sha256: str
+    tracked: tuple[str, ...]
+    untracked: tuple[str, ...]
+    paths: dict[str, RawPathState]
+    objects: ObjectDbFingerprint
+    raw_dir: str
+
+
+_GIT_READONLY_COMMANDS = frozenset(
+    {
+        ("rev-parse", "--show-toplevel"),
+        ("rev-parse", "HEAD"),
+        ("rev-parse", "--git-path", "index"),
+        ("rev-parse", "--git-path", "objects"),
+        ("rev-parse", "--git-common-dir"),
+        ("status", "--porcelain=v2", "-z", "--untracked-files=all", "--ignored=no"),
+        ("ls-files", "-z", "--cached"),
+        ("ls-files", "-z", "--others", "--exclude-standard"),
+        ("check-ignore", "--no-index", "-z", "--stdin"),
+        ("count-objects", "-v"),
+    }
+)
+_AMEND_PLAN_DIR_RE = re.compile(r"docs/modules/(?P<module>[^/]+)/relay/(?P<plan_id>[^/]+)")
+_AMEND_DESIGN_RE = re.compile(r"docs/modules/[^/]+/design/")
+_AMEND_DRIVE_RE = re.compile(r"^[A-Za-z]:")
+
+
+def _git_readonly(
+    repo_root: Path,
+    argv: tuple[str, ...],
+    stdin: bytes = b"",
+    allow_exit: tuple[int, ...] = (0,),
+) -> bytes:
+    """P1-02: the guard runs only frozen read-only git commands, locks disabled."""
+    if argv not in _GIT_READONLY_COMMANDS:
+        raise _error("HC-RL-A122", "git invocation outside the read-only allowlist")
+    env = dict(os.environ)
+    env["GIT_OPTIONAL_LOCKS"] = "0"
     try:
-        lint_plan(Path(plan_dir) / "relay_plan.md", config)
+        proc = subprocess.run(
+            ["git", "-C", str(repo_root), *argv],
+            input=stdin,
+            capture_output=True,
+            check=False,
+            env=env,
+        )
+    except OSError as exc:
+        raise _error("HC-RL-A122", f"cannot run git {argv[0]}: {exc}", exit_code=3) from exc
+    if proc.returncode not in allow_exit:
+        raise _error(
+            "HC-RL-A122", f"git {argv[0]} exited {proc.returncode} in read-only mode", exit_code=3
+        )
+    return proc.stdout
+
+
+def _resolve_repo_root(repo: str) -> Path:
+    candidate = Path(os.path.abspath(repo))
+    raw = _git_readonly(candidate, ("rev-parse", "--show-toplevel"))
+    return Path(os.path.realpath(os.fsdecode(raw.strip())))
+
+
+def _git_path(repo_root: Path, name: str) -> Path:
+    raw = _git_readonly(repo_root, ("rev-parse", "--git-path", name))
+    path = Path(os.fsdecode(raw.strip()))
+    if not path.is_absolute():
+        path = repo_root / path
+    return Path(os.path.realpath(path))
+
+
+def _is_repo_relative(rel: str) -> bool:
+    if not rel or "\0" in rel:
+        return False
+    if rel.startswith(("/", "\\")) or _AMEND_DRIVE_RE.match(rel):
+        return False
+    return all(part not in ("", ".", "..") for part in rel.split("/"))
+
+
+def _decode_git_z_paths(data: bytes, *, meta: bool) -> list[str]:
+    paths: list[str] = []
+    for item in data.split(b"\0"):
+        if not item:
+            continue
+        if meta:
+            tab = item.find(b"\t")
+            if tab < 0:
+                raise _error("HC-RL-A122", "malformed git ls-files record")
+            item = item[tab + 1 :]
+        rel = os.fsdecode(item)
+        if not _is_repo_relative(rel):
+            raise _error("HC-RL-A122", "git reported a path outside the repo-relative contract")
+        paths.append(rel)
+    return paths
+
+
+def _read_git_path_sets(repo_root: Path) -> tuple[frozenset[str], frozenset[str], bytes]:
+    """Frozen read-only sets: tracked ∪ non-ignored untracked, plus raw porcelain v2."""
+    tracked = frozenset(
+        _decode_git_z_paths(_git_readonly(repo_root, ("ls-files", "-z", "--cached")), meta=False)
+    )
+    untracked = frozenset(
+        _decode_git_z_paths(
+            _git_readonly(repo_root, ("ls-files", "-z", "--others", "--exclude-standard")),
+            meta=False,
+        )
+    )
+    porcelain = _git_readonly(
+        repo_root, ("status", "--porcelain=v2", "-z", "--untracked-files=all", "--ignored=no")
+    )
+    return tracked, untracked, porcelain
+
+
+def _lstat_or_none(path: Path) -> os.stat_result | None:
+    try:
+        return path.lstat()
+    except FileNotFoundError:
+        return None
+    except OSError as exc:
+        raise _error(
+            "HC-RL-A122",
+            f"cannot lstat a worktree path: {exc.strerror or type(exc).__name__}",
+            exit_code=3,
+        ) from exc
+
+
+def _index_state(repo_root: Path) -> IndexState:
+    index_path = _git_path(repo_root, "index")
+    info = _lstat_or_none(index_path)
+    if info is None or not stat.S_ISREG(info.st_mode):
+        return IndexState(False)
+    try:
+        data = index_path.read_bytes()
+    except OSError as exc:
+        raise _error("HC-RL-A122", f"cannot read the real index: {exc}", exit_code=3) from exc
+    return IndexState(True, hashlib.sha256(data).hexdigest(), stat.S_IMODE(info.st_mode))
+
+
+def _object_database_fingerprint(repo_root: Path) -> ObjectDbFingerprint:
+    """Recursive (name, lstat type, size, mtime_ns, file sha256) listing + count-objects."""
+    objects_dir = _git_path(repo_root, "objects")
+    entries: list[tuple[str, str, int | None, int | None, str | None]] = []
+    if objects_dir.is_dir():
+        for root, dirnames, filenames in os.walk(objects_dir):
+            for name in (*dirnames, *filenames):
+                path = Path(root) / name
+                rel = path.relative_to(objects_dir).as_posix()
+                info = _lstat_or_none(path)
+                if info is None:
+                    raise _error(
+                        "HC-RL-A122", "object database entry vanished during fingerprint"
+                    )
+                if stat.S_ISDIR(info.st_mode):
+                    entries.append((rel, "dir", None, info.st_mtime_ns, None))
+                elif stat.S_ISLNK(info.st_mode):
+                    entries.append((rel, "symlink", None, info.st_mtime_ns, os.readlink(path)))
+                elif stat.S_ISREG(info.st_mode):
+                    data = path.read_bytes()
+                    entries.append(
+                        (
+                            rel,
+                            "regular",
+                            len(data),
+                            info.st_mtime_ns,
+                            hashlib.sha256(data).hexdigest(),
+                        )
+                    )
+                else:
+                    entries.append((rel, "special", None, info.st_mtime_ns, None))
+    count = _git_readonly(repo_root, ("count-objects", "-v")).decode("utf-8", "replace")
+    return ObjectDbFingerprint(tuple(sorted(entries)), count)
+
+
+def _restricted_dir(path: Path) -> None:
+    os.mkdir(path, 0o700)
+    if os.name == "posix":
+        try:
+            os.chmod(path, 0o700)
+            if stat.S_IMODE(path.lstat().st_mode) != 0o700:
+                raise _error(
+                    "HC-RL-A122", "snapshot directory permissions cannot be tightened"
+                )
+        except BaseException:
+            try:
+                os.rmdir(path)
+            except OSError:
+                pass
+            raise
+
+
+def _restricted_writer(path: Path):
+    descriptor = os.open(
+        path,
+        os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0),
+        0o600,
+    )
+    if os.name == "posix":
+        os.fchmod(descriptor, 0o600)
+    return os.fdopen(descriptor, "wb")
+
+
+def _store_raw_copy(raw_dir: Path, data: bytes) -> str:
+    """One raw copy under a fresh 0600 name allocated by O_EXCL create."""
+    serial = 0
+    while True:
+        name = f"raw-{serial:05d}"
+        serial += 1
+        try:
+            with _restricted_writer(raw_dir / name) as handle:
+                handle.write(data)
+        except FileExistsError:
+            continue
+        return name
+
+
+def _same_stat(left: os.stat_result, right: os.stat_result) -> bool:
+    return (
+        left.st_mode,
+        left.st_size,
+        left.st_mtime_ns,
+        left.st_ino,
+    ) == (right.st_mode, right.st_size, right.st_mtime_ns, right.st_ino)
+
+
+def _snapshot_raw_path(repo_root: Path, relpath: str, raw_dir: Path) -> RawPathState:
+    """Raw lstat+bytes capture — no git clean/smudge/EOL filter is ever applied."""
+    target = repo_root / relpath
+    first = _lstat_or_none(target)
+    if first is None:
+        if _lstat_or_none(target) is not None:
+            raise _error("HC-RL-A122", "worktree path appeared during sampling")
+        return _ABSENT_PATH
+    if not stat.S_ISREG(first.st_mode) and not stat.S_ISLNK(first.st_mode):
+        return RawPathState("special", mode=stat.S_IMODE(first.st_mode))
+    if stat.S_ISLNK(first.st_mode):
+        link_target = os.readlink(target)
+        second = _lstat_or_none(target)
+        if second is None or not _same_stat(first, second):
+            raise _error("HC-RL-A122", "worktree path changed during sampling")
+        raw_id = _store_raw_copy(raw_dir, os.fsencode(link_target))
+        return RawPathState(
+            "symlink",
+            mode=stat.S_IMODE(second.st_mode),
+            symlink_target=link_target,
+            raw_id=raw_id,
+        )
+    try:
+        descriptor = os.open(
+            target, os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0)
+        )
+    except OSError as exc:
+        raise _error(
+            "HC-RL-A122",
+            f"cannot sample a worktree path: {exc.strerror or type(exc).__name__}",
+            exit_code=3,
+        ) from exc
+    with os.fdopen(descriptor, "rb") as handle:
+        data = handle.read()
+    second = _lstat_or_none(target)
+    if second is None or not _same_stat(first, second):
+        raise _error("HC-RL-A122", "worktree path changed during sampling")
+    raw_id = _store_raw_copy(raw_dir, data)
+    return RawPathState(
+        "regular",
+        mode=stat.S_IMODE(second.st_mode),
+        size=len(data),
+        sha256=hashlib.sha256(data).hexdigest(),
+        raw_id=raw_id,
+    )
+
+
+def _snapshot_worktree(repo_root: Path, snapshot_dir: Path, phase: str) -> WorktreeSnapshot:
+    """Full raw-state capture of every tracked + non-ignored untracked worktree path."""
+    phase_dir = Path(snapshot_dir) / phase
+    raw_dir = phase_dir / "raw"
+    _restricted_dir(phase_dir)
+    _restricted_dir(raw_dir)
+    head_raw = _git_readonly(repo_root, ("rev-parse", "HEAD"), allow_exit=(0, 128))
+    head = head_raw.decode("utf-8", "replace").strip() or None
+    index = _index_state(repo_root)
+    tracked, untracked, porcelain = _read_git_path_sets(repo_root)
+    objects = _object_database_fingerprint(repo_root)
+    paths = {
+        rel: _snapshot_raw_path(repo_root, rel, raw_dir)
+        for rel in sorted(tracked | untracked)
+    }
+    snapshot = WorktreeSnapshot(
+        repo_root=str(repo_root),
+        head=head,
+        index=index,
+        porcelain_sha256=hashlib.sha256(porcelain).hexdigest(),
+        tracked=tuple(sorted(tracked)),
+        untracked=tuple(sorted(untracked)),
+        paths=paths,
+        objects=objects,
+        raw_dir=str(raw_dir),
+    )
+    _write_json_restricted(
+        phase_dir / "manifest.json",
+        {
+            "version": 1,
+            "phase": phase,
+            "repo_root": snapshot.repo_root,
+            "head": snapshot.head,
+            "index": {
+                "exists": index.exists,
+                "sha256": index.sha256,
+                "mode": index.mode,
+            },
+            "porcelain_sha256": snapshot.porcelain_sha256,
+            "tracked": list(snapshot.tracked),
+            "untracked": list(snapshot.untracked),
+            "paths": {
+                rel: {
+                    "kind": state.kind,
+                    "mode": state.mode,
+                    "size": state.size,
+                    "sha256": state.sha256,
+                    "symlink_target": state.symlink_target,
+                    "raw_id": state.raw_id,
+                }
+                for rel, state in paths.items()
+            },
+            "objects": {
+                "entries": [list(entry) for entry in objects.entries],
+                "count_objects": objects.count_objects,
+            },
+        },
+    )
+    return snapshot
+
+
+def _diff_worktree_snapshots(before: WorktreeSnapshot, after: WorktreeSnapshot) -> tuple[str, ...]:
+    """actual = paths whose (kind, raw sha256, permission mode, symlink target) differ."""
+    union = set(before.paths) | set(after.paths)
+    return tuple(
+        sorted(
+            rel
+            for rel in union
+            if before.paths.get(rel, _ABSENT_PATH).diff_tuple()
+            != after.paths.get(rel, _ABSENT_PATH).diff_tuple()
+        )
+    )
+
+
+def _require_plain_parents(repo_root: Path, target: Path) -> None:
+    ancestors: list[Path] = []
+    parent = target.parent
+    while parent != repo_root:
+        ancestors.append(parent)
+        if parent.parent == parent:
+            raise _error("HC-RL-A122", "restore target escapes the repo")
+        parent = parent.parent
+    for ancestor in reversed(ancestors):
+        info = _lstat_or_none(ancestor)
+        if info is None:
+            os.mkdir(ancestor, 0o700)
+        elif stat.S_ISLNK(info.st_mode) or not stat.S_ISDIR(info.st_mode):
+            raise _error(
+                "HC-RL-A122", "restore parent chain contains a symlink or non-directory"
+            )
+
+
+def _restore_one_path(before: WorktreeSnapshot, repo_root: Path, rel: str) -> None:
+    state = before.paths.get(rel, _ABSENT_PATH)
+    target = repo_root / rel
+    current = _lstat_or_none(target)
+    if state.kind == "special":
+        raise _error("HC-RL-A122", "cannot restore a special path; manual takeover required")
+    if state.kind == "absent":
+        if current is None:
+            return
+        if stat.S_ISREG(current.st_mode) or stat.S_ISLNK(current.st_mode):
+            target.unlink()
+            return
+        raise _error("HC-RL-A122", "restore target became a directory or special file")
+    _require_plain_parents(repo_root, target)
+    current = _lstat_or_none(target)
+    if current is not None and not (
+        stat.S_ISREG(current.st_mode) or stat.S_ISLNK(current.st_mode)
+    ):
+        raise _error("HC-RL-A122", "restore target became a directory or special file")
+    if state.kind == "regular":
+        data = (Path(before.raw_dir) / str(state.raw_id)).read_bytes()
+        if current is not None:
+            target.unlink()
+        descriptor = os.open(
+            target,
+            os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0),
+            0o600,
+        )
+        try:
+            with os.fdopen(descriptor, "wb") as handle:
+                handle.write(data)
+                handle.flush()
+                os.fsync(handle.fileno())
+            if os.name == "posix" and state.mode is not None:
+                os.chmod(target, state.mode)
+        except BaseException:
+            try:
+                target.unlink()
+            except OSError:
+                pass
+            raise
+        return
+    if state.kind == "symlink":
+        if current is not None:
+            target.unlink()
+        os.symlink(str(state.symlink_target), target)
+        return
+    raise _error("HC-RL-A122", f"unknown snapshot kind: {state.kind}")
+
+
+def _restore_worktree_snapshot(before: WorktreeSnapshot, relpaths: tuple[str, ...]) -> None:
+    """Restore raw bytes/mode/symlink/existence for the given paths from before copies."""
+    repo_root = Path(before.repo_root)
+    for rel in sorted(set(relpaths)):
+        if not _is_repo_relative(rel):
+            raise _error("HC-RL-A122", "restore set contains a non repo-relative path")
+        _restore_one_path(before, repo_root, rel)
+
+
+def _write_json_restricted(path: Path, payload: dict[str, object]) -> None:
+    with _restricted_writer(path) as handle:
+        handle.write(json.dumps(payload, ensure_ascii=True, sort_keys=True).encode("utf-8"))
+
+
+def _load_json(path: Path) -> dict[str, object]:
+    try:
+        data = json.loads(path.read_bytes().decode("utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise _error("HC-RL-A122", f"cannot read snapshot manifest: {exc}", exit_code=3) from exc
+    if not isinstance(data, dict):
+        raise _error("HC-RL-A122", "snapshot manifest is not an object")
+    return data
+
+
+def _load_sample_snapshot(phase_dir: Path) -> WorktreeSnapshot:
+    data = _load_json(phase_dir / "manifest.json")
+    index = data["index"]
+    objects = data["objects"]
+    return WorktreeSnapshot(
+        repo_root=str(data["repo_root"]),
+        head=data["head"],
+        index=IndexState(index["exists"], index["sha256"], index["mode"]),
+        porcelain_sha256=str(data["porcelain_sha256"]),
+        tracked=tuple(str(rel) for rel in data["tracked"]),
+        untracked=tuple(str(rel) for rel in data["untracked"]),
+        paths={
+            rel: RawPathState(
+                kind=state["kind"],
+                mode=state["mode"],
+                size=state["size"],
+                sha256=state["sha256"],
+                symlink_target=state["symlink_target"],
+                raw_id=state["raw_id"],
+            )
+            for rel, state in data["paths"].items()
+        },
+        objects=ObjectDbFingerprint(
+            tuple(tuple(entry) for entry in objects["entries"]),
+            str(objects["count_objects"]),
+        ),
+        raw_dir=str(phase_dir / "raw"),
+    )
+
+
+def _snapshots_equivalent(left: WorktreeSnapshot, right: WorktreeSnapshot) -> bool:
+    return (
+        left.head == right.head
+        and left.index.diff_tuple() == right.index.diff_tuple()
+        and left.porcelain_sha256 == right.porcelain_sha256
+        and left.tracked == right.tracked
+        and left.untracked == right.untracked
+        and {rel: state.diff_tuple() for rel, state in left.paths.items()}
+        == {rel: state.diff_tuple() for rel, state in right.paths.items()}
+        and left.objects == right.objects
+    )
+
+
+def _remove_snapshot_dir(snap: Path) -> None:
+    if snap.is_dir() and not os.path.islink(snap):
+        shutil.rmtree(snap, ignore_errors=True)
+
+
+def _normalize_proposed(proposed: tuple[str, ...], repo_root: Path) -> tuple[str, ...]:
+    seen: set[str] = set()
+    normalized: list[str] = []
+    for raw in proposed:
+        if not raw or "\0" in raw:
+            raise _error("HC-RL-A122", "proposed path is empty or contains NUL")
+        if raw.startswith(("/", "\\")) or _AMEND_DRIVE_RE.match(raw):
+            raise _error("HC-RL-A122", f"absolute proposed path rejected: {raw}")
+        parts = [part for part in raw.replace("\\", "/").split("/") if part]
+        if any(part in (".", "..") for part in parts):
+            raise _error("HC-RL-A122", f"proposed path with . or .. rejected: {raw}")
+        rel = "/".join(parts)
+        if rel in seen:
+            raise _error("HC-RL-A122", f"duplicate proposed path: {rel}")
+        resolved = Path(os.path.realpath(repo_root / rel))
+        if not resolved.is_relative_to(repo_root):
+            raise _error("HC-RL-A122", f"proposed path resolves outside the repo: {rel}")
+        seen.add(rel)
+        normalized.append(rel)
+    return tuple(normalized)
+
+
+def _reject_ignored(repo_root: Path, proposed: tuple[str, ...]) -> None:
+    stdin = b"".join(os.fsencode(rel) + b"\0" for rel in proposed)
+    raw = _git_readonly(
+        repo_root,
+        ("check-ignore", "--no-index", "-z", "--stdin"),
+        stdin=stdin,
+        allow_exit=(0, 1),
+    )
+    ignored = set(_decode_git_z_paths(raw, meta=False))
+    hits = [rel for rel in proposed if rel in ignored]
+    if hits:
+        raise _error("HC-RL-A122", f"proposed path is git-ignored: {hits[0]}")
+
+
+def _prepare_snapshot_dir(snapshot_dir: str, repo_root: Path) -> Path:
+    snap = Path(snapshot_dir)
+    if not snap.is_absolute():
+        raise _error("HC-RL-A122", "--snapshot-dir must be an absolute path")
+    if os.path.lexists(snap):
+        raise _error("HC-RL-A122", "--snapshot-dir already exists")
+    # Per-ancestor lstat, not a realpath/abspath string diff: on Windows an 8.3
+    # short-name component expands under realpath without being a symlink.
+    ancestor = snap
+    while True:
+        info = _lstat_or_none(ancestor)
+        if info is not None and stat.S_ISLNK(info.st_mode):
+            raise _error("HC-RL-A122", "--snapshot-dir has a symlink parent chain")
+        if ancestor.parent == ancestor:
+            break
+        ancestor = ancestor.parent
+    resolved = Path(os.path.realpath(snap))
+    common_raw = _git_readonly(repo_root, ("rev-parse", "--git-common-dir"))
+    common = Path(os.fsdecode(common_raw.strip()))
+    if not common.is_absolute():
+        common = repo_root / common
+    forbidden_roots = (
+        repo_root,
+        _git_path(repo_root, "index").parent,
+        _git_path(repo_root, "objects"),
+        Path(os.path.realpath(common)),
+    )
+    for root in forbidden_roots:
+        if resolved.is_relative_to(root):
+            raise _error(
+                "HC-RL-A122", "--snapshot-dir must live outside the repo and git metadata"
+            )
+    _restricted_dir(snap)
+    return snap
+
+
+def _before_cards(before: WorktreeSnapshot, plan_file_rel: str) -> tuple[str, ...]:
+    """Read the marker cards from the before raw copy — never the post-edit plan."""
+    state = before.paths.get(plan_file_rel, _ABSENT_PATH)
+    if state.kind != "regular" or not state.raw_id:
+        raise _error("HC-RL-A122", "cannot read the before copy of relay_plan.md")
+    try:
+        text = (Path(before.raw_dir) / state.raw_id).read_bytes().decode("utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise _error(
+            "HC-RL-A122", f"cannot decode the before relay_plan.md: {exc}", exit_code=3
+        ) from exc
+    lines = text.splitlines()
+    try:
+        _, fields = _parse_marker(lines[0] if lines else "")
+    except RelayError as exc:
+        raise _error("HC-RL-A122", f"before plan marker unreadable: {exc.message}") from exc
+    cards = tuple(card for card in fields["cards"].split(",") if card)
+    if not cards:
+        raise _error("HC-RL-A122", "before plan marker has no cards=")
+    return cards
+
+
+def _check_amend_allowlist(
+    proposed: tuple[str, ...],
+    plan_rel: str,
+    module: str,
+    cards: tuple[str, ...],
+    before: WorktreeSnapshot,
+) -> None:
+    """decision.1 ①B: exactly three path classes; design/ and anything else is A122."""
+    plan_file = f"{plan_rel}/relay_plan.md"
+    dev_plan_re = re.compile(rf"docs/modules/{re.escape(module)}/dev_plan/P[0-9]+-[^/]*\.md")
+    task_plans = {f"docs/modules/{module}/workspace/{card}/task_plan.md" for card in cards}
+    observed = set(before.tracked) | set(before.untracked)
+    for rel in proposed:
+        if _AMEND_DESIGN_RE.match(rel):
+            raise _error("HC-RL-A122", f"design/ is a forbidden area: {rel}")
+        allowed = (
+            rel == plan_file or dev_plan_re.fullmatch(rel) is not None or rel in task_plans
+        )
+        if not allowed:
+            raise _error(
+                "HC-RL-A122", f"proposed path outside the three-class allowlist: {rel}"
+            )
+        if before.paths.get(rel, _ABSENT_PATH).kind == "special":
+            raise _error(
+                "HC-RL-A122", f"proposed path is a directory or special file: {rel}"
+            )
+        segments = rel.split("/")
+        for depth in range(1, len(segments)):
+            ancestor = "/".join(segments[:depth])
+            if ancestor in observed:
+                raise _error(
+                    "HC-RL-A122",
+                    f"proposed path crosses a tracked/gitlink ancestor: {rel}",
+                )
+
+
+def _validate_amend_before(
+    plan_dir: str,
+    repo: str,
+    snapshot_dir: str,
+    proposed: tuple[str, ...],
+    config: RelayConfig,
+) -> int:
+    repo_root = _resolve_repo_root(repo)
+    plan_root = Path(os.path.realpath(plan_dir))
+    try:
+        plan_rel = plan_root.relative_to(repo_root).as_posix()
+    except ValueError:
+        raise _error("HC-RL-A122", "--plan must point inside the repository")
+    match = _AMEND_PLAN_DIR_RE.fullmatch(plan_rel)
+    if match is None:
+        raise _error("HC-RL-A122", "--plan must be docs/modules/<module>/relay/<plan_id>/")
+    module = match.group("module")
+    normalized = _normalize_proposed(proposed, repo_root)
+    _reject_ignored(repo_root, normalized)
+    snap = _prepare_snapshot_dir(snapshot_dir, repo_root)
+    try:
+        before = _snapshot_worktree(repo_root, snap, "before")
+        verify = _snapshot_worktree(repo_root, snap, "verify")
+        if not _snapshots_equivalent(before, verify):
+            raise _error("HC-RL-A122", "worktree is not silent: two before-samples disagree")
+        shutil.rmtree(snap / "verify")
+        cards = _before_cards(before, f"{plan_rel}/relay_plan.md")
+        _check_amend_allowlist(normalized, plan_rel, module, cards, before)
+        _write_json_restricted(
+            snap / "manifest.json",
+            {
+                "version": 1,
+                "repo_root": str(repo_root),
+                "plan_rel": plan_rel,
+                "module": module,
+                "proposed": list(normalized),
+            },
+        )
+    except BaseException:
+        _remove_snapshot_dir(snap)
+        raise
+    print(f"lint: amend-check before ok ({len(normalized)} proposed path(s))")
+    return 0
+
+
+def _restore_after_failure(
+    before: WorktreeSnapshot, restore_set: set[str], snap: Path
+) -> None:
+    try:
+        _restore_worktree_snapshot(before, tuple(sorted(restore_set)))
+        restored = _snapshot_worktree(Path(before.repo_root), snap, "restored")
+        residual = _diff_worktree_snapshots(before, restored)
+        meta_equal = (
+            restored.head == before.head
+            and restored.index.diff_tuple() == before.index.diff_tuple()
+            and restored.objects == before.objects
+        )
+    except (RelayError, OSError):
+        residual = ("<unrestored>",)
+        meta_equal = False
+    if residual or not meta_equal:
+        raise _error(
+            "HC-RL-A122",
+            "restore could not be verified; restricted snapshot kept for manual "
+            f"takeover at runtime handle {snap}",
+        )
+    _remove_snapshot_dir(snap)
+
+
+def _validate_amend_after(plan_dir: str, repo: str, snapshot_dir: str, config: RelayConfig) -> int:
+    repo_root = _resolve_repo_root(repo)
+    plan_root = Path(os.path.realpath(plan_dir))
+    try:
+        plan_rel = plan_root.relative_to(repo_root).as_posix()
+    except ValueError:
+        raise _error("HC-RL-A122", "--plan must point inside the repository")
+    snap = Path(snapshot_dir)
+    if not snap.is_dir() or os.path.islink(snap):
+        raise _error("HC-RL-A122", "--snapshot-dir must be an existing real directory")
+    run = _load_json(snap / "manifest.json")
+    if (
+        run.get("version") != 1
+        or run.get("repo_root") != str(repo_root)
+        or run.get("plan_rel") != plan_rel
+    ):
+        raise _error("HC-RL-A122", "snapshot-dir does not belong to this repo/plan run")
+    before = _load_sample_snapshot(snap / "before")
+    proposed = tuple(str(item) for item in run.get("proposed", ()))
+    after = _snapshot_worktree(repo_root, snap, "after")
+    actual = _diff_worktree_snapshots(before, after)
+    failure: RelayError | None = None
+    if set(actual) != set(proposed):
+        unchanged = sorted(set(proposed) - set(actual))
+        unexpected = len(set(actual) - set(proposed))
+        failure = _error(
+            "HC-RL-A122",
+            "actual != proposed "
+            f"(unchanged proposed: {','.join(unchanged) or 'none'}; "
+            f"unexpected changed paths: {unexpected})",
+        )
+    elif (
+        after.head != before.head
+        or after.index.diff_tuple() != before.index.diff_tuple()
+        or after.objects != before.objects
+    ):
+        failure = _error(
+            "HC-RL-A122", "HEAD, real index, or object database changed during the window"
+        )
+    else:
+        try:
+            lint_plan(plan_root / "relay_plan.md", config)
+        except RelayError as exc:
+            failure = exc
+    if failure is None:
+        _remove_snapshot_dir(snap)
+        print(
+            "lint: amend-check after ok "
+            f"(actual == proposed: {len(actual)} path(s)); plan lint ok"
+        )
+        return 0
+    _restore_after_failure(before, set(actual) | set(proposed), snap)
+    raise failure
+
+
+def _lint_command(
+    plan_dir: str,
+    as_json: bool,
+    config: RelayConfig,
+    *,
+    amend_check: str | None = None,
+    repo: str | None = None,
+    snapshot_dir: str | None = None,
+    proposed_path: tuple[str, ...] = (),
+) -> int:
+    try:
+        if amend_check is None:
+            lint_plan(Path(plan_dir) / "relay_plan.md", config)
+        elif amend_check == "before":
+            return _validate_amend_before(plan_dir, repo or "", snapshot_dir or "", proposed_path, config)
+        else:
+            return _validate_amend_after(plan_dir, repo or "", snapshot_dir or "", config)
     except RelayError as exc:
         if exc.exit_code == 3:
             return _fail(exc)
@@ -805,9 +1629,18 @@ def _authorize_agent(plan: Plan, node: NodeSpec, event: str, agent: str) -> None
     name, _ = _agent_parts(agent)
     if event in CONTROL_EVENTS:
         if name not in CONTROL_AGENT_NAMES:
+            if event == "plan_amend":
+                raise _error(
+                    "HC-RL-A119", f"plan_amend must be written by monitor#<n>: {agent}"
+                )
             raise _error("HC-RL-A69", f"control event requires orchestrator or monitor: {event}")
         return
     if name in RELAUNCH_EXEMPT_AGENT_NAMES:
+        # HC-RL-A122: planner-amend never writes blocked/escalate — an out-of-scope
+        # finding is reported only through its ordinary done.note, then the monitor
+        # writes the blocked stage_result.
+        if name == "planner-amend" and event in {"blocked", "escalate"}:
+            raise _error("HC-RL-A122", f"planner-amend must not write {event}")
         return
     if name not in {spec.agent for spec in _node_agents(plan, node.node)}:
         raise _error("HC-RL-A59", f"agent {name} is not active for node {node.node}")
@@ -873,6 +1706,36 @@ def _validate_plan_loaded_note(note: str) -> None:
         if token.startswith("skill=") and token[len("skill=") :]:
             return
     raise _error("HC-RL-A18", "plan_loaded note must contain a non-empty skill=<version>")
+
+
+def _validate_plan_amend_note(note: str) -> None:
+    """HC-RL-A119: a plan_amend note carries the proposal filename plus nodes=<node,…>."""
+    if not any("=" not in token for token in note.split()):
+        raise _error("HC-RL-A119", "plan_amend note must carry the proposal filename")
+    nodes = _note_tokens(note).get("nodes")
+    if nodes is None or not nodes or any(not item for item in nodes.split(",")):
+        raise _error("HC-RL-A119", "plan_amend note must carry nodes=<node,node>")
+
+
+def _validate_planner_amend_done_note(note: str) -> None:
+    """HC-RL-A122: a planner-amend `done` either carries an ordinary free-form note
+    (successful amend) or exactly the structured out-of-scope form
+    `outcome=out-of-scope proposal=<方案文件名> reason=<非空原因>`."""
+    tokens = _note_tokens(note)
+    if "outcome" not in tokens:
+        return
+    if tokens["outcome"] != "out-of-scope":
+        raise _error("HC-RL-A122", "planner-amend done outcome must be out-of-scope")
+    proposal = tokens.get("proposal", "")
+    if not proposal or "/" in proposal or "\\" in proposal:
+        raise _error(
+            "HC-RL-A122",
+            "planner-amend out-of-scope done.note must carry proposal=<方案文件名>",
+        )
+    if not tokens.get("reason"):
+        raise _error(
+            "HC-RL-A122", "planner-amend out-of-scope done.note must carry reason=<非空原因>"
+        )
 
 
 def _validate_decision_ownership(
@@ -1018,9 +1881,13 @@ def _validate_event_semantics(
         _validate_node_close(plan, entries, node)
         return
     if event in CONTROL_EVENTS:
+        if event == "plan_amend":
+            _validate_plan_amend_note(note)
         _validate_stage_event(plan, entries, event, note)
         return
     if event in AGENT_EVENTS:
+        if event == "done" and _agent_parts(agent)[0] == "planner-amend":
+            _validate_planner_amend_done_note(note)
         _validate_decision_ownership(entries, node, event, agent, note)
         _validate_strategist_conclusion(entries, node, event, agent)
         _validate_agent_transition(plan, entries, node, event, agent)
@@ -1114,6 +1981,31 @@ def _validate_stage_event(
             raise _error(
                 "HC-RL-A112",
                 f"stage_result must follow the last node_close of {stage_id}; still open: {unclosed}",
+            )
+        # HC-RL-A123: the amend summary mirrors this instance's own plan_amend history.
+        # A superseded row keeps its stage_id and node names stay unique (A46), so
+        # attribution uses the full table — superseding the carrier cannot orphan it.
+        all_nodes = {node.node: node for node in plan.nodes}
+        stage_amends = any(
+            entry["event"] == "plan_amend"
+            for entry in _stage_entries(entries, stage_id, all_nodes)
+        )
+        if stage_amends:
+            if not tokens.get("amend"):
+                raise _error(
+                    "HC-RL-A123",
+                    f"stage_result for {stage_id} must carry amend=<proposal> after plan_amend",
+                )
+            nodes = tokens.get("nodes", "")
+            if not nodes or any(not item for item in nodes.split(",")):
+                raise _error(
+                    "HC-RL-A123",
+                    f"stage_result for {stage_id} must carry nodes=<node,node> after plan_amend",
+                )
+        elif "amend" in tokens:
+            raise _error(
+                "HC-RL-A123",
+                f"stage_result for {stage_id} carries amend= without a stage plan_amend",
             )
         return
 
@@ -1866,6 +2758,7 @@ def _status_command(plan_dir: str, as_json: bool, config: RelayConfig) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    _configure_utf8_stdio()
     parser = RelayArgumentParser(prog="relay_log.py")
     subparsers = parser.add_subparsers(dest="command", required=True)
     add_parser = subparsers.add_parser("add")
@@ -1883,8 +2776,24 @@ def main(argv: list[str] | None = None) -> int:
     lint_parser.add_argument("--plan", required=True)
     lint_parser.add_argument("--json", action="store_true")
     lint_parser.add_argument("--config-dir")
+    lint_parser.add_argument("--amend-check", choices=("before", "after"))
+    lint_parser.add_argument("--repo")
+    lint_parser.add_argument("--snapshot-dir")
+    lint_parser.add_argument("--proposed-path", action="append", default=[])
     try:
         args = parser.parse_args(argv)
+        if args.command == "lint":
+            if args.amend_check is None and (
+                args.repo or args.snapshot_dir or args.proposed_path
+            ):
+                parser.error("--repo/--snapshot-dir/--proposed-path require --amend-check")
+            if args.amend_check is not None:
+                if not args.repo or not args.snapshot_dir:
+                    parser.error("--amend-check requires --repo and --snapshot-dir")
+                if args.amend_check == "before" and not args.proposed_path:
+                    parser.error("--amend-check before requires at least one --proposed-path")
+                if args.amend_check == "after" and args.proposed_path:
+                    parser.error("--amend-check after takes no --proposed-path")
     except RelayError as exc:
         return _fail(exc)
     try:
@@ -1896,7 +2805,15 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "status":
         return _status_command(args.plan, args.json, config)
     if args.command == "lint":
-        return _lint_command(args.plan, args.json, config)
+        return _lint_command(
+            args.plan,
+            args.json,
+            config,
+            amend_check=args.amend_check,
+            repo=args.repo,
+            snapshot_dir=args.snapshot_dir,
+            proposed_path=tuple(args.proposed_path),
+        )
     raise AssertionError(f"unreachable command: {args.command}")
 
 
