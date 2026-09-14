@@ -31,3 +31,12 @@
 ## 信号
 
 （durable signal 已改为各角色独立 `done.<role>.md`，见 task_plan §批次与 durable signal；本文件由 scribe 独占维护，不再承接 DONE 行。builder 的 W_READY 已迁至 `done.builder.md`。）
+
+## as-built（F1 · scribe#1 · 2026-09-14）
+
+- **交付物**：仓根 `.gitignore` 末尾追加 Python 副产品忽略段——注释行 `# Python 测试副产品（不入仓；承接 RLT_10 F-002）` + 规则行 `__pycache__/`（第 30 行）与 `*.pyc`（第 31 行），既有 27 行未动。施工落盘 commit=`85af7fb3e47e0cfe4150595c056da82f0d0e1b5a`（本棒读取 `git rev-parse 85af7fb` 核实）。
+- **验收证据**：
+  - AC-1：`git check-ignore -v tools/relay-light/__pycache__/x.pyc` exit 0，命中行 `.gitignore:30:__pycache__/` → **C1-EV-003**。
+  - AC-2：`pwsh tools/tests/relay-light-log.ps1` 实跑到底（`Ran 164 tests … OK (skipped=2)` + `Ran 7 tests … OK`，自然退出 exit 0）后 `git status --short` 与 `git ls-files` 匹配 `__pycache__|\.pyc` 计数均为 0 → **C1-EV-004**。
+- **复核结论**：plan-review（W 批次小审）复审3 PASS；R1 两路——lesson PASS（P1=0 / P2=1，L-DRILL-02-1 限定条件链后采纳、L-DRILL-02-2 合并入 RLT_10 F-002 / RLT_03 F-008 既有教训链，P2-1 已转记 findings F-003）、consistency PASS（P1=0 / P2=0）。明细见 `review.md` §R1 汇总、`review.lesson.md`、`review.consistency.md`、`review.plan.md`。
+- **未合并说明**：本卡为非正式 Windows 预演，交付物在分支 `dryrun/rlt12-win`（worktree `dryrun-rlt12-win`），不进 master、不 push、不建 PR、不合并；GitHub-flow 已获用户豁免（`GitHub-flow: user-waived (2026-09-14, scope=dryrun-win-01 全部预演工件与 DRILL_02)`）。as-built 仅到「工作区交接就绪」，不等于 verify / 验收 / 发布。
