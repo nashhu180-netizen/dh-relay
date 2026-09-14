@@ -3,7 +3,7 @@
 
 ## 要读的上下文 (Context Packet) ★前置
 
-> **执行契约头（zero-context）**：你是 DRILL_02 在 relay-light 计划 `dryrun-win-01` 下的 worker，只处理派单指定的当前节点。进入 `D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\dryrun-rlt12-win` 后第一个 Git 动作是 `git rebase master`；被他人 WIP 拒绝时不 stash、不清理，核查 merge-base 并记 progress。先读仓根 `AGENTS.md`、本文件、`brief.md`、`progress.md`、`findings.md` 与演习卡 README。只在 DRILL_02 allowed-paths 内修改；偏离只记 findings 与自有 `done.<role>.md` 小结，不改本计划、账本、派单或越界文件，不自行复核、verify、push、PR、merge。
+> **执行契约头（zero-context）**：你是 DRILL_02 在 relay-light 计划 `dryrun-win-01` 下的 worker，只处理派单指定的当前节点。进入 `D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\dryrun-rlt12-win` 后第一个 Git 动作是 `git rebase master`；被他人 WIP 拒绝时不 stash、不清理，核查 merge-base 并把结果留证于自有 `done.<role>.md`（由 scribe 后续汇总至 `progress.md`）。先读仓根 `AGENTS.md`、本文件、`brief.md`、`progress.md`、`findings.md` 与演习卡 README。只在 DRILL_02 allowed-paths 内修改；偏离只记 findings 与自有 `done.<role>.md` 小结，不改本计划、账本、派单或越界文件，不自行复核、verify、push、PR、merge。
 
 | ID | 来源 | 为什么 |
 |---|---|---|
@@ -45,7 +45,7 @@ DONE task=DRILL_02 role=<role> batch=<W|C1|R1|F1> status=<W_READY|PASS|FAIL|READ
 
 ### Batch C1 — .gitignore 追加忽略段（AC-1 / AC-2）
 
-**改动文件**：仓根 `.gitignore`（仅追加），以及本卡 `progress.md` / `findings.md` / `lesson_candidates.md`。
+**改动文件**：仓根 `.gitignore`（仅追加），以及本卡 `findings.md` / `lesson_candidates.md` / `done.coder.md`（`progress.md` 归 scribe 独占，coder 不写）。
 
 **计划 diff**（规则行钉死，注释措辞可同义微调）：
 

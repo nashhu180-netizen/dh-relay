@@ -18,7 +18,7 @@
 
 ## Zero-context 自查
 
-construction worker 进入本 worktree 后第一个 Git 动作是 `git rebase master`；若被他人 WIP 拒绝，按派单纪律不 stash、不清理，核查 `git merge-base HEAD master` 是否已等于 master 顶点并如实记 progress。随后读仓根 `AGENTS.md`、本文件、`task_plan.md`、`progress.md`、`findings.md` 与演习卡 README；只读盘点 `.gitignore` 现状与 `tools/tests/relay-light-log.ps1` 的调用方式。演习卡 README 决定 allowed-paths 与验收口径；如合同与现状冲突，只落 `findings.md` 并发 BLOCKED，不得越权修改。
+construction worker 进入本 worktree 后第一个 Git 动作是 `git rebase master`；若被他人 WIP 拒绝，按派单纪律不 stash、不清理，核查 `git merge-base HEAD master` 是否已等于 master 顶点，并把核查结果留证于自有 `done.<role>.md`（由 scribe 后续汇总至 `progress.md`）。随后读仓根 `AGENTS.md`、本文件、`task_plan.md`、`progress.md`、`findings.md` 与演习卡 README；只读盘点 `.gitignore` 现状与 `tools/tests/relay-light-log.ps1` 的调用方式。演习卡 README 决定 allowed-paths 与验收口径；如合同与现状冲突，只落 `findings.md` 并发 BLOCKED，不得越权修改。
 
 ## 完成条件 ★必写
 
