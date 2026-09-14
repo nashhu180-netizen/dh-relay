@@ -9,6 +9,7 @@
 |---|---|---|---|---|
 | 2026-09-13 | W / builder | 读取 dispatch 与冻结输入，建立 RLT_09 七件套，拆 B1～B5（含 RLT_10 F-003）并冻结 heavy 五路复核 | 待 plan-reviewer 审核 | `brief.md`、`task_plan.md`、`execution_strategy.md`、`findings.md`、`lesson_candidates.md`、`review.md` |
 | 2026-09-14 | C / B1 exec | A119+A123 账本合同：`plan_amend` note 校验（文件名独立非 key token + `nodes=` 非空逐项）与非控制名写者→A119；`stage_result` 按同阶段 `plan_amend` 历史对称摘要校验 | RED(E-B1-01)→GREEN(E-B1-02)→Python 143 绿 + pwsh ALL PASS | E-B1-01..05；commit=6edb32e |
+| 2026-09-14 | C / B2 exec | A120 lint 连续性放宽：`stage_runs` 除末段外必须唯一、末段允许重现既有 stage_id（只识别表尾追加形态）；两正例 + 四硬约束反例；两处旧 fixture 收窄至实际负责断言（A89） | 基线 b6b7d66 RED(E-B2-01)→GREEN(E-B2-02)→Python 145 绿 + pwsh ALL PASS | E-B2-01..05；commit=ab6343c |
 
 ## 证据账本
 
@@ -29,7 +30,8 @@
 
 | 批次 | candidate SHA | RED / GREEN | audit | 下一步 |
 |---|---|---|---|---|
-| B1 | 6edb32e | E-B1-01 / E-B1-02 | 待审 | audit 小审 → B2 |
+| B1 | 6edb32e | E-B1-01 / E-B1-02 | PASS（check.C1.md） | audit 小审 → B2 |
+| B2 | ab6343c | E-B2-01 / E-B2-02 | 待审 | audit 小审 → B3 |
 
 ## 信号
 
@@ -45,3 +47,5 @@ DONE task=RLT_09 role=builder batch=W4 status=W_READY evidence=commit=0898ab9 ne
 DONE task=RLT_09 role=audit batch=W4 status=PASS evidence=review.plan.md next=orchestrator
 DONE task=RLT_09 role=exec batch=1 status=READY_FOR_REVIEW evidence=E-B1-01,E-B1-02,E-B1-03,E-B1-04,E-B1-05,commit=6edb32e next=orchestrator
 DONE task=RLT_09 role=audit batch=1 status=PASS evidence=check.C1.md next=orchestrator
+DONE task=RLT_09 role=exec batch=2 status=READY_FOR_REVIEW evidence=E-B2-01,E-B2-02,E-B2-03,E-B2-04,E-B2-05,commit=ab6343c next=orchestrator
+DONE task=RLT_09 role=audit batch=2 status=PASS evidence=check.C2.md next=orchestrator
