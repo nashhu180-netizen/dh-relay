@@ -1136,7 +1136,7 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 
 > 分栏依据**验收二分**：机器能完整证明的进 AI 栏，只有需要用户凭业务判断「结果对不对 / 能不能用」的进人验栏。复合观察点已原子化，共享 E-ID 的两条分列两栏。
 >
-> **共 132 条：AI 自动验收 117 条 + 人类验收 15 条**（2026-09-11 RLT-A-06 退役 A91/A108、续发 A131～A136，AI 净增 4；退役 H2、续发 H18，人验净值 0；2026-09-14 RLT-A-08 续发 A137～A142，AI 净增 6）。
+> **共 133 条：AI 自动验收 118 条 + 人类验收 15 条**（2026-09-11 RLT-A-06 退役 A91/A108、续发 A131～A136，AI 净增 4；退役 H2、续发 H18，人验净值 0；2026-09-14 RLT-A-08 续发 A137～A143，AI 净增 7）。
 >
 > **已退役且不再复用的 ID**：HC-RL-A1、HC-RL-A3、HC-RL-A4、HC-RL-A6、HC-RL-A20、HC-RL-A22、HC-RL-A23、HC-RL-A25、HC-RL-A64、HC-RL-A86、HC-RL-A88、HC-RL-A90、HC-RL-A91、HC-RL-A108（原子化拆分）；HC-RL-A8、HC-RL-A76、HC-RL-A79、HC-RL-H2、HC-RL-H8、HC-RL-H9（语义或结构调整）。
 
@@ -1261,6 +1261,7 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 | HC-RL-A140 | 静默超时配置：`dh-mapping.toml` 的 `limits.silence_timeout_min` 可加载（默认 30）；`status` 只按**账本**最近事件计算静默，超过该值时该 agent 行标 `ledger_silent` **提示**（不是挂死判定）；skill 核心与两份 adapter 的监工模板含「`ledger_silent` → 核 Herdr 状态 + pane 末行 + 允许路径产出三者是否也无变化 → 三者均无变化才中断并记 `agent_lost silent_timeout` → 同 pane 重拉 `#n+1`；任一仍在变化不得中断」原文 | 单测：打桩时钟断言提示出现/不出现；结构检查三处模板命中「三者均无变化」与「不得中断」两句 |
 | HC-RL-A141 | 派活提交与等待纪律写进两份 adapter：`agent start` 后 `wait --until idle` 再 `prompt`，prompt 后读取 pane 末行确认已提交（未提交则 `send-keys Enter` 一次并复核）；编排等待优先用账本文件事件监听，附「监工连续空闲 ≥2 分钟且无新账本行」告警；沙箱型只读启动不可用时的替代（bypass 沙箱 + 提示词只读约束 + `launch_fix=`）写进 adapter 环境预检 | 结构检查两份 adapter 各命中三段原文 |
 | HC-RL-A142 | `decision_mode` 模式门与 `cancelled` 归属闸在 `add` 路径实现：`consult` 下 `decision` 后无 `user_decision` 即写 `resume` 退出 2；`auto` 下 decider 链出现 `user_decision` 退出 2；`cancelled` 进入决策类归属校验（A69），非触发 agent 名下的 `cancelled` 退出 2 | RLT_07 钉住的两条 `@unittest.skip` 负例去 skip 即绿；新增 `cancelled` 归属正反各一例 |
+| HC-RL-A143 | light 档 plan-review 分级（用户 2026-09-14 裁决 C）：skill 核心的 plan-reviewer 模板写明——纯措辞/格式/引用陈旧项一律 P2、不阻断 PASS；allowed-paths、写入者边界（谁写 progress/findings/lesson）、节点/阶段边界、验收命令与完成信号缺失或矛盾仍为 P1 阻断；模板附「light 只按此分级，heavy/normal 不变」 | 结构检查：模板命中「P2 不阻断」与四类 P1 原文；预演 `review.plan.md` 两轮 P1 按新分级重判可复算为 1 P1 + 4 P2 |
 
 ### 11.2 人类验收栏
 
@@ -1326,7 +1327,7 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 5. **教训候选回流**：把 §15 自查里的三条新教训提进 `knowledge/教训库-候选.md`。
 6. **改计划实例的提示词与白名单校验**：`planner-amend` 的提示词模板须含输入四件、一次改完、跑 lint 修到过；碰禁区时三类计划目标与输入方案文件均零变化，不写 `blocked` / `escalate` / `plan_amend`，只在普通 `done.note` 写结构化「超出范围」原因，由 monitor 续写 `stage_result outcome=blocked`。白名单校验须用紧邻本次动作的改前/改后快照取得精确变更集。→ HC-RL-A122
 7. **绕过 B-adjust 的决定要写进 AGENTS.md**：relay-light **有意绕过** dev-harness「改开发方案须 B-adjust 用户确认」这条，须在 AGENTS.md 的 relay-light 编排协议段注明，免得后来人当成违规。→ HC-RL-A28 / §1.3
-8. **Linux 预演回流（RLT-A-08）**：`stage_result` 按 outcome 分校验与 `ref=` 引用、环境性 NOT_RUN 出口、`launch_fix=` 记账、静默超时配置与监工模板、派活提交/等待纪律与沙箱替代预检、`decision_mode` 模式门与 `cancelled` 归属闸，须由一张标准档卡承接；是否作为 RLT_12 的硬依赖由用户在 RLT-B-07 裁决（推荐硬依赖：先修后跑）。→ HC-RL-A137～A142
+8. **Linux 预演回流（RLT-A-08）**：`stage_result` 按 outcome 分校验与 `ref=` 引用、环境性 NOT_RUN 出口、`launch_fix=` 记账、静默超时配置与监工模板、派活提交/等待纪律与沙箱替代预检、`decision_mode` 模式门与 `cancelled` 归属闸，须由一张标准档卡承接；用户 2026-09-14 裁决**不作 RLT_12 硬依赖**——RLT_12 可先跑，但带已知缺口开工须另取风险确认，并在证据中写明 A112/NOT_RUN 缺口口径；light 卡 plan-review 按 A143 分级。→ HC-RL-A137～A143
 
 ## 15. 查漏自查（对照 dev-harness `references/查漏清单.md`）
 
