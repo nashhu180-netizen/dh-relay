@@ -243,7 +243,7 @@ relay_log.py lint   --plan <dir> [--json] [--config-dir <dir>]
 | `monitor_launch` | 编排 | 每阶段实例至少一次（重拉监工可多次），必须在本实例 `stage_start` 之后；`note` 带 `stage_id=` |
 | `node_start` | 监工 | 每节点仅一次；在该节点任何 `agent_launch` 之前；`depends_on` 未全 `closed` 时退出 `2` |
 | `node_close` | 监工 | 仅在双判据成立时接受，每节点一次 |
-| `stage_result` | 监工 | 每阶段实例**可多次**（`blocked` 后用户裁决要续写终局）；`note` 必须含 `stage_id=` 与 `outcome=done / blocked / failed / cancelled` 及原因。**`status` 只认该实例最新一条** |
+| `stage_result` | 监工 | 每阶段实例**可多次**（`blocked` 后用户裁决要续写终局）；`note` 必须含 `stage_id=` 与 `outcome=done / blocked / failed / cancelled` 及原因。**`outcome ∈ {done, cancelled}` 要求本实例全部节点已 `closed`；`outcome ∈ {blocked, failed}` 允许节点未关**，但 `note` 必须以 `ref=<agent>#<n>:<事件>` 引用本实例内一条未终局的 `blocked` 或一条 `agent_lost`（RLT-A-08）。**`status` 只认该实例最新一条** |
 | `stage_close` | 编排 | 每**阶段实例**一次，前置是**该实例最新 `stage_result` 的 `outcome ∈ {done, cancelled}`**，否则退出 `2` |
 | `monitor_restart` | 监工 | 任意位置，不限次 |
 | `plan_amend` | 监工 | 运行中改计划完成后写（§4.5），任意位置、不限次，**不进状态机**；`agent` 必须是 `monitor#<n>`；`note` 写方案文件名 + 新节点号列表，形如 `decision.2.md nodes=C3,C4` |
@@ -503,7 +503,7 @@ user_decision <coder>          ← 永远出现，不看 decision_mode
 | `agent` | agent 名字（账本身份前半段） |
 | `node` | 挂在哪个节点 |
 | `role` | 角色名（对应 `roles.toml` 的键） |
-| `launch` | 发起方式；留空则取 `roles.toml` 的默认 |
+| `launch` | 发起方式；留空则取 `roles.toml` 的默认。**实际启动方式与本列不同时不改计划**：监工在该 `agent_launch.note` 写 `launch_fix=<原因>`，视为运行事实记账而非改计划（RLT-A-08；不触发 `plan_amend`，lint 不校验本列与账本一致） |
 | `output` | 产出文件 |
 | `trigger` | 留空 = 节点开始即发起；`on:blocked` = 上游 agent 卡住时；`on:done:<名字>` = 等指定**同节点** agent `done` 后发起。**批内持续在场的角色（coder、checker）一律留空**——它们要在对方拿到终态前就在场 |
 | `note` | 备注。废弃行写 `superseded` |
@@ -660,6 +660,8 @@ outcome=blocked（监工）→ 编排通知用户 → 用户裁决
 ```
 
 `failed` 路径不变（重拉监工一次，再 failed 通知用户）。
+
+**环境性 NOT_RUN 出口**（RLT-A-08）：某 agent 在本节点连续 `agent_lost` 达 `attempt_max` 且每条 `note` 含 `NOT_RUN`（进程从未进入工作态，如沙箱起不来、模型不可达），监工不再重拉，也不伪造 `blocked`；直接写 `stage_result outcome=blocked ref=<agent>#<n>:agent_lost` 交编排转用户。用户裁决「换启动方式」时，监工在同一阶段实例内以 `launch_fix=` 记账重拉（attempt 继续 +1，`attempt_max` 对同一 `launch_fix` 值各自计数）；裁决「放弃」走 `cancelled`。
 
 ### 5.3 节点关闭判据
 
@@ -872,6 +874,8 @@ herdr agent wait <agent> --timeout 1200000
 |---|---|---|---|
 | **attempt** | 节点实例内同一 agent 名 | 3（每节点独立，跨节点不累计） | 仅在本节点 `agent_lost` / `cancelled` / 阶段 `failed` 后重拉时 +1；**批内 `checkpoint` 往返不增**；节点级返工是新节点实例、从 1 起 |
 | **X 轮数** | 复核返工轮 | `dh-mapping.toml` 的 `max_rounds`（当前 2） | 每开一个 X 阶段 +1 |
+
+**静默超时**（RLT-A-08）：agent 处于 `working` 但产出与终端均无变化超过 `dh-mapping.toml` 的 `limits.silence_timeout_min`（默认 30）时，监工判定该实例挂死：先向其发送中断使 `wait` 返回，再写 `agent_lost`（`note` 含 `silent_timeout`），同 pane 重拉 `#n+1`，重发派活并注明「先检查已有部分产物」。这是 attempt 递增的合法前因之一（A113 的 `agent_lost` 分支），不是新的计数。
 
 **出口相同**：任一先到上限即停 → 拉 **strategist** → **交用户裁决**。两者不叠加计算，也不互相重置。
 
@@ -1132,7 +1136,7 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 
 > 分栏依据**验收二分**：机器能完整证明的进 AI 栏，只有需要用户凭业务判断「结果对不对 / 能不能用」的进人验栏。复合观察点已原子化，共享 E-ID 的两条分列两栏。
 >
-> **共 126 条：AI 自动验收 111 条 + 人类验收 15 条**（2026-09-11 RLT-A-06 退役 A91/A108、续发 A131～A136，AI 净增 4；退役 H2、续发 H18，人验净值 0）。
+> **共 132 条：AI 自动验收 117 条 + 人类验收 15 条**（2026-09-11 RLT-A-06 退役 A91/A108、续发 A131～A136，AI 净增 4；退役 H2、续发 H18，人验净值 0；2026-09-14 RLT-A-08 续发 A137～A142，AI 净增 6）。
 >
 > **已退役且不再复用的 ID**：HC-RL-A1、HC-RL-A3、HC-RL-A4、HC-RL-A6、HC-RL-A20、HC-RL-A22、HC-RL-A23、HC-RL-A25、HC-RL-A64、HC-RL-A86、HC-RL-A88、HC-RL-A90、HC-RL-A91、HC-RL-A108（原子化拆分）；HC-RL-A8、HC-RL-A76、HC-RL-A79、HC-RL-H2、HC-RL-H8、HC-RL-H9（语义或结构调整）。
 
@@ -1251,6 +1255,12 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 | HC-RL-A14 | 现役 dh-relay 未被改动 | `git diff --stat` 对 `tools/runner/` `tools/host/` `tools/contracts/` 为空 |
 | HC-RL-A30 | **〔E-链路〕** 一份真计划跑完后：全部阶段 `stage_close`、全部节点 `closed`，每条 `agent_launch` 都有配对终态事件，无悬空 agent | 实跑后 `status --json` 断言 |
 | HC-RL-A31 | **〔E-账本〕** 账本每行过 schema 校验，事件顺序满足状态机与阶段时序偏序 | 对实跑账本跑校验脚本 |
+| HC-RL-A137 | `stage_result` 分 outcome 校验节点关闭：`done`/`cancelled` 仍要求本实例全部节点 `closed`（A112）；`blocked`/`failed` 允许节点未关，但 `note` 必须含 `ref=<agent>#<n>:blocked` 或 `ref=<agent>#<n>:agent_lost` 且该引用在本实例内存在、为该 agent 最新事件；缺 `ref=`、引用不存在或引用已被 `resume`/终态覆盖均退出 2 并报 A137 | 单测：节点未关时 `blocked`+合法 ref 接受、`done` 仍拒 A112；三种非法 ref 各一例退出 2 报 A137；`stage_close` 对 `blocked` 仍拒 A118 |
+| HC-RL-A138 | 环境性 NOT_RUN 出口：同一 `(node, agent)` 连续 `attempt_max` 条 `agent_lost` 且 `note` 均含 `NOT_RUN` 后，第 `attempt_max+1` 条 `agent_launch` 被拒（A113 上限）；此时 `stage_result outcome=blocked ref=<agent>#<attempt_max>:agent_lost` 被接受；用户裁决后带 `launch_fix=` 的 `agent_launch` 接受且 attempt 继续递增，`attempt_max` 按 `launch_fix` 值分别计数 | 单测：三连 NOT_RUN 后第四条无 `launch_fix` 拒、带 `launch_fix=bypass_sandbox` 接受为 `#4`；`status` 的不可关原因列出 `NOT_RUN` 计数 |
+| HC-RL-A139 | `launch_fix=` 记账：`agent_launch.note` 可含 `launch_fix=<token>`；`add` 不校验其与计划 `launch` 列的关系、不要求 `plan_amend`；`status --json` 在该 agent 条目暴露 `launch_fix` 字段（无则为 null） | 单测：带/不带 `launch_fix` 各一例，断言 `status --json` 字段；lint 不因 launch 列与账本不一致报错 |
+| HC-RL-A140 | 静默超时配置：`dh-mapping.toml` 的 `limits.silence_timeout_min` 可加载（默认 30）；`status` 的「静默」时长超过该值时，该 agent 行标 `silent_timeout` 提示；skill 核心与两份 adapter 的监工模板含「静默超时 → 中断 → `agent_lost silent_timeout` → 同 pane 重拉 `#n+1`」原文 | 单测：打桩时钟断言提示出现/不出现；结构检查三处模板命中 |
+| HC-RL-A141 | 派活提交与等待纪律写进两份 adapter：`agent start` 后 `wait --until idle` 再 `prompt`，prompt 后读取 pane 末行确认已提交（未提交则 `send-keys Enter` 一次并复核）；编排等待优先用账本文件事件监听，附「监工连续空闲 ≥2 分钟且无新账本行」告警；沙箱型只读启动不可用时的替代（bypass 沙箱 + 提示词只读约束 + `launch_fix=`）写进 adapter 环境预检 | 结构检查两份 adapter 各命中三段原文 |
+| HC-RL-A142 | `decision_mode` 模式门与 `cancelled` 归属闸在 `add` 路径实现：`consult` 下 `decision` 后无 `user_decision` 即写 `resume` 退出 2；`auto` 下 decider 链出现 `user_decision` 退出 2；`cancelled` 进入决策类归属校验（A69），非触发 agent 名下的 `cancelled` 退出 2 | RLT_07 钉住的两条 `@unittest.skip` 负例去 skip 即绿；新增 `cancelled` 归属正反各一例 |
 
 ### 11.2 人类验收栏
 
@@ -1316,6 +1326,7 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 5. **教训候选回流**：把 §15 自查里的三条新教训提进 `knowledge/教训库-候选.md`。
 6. **改计划实例的提示词与白名单校验**：`planner-amend` 的提示词模板须含输入四件、一次改完、跑 lint 修到过；碰禁区时三类计划目标与输入方案文件均零变化，不写 `blocked` / `escalate` / `plan_amend`，只在普通 `done.note` 写结构化「超出范围」原因，由 monitor 续写 `stage_result outcome=blocked`。白名单校验须用紧邻本次动作的改前/改后快照取得精确变更集。→ HC-RL-A122
 7. **绕过 B-adjust 的决定要写进 AGENTS.md**：relay-light **有意绕过** dev-harness「改开发方案须 B-adjust 用户确认」这条，须在 AGENTS.md 的 relay-light 编排协议段注明，免得后来人当成违规。→ HC-RL-A28 / §1.3
+8. **Linux 预演回流（RLT-A-08）**：`stage_result` 按 outcome 分校验与 `ref=` 引用、环境性 NOT_RUN 出口、`launch_fix=` 记账、静默超时配置与监工模板、派活提交/等待纪律与沙箱替代预检、`decision_mode` 模式门与 `cancelled` 归属闸，须由一张标准档卡承接并在 RLT_12 正式跑前落地（RLT_12 不依赖它，但正式跑应使用其产物）。→ HC-RL-A137～A142
 
 ## 15. 查漏自查（对照 dev-harness `references/查漏清单.md`）
 
