@@ -1260,8 +1260,16 @@ def _prepare_snapshot_dir(snapshot_dir: str, repo_root: Path) -> Path:
         raise _error("HC-RL-A122", "--snapshot-dir must be an absolute path")
     if os.path.lexists(snap):
         raise _error("HC-RL-A122", "--snapshot-dir already exists")
-    if os.path.realpath(snap) != os.path.abspath(snap):
-        raise _error("HC-RL-A122", "--snapshot-dir has a symlink parent chain")
+    # Per-ancestor lstat, not a realpath/abspath string diff: on Windows an 8.3
+    # short-name component expands under realpath without being a symlink.
+    ancestor = snap
+    while True:
+        info = _lstat_or_none(ancestor)
+        if info is not None and stat.S_ISLNK(info.st_mode):
+            raise _error("HC-RL-A122", "--snapshot-dir has a symlink parent chain")
+        if ancestor.parent == ancestor:
+            break
+        ancestor = ancestor.parent
     resolved = Path(os.path.realpath(snap))
     common_raw = _git_readonly(repo_root, ("rev-parse", "--git-common-dir"))
     common = Path(os.fsdecode(common_raw.strip()))

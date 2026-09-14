@@ -51,6 +51,12 @@
 | E-X1-03 | X1 | `python3 -m unittest tools/relay-light/test_relay_log.py` | exit 0，`Ran 163 tests`，`OK (skipped=2)` | Python 全量回归绿（162→163，新增 1 条 X1 用例） |
 | E-X1-04 | X1 | `pwsh -NoProfile -File tools/tests/run-relay-tests.ps1` | exit 0，末行 `RELAY ALL PASS (SKIPPED: 1)` | PowerShell 全量绿 |
 | E-X1-05 | X1 | `rm -rf tools/relay-light/__pycache__`；`git diff --check`；`git status --porcelain`；`git diff master --name-only` | __pycache__ 已删；`--check` 无输出；改动限 `relay_log.py`、`test_relay_log.py`、`dev_plan/P1`（RLT-A-07 授权措辞同步）、workspace 工件 | 边界与 whitespace 洁净；四集合闭集保持 |
+| E-X2-01 | X2 | PR #19 CI：windows-latest `relay-light-python`（163 中 10 败，全部同根因） | `lint: HC-RL-A122 --snapshot-dir has a symlink parent chain` 误报——`os.path.realpath(snap) != os.path.abspath(snap)` 字符串判等把 8.3 短名展开误判为 symlink | CI RED：Windows 临时目录 `RUNNER~1` 形态触发误报（本地复现见 E-X2-02） |
+| E-X2-02 | X2 | `python3 -m unittest -v …RelayPlanAmendGuardTests.test_snapshot_dir_tolerates_realpath_name_expansion`（修复前） | exit 1，`AssertionError: 0 != 2 : lint: HC-RL-A122 --snapshot-dir has a symlink parent chain`——monkeypatch `os.path.realpath` 模拟 8.3→长名展开即复现 | RED：Linux 上等效形态复现同一误报签名 |
+| E-X2-03 | X2 | `python3 -m unittest -v tools.relay-light.test_relay_log.RelayPlanAmendGuardTests` | exit 0，`Ran 13 tests ... OK` | GREEN：逐级祖先 `lstat`+`S_ISLNK` 检测后 8.3 展开放行、真 symlink 父链仍拒、既有 snapshot-dir 反例全保持 |
+| E-X2-04 | X2 | `python3 -m unittest tools/relay-light/test_relay_log.py` | exit 0，`Ran 164 tests in 225.216s`，`OK (skipped=2)` | Python 全量回归绿（163→164，新增 1 条 X2 用例） |
+| E-X2-05 | X2 | `pwsh -NoProfile -File tools/tests/run-relay-tests.ps1` | exit 0，末行 `RELAY ALL PASS (SKIPPED: 1)` | PowerShell 全量绿 |
+| E-X2-06 | X2 | `rm -rf tools/relay-light/__pycache__`；`git diff --check`；`git status --porcelain` | __pycache__ 已删；`--check` 无输出；改动仅 `relay_log.py` + `test_relay_log.py` 两份允许路径 | 边界与 whitespace 洁净 |
 
 ## 批次 Handoff
 

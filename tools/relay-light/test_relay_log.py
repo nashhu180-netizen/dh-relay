@@ -4367,6 +4367,48 @@ class RelayPlanAmendGuardTests(RelayCliTestCase):
             result = self.run_amend("before", link / "snap", (self.DEV_PLAN,))
             self.assertEqual(2, result.returncode, result.stderr)
 
+    def test_snapshot_dir_tolerates_realpath_name_expansion(self) -> None:
+        """Windows 8.3 短路径等效形态：realpath 展开后字符串变化但父链无 symlink
+        ——不得误报 'symlink parent chain'；同一补丁下真 symlink 父链仍拒。"""
+        snap = self.runtime / "x2snap"
+        real_realpath = os.path.realpath
+
+        def expands_8_3(path, *args, **kwargs):
+            resolved = real_realpath(path, *args, **kwargs)
+            if os.fspath(path) == os.fspath(snap):
+                # 模拟 8.3→长名展开：同一目录项、不同字符串。
+                return str(Path(resolved).parent.parent / "RUNNER~1" / snap.name)
+            return resolved
+
+        argv = [
+            "lint", "--plan", str(self.repo / self.PLAN_REL),
+            "--amend-check", "before", "--repo", str(self.repo),
+            "--snapshot-dir", str(snap), "--proposed-path", self.DEV_PLAN,
+            "--config-dir", str(SKILL_DIR),
+        ]
+        stderr = io.StringIO()
+        with (
+            mock.patch.object(os.path, "realpath", expands_8_3),
+            redirect_stderr(stderr),
+        ):
+            self.assertEqual(0, main(argv), stderr.getvalue())
+        self.assertTrue(snap.is_dir())
+        if os.name == "posix":
+            # 同一补丁形态下真 symlink 父链仍须整链拒绝。
+            link = self.runtime / "linked83"
+            os.symlink(self.repo, link)
+            snap2 = link / "snap"
+            argv[argv.index(str(snap))] = str(snap2)
+            stderr = io.StringIO()
+            with (
+                mock.patch.object(os.path, "realpath", expands_8_3),
+                redirect_stderr(stderr),
+            ):
+                code = main(argv)
+            self.assertEqual(2, code)
+            self.assertIn("symlink parent chain", stderr.getvalue())
+            self.assertFalse(snap2.exists())
+
 
 class SkillCoreDocTests(unittest.TestCase):
     """RLT_07 Batch 1 — HC-RL-A12/A19/A27/A66/A67/A98/A100/A117/A132 SKILL.md 核心合同。"""
