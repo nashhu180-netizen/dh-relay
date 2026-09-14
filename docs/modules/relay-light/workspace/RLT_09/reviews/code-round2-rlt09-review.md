@@ -81,3 +81,30 @@ StringIO / closed 流 / `sys.stdout=None` / 二次 reconfigure 幂等 / ascii �
 ## 结论
 
 **REQUEST_CHANGES** —— 核心实现质量高、探针覆盖的 21+41 项边界全部符合 oracle，但 P2-1 表明 HC-RL-A123 的强制路径存在一条全合法操作可静默击穿的缝隙（supersede plan_amend 载体节点），属验收口径内的行为缺口而非提示项。建议整改 `_stage_of`/stage_amends 归因（含 superseded 行）并补该形态回归用例；P3-1~P3-5 为提示性记录。本结论不代替验收、verify、人验或远端动作。
+
+## X1 复看（code-round2 P2-1 整改定向复看）
+
+- **复核者**：`rlt09-review`（Devin 会话 / swe-2-max）；范围：仅核本路 P2-1 是否真正闭合；候选 `258a9be`（HEAD 另含 exec 信号 `334f8fb` 与 audit `check.X1` 未提交工件）。
+- **整改形态**：`_validate_stage_event` 内 `stage_amends` 判定的节点归因从活跃表（`nodes_by_name`）改为全计划表 `all_nodes`（含 superseded 行；superseded 行保留 `stage_id`，节点名经 A46 全表唯一）。`_stage_of` 本体与其余消费方（status 投影、`_ledger_warnings`、`_validate_writer_handoff`、loss_stop）口径未动——最小爆炸半径修法，findings X1 注记如实记录了该 scoping。
+
+### 复看证据（复核者自跑）
+
+| 项 | 命令/方式 | 结果 |
+|---|---|---|
+| 原缝隙复现 | `python3 /tmp/r2_supersede_carrier.py`（同 code-round2 探针原样重跑） | `stage_result`（无 `amend=`）现被拒：rc=2 `error: HC-RL-A123 … must carry amend=<proposal> after plan_amend` |
+| 新用例 GREEN | `python3 -m unittest …test_a123_binds_plan_amend_whose_carrier_was_superseded` | exit 0，OK |
+| 新用例 RED 可信性 | 仓外隔离目录 `/tmp/r2_red/`：`git show 5fc8abf:…relay_log.py`（修复前实现）+ 候选新用例 | exit 1，`FAILED (failures=1)`：`AssertionError: 2 != 0`——用例确实咬合被修行 |
+| 账本矩阵回归 | `/tmp/r2_ledger_probe.py` 41 步三态/窗口/写者矩阵原样重跑 | 41/41 OK，零 MISMATCH——归因加宽未漂 A119/A123/A93 既有判定 |
+| 五条 HC + F-003 | 五条 unittest 定向命令 | 全部 exit 0 |
+| 全量 Python | `python3 -m unittest tools/relay-light/test_relay_log.py` | exit 0，163 tests OK (skipped=2)，162→163 与新用例对应 |
+| 全量 pwsh | `pwsh -NoProfile -File tools/tests/run-relay-tests.ps1` | exit 0，`RELAY ALL PASS (SKIPPED: 1)`（内嵌 Python 163 绿 + install 7 绿） |
+
+### 归因面残留核对
+
+- 误绑风险零：全表归因下 plan_amend 行仍按其载体 `stage_id` 归实例，A46 全表唯一排除名碰撞；载体写入时已过 A93 窗口校验，属该实例真实历史。跨实例隔离保持（本探针 S3/S4 腿原样通过）。
+- 未动面的残余口径（status 投影/`_ledger_warnings` 对 superseded 节点上的历史行仍按活跃表跳过）属投影/告警呈现面，非 A123 强制面；写入闸已封住矛盾账本态的生成，findings 注记如实记录，不追加要求。
+- 允许路径：`relay_log.py`+`test_relay_log.py`+`dev_plan`（RLT-A-07 授权措辞同步，两处）+workspace 工件；`git diff 258a9be^..258a9be` 文件集与 audit `check.X1` 记录一致。
+
+### 复看结论
+
+**APPROVE** —— P2-1 真实闭合：原缝隙以同一探针复现为拒绝、新用例 RED→GREEN 独立复跑可信、41 步账本矩阵与双全量回归零漂移。本结论只覆盖 code-round2 P2-1；consistency/lesson 两路的 X1 整改项归各自复核者收口。不代替验收、verify、人验或远端动作。

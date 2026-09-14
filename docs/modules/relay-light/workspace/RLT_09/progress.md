@@ -92,3 +92,5 @@ DONE task=RLT_09 role=review batch=R status=APPROVE evidence=reviews/requirement
 DONE task=RLT_09 role=review batch=R status=APPROVE_WITH_NITS evidence=reviews/lesson-rlt09-review.md next=orchestrator
 DONE task=RLT_09 role=review batch=R status=REQUEST_CHANGES evidence=reviews/code-round2-rlt09-review.md next=orchestrator
 DONE task=RLT_09 role=exec batch=X1 status=READY_FOR_REVIEW evidence=E-X1-01,E-X1-02,E-X1-03,E-X1-04,E-X1-05,commit=258a9be next=orchestrator
+DONE task=RLT_09 role=audit batch=X1 status=PASS evidence=check.X1.md next=orchestrator
+DONE task=RLT_09 role=review batch=X1 status=APPROVE evidence=reviews/code-round2-rlt09-review.md next=orchestrator
