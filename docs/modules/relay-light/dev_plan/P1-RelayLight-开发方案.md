@@ -44,7 +44,7 @@
 - **RLT-B-04 调整**：2026-09-10 用户明文「你来写入」；fresh Opus 三轮复核最终 `APPROVE`（P0=0、P1=0），把 parser/lint、完整 status、五阶段模板的验收 owner 分别对齐 RLT_03/RLT_05/RLT_07，活动总账 121→122；证据见 [`design/evidence/05-交叉审核记录-RLT03与RLT05验收边界.md`](../design/evidence/05-交叉审核记录-RLT03与RLT05验收边界.md)。
 - **RLT-B-05 调整**：RLT_03 收口阶段补齐 fresh A/B 事件证据，未改变任务合同；证据见 [`design/evidence/06-交叉审核记录-RLT03阶段合同补充.md`](../design/evidence/06-交叉审核记录-RLT03阶段合同补充.md)。
 - **RLT-B-06 调整**：2026-09-11 基于已晋级 RLT-A-06 的正式输入完成 fresh Opus 复核、v5 窄核 `APPROVE`、讲解与理解校验；用户明确回答“后者，继续”，确认 B06 落盘并另行授权 D-start。RLT_05/RLT_07 验收 owner、配置目录合同及 RLT_12/13/17 证据语义已原子同步；活动总账 122→126。证据见 [`design/evidence/07-交叉审核记录-RLT05合同缺口候选.md`](../design/evidence/07-交叉审核记录-RLT05合同缺口候选.md#understanding-rlt-b06)。
-- **RLT-B-07 调整**：2026-09-14 RLT_12 Linux 非正式预演（DRILL_01，分支 `dryrun/rlt12-linux`）暴露六条协议/实现缺口（DR-F-001～006）；升级 RLT-A-08 续发 A137～A143（活动总账 126→133），新增标准档卡 RLT_21 承接并并入 RLT_07 挂账的 F-002/F-003；卡数 17→18；fresh 审核 REVISE P1=5/P2=2 全部采纳后，用户 2026-09-14 裁决：RLT_21 不作 RLT_12 硬依赖、light plan-review 取分级 C，并确认 push + PR 落盘；证据见 [`design/evidence/09-交叉审核记录-RLT-A08-Linux预演回流.md`](../design/evidence/09-交叉审核记录-RLT-A08-Linux预演回流.md)。
+- **RLT-B-07 调整**：2026-09-14 RLT_12 Linux 非正式预演（DRILL_01，分支 `dryrun/rlt12-linux`）暴露六条协议/实现缺口（DR-F-001～006）；升级 RLT-A-08 续发 A137～A143（活动总账 126→133），新增标准档卡 RLT_21 承接并并入 RLT_07 挂账的 F-002/F-003；卡数 17→18；fresh 审核 REVISE P1=5/P2=2 全部采纳后，用户 2026-09-14 裁决：RLT_21 不作 RLT_12 硬依赖、light plan-review 取分级 C，并确认 push + PR 落盘；PR #20 squash 合入（`b078095`）；证据见 [`design/evidence/09-交叉审核记录-RLT-A08-Linux预演回流.md`](../design/evidence/09-交叉审核记录-RLT-A08-Linux预演回流.md)。
 
 ## 1. 概述
 
