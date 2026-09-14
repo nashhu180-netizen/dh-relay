@@ -20,3 +20,10 @@
 |---|---|---|---|---|
 
 ## 信号
+
+DONE task=RLT_09 role=builder batch=W status=W_READY evidence=brief.md,task_plan.md,execution_strategy.md,progress.md,findings.md,lesson_candidates.md,review.md,commit=aaa2700 next=orchestrator
+DONE task=RLT_09 role=audit batch=W status=FAIL evidence=review.plan.md next=orchestrator
+DONE task=RLT_09 role=builder batch=W2 status=W_READY evidence=commit=ce14890 next=orchestrator
+
+DONE task=RLT_09 role=decide batch=1 status=CONSULT evidence=decision.1.md next=orchestrator
+DECISION task=RLT_09 decision=decision.1 choice=F-001:B,P1-03:A,A-adjust:authorized by=user(2026-09-13,orchestrator-session) evidence=design/evidence/08,RLT-A-07 next=builder-W3

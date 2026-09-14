@@ -15,7 +15,7 @@
 
 ## 目标 (Outcome)
 
-完成运行中追加改计划的程序、测试和仓内 skill 合同：`plan_amend` 由 monitor 合法重复写且不进入 agent 状态机；A120 只放宽同 stage 合法表尾追加，并守住四项硬约束；`status` 每次重读计划并按计划顺序派生阶段；`stage_result` 对本阶段有无改计划执行对称摘要校验；planner-amend 通过现有 `lint` 的子模式执行改前路径预检和改后精确 diff 复核，命中 design 禁区时整份不落笔；同时在 `relay_log.py` 入口为 stdout/stderr 建立 UTF-8 防护，消除 Windows cp1252 中文输出崩溃。
+完成运行中追加改计划的程序、测试和仓内 skill 合同：`plan_amend` 由 monitor 合法重复写且不进入 agent 状态机；A120 只放宽同 stage 合法表尾追加，并守住四项硬约束；`status` 每次重读同一份合法计划并按计划顺序派生阶段；`stage_result` 对本阶段有无改计划执行对称摘要校验；planner-amend 通过现有 `lint` 的子模式执行改前路径预检和改后精确 diff 复核，命中 design 禁区时整份不落笔，全部计划目标与输入方案文件零变化，失败原因只进入 planner-amend 普通 `done.note`，由 monitor 写 blocked `stage_result`；同时在 `relay_log.py` 入口为 stdout/stderr 建立 UTF-8 防护，消除 Windows cp1252 中文输出崩溃。
 
 ## Zero-context 自查
 
@@ -57,26 +57,26 @@ python3 -m unittest -v tools.relay-light.test_relay_log.RelayPlanLintTests.test_
 
 ### HC-RL-A121
 
-> 编排开阶段前重读计划：**不修改 `relay_log.py` 代码、仅向计划文件追加新阶段的节点行后再次调用 `status`**，输出的 `stages` 含该新阶段且顺序正确；下一阶段由计划推导而非固定 `W→C→R→F`
+> 编排开阶段前重读计划：两次调用之间**不修改 `relay_log.py` 代码、不改账本，只修改同一份计划文件，追加新阶段节点行及保持计划合法所必需的对应 agent 行**；再次调用 `status` 后，输出的 `stages` 含该新阶段且顺序正确，下一阶段由计划推导而非固定 `W→C→R→F`
 
 ```bash
 python3 -m unittest -v tools.relay-light.test_relay_log.RelayStatusProjectionTests.test_status_rereads_appended_stage_in_plan_order
 ```
 
-判据：同一 plan 目录第一次 status 后只追加合法 X 阶段节点/agent 行，第二次 status 的 `stages` 恰多该实例且顺序等于节点表首次出现顺序；fixture 使用非 WCRF 顺序，证明没有固定阶段序列缓存。
+判据：同一 plan 目录第一次 status 后，只修改该 `relay_plan.md`，追加合法 X 阶段节点行及通过 A75 所必需的对应 agent 行；不改 `relay_log.py` 或其它代码、不改 `relay_log.jsonl`。第二次 status 的 `stages` 恰多该实例且顺序等于节点表首次出现顺序；fixture 使用非 WCRF 顺序，证明没有固定阶段序列缓存。
 
 ### HC-RL-A122
 
-> 改计划白名单（按路径）：改计划实例只允许改 `docs/modules/<模块>/relay/<plan_id>/relay_plan.md`（含其 marker 的 `cards=`）、`docs/modules/<模块>/dev_plan/P<N>-*.md`、以及 `docs/modules/<模块>/workspace/<卡号>/task_plan.md` 且 **`<卡号>` 必须是改动前 marker `cards` 里已存在的卡**；新增卡的 `task_plan.md` 由该卡 W 阶段 builder 建，改计划实例写它即判失败。**`docs/modules/<模块>/design/` 整个目录是禁区**，被改动即验收失败（验收 ID 不得新增或改动）。禁区命中时**整份改动不落笔**，不做部分执行
+> 改计划白名单（按路径）保持**三类闭集**：改计划实例只允许改 `docs/modules/<模块>/relay/<plan_id>/relay_plan.md`（含其 marker 的 `cards=`）、`docs/modules/<模块>/dev_plan/P<N>-*.md`、以及 `docs/modules/<模块>/workspace/<卡号>/task_plan.md` 且 **`<卡号>` 必须是改动前 marker `cards` 里已存在的卡**；新增卡的 `task_plan.md` 由该卡 W 阶段 builder 建，改计划实例写它即判失败。**`docs/modules/<模块>/design/` 整个目录是禁区**。禁区命中时整份拒绝，全部计划目标文件与输入方案文件均保持零变化，不做部分执行；planner-amend 不写 `blocked` / `escalate` / `plan_amend`，以普通 `done.note` 写 `outcome=out-of-scope proposal=<方案文件名> reason=<原因>`，再由 monitor 写 `stage_result outcome=blocked`
 
 ```bash
 python3 -m unittest -v tools.relay-light.test_relay_log.RelayPlanAmendGuardTests
 python3 -m unittest -v tools.relay-light.test_relay_log.SkillCoreDocTests.test_planner_amend_template_contract
 ```
 
-判据：现有 `lint` 顶层子命令下的 planner-amend 校验模式以改动前 marker cards 为基准，三类路径分别通过；新卡 task_plan、任意 design 路径和混合允许/禁止集合全部 exit 2 且 A122。design 反例必须在预检阶段失败，随后 `git diff --name-only` 证明白名单文件也零改动；成功写入后再次以 `git diff --name-only` 精确复核实际集合。skill 模板含输入四件、一次改完、最多 lint 三次、禁区写「超出范围」、改前/改后两道校验。`main` 的顶层命令集合仍恰为 `add/status/lint`，不与 A135 冲突。
+判据：现有 `lint` 顶层子命令下的 planner-amend 校验模式以改动前 marker cards 为基准，三类路径分别通过；新卡 task_plan、任意 design 路径和混合允许/禁止集合全部 exit 2 且 A122。design 混合反例必须在预检阶段失败，actual 为空，全部计划目标与输入方案文件的 blob/bytes 均零变化。planner-amend 只走 `agent_launch → done`，其 `done.note` 精确含 `outcome=out-of-scope proposal=<方案文件名> reason=<原因>`；不出现它的 `blocked` / `escalate` / `plan_amend`，随后 monitor 写 `stage_result outcome=blocked`。成功写入后按 W2 快照算法证明 `actual == proposed`。skill 模板含输入四件、一次改完、最多 lint 三次、拒绝分支零文件变化和上述完成记录。`main` 的顶层命令集合仍恰为 `add/status/lint`，不与 A135 冲突。
 
-W2 冻结 P1-02 的归因算法：不要求 planner-amend 入场时全仓无 dirty，而要求单写者静默、HEAD 与真实 index 在守门窗口内不变；用两个全新的临时 `GIT_INDEX_FILE` 分别从同一 HEAD `read-tree`，再以 `git add -A -- .` 把当时 tracked 工作树状态和 untracked 非忽略文件写成 before/after tree。actual 集合固定取 `git diff --name-only -z --no-renames <before_tree> <after_tree>`，按 NUL 解码、转 repo-relative POSIX 路径、去重排序。这样改前已有 dirty 会进入 before tree，同一路径二次修改仍因 before/after blob 不同被报告；新建/修改/删除 untracked 非忽略文件同样进入 actual，ignored 文件与空目录不属于合同观察面，真实 index 的 tree id 改变则 fail closed。成功例必须 `actual == proposed`，不是子集；禁区混合 proposed 在任何业务文件写入前整体拒绝，并以 `actual == ∅` 及每个目标文件 before/after blob 相等双证证明零变化。完整步骤与测试矩阵见 `task_plan.md` B4。
+W2 冻结 P1-02 的归因算法：不要求 planner-amend 入场时全仓无 dirty，而要求单写者静默、HEAD 与真实 index 在守门窗口内不变；用两个全新的临时 `GIT_INDEX_FILE` 分别从同一 HEAD `read-tree`，再以 `git add -A -- .` 把当时 tracked 工作树状态和 untracked 非忽略文件写成 before/after tree。actual 集合固定取 `git diff --name-only -z --no-renames <before_tree> <after_tree>`，按 NUL 解码、转 repo-relative POSIX 路径、去重排序。这样改前已有 dirty 会进入 before tree，同一路径二次修改仍因 before/after blob 不同被报告；新建/修改/删除 untracked 非忽略文件同样进入 actual，ignored 文件与空目录不属于合同观察面，真实 index 的 tree id 改变则 fail closed。成功例必须 `actual == proposed`，不是子集；禁区混合 proposed 在任何业务文件写入前整体拒绝，并以 `actual == ∅` 及每个目标文件 before/after blob 相等双证证明零变化。已动笔后 lint/after 守门最终失败时，只按 before tree 恢复本次 `actual ∪ proposed` 路径到精确改前 bytes/mode/存在性，再复采证明 actual 为空；不得用 HEAD 覆盖改前已有 dirty。完整步骤与测试矩阵见 `task_plan.md` B4。
 
 ### HC-RL-A123
 

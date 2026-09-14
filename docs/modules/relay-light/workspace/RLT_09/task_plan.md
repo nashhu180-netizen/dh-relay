@@ -11,11 +11,11 @@
 4. 每批完成后 coder 在终端打印四行小结（做了什么 / 证据 / 偏离与 findings / 下一步）；scribe 只据事实追加 `progress.md`。coder 可追加 `findings.md` / `lesson_candidates.md`，不得让 scribe 代写。
 5. 每批 commit scope 为英文 `relay-light`；commit 后发 `DONE ... READY_FOR_REVIEW`，audit 未 PASS 不开始下一批。B5 PASS 后由 orchestrator 重派 exec 才能发 `CONSTRUCTION_DONE`。
 
-## W audit 待裁决项
+## W audit 裁决闭合
 
-- **P1-01：待 `decision.1` 裁决后重写。** 当前 B4 关于三类白名单与方案文件写「超出范围」的合同取向不变；builder W2 不选边、不删任一要求。裁决同步权威 oracle 后，必须重写 B4 对应的程序、skill 模板、正反例与 actual 集合判据，再交 plan-review。
-- **P1-03：待 `decision.1` 裁决后重写。** 当前 B3 的 A121 措辞及“节点表和 agent 表追加”fixture 不变；builder W2 不解释“节点行”范围。裁决同步权威 oracle 后，必须重写 B3 场景动作与验证判据，再交 plan-review。
-- **本次 W2 只闭合 P1-02。** 下述 B4 快照算法独立于 P1-01 的白名单取向；P1-01/P1-03 未裁决前整份 W 计划仍不具备 PASS 条件。
+- **P1-01：CLOSED by `decision.1` ①B + RLT-A-07。** B4 保留三类闭集；禁区拒绝时全部计划目标与输入方案文件零变化，失败原因进入 planner-amend 普通 `done.note`，monitor 写 blocked `stage_result`；删除回写方案文件要求。
+- **P1-02：CLOSED by W2。** B4 保留下述临时 Git index/tree 的 before/after 快照与 `actual == proposed` 算法，覆盖 tracked、untracked 和改前 dirty 同路径二次修改。
+- **P1-03：CLOSED by `decision.1` ②A + RLT-A-07。** B3 明确两次 status 之间只修改同一 `relay_plan.md`，追加新阶段节点行及保持计划合法所必需的对应 agent 行；不改代码、不改账本。
 
 ## B1 — A119 + A123 账本合同
 
@@ -96,7 +96,7 @@ python3 -m unittest -v \
 ### 改动点
 
 - `tools/relay-light/test_relay_log.py` 新增 `RelayStatusProjectionTests.test_status_rereads_appended_stage_in_plan_order`。
-- fixture 必须在同一个 plan 目录第一次调用 `status --json`，随后只对 `relay_plan.md` 节点表和 agent 表追加一个合法 X 阶段实例，再次调用 status；计划采用非 WCRF 顺序并维护合法依赖。
+- fixture 必须在同一个 plan 目录第一次调用 `status --json`，冻结 `relay_log.py` 与 `relay_log.jsonl` 的 bytes/hash；随后只修改同一 `relay_plan.md`，追加一个新 X 阶段的节点行及通过 A75、A24 所必需的对应 agent 行，再次调用 status。计划采用非 WCRF 顺序并维护合法依赖。
 - 若测试暴露实现缓存，才最小修改 `relay_log.py` 的 `_status_command`/计划读取路径；不得为“证明不改代码”制造无意义实现 diff。A121 的“仅向计划追加”描述的是两次 status 之间的场景动作。
 
 ### RED → GREEN
@@ -106,11 +106,11 @@ python3 -m unittest -v tools.relay-light.test_relay_log.RelayStatusProjectionTes
 ```
 
 - RED：先临时让断言期待一个未追加阶段，确认测试咬住 `stages` 精确顺序（变异只在工作树、随即撤回，不提交）；若现状已满足 A121，允许“行为已绿 + 断言变异红”，不得伪称实现前行为失败。
-- GREEN：两次 status 均 exit 0；第二次恰多 X 实例，节点与 stage 顺序随 plan，且第一次 payload 不被回写改变。
+- GREEN：两次 status 均 exit 0；第二次恰多 X 实例，节点与 stage 顺序随 plan，且第一次 payload 不被回写改变；两次之间 `relay_log.py` 与 `relay_log.jsonl` bytes/hash 不变，除同一 `relay_plan.md` 外 repo/fixture 无其它文件变化；A75 空节点反例仍拒绝。
 
 ### audit 小审输入
 
-- fixture 追加前后 diff、两次 payload 摘要、断言变异 RED 与最终 GREEN。
+- fixture 的计划文件追加前后 diff（仅节点行 + 必要 agent 行）、两次 payload 摘要、代码/账本哈希不变、A75 回归、断言变异 RED 与最终 GREEN。
 - 说明 `relay_log.py` 是否零改及理由；B3 commit、边界四集合。
 
 ## B4 — A122 白名单守门 + planner-amend 模板
@@ -126,12 +126,7 @@ relay_log.py lint --plan <plan_dir> --amend-check after  --repo <repo> --snapsho
 
 `before` 完成 proposed 全量预检、双采样稳定检查并把 repo root、HEAD、真实 index tree、before tree、before marker cards 与规范化 proposed 写入 repo 外新文件（存在即拒绝覆盖）；成功后才准动笔。`after` 读取同一快照、复核身份/HEAD/index，构造 after tree 并比较 actual。上述 flag 名、阶段值和快照字段是 P1-02 冻结接口，不再留给 exec 改名；临时文件不得进入 Git，普通 lint 合同不变。
 
-**F-001 前置闸**：design §4.5.2 同时要求“可碰文件只有三类 / 禁区命中整份不落笔”和“碰禁区时在方案文件写『超出范围』”；方案文件通常是 `workspace/<卡>/decision.<n>.md` 或 strategist 文件，不在三类白名单内，若用全仓 `git diff --name-only` 会出现第四类路径。exec 在 B4 动代码前必须发 `BLOCKED` 交 decider/orchestrator 裁决，二选一后才能继续：
-
-- **方案 A（扩白名单）**：经用户/design 修订，把“当前输入方案文件仅可追加超出范围结果”列为第四类控制记录，再让 actual diff 校验显式接纳它；不授权其他 workspace 文件。
-- **方案 B（保持三类闭集）**：经用户/design 修订，planner-amend 不写方案文件，只打印结构化“超出范围”，由 monitor 写 `stage_result outcome=blocked`；actual diff 继续严格只认三类。
-
-builder 不选边；未裁决时 B1～B3 可依序完成，B4 停在前置闸，B5 是否先行由 orchestrator 明确重排，exec 不自行越批。
+**decision.1 ①B 已生效**：三类闭集不增加第四类。禁区或其它 proposed 非法时，`before` 预检在任何目标写入前整份拒绝；全部计划目标文件和输入方案文件均保持零变化。planner-amend 不写 `blocked` / `escalate` / `plan_amend`，只完成普通 `agent_launch → done`，`done.note` 固定为 `outcome=out-of-scope proposal=<方案文件名> reason=<原因>`；当班 monitor 随后写 `stage_result outcome=blocked`。不得回写 decision/strategist 方案文件，不得把账本文件加入或偷滤出计划 actual 集合。
 
 ### P1-02 冻结：改前快照、洁净前提与改后取集
 
@@ -161,7 +156,7 @@ git -C <repo_root> write-tree
 #### 3. proposed 与 actual 的精确算法
 
 1. 从方案抽取完整 proposed 列表，先转成 repo-relative POSIX 路径；拒绝绝对路径、空路径、`.`/`..` 穿越、NUL、repo 外路径、重复项和 Git ignored 路径。
-2. 以 **before tree 内的 relay_plan marker cards** 做授权判断；不得读改后的 marker 给新卡 task_plan 反向授权。P1-01 裁决前仍按现有两案停在前置闸，不改变白名单取向。
+2. 以 **before tree 内的 relay_plan marker cards** 做授权判断；不得读改后的 marker 给新卡 task_plan 反向授权。输入方案文件只读，用于 `done.note proposal=` 关联，不属于 proposed 或成功白名单。
 3. 全量 proposed 预检必须在任何目标文件写入前完成；任一非法则整组拒绝，不调用写入动作。
 4. 预检通过后才一次修改；构造 `after_tree`，并取：
 
@@ -171,6 +166,7 @@ git -C <repo_root> write-tree
 
    输出按 NUL 分隔解码、统一为 repo-relative POSIX 路径、去重排序，得到 `actual`。`--no-renames` 固定 rename 为 delete+add 两个路径，避免相似度启发式改变集合。
 5. 成功的唯一集合判据是 `actual == proposed`：actual 多路径表示越界，少路径表示 proposed 中有未真正变化/no-op 的目标；两者都 A122 fail closed。随后再核 HEAD/真实 index 未变，最后运行普通 plan lint。
+6. after 守门、普通 lint 或第 3 次修复最终失败时，恢复集合固定为 `actual ∪ proposed`：before tree 有该路径就按 tree entry 恢复 blob、mode 与 symlink 形态，before tree 无该路径就删除本次新建项；恢复只针对这次集合，不用 `checkout HEAD`，因此不会抹掉改前已有 dirty。恢复后以同一算法重建 tree，必须证明相对 before 的 actual 为空；恢复失败即 fail closed 并报告人工接管，不得写成功 `plan_amend`。
 
 临时 tree/blob 只作为 Git 对象证据，不改真实 index；测试与证据要登记 before/after tree id、proposed/actual 的 JSON 或 NUL 安全转写，不登记文件正文或凭据。
 
@@ -182,18 +178,21 @@ git -C <repo_root> write-tree
 - **untracked 三态**：改前已有 untracked 非忽略文件后再改、运行中新建、运行中删除分别进入 actual；ignored proposed 在预检拒绝。
 - **成功精确相等**：proposed 含两个允许路径且两者都产生净变化，断言排序后 `actual == proposed`；再加一个 proposed no-op，断言因 actual 少项而拒绝。
 - **越界多项**：proposed 只含允许 A，但写入同时碰 B，断言 actual 多出 B 并拒绝。
-- **禁区混合零变化**：proposed 同时含允许目标 A 与 design 禁区 D，预检即拒绝，不调用写入 callback；重新采 after tree，断言 `actual == ∅`，并逐个断言 A、D 的 before/after tree blob 与工作树 bytes 均相等。
+- **禁区混合零变化**：proposed 同时含允许目标 A 与 design 禁区 D，预检即拒绝，不调用写入 callback；重新采 after tree，断言 `actual == ∅`，并逐个断言 A、D 与输入方案 P 的 before/after tree blob 及工作树 bytes 均相等。
+- **失败恢复不抹旧 dirty**：允许 A 改前已 dirty 为 v1，planner 改 A→v2 并新建 B，after/lint 判失败；按 before tree 恢复后 A 回到 v1 而非 HEAD，B 恢复为不存在，复采 actual 为空，输入方案仍原 bytes。
+- **失败账本链**：planner-amend 只接受普通 `agent_launch → done`，done.note 的 `outcome/proposal/reason` 三 token 齐全；其名下 `blocked` / `escalate` 被拒，失败分支无 `plan_amend`，monitor 的 `stage_result` 写 `outcome=blocked` 并关联 proposal。账本验证与计划 actual 集合分开，不能把 `relay_log.jsonl` 当白名单目标。
 - **静默/真实 index 破坏**：before 双采样不一致、HEAD 改变或真实 index tree id 改变各一例 fail closed，不把污染后的集合报成成功。
 
 ### 改动点
 
 - `relay_log.py`：
   - 按上节临时 Git index/tree 算法实现 before/after 快照；解析 **before tree** 中 `relay_plan.md` marker 的 module/cards；路径全规范化为 repo-relative POSIX 格式，拒绝绝对路径、`..`、repo 外路径。
-  - 白名单仅三类：该 plan 的 `relay_plan.md`；同模块 `dev_plan/P<N>-*.md`；改动前 cards 中现有卡的 `workspace/<card>/task_plan.md`。
+  - 白名单仅三类：该 plan 的 `relay_plan.md`；同模块 `dev_plan/P<N>-*.md`；改动前 cards 中现有卡的 `workspace/<card>/task_plan.md`。输入方案文件始终只读。
   - `docs/modules/<module>/design/` 前缀和其他路径一律 A122；新加到 marker 的 card 不得反向授权其 task_plan。
-  - 预检集合任一非法则整体失败，调用方未写任何文件；改后固定用 `git diff --name-only -z --no-renames <before_tree> <after_tree>` 取得 actual，并要求 `actual == proposed`。普通 `lint --plan` 不启用 git 检查。
-- `test_relay_log.py`：新增 `RelayPlanAmendGuardTests`，覆盖三类逐项/组合正例、旧 card/new card、design、混合集合全有全无、repo 外路径、普通 lint、顶层三命令，以及本节 tracked/untracked/dirty/静默/集合相等完整矩阵。
-- `tools/relay-light/skill/SKILL.md`：补 `planner-amend` 专节/提示词模板，输入恰含方案文件、当前 relay_plan、开发方案、涉及的已有卡 task_plan；先从方案列出完整 proposed paths 并跑预检，命中禁区只向方案文件追加「超出范围」说明后停止；通过才一次改完，改后跑精确 diff 守门与普通 lint，失败最多修三次，第 3 次仍失败按超出范围收尾。明确不 blocked/escalate、不建新卡七件套、agent_launch→done。
+  - 预检集合任一非法则整体失败，调用方未写任何文件；改后固定用 `git diff --name-only -z --no-renames <before_tree> <after_tree>` 取得 actual，并要求 `actual == proposed`。after/lint 最终失败时按 before tree 恢复 `actual ∪ proposed` 的 bytes/mode/存在性并复证 actual 为空；普通 `lint --plan` 不启用 git 检查。
+  - 为 planner-amend 冻结 out-of-scope 生命周期：其 `blocked` / `escalate` 拒绝；普通 `done.note` 要求 `outcome=out-of-scope proposal=<方案文件名> reason=<非空原因>`。不生成 `plan_amend`；monitor 负责 stage_result blocked。
+- `test_relay_log.py`：新增 `RelayPlanAmendGuardTests`，覆盖三类逐项/组合正例、旧 card/new card、design、混合集合全有全无、输入方案零变化、repo 外路径、普通 lint、顶层三命令，以及本节 tracked/untracked/dirty/静默/集合相等完整矩阵；另加生命周期用例锁 planner-amend done.note 与禁写事件、monitor blocked 交接。
+- `tools/relay-light/skill/SKILL.md`：补 `planner-amend` 专节/提示词模板，输入恰含方案文件、当前 relay_plan、开发方案、涉及的已有卡 task_plan；先从方案列出完整 proposed paths 并跑预检，命中禁区时任何文件都不改，只以普通 `done.note` 写结构化 out-of-scope 原因后停止，由 monitor 写 blocked stage_result；通过才一次改完，改后跑精确 diff 守门与普通 lint，失败最多修三次，第 3 次仍按同一零文件变化/完成记录路径收尾。明确不写 blocked/escalate、不建新卡七件套。
 - 两份 adapter 若只需链接到核心模板则不复制模板；若当前派活入口必须增加引用，两份保持同构并加结构测试。
 
 ### RED → GREEN
@@ -204,13 +203,13 @@ python3 -m unittest -v tools.relay-light.test_relay_log.SkillCoreDocTests.test_p
 python3 -m unittest -v tools.relay-light.test_relay_log.RelayConfigTests.test_each_subcommand_help_exposes_config_dir
 ```
 
-- RED：F-001 已裁决并同步权威合同后，校验模式/模板当前缺失；有效 RED 是预期 API/文本合同未实现，不接受 argparse 方法名写错或 fixture 仓库未初始化。
-- GREEN：P1-02 矩阵全部通过；成功例 `actual == proposed`；改前 dirty 同路径二次修改仍进入 actual；tracked/untracked 处理符合冻结算法；新卡 task_plan/design/混合集合 A122；design 混合反例 `actual == ∅` 且目标 blob/bytes 零变化；普通 lint 不回归；顶层命令仍三个。P1-01 的最终白名单集合按 `decision.1` 重写后执行。
+- RED：校验模式、planner-amend 禁写事件/done.note 与模板当前缺失；有效 RED 是预期行为断言失败，不接受 argparse 方法名写错、fixture 仓库未初始化或违反既有 A112 前置造成的噪声。
+- GREEN：P1-02 矩阵全部通过；成功例 `actual == proposed`；改前 dirty 同路径二次修改仍进入 actual；tracked/untracked 处理符合冻结算法；新卡 task_plan/design/混合集合 A122；design 混合反例 `actual == ∅` 且所有目标及输入方案 blob/bytes 零变化；planner-amend 只有结构化 done、禁写 blocked/escalate/plan_amend，monitor blocked 交接成立；普通 lint 不回归；顶层命令仍三个。
 
 ### audit 小审输入
 
 - CLI/help 与 helper 契约、HEAD/真实 index/before 双采样稳定证明、before cards 快照、before/after tree id、所有正反例的 path set/exit/rule。
-- tracked/untracked/改前 dirty 同路径二次修改矩阵；design 混合反例的 `actual == ∅` 与目标 blob/bytes 零变化；成功例的 proposed/actual 精确相等证明。
+- tracked/untracked/改前 dirty 同路径二次修改矩阵；design 混合反例的 `actual == ∅` 与计划目标 + 输入方案 blob/bytes 零变化；planner-amend done.note/禁写事件/monitor blocked 账本证据；成功例的 proposed/actual 精确相等证明。
 - SKILL 模板逐项映射；两 adapter 是否改动及同构证据；B4 commit、边界四集合。
 
 ## B5 — F-003 UTF-8 输出防护

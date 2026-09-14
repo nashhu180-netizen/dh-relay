@@ -2,7 +2,7 @@
 # decision.1 — RLT_09 W 阶段 oracle 冲突
 
 - 决策者：`rlt09-decide`；日期：2026-09-13；Issue：#18；分支：`wt/RLT_09`；审核候选：`aaa2700`。
-- 总分类：`kind=consult`，等待用户逐项裁决；本文是选项建议，不是生效合同、W PASS 或施工授权。
+- 总分类：`kind=consult`，`status=APPROVED`；用户于 2026-09-13 在编排会话选择 **①B / ②A / ③最小 A-adjust**。选项正文保留为形成史；生效合同以 RLT-A-07 同步后的 design/01 与 DevPlan §RLT_09 为准。本批准不是 W PASS、D-start、施工验收或远端动作授权。
 - 依据：`dispatch/README.md`、`dispatch/decide.md`、`review.plan.md`、`findings.md`、`progress.md`，design/01 §3.5、§4.5、§9.4、§11、§14 第 6 项，DevPlan §RLT_09；实现仅做静态核对，未运行行为测试。
 - 共通边界：本棒只写决策文件与 progress 完成信号，不改代码、task_plan、design/dev_plan。正式验收 ID 不新增、不删除、不重编号、不改标识；对既有 ID 的描述/测试措辞作澄清同样属于 oracle 调整，不能以“ID 没变”推定已有授权。设计与验收不属于运行中绕过 B-adjust 的例外。下文 design A-adjust 指由编排在接力外按 design §4.5.3 的 A-full／A′ 路径取得确认并同步权威工件，必要时同步 DevPlan；本棒不自行加载或执行该流程。
 
@@ -16,9 +16,9 @@
 | B：保留三类闭集，失败原因走完成记录（推荐） | 删除 planner-amend 写方案文件的要求。命中禁区时全部计划目标文件及输入方案文件均零变化；由 planner-amend 的普通 `done.note` 承载「超出范围」及原因，终端可同步显示；monitor 按既有职责记录 `stage_result outcome=blocked`，编排转交用户。planner-amend 不写 blocked/escalate，也不伪造成功 plan_amend。 | 必须 design A-adjust，同步上述各处失败记录措辞，并在 A122 明确改前/改后取集覆盖 planner-amend 的计划文件改动，正常账本事件由既有账本合同单独取证，不能悄悄从全仓 diff 排除。保留 A122 ID、三类路径与整份拒绝；代价是失败原因不再内嵌原方案，须以方案文件名关联 durable done/stage_result 证据。 |
 | C：暂不改正式 oracle，取得精确单次豁免 | 用户明确选择 A 或 B 的替代行为，逐条指定本卡暂不满足的原文、适用分支、证据与后续补齐责任；或不豁免而保持 BLOCKED。 | 必须用户对话明确豁免，不能推定为仓库 GitHub-flow 豁免。若暂不走 design A-adjust，原合同冲突仍在，证据只能标“按豁免执行”，不能报原版 A122 逐字 PASS；后续 RLT_16/RLT_19 不自动继承。正式合同闭合仍需 A-adjust。 |
 
-**推荐 B，待用户决定。** 它保留最关键的路径闭集与拒绝时零计划改动，失败信息进入既有 durable 账本。但 `done.note` 是待批准的新记录约定，不是当前 oracle 已有答案；需明确账本写入与计划差分的取证边界，不能把问题转移成隐藏账本 diff。若用户优先要求在方案旁查看失败原因，可选 A，但必须批准那一个输入文件的精确例外。
+**用户已选 B。** 它保留三类路径闭集与拒绝时全部计划目标、输入方案文件零变化；失败信息进入 planner-amend 普通 `done.note`，由 monitor 续写 blocked `stage_result`。本选择已由 RLT-A-07 同步进权威 oracle；账本证据与计划文件差分分开取证，不把账本文件偷滤成计划白名单的第四类路径。
 
-**交回编排的闭合条件：** 先取得 A/B/C 的明确选择和相应授权，同步权威 oracle，再由 builder 改 B4 程序、模板和反例判据并重新 plan-review。禁区与白名单混合请求必须证明所有计划目标文件零变化；A 另证只有允许的单一追加，B 另证输入方案零变化且失败账本记录可追溯。`review.plan.md` P1-02 的改前快照、既有 dirty 同路径二次修改、tracked/untracked 与 actual/proposed 精确集合问题仍由 builder/audit 独立闭合，本决定不代替它，也不解除 W FAIL。
+**交回编排的闭合记录：** 用户已选择 B 并授权最小 A-adjust；RLT-A-07 已同步权威 oracle，builder W3 按 B 重写程序、模板和反例判据后重新 plan-review。禁区与白名单混合请求必须证明所有计划目标及输入方案文件零变化，且失败账本记录可追溯。`review.plan.md` P1-02 的改前快照、既有 dirty 同路径二次修改、tracked/untracked 与 actual/proposed 精确集合问题已由 builder W2 独立闭合；本决定不代替 plan-review，也不解除 W FAIL。
 
 ## ② P1-03：A121「仅追加节点行」与 A75 合法计划约束
 
@@ -30,6 +30,13 @@
 | B：保留字面 oracle，改变运行时容忍度 | 让 status 在新节点没有 active agent 时也输出新阶段，例如绕过 A75 或自动补 agent。 | 属于产品行为变化，必须 design A-adjust，重新协调 §3.5、A75、A121 与 DevPlan A120 的 A75 回归承诺，另取得实现范围授权；不新增或重编号 ID 也不能免除语义变更确认。代价是扩大 status/lint 差异或引入隐式配置，可能掩盖坏计划，不推荐，现授权下不可执行。 |
 | C：仅豁免本次测试措辞或继续找合法反例 | 用户明确允许本卡用“节点 + 必要 agent 行”替代原字面步骤；否则保留 BLOCKED，仅在有人提供两次 status 均成功、无预挂非法 agent/节点号复用/旁路 lint 的逐字 fixture 后重审。 | 单次替代须用户明确豁免；没有正式 A-adjust 时只能记录 A121 原文未逐字满足，不能报无条件 PASS，后续仍须同步 oracle。继续找 fixture 不需改 oracle，但目前没有可执行证据，不能据此解锁 W。 |
 
-**推荐 A，待用户决定。** A121 的目标是证明 status 重读并按计划派生阶段，合法性所需 agent 行应明确写入操作步骤；这样同时保留 A75 和 A120 的交接约束。不要为了得到第二次 status 退出 0 而放宽 A75，也不要把现有 B3 写法视为已获批准。
+**用户已选 A。** A121 的目标是证明 status 重读并按计划派生阶段；两次 status 间只修改同一计划文件，追加新阶段节点行及保持计划合法所必需的对应 agent 行，不改代码、不改账本。A75 与 A120 的交接约束保持不变；本选择已由 RLT-A-07 同步进权威 oracle。
 
-**交回编排的闭合条件：** 用户选定后先同步 oracle，再由 builder 修改 B3 与 brief 引用，audit 重新核对同目录两次真实 status、新实例与顺序断言、非 WCRF 顺序及 A75 拒绝回归。两项推荐均未生效；本棒只交付 CONSULT，不解除任何施工、W 审核、verify 或人验闸。
+## 批准记录
+
+- **① F-001 / P1-01：APPROVED B**——保留三类闭集；禁区命中时全部计划目标与输入方案文件零变化；planner-amend 不写 `blocked` / `escalate` / `plan_amend`，以普通 `done.note` 承载 `outcome=out-of-scope proposal=<方案文件名> reason=<原因>`，monitor 写 `stage_result outcome=blocked`。
+- **② P1-03：APPROVED A**——只修改同一 `relay_plan.md`，追加新阶段节点行及保持 A75 合法所必需的对应 agent 行；两次 status 间不改代码、不改账本。
+- **③ 同步授权：APPROVED 最小 A-adjust**——用户授权 `wt/RLT_09` 上的 RLT-A-07；不新增、不删除、不改验收 ID。
+- 同步证据：`../../design/evidence/08-交叉审核记录-RLT09-oracle澄清.md`；design commit 由 W3 progress 登记。
+
+**交回编排的闭合记录：** 用户已选择 A，RLT-A-07 已同步 oracle；builder W3 修改 B3 与 brief 引用后，由 audit 重新核对同目录两次真实 status、新实例与顺序断言、非 WCRF 顺序及 A75 拒绝回归。本批准不自动解除 W 审核、D-start、verify 或人验闸。
