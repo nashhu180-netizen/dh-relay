@@ -875,7 +875,7 @@ herdr agent wait <agent> --timeout 1200000
 | **attempt** | 节点实例内同一 agent 名 | 3（每节点独立，跨节点不累计） | 仅在本节点 `agent_lost` / `cancelled` / 阶段 `failed` 后重拉时 +1；**批内 `checkpoint` 往返不增**；节点级返工是新节点实例、从 1 起 |
 | **X 轮数** | 复核返工轮 | `dh-mapping.toml` 的 `max_rounds`（当前 2） | 每开一个 X 阶段 +1 |
 
-**静默超时**（RLT-A-08）：agent 处于 `working` 但产出与终端均无变化超过 `dh-mapping.toml` 的 `limits.silence_timeout_min`（默认 30）时，监工判定该实例挂死：先向其发送中断使 `wait` 返回，再写 `agent_lost`（`note` 含 `silent_timeout`），同 pane 重拉 `#n+1`，重发派活并注明「先检查已有部分产物」。这是 attempt 递增的合法前因之一（A113 的 `agent_lost` 分支），不是新的计数。
+**静默超时**（RLT-A-08）：`status` 只看账本，最近事件距今超过 `dh-mapping.toml` 的 `limits.silence_timeout_min`（默认 30）即标 `ledger_silent` 提示；提示不等于挂死。监工收到提示后再核三件事：Herdr 报告的 agent 状态、pane 末行、允许路径内产出文件，**三者均无变化**才判定挂死：先向其发送中断使 `wait` 返回，再写 `agent_lost`（`note` 含 `silent_timeout`），同 pane 重拉 `#n+1`，重发派活并注明「先检查已有部分产物」；任一仍在变化则不得中断。这是 attempt 递增的合法前因之一（A113 的 `agent_lost` 分支），不是新的计数。
 
 **出口相同**：任一先到上限即停 → 拉 **strategist** → **交用户裁决**。两者不叠加计算，也不互相重置。
 
@@ -1168,7 +1168,7 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 | HC-RL-A109 | lint：**同卡阶段实例串行**——同一张卡的阶段实例 `depends_on` 链无分叉；跨卡并行允许 | 单测：同卡两阶段并列被拒；跨卡两阶段并列通过 |
 | HC-RL-A110 | 阶段实例可重复进入：同卡同 stage 的 `#1` / `#2` 各自独立，各写各的 `stage_result`，`R#1` 的 `failed` 不影响 `R#2` 判定 | 单测：构造 R#1 failed + R#2 done，断言 R#2 的 `stage_close` 被接受 |
 | HC-RL-A111 | `open_stages` 派生：所有已 `stage_start` 未 `stage_close` 的实例；跨卡可多个，同卡至多一个 | 单测：跨卡两实例同时 open 断言列表长度 2；同卡两实例同时 open 报警 |
-| HC-RL-A112 | 阶段收尾四步顺序（`node_close` → `stage_result` → `stage_close` → 关空间）：`stage_result` 早于该实例末节点 `node_close` 时退出 2；`stage_close` 在无 `stage_result` 或最新 `outcome ∉ {done, cancelled}` 时退出 2 | 单测：顺序颠倒、缺 result、outcome 为 blocked 三例 |
+| HC-RL-A112 | 阶段收尾四步顺序（`node_close` → `stage_result` → `stage_close` → 关空间）：**`outcome ∈ {done, cancelled}` 的** `stage_result` 早于该实例末节点 `node_close` 时退出 2（`blocked`/`failed` 的前置见 A137，RLT-A-08 澄清）；`stage_close` 在无 `stage_result` 或最新 `outcome ∉ {done, cancelled}` 时退出 2 | 单测：`done` 顺序颠倒、缺 result、outcome 为 blocked 三例 |
 | HC-RL-A105 | `stage_result` 合同：`note` 含 `stage_id=` 与 `outcome=done / blocked / failed / cancelled`；缺字段或非法值退出 2。**同一实例允许多条**，`status` 只认最新一条 | 单测：缺 stage_id、非法 outcome 各一例被拒；连写 blocked→done 断言 status 取 done |
 | HC-RL-A118 | `blocked` 收尾路径：最新 `outcome=blocked` 时 `stage_close` 退出 2；补写 `outcome=done` 或 `outcome=cancelled` 后被接受；`cancelled` 的 `note` 必须引用 `user_decision` | 单测：blocked 下 close 被拒；两条终局各一例被接受；cancelled 缺引用被拒 |
 | HC-RL-A119 | `plan_amend` 事件校验：`agent` 必须是 `monitor#<n>`（`by=monitor`），`note` 必须同时含方案文件名与 `nodes=<节点号,节点号>`；**不进状态机**，同一 `(node, monitor#<n>)` 可重复出现且不影响 agent 事件配对 | 单测：`agent` 填 `coder#1` 被拒；`note` 缺文件名、缺 `nodes=` 各一例被拒；合法例连写两条均被接受且状态机派生不变 |
@@ -1255,10 +1255,10 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 | HC-RL-A14 | 现役 dh-relay 未被改动 | `git diff --stat` 对 `tools/runner/` `tools/host/` `tools/contracts/` 为空 |
 | HC-RL-A30 | **〔E-链路〕** 一份真计划跑完后：全部阶段 `stage_close`、全部节点 `closed`，每条 `agent_launch` 都有配对终态事件，无悬空 agent | 实跑后 `status --json` 断言 |
 | HC-RL-A31 | **〔E-账本〕** 账本每行过 schema 校验，事件顺序满足状态机与阶段时序偏序 | 对实跑账本跑校验脚本 |
-| HC-RL-A137 | `stage_result` 分 outcome 校验节点关闭：`done`/`cancelled` 仍要求本实例全部节点 `closed`（A112）；`blocked`/`failed` 允许节点未关，但 `note` 必须含 `ref=<agent>#<n>:blocked` 或 `ref=<agent>#<n>:agent_lost` 且该引用在本实例内存在、为该 agent 最新事件；缺 `ref=`、引用不存在或引用已被 `resume`/终态覆盖均退出 2 并报 A137 | 单测：节点未关时 `blocked`+合法 ref 接受、`done` 仍拒 A112；三种非法 ref 各一例退出 2 报 A137；`stage_close` 对 `blocked` 仍拒 A118 |
-| HC-RL-A138 | 环境性 NOT_RUN 出口：同一 `(node, agent)` 连续 `attempt_max` 条 `agent_lost` 且 `note` 均含 `NOT_RUN` 后，第 `attempt_max+1` 条 `agent_launch` 被拒（A113 上限）；此时 `stage_result outcome=blocked ref=<agent>#<attempt_max>:agent_lost` 被接受；用户裁决后带 `launch_fix=` 的 `agent_launch` 接受且 attempt 继续递增，`attempt_max` 按 `launch_fix` 值分别计数 | 单测：三连 NOT_RUN 后第四条无 `launch_fix` 拒、带 `launch_fix=bypass_sandbox` 接受为 `#4`；`status` 的不可关原因列出 `NOT_RUN` 计数 |
+| HC-RL-A137 | `clarifies: HC-RL-A112`；`stage_result` 分 outcome 校验节点关闭：`done`/`cancelled` 仍要求本实例全部节点 `closed`（A112）；`blocked`/`failed` 允许节点未关，但 `note` 必须含 `ref=<agent>#<n>:blocked` 或 `ref=<agent>#<n>:agent_lost` 且该引用在本实例内存在、为该 agent 最新事件；缺 `ref=`、引用不存在或引用已被 `resume`/终态覆盖均退出 2 并报 A137 | 单测：节点未关时 `blocked`+合法 ref 接受、`done` 仍拒 A112；三种非法 ref 各一例退出 2 报 A137；`stage_close` 对 `blocked` 仍拒 A118 |
+| HC-RL-A138 | 环境性 NOT_RUN 出口：同一 `(node, agent)` 连续 `attempt_max` 条 `agent_lost` 且 `note` 均含 `NOT_RUN` 后，第 `attempt_max+1` 条 `agent_launch` 被拒（A107 attempt 止损）；此时 `stage_result outcome=blocked ref=<agent>#<attempt_max>:agent_lost` 被接受。**新预算只能由用户开**：编排把 blocked 交用户后，监工以该 agent 名下一条 `user_decision`（`note` 含 `launch_fix=<token>`）记录裁决，随后带同一 `launch_fix=<token>` 的 `agent_launch` 才被接受，attempt 继续递增，止损对该 token 组重新计 `attempt_max`；**每条 `user_decision` 只授权一个 token，每个 `(node, agent)` 最多一个 `launch_fix` 组**（总预算 ≤ 2×`attempt_max`），无授权引用、token 不一致或第二组均退出 2 | 单测：三连 NOT_RUN 后第四条无授权拒；`user_decision launch_fix=bypass_sandbox` 后同 token `#4` 接受、异 token 拒；第二组 `user_decision` 拒；`status` 不可关原因列出 `NOT_RUN` 计数与 fix 组 |
 | HC-RL-A139 | `launch_fix=` 记账：`agent_launch.note` 可含 `launch_fix=<token>`；`add` 不校验其与计划 `launch` 列的关系、不要求 `plan_amend`；`status --json` 在该 agent 条目暴露 `launch_fix` 字段（无则为 null） | 单测：带/不带 `launch_fix` 各一例，断言 `status --json` 字段；lint 不因 launch 列与账本不一致报错 |
-| HC-RL-A140 | 静默超时配置：`dh-mapping.toml` 的 `limits.silence_timeout_min` 可加载（默认 30）；`status` 的「静默」时长超过该值时，该 agent 行标 `silent_timeout` 提示；skill 核心与两份 adapter 的监工模板含「静默超时 → 中断 → `agent_lost silent_timeout` → 同 pane 重拉 `#n+1`」原文 | 单测：打桩时钟断言提示出现/不出现；结构检查三处模板命中 |
+| HC-RL-A140 | 静默超时配置：`dh-mapping.toml` 的 `limits.silence_timeout_min` 可加载（默认 30）；`status` 只按**账本**最近事件计算静默，超过该值时该 agent 行标 `ledger_silent` **提示**（不是挂死判定）；skill 核心与两份 adapter 的监工模板含「`ledger_silent` → 核 Herdr 状态 + pane 末行 + 允许路径产出三者是否也无变化 → 三者均无变化才中断并记 `agent_lost silent_timeout` → 同 pane 重拉 `#n+1`；任一仍在变化不得中断」原文 | 单测：打桩时钟断言提示出现/不出现；结构检查三处模板命中「三者均无变化」与「不得中断」两句 |
 | HC-RL-A141 | 派活提交与等待纪律写进两份 adapter：`agent start` 后 `wait --until idle` 再 `prompt`，prompt 后读取 pane 末行确认已提交（未提交则 `send-keys Enter` 一次并复核）；编排等待优先用账本文件事件监听，附「监工连续空闲 ≥2 分钟且无新账本行」告警；沙箱型只读启动不可用时的替代（bypass 沙箱 + 提示词只读约束 + `launch_fix=`）写进 adapter 环境预检 | 结构检查两份 adapter 各命中三段原文 |
 | HC-RL-A142 | `decision_mode` 模式门与 `cancelled` 归属闸在 `add` 路径实现：`consult` 下 `decision` 后无 `user_decision` 即写 `resume` 退出 2；`auto` 下 decider 链出现 `user_decision` 退出 2；`cancelled` 进入决策类归属校验（A69），非触发 agent 名下的 `cancelled` 退出 2 | RLT_07 钉住的两条 `@unittest.skip` 负例去 skip 即绿；新增 `cancelled` 归属正反各一例 |
 
@@ -1326,7 +1326,7 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 5. **教训候选回流**：把 §15 自查里的三条新教训提进 `knowledge/教训库-候选.md`。
 6. **改计划实例的提示词与白名单校验**：`planner-amend` 的提示词模板须含输入四件、一次改完、跑 lint 修到过；碰禁区时三类计划目标与输入方案文件均零变化，不写 `blocked` / `escalate` / `plan_amend`，只在普通 `done.note` 写结构化「超出范围」原因，由 monitor 续写 `stage_result outcome=blocked`。白名单校验须用紧邻本次动作的改前/改后快照取得精确变更集。→ HC-RL-A122
 7. **绕过 B-adjust 的决定要写进 AGENTS.md**：relay-light **有意绕过** dev-harness「改开发方案须 B-adjust 用户确认」这条，须在 AGENTS.md 的 relay-light 编排协议段注明，免得后来人当成违规。→ HC-RL-A28 / §1.3
-8. **Linux 预演回流（RLT-A-08）**：`stage_result` 按 outcome 分校验与 `ref=` 引用、环境性 NOT_RUN 出口、`launch_fix=` 记账、静默超时配置与监工模板、派活提交/等待纪律与沙箱替代预检、`decision_mode` 模式门与 `cancelled` 归属闸，须由一张标准档卡承接并在 RLT_12 正式跑前落地（RLT_12 不依赖它，但正式跑应使用其产物）。→ HC-RL-A137～A142
+8. **Linux 预演回流（RLT-A-08）**：`stage_result` 按 outcome 分校验与 `ref=` 引用、环境性 NOT_RUN 出口、`launch_fix=` 记账、静默超时配置与监工模板、派活提交/等待纪律与沙箱替代预检、`decision_mode` 模式门与 `cancelled` 归属闸，须由一张标准档卡承接；是否作为 RLT_12 的硬依赖由用户在 RLT-B-07 裁决（推荐硬依赖：先修后跑）。→ HC-RL-A137～A142
 
 ## 15. 查漏自查（对照 dev-harness `references/查漏清单.md`）
 

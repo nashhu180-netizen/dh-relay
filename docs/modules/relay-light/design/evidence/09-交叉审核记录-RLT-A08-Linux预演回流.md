@@ -56,11 +56,24 @@ ID 声明：只续发，不退役、不改号、不改既有 owner；A96/A114/A6
 
 ## 三、fresh 审核
 
-（待 fresh-context reviewer 落盘后由主会话逐条裁决并回填；见 `workspace/RLT_12/evidence/linux-dry-run/reviews/`）
+- 派出：codex `gpt-5.6-sol`（`b07-review-sol`，独立终端空间，未参与原稿；bypass 沙箱 + 提示词只读，派出前后 git 基线 `9204012` 一致，产出文件外零改动）。
+- 产出：`workspace/RLT_12/evidence/linux-dry-run/reviews/rlt-b07-fresh-review-sol.md`，`VERDICT=REVISE P0=0 P1=5 P2=2`。
+- 独立核查的仓库事实：`relay_log.py` A112 对所有 outcome 统一拒未关节点；`loss_stop()` 按 `(node, agent)` 累计、无分桶；`derive_status()` 静默只按账本 `last_ts`；§6 对照表机器提取 132 个唯一 ID、0 重复。
 
 ## 四、主会话裁决
 
-（待填）
+| # | 级别 | 审核意见 | 裁决 | 落点 |
+|---|---|---|---|---|
+| 方案-1 | P1 | A112 与 A137 互相矛盾 | 采纳：A112 文本收窄为只约束 `done/cancelled`，标「RLT-A-08 澄清」；A137 标 `clarifies: HC-RL-A112`；owner 不变 | design §11.1 |
+| 方案-2 | P1 | `launch_fix` 分桶可无限刷新止损；A113 误引 | 采纳：新预算只能由用户开——须先有该 agent 名下 `user_decision`（note 含 `launch_fix=<token>`），同 token 才接受；每 `user_decision` 一个 token、每 `(node, agent)` 最多一组，总预算 ≤ 2×attempt_max；引用改 A107 | design §11.1 A138 |
+| 方案-3 | P1 | A140 把账本静默误写成终端/产出静默 | 采纳：`status` 只标 `ledger_silent` 提示；中断前监工须核 Herdr 状态 + pane 末行 + 允许路径产出三者均无变化；加「任一仍在变化不得中断」 | design §7.3、§11.1 A140 |
+| 方案-4 | P2 | 覆盖自查计数停在修订前 | 采纳：§承接设计、§6 尾注、§8.1、§9 四处同步为 117+15=132、18 张卡 | DevPlan |
+| 理解-1 | P1 | 「六条发现」表述漏掉 DR-F-006 | 采纳：RLT_21 非目标显式写明 DR-F-006 另由用户裁决；转为「需用户决定-2」 | DevPlan RLT_21 |
+| 理解-2 | P2 | 双侧安装缺当次授权闸 | 采纳：RLT_21 实施提示补与 RLT_12 同闸的展示目标 + 当次授权 + 证据要求 | DevPlan RLT_21 |
+| 决定-1 | P1 | RLT_21 是否为 RLT_12 硬依赖 | 交用户；主会话推荐硬依赖（先修后跑）；design §14 第 8 项改为「由用户裁决」占位 | 待用户 |
+| 决定-2 | P1 | light plan-review 收窄 / 保持 / 折中 | 交用户；主会话推荐 C（纯措辞降 P2，写入者与节点边界仍 P1） | 待用户 |
+
+裁决后未做定向复审（改动均为审核意见的直接落地，无新增裁量）；用户确认时若改变决定-1/2 的推荐项，再做一次定向复审。
 
 <a id="understanding-rlt-b07"></a>
 

@@ -50,7 +50,7 @@
 
 - **交付什么**：Python 标准库单文件账本程序 `relay_log.py`（前四批 `add/status/lint`，第 5 批补 `watch`）、仓内单源的 relay-light skill 五件与两侧全量同步安装器、五阶段模板与 dev-harness 映射、仓内协议与测试登记、Windows/ThinkPad 四组合实跑及完整人验证据；`watch` 设计已冻结，**第 5 批必做**，独立成批以免前四批被它拖住。
 - **不含什么**：不改 dev-harness；不迁移或替换现役 dh-relay Runner/Ticket/Receipt；不做身份物理校验、停滞检测、锁、无 Herdr 退路、E11/E12/E13 接力；**前四批不依赖 `watch`**，各自可先验收，但 `watch` 本身不是可选项。
-- **承接设计**：唯一业务输入为 [`design/01-RelayLight-产品设计与验收.md`](../design/01-RelayLight-产品设计与验收.md)，承接其 111 条 `HC-RL-A*` 与 15 条 `HC-RL-H*`，共 126 条；README、`design/drafts/`、`evidence/` 只用于入口或形成史，不作业务输入。
+- **承接设计**：唯一业务输入为 [`design/01-RelayLight-产品设计与验收.md`](../design/01-RelayLight-产品设计与验收.md)，承接其 117 条 `HC-RL-A*` 与 15 条 `HC-RL-H*`，共 126 条；README、`design/drafts/`、`evidence/` 只用于入口或形成史，不作业务输入。
 - **实施策略一句话**：先用只读一致性对照钉住与现役 Runner 的有意差异，再形成可跑的最小账本与 skill，在第一批跑出 Windows Claude 真计划闭环，随后补主控互换、异常/改计划、Linux，第 5 批补 `watch`。
 - **任务前缀 / 模块 slug**：`RLT_`（从 `RLT_01` 起，全模块唯一）/ `relay-light`（verify scope=`relay-light`）。
 - **落点约束**：skill 五文件唯一源落 `tools/relay-light/skill/`；两个用户级目录只是安装器 `--all` 产出的派生副本，不得就地编辑或反向同步。adapter 显式传本侧用户级副本；直接调用按 design §6.2.1 的五情形解析，不直接读取仓内源。
@@ -385,7 +385,7 @@
 #### RLT_21 — Linux 预演回流：监工异常出口、启动修正记账、静默超时与派活纪律、决策模式门
 
 - **目标**：把 RLT_12 Linux 非正式预演（DRILL_01）暴露的六条缺口落成程序与协议：`stage_result` 按 outcome 分校验并以 `ref=` 引用阻塞/失联事件；环境性 NOT_RUN 的合法出口；`launch_fix=` 运行事实记账；`silence_timeout_min` 配置与监工静默超时模板；两份 adapter 的派活提交/等待纪律与沙箱替代预检；并补齐 RLT_07 挂账的 `decision_mode` 模式门与 `cancelled` 归属闸。
-- **非目标**：不实现 `watch`（RLT_18）；不改 dev-harness；不改现役 Runner；不把预演分支 `dryrun/rlt12-linux` 合入 master（其 `.gitignore` 交付另行 cherry-pick 或由本卡顺带承接，见实施提示）；不改动 RLT_12 的目标与验收。
+- **非目标**：不实现 `watch`（RLT_18）；不改 dev-harness；不改现役 Runner；不把预演分支 `dryrun/rlt12-linux` 合入 master（其 `.gitignore` 交付另行 cherry-pick 或由本卡顺带承接，见实施提示）；不改动 RLT_12 的目标与验收；DR-F-006（light plan-review 强度）不由本卡顺带决定，按用户在 RLT-B-07 的裁决另行处理（承接则补验收腿，不承接则记后续项）。
 - **验收口径**：
   - **机器证**｜来源：design/01 + `HC-RL-A137`｜`stage_result` 的 `done`/`cancelled` 仍要求全节点 closed；`blocked`/`failed` 允许节点未关但必须合法 `ref=`。
   - **机器证**｜来源：design/01 + `HC-RL-A138`｜连续 `attempt_max` 条 NOT_RUN `agent_lost` 后 `blocked` 出口可写；`launch_fix=` 重拉按值分别计数。
@@ -401,7 +401,7 @@
   - `docs/modules/relay-light/workspace/RLT_21/**`
 - **档位**：标准。
 - **任务类型**：常规 <!-- dh:task-type:v1 task=RLT_21 type=normal -->
-- **实施提示**：输入以 `workspace/RLT_12/evidence/linux-dry-run/README.md` 的 DR-F-001～006 与账本 `relay/dryrun-linux-01/relay_log.jsonl`（预演分支）为事实来源，不重跑预演；`ref=` 与 `launch_fix=` 均为 note token，沿用 `_note_tokens` 解析，不新增账本字段；skill 改动后须 `install_skill.py --all` 重同步两侧并记哈希（A32 仍由 RLT_12 首步正式取证）。
+- **实施提示**：输入以 `workspace/RLT_12/evidence/linux-dry-run/README.md` 的 DR-F-001～006 与账本 `relay/dryrun-linux-01/relay_log.jsonl`（预演分支）为事实来源，不重跑预演；`ref=` 与 `launch_fix=` 均为 note token，沿用 `_note_tokens` 解析，不新增账本字段；skill 改动后的两侧重同步与 RLT_12 同闸：先展示解析后的两个绝对目标并取得用户当次明确授权，再 `install_skill.py --all`，记录命令、退出码、哈希与两份 manifest；未授权则停在仓内验证（A32 仍由 RLT_12 首步正式取证）。
 
 #### RLT_13 — Windows Codex 与纯配置换协作
 
@@ -624,7 +624,7 @@
 | HC-RL-A140 | RLT_21 | HC-RL-A141 | RLT_21 |
 | HC-RL-A142 | RLT_21 |  |  |
 
-> 退役 ID 不进入对照表、不复用。附录按活动 ID 排序；实际覆盖集合以正式输入 §11 的 111+15 条为准。
+> 退役 ID 不进入对照表、不复用。附录按活动 ID 排序；实际覆盖集合以正式输入 §11 的 117+15 条为准（RLT-A-08 后）。
 
 ## 7. 正式输入回流与实施证据要求
 
@@ -654,8 +654,8 @@ A′ 增补的裁决过程见 [`design/evidence/01-交叉审核记录-RelayLight
 
 ### 8.1 覆盖关
 
-- 从正式输入 §11 机器解析得到活动验收 **111 条 AI + 15 条人验 = 126 条**。
-- 本文件任务卡与 §6 对照表均按活动 ID 建映射：**126 个唯一 ID、0 漏项、0 重复**；退役 ID 未纳入。全计划 **17 张卡**，首次安装安排已并入 RLT_12。
+- 从正式输入 §11 机器解析得到活动验收 **117 条 AI + 15 条人验 = 132 条**（RLT-A-08 续发 A137～A142）。
+- 本文件任务卡与 §6 对照表均按活动 ID 建映射：**132 个唯一 ID、0 漏项、0 重复**；退役 ID 未纳入。全计划 **18 张卡**，首次安装安排已并入 RLT_12，RLT-B-07 新增 RLT_21。
 - §14 七个同步项全部落到 RLT_01/RLT_02/RLT_07/RLT_08/RLT_09/RLT_11/RLT_12/RLT_17，且第 4 项由 RLT_02 单独成卡。
 
 ### 8.2 颗粒度关
@@ -672,7 +672,7 @@ A′ 增补的裁决过程见 [`design/evidence/01-交叉审核记录-RelayLight
 
 ## 9. 计划完工
 
-- [ ] 17 张卡全部销户（RLT_20 号已并入 RLT_12），含第 5 批的 RLT_18（用户已裁决 watch 接着做）。
-- [ ] 前四批交付 108 条机器验收与 13 条人验；第 5 批 RLT_18 补齐 watch 的 3 条机器验收与 2 条人验，**总账 126 条全部有等价证据**。
+- [ ] 18 张卡全部销户（RLT_20 号已并入 RLT_12），含第 5 批的 RLT_18（用户已裁决 watch 接着做）。
+- [ ] 前四批交付 108 条机器验收与 13 条人验；第 5 批 RLT_18 补齐 watch 的 3 条机器验收与 2 条人验，**总账 132 条全部有等价证据**。
 - [ ] Windows/Linux × Claude Code/Codex 四组合证据齐全；用户完成全部 15 条人判，其中 watch 的 2 条在第 5 批完成。
 - [ ] `verify(relay-light):` 只能在用户查看证据并明确授权后提交；本方案确认不授权 verify、merge、push 或 deploy，各卡仍单独开工。
