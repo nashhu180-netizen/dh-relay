@@ -83,3 +83,4 @@ DONE task=RLT_09 role=review batch=R status=APPROVE_WITH_NITS evidence=reviews/c
 DONE task=RLT_09 role=review batch=R status=APPROVE_WITH_NITS evidence=reviews/consistency-rlt09-review.md next=orchestrator
 DONE task=RLT_09 role=review batch=R status=APPROVE evidence=reviews/requirement-rlt09-review.md next=orchestrator
 DONE task=RLT_09 role=review batch=R status=APPROVE_WITH_NITS evidence=reviews/lesson-rlt09-review.md next=orchestrator
+DONE task=RLT_09 role=review batch=R status=REQUEST_CHANGES evidence=reviews/code-round2-rlt09-review.md next=orchestrator
