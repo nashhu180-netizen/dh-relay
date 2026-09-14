@@ -3371,6 +3371,61 @@ class RelayLifecycleTests(RelayCliTestCase):
         self.add_ok("stage_close", agent="orchestrator#1", note="stage_id=DHR_90:C#1")
         self.assertEqual("closed", self.status_payload()["stages"][1]["state"])
 
+    def test_a123_binds_plan_amend_whose_carrier_was_superseded(self) -> None:
+        """HC-RL-A123: superseding the plan_amend carrier node must not orphan the binding."""
+        self.write_plan(
+            node_rows=[
+                "| W1 | DHR_90 | DHR_90:W#1 | build | agent:builder | | |",
+                "| C1 | DHR_90 | DHR_90:C#1 | construction | agent:coder | W1 | |",
+                "| C2 | DHR_90 | DHR_90:C#1 | construction | agent:coder | W1 | |",
+                "| R1 | DHR_90 | DHR_90:R#1 | review | agent:requirement | C2 | |",
+            ],
+            agent_rows=[
+                "| builder | W1 | builder | | task_plan.md | | |",
+                "| coder | C1 | coder | | code.md | | |",
+                "| coder | C2 | coder | | code2.md | | |",
+                "| requirement | R1 | reviewer | | review.requirement.md | | |",
+                "| lesson | R1 | reviewer | | review.lesson.md | | |",
+            ],
+        )
+        self.drive_closed_w_stage()
+        self.add_ok("stage_start", node="C1", agent="orchestrator#1", note="stage_id=DHR_90:C#1")
+        self.add_ok("monitor_launch", node="C1", agent="orchestrator#1", note="stage_id=DHR_90:C#1")
+        self.add_ok("plan_amend", node="C1", note="decision.9.md nodes=C3")
+        # The amendment retires its own carrier: C1 superseded-by C3, C3 tail-appended.
+        self.write_plan(
+            node_rows=[
+                "| W1 | DHR_90 | DHR_90:W#1 | build | agent:builder | | |",
+                "| C1 | DHR_90 | DHR_90:C#1 | construction | agent:coder | W1 | superseded-by:C3 |",
+                "| C2 | DHR_90 | DHR_90:C#1 | construction | agent:coder | W1 | |",
+                "| R1 | DHR_90 | DHR_90:R#1 | review | agent:requirement | C2 | |",
+                "| C3 | DHR_90 | DHR_90:C#1 | construction | agent:coder | C2 | |",
+            ],
+            agent_rows=[
+                "| builder | W1 | builder | | task_plan.md | | |",
+                "| coder | C1 | coder | | code.md | | |",
+                "| coder | C2 | coder | | code2.md | | |",
+                "| coder | C3 | coder | | code3.md | | |",
+                "| requirement | R1 | reviewer | | review.requirement.md | | |",
+                "| lesson | R1 | reviewer | | review.lesson.md | | |",
+            ],
+        )
+        lint = self.run_lint_cli(self.plan_path.parent)
+        self.assertEqual(0, lint.returncode, lint.stderr)
+        self.close_node("C2")
+        self.close_node("C3")
+        self.assert_rejected(
+            "stage_result",
+            code="HC-RL-A123",
+            note="stage_id=DHR_90:C#1 outcome=done 无 amend 摘要",
+        )
+        self.add_ok(
+            "stage_result",
+            note="stage_id=DHR_90:C#1 outcome=done amend=decision.9.md nodes=C3 C1 已由 C3 接替",
+        )
+        self.add_ok("stage_close", agent="orchestrator#1", note="stage_id=DHR_90:C#1")
+        self.assertEqual("closed", self.status_payload()["stages"][1]["state"])
+
     def launch_planner_amend(self) -> None:
         """Open `DHR_90:W#1` and launch one planner-amend instance the ordinary way."""
         self.start_ledger()

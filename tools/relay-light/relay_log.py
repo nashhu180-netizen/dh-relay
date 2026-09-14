@@ -1975,9 +1975,12 @@ def _validate_stage_event(
                 f"stage_result must follow the last node_close of {stage_id}; still open: {unclosed}",
             )
         # HC-RL-A123: the amend summary mirrors this instance's own plan_amend history.
+        # A superseded row keeps its stage_id and node names stay unique (A46), so
+        # attribution uses the full table — superseding the carrier cannot orphan it.
+        all_nodes = {node.node: node for node in plan.nodes}
         stage_amends = any(
             entry["event"] == "plan_amend"
-            for entry in _stage_entries(entries, stage_id, nodes_by_name)
+            for entry in _stage_entries(entries, stage_id, all_nodes)
         )
         if stage_amends:
             if not tokens.get("amend"):

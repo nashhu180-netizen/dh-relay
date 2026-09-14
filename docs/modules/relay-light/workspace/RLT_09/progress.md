@@ -45,6 +45,11 @@
 | E-B5-04 | B5 | `python3 -m unittest tools/relay-light/test_relay_log.py` | exit 0，`Ran 162 tests in 230.196s`，`OK (skipped=2)` | Python 全量回归绿（159→162，新增 3 条编码用例） |
 | E-B5-05 | B5 | `pwsh -NoProfile -File tools/tests/run-relay-tests.ps1` | exit 0，末行 `RELAY ALL PASS (SKIPPED: 1)` | PowerShell 全量绿（relay-light Python 162 + install_skill 7） |
 | E-B5-06 | B5 | `rm -rf tools/relay-light/__pycache__`；`git diff --check`；`git status --porcelain` | __pycache__ 已删；`--check` 无输出；改动仅 `relay_log.py` + `test_relay_log.py` 两份允许路径 | 边界与 whitespace 洁净 |
+| E-X1-01 | X1 | `python3 -m unittest -v tools.relay-light.test_relay_log.RelayLifecycleTests.test_a123_binds_plan_amend_whose_carrier_was_superseded`（修复前） | exit 1，`FAILED (failures=1)`：`AssertionError: 2 != 0`——`plan_amend` 载体 C1 被 `superseded-by:C3` 退役、C3 尾段追加的合法形态下，`stage_result stage_id=DHR_90:C#1 outcome=done`（无 `amend=`）被接受（rc=0） | RED：复现 code-round2 P2-1 探针形态，A123 绑定被孤儿化（同 `/tmp/r2_supersede_carrier.py` 结论） |
+| E-X1-02 | X1 | `python3 -m unittest -v` 同上新用例 + `test_stage_result_amend_summary_matches_stage_history` + `test_plan_amend_requires_monitor_and_complete_note_and_is_repeatable` | exit 0，`Ran 3 tests ... OK` | GREEN：`stage_amends` 归因改用含 superseded 行的全节点表后，无 `amend=` 拒、带 `amend=decision.9.md nodes=C3` 放行并 `stage_close`；A119/A123 既有矩阵不漂 |
+| E-X1-03 | X1 | `python3 -m unittest tools/relay-light/test_relay_log.py` | exit 0，`Ran 163 tests`，`OK (skipped=2)` | Python 全量回归绿（162→163，新增 1 条 X1 用例） |
+| E-X1-04 | X1 | `pwsh -NoProfile -File tools/tests/run-relay-tests.ps1` | exit 0，末行 `RELAY ALL PASS (SKIPPED: 1)` | PowerShell 全量绿 |
+| E-X1-05 | X1 | `rm -rf tools/relay-light/__pycache__`；`git diff --check`；`git status --porcelain`；`git diff master --name-only` | __pycache__ 已删；`--check` 无输出；改动限 `relay_log.py`、`test_relay_log.py`、`dev_plan/P1`（RLT-A-07 授权措辞同步）、workspace 工件 | 边界与 whitespace 洁净；四集合闭集保持 |
 
 ## 批次 Handoff
 
