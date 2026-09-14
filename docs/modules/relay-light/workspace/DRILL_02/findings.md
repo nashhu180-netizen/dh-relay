@@ -8,3 +8,4 @@
 | ID | 发现 | 影响 | 状态 |
 |---|---|---|---|
 | F-001 | 进场 `git rebase master` 被脏树拒绝：他人 WIP 占树（`relay_log.jsonl` 未暂存改动；untracked `.devin/`、`dispatch/monitor-W1.md`、`tools/relay-light/__pycache__/`）。`git merge-base HEAD master` = master 顶点 `51d8062`，本分支已含最新基线，rebase 属 no-op | 无实质影响——基线等价已满足；但后续 coder 进场同样会撞此拒绝，应按同款「merge-base 核查 + 自有 done 文件留证」处理（由 scribe 汇总至 `progress.md`），不得 stash/清理他人现场 | 已登记，供监工/编排知情；不阻塞 |
+| F-002 | coder 进场复现 F-001：`git rebase master` 再被他人 WIP 拒绝（`relay_log.jsonl` unstaged；untracked `.devin/`、`dispatch/monitor-C1.md`、`dispatch/monitor-W1.md`、`done.builder.md`、`done.plan-reviewer.md`、`review.plan.md`、`tools/relay-light/__pycache__/`）。核查 `git merge-base HEAD master` = `git rev-parse master` = `51d80629e2debfde8c6cc644f2433808a9a66275`，HEAD=`4a718d931da6a6581c233f511d75f15068f8c8a9` 已含 master 顶点 | 无实质影响；按合同同款处置（不 stash/不清理），留证于 `done.coder.md`。证实「监工账本持续写 + 多角色共树」下进场 rebase 必被拒，merge-base 等值核查是稳定可用的替代判据 | 已登记，不阻塞 |
