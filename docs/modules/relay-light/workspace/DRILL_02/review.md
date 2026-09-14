@@ -36,6 +36,15 @@ light Recipe 无强制有效单测要求；本卡验收由 AC-1（check-ignore �
 | lesson | 待执行 | | | `review.lesson.md` |
 | consistency | 待执行 | | | `review.consistency.md` |
 
+## R1 汇总（scribe#1）
+
+两路复核均 PASS，R1 无 P1 阻断项。
+
+| 路 | 结论 | P1 | P2 | 处置 |
+|---|---|---|---|---|
+| lesson | PASS | 0 | 1 | 候选裁决：L-DRILL-02-1 **采纳**——W/C1 两次独立复现合并为一条，但收编必须带完整条件链（先按合同尝试 `git rebase master`；仅当其因已识别的他人 WIP 被拒时，才核 `merge-base(HEAD, master) == master`；等值只证拓扑 no-op，不授权 stash/清理/提交他人文件）。L-DRILL-02-2 **合并**——并入 RLT_10 F-002 / RLT_03 F-008 既有 Python 副产品教训链，作机制化闭合证据，不另建平行教训。唯一 P2-1（候选原句省略触发前提）已转记 `findings.md` |
+| consistency | PASS | 0 | 0 | 无发现。`.gitignore` 纯追加与计划钉死段一致；四集合/allowed-paths 闭集满足（`tools/` 零 diff，他人 WIP 未暂存未删）；task_plan 七步对账全 PASS；progress 与账本状态一致 |
+
 ## AI 提交区　⚠️ This is not human approval
 
 **Confidence Challenge**：本卡为非正式预演卡；任何测试绿、checker PASS 或 reviewer 结论都不等于用户验收、verify、push、PR、CI、merge 或发布，也不计入 RLT_12 状态。

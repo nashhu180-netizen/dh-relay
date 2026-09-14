@@ -9,3 +9,14 @@ DONE task=DRILL_02 role=scribe batch=C1 status=CONSTRUCTION_DONE evidence=docs/m
 - **证据**：C1-EV-001~005 全部转录自 `done.coder.md` 留证与 `check.C1.md` 实测（含 commit SHA `85af7fb3…` / `3883fcaa…`、check-ignore 命中行、164+7 项 OK、测后零 `__pycache__`/`.pyc`、四集合闭集），未发明证据；汇总 commit=`603f44a800fc68f9502143c699c530d092a256ff`，同实例文案整改 commit=`673368891556a78c75bc6f1b9ce6930112206c68`（scribe launch 口径改账本可证、异常表述改事实描述、收口指向改本阶段 monitor），本信号文件单独 commit（HEAD）。
 - **核查与异常**：F-002 基线事实复核成立（merge-base=master=`51d8062`，findings 已登记）；`relay_log.py status` 只读确认 C1 开放、scribe 缺终态。运行异常按派单事实记入日志：coder prompt 补一次 Enter（seq102→103 working 且输入清空）；checker 启动后空输入在后台空闲显示 done/interactive_ready，等待 idle 超时（60s），读取空输入确认就绪，prompt 补 Enter 后 seq106→108 working 且输入清空；scribe prompt 同样补一次 Enter 后 seq112→113 working 且输入清空（监工实测）；三次均未重拉。
 - **下一步**：next=monitor——C1 交本阶段 monitor（DRILL_02:C#1）收口，后续阶段由 orchestrator 处理；worker 完成即停，不进复核、不 verify、不 push/PR/merge。
+
+# done.scribe — DRILL_02 Batch R1
+
+DONE task=DRILL_02 role=scribe batch=R1 status=REVIEW_DONE evidence=review.lesson.md,review.consistency.md next=monitor
+
+## 四行小结
+
+- **做了什么**：R1 批次汇总——在 `review.md` 添加「R1 汇总」节（路/结论/P1/P2/处置表 + lesson 候选裁决），把 lesson 路唯一 P2-1 转记 `findings.md` F-003，写本信号；未改 `lesson_candidates.md`、源码、账本或他人产物。
+- **证据**：`review.lesson.md` PASS（P1=0/P2=1，L-DRILL-02-1 限定条件链后采纳、L-DRILL-02-2 合并入既有教训链）；`review.consistency.md` PASS（P1=0/P2=0，七步对账全过）。
+- **核查与异常**：F-003 明确条件链——先尝试 rebase、仅因他人 WIP 被拒后才可核 merge-base 等值，不泛化、不授权动他人现场。
+- **下一步**：next=monitor——R1 交本阶段 monitor（DRILL_02:R#1）收口；worker 完成即停，不进 F/verify/push/PR/merge。
