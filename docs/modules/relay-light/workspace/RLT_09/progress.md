@@ -13,6 +13,7 @@
 | 2026-09-14 | C / B3 exec | A121 status 重读合同测试：非 WCRF 计划两次 status 间仅向同一 relay_plan.md 追加 X#2 节点行 + 必需 agent 行；断言新实例按计划序出现、代码/账本哈希不变、A75 回归保持 | 断言变异 RED(E-B3-01)→GREEN(E-B3-02)→Python 146 绿 + pwsh ALL PASS；relay_log.py 零改动 | E-B3-01..05；commit=75eb1a0 |
 | 2026-09-14 | C / B4 exec | A122 白名单守门 + planner-amend 模板：`lint --amend-check before|after` 下属模式实现 P1-02 冻结快照算法（三类闭集预检、双采样原始快照、actual==proposed、仓外恢复、object database 只读核对）；planner-amend 生命周期禁 blocked/escalate + 结构化 out-of-scope done.note；SKILL.md 模板 + 双 adapter 同构指针 | stub RED(E-B4-01)→GREEN(E-B4-02)→Python 159 绿 + pwsh ALL PASS；禁表冲突改写后复绿 | E-B4-01..05；commit=bc89770 |
 | 2026-09-14 | C / B5 exec | F-003 UTF-8 输出防护：`main()` 入口 `_configure_utf8_stdio()` 就地 reconfigure stdout/stderr；`RelayCliEncodingTests` 以 bytes 捕获 ascii/cp1252 子进程四路中文输出（status 文本/JSON、lint stderr/JSON） | RED(E-B5-01 八腿 UnicodeEncodeError)→GREEN(E-B5-02)→Python 162 绿 + pwsh ALL PASS | E-B5-01..06；commit=44be5ba |
+| 2026-09-14 | C / 收口 | 五批小审全 PASS（check.C1..C5）后收口：B1 6edb32e / B2 ab6343c / B3 75eb1a0 / B4 bc89770 / B5 44be5ba；证据 E-B1-01..E-B5-06 共 26 条；findings 记 F-001 闭合链 + B1..B5 五批注记，lesson 候选 L-B2-01/L-B3-01/L-B4-01/L-B5-01 四条；四集合 allowed-paths 闭集确认（design/01、design/evidence/08、dev_plan/P1 属 RLT-A-07 授权项），git status 干净 | 收口 | commits=6edb32e,ab6343c,75eb1a0,bc89770,44be5ba |
 
 ## 证据账本
 
@@ -53,7 +54,7 @@
 | B2 | ab6343c | E-B2-01 / E-B2-02 | PASS（check.C2.md） | audit 小审 → B3 |
 | B3 | 75eb1a0 | E-B3-01 / E-B3-02 | PASS（check.C3.md） | audit 小审 → B4 |
 | B4 | bc89770 | E-B4-01 / E-B4-02 | PASS（check.C4.md） | audit 小审 → B5 |
-| B5 | 44be5ba | E-B5-01 / E-B5-02 | 待审 | audit 小审 → 卡收束 |
+| B5 | 44be5ba | E-B5-01 / E-B5-02 | PASS（check.C5.md） | audit 小审 → 卡收束 |
 
 ## 信号
 
