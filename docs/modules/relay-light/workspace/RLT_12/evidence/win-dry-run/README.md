@@ -82,12 +82,31 @@ manifest.json 两侧各一份（.claude `44a347ac6d0f`，.codex `ce98e8219e63`�
 
 ## 预演运行记录（2026-09-14，Windows，非正式，不计 RLT_12 状态）
 
-（四阶段跑完后填写）
+计划 `docs/modules/relay-light/relay/dryrun-win-01/`，分支 `dryrun/rlt12-win`，账本 51 行、四阶段全部 `closed result=done`。编排为 Devin swe-2 max（`wA:p2`，只分发不施工）；每阶段一个 codex 监工在独立终端空间，worker 各自一 pane。
+
+| 阶段 | 监工空间 | 关键事件 | 用时 | 结果 |
+|---|---|---|---|---|
+| W#1 | wC | builder#1 devin 一次交付七件套+task_plan（c9d7bae）；plan-reviewer#1 read-only 沙箱拒写 review.plan.md → `blocked`→`agent_lost`；plan-reviewer#2 换 `workspace-write` 上线 → FAIL(P1-001 信号共写 progress) → builder 两轮整改（37370a7、4a718d9）→ 复审3 PASS | 20:44–21:41 | done（c9d7bae…4a718d9，编排补豁免 8e878c6） |
+| C#1 | wD | coder#1 devin 一次过：`.gitignore` 追加段 + check-ignore 命中 line30 + 测试 164+7 OK（85af7fb）；checker#1 独立复跑测试 PASS 无 P1；scribe#1 汇总 progress | 21:44–22:16 | done（85af7fb…6733688） |
+| R#1 | wE | lesson#1 PASS P2=1 / consistency#1 PASS P2=0 并行（codex workspace-write）；scribe 汇总 | 22:19–22:28 | done（8348142） |
+| F#1 | wF | scribe#1 落 as-built + HANDOFF_READY | 22:29–22:36 | done（a73d775），未 push/PR |
+
+交付物验证（编排亲核，2026-09-14 22:4x）：`git check-ignore -v tools/relay-light/__pycache__/x.pyc` → `.gitignore:30:__pycache__/` 命中；`pwsh tools/tests/relay-light-log.ps1` 全绿（164 用例 363s OK skipped=2 + 7 用例 2.3s OK，exit 0）后 `git status --short` 无任何 `__pycache__`/`*.pyc` 行。
 
 ### 发现（供 RLT_12 正式跑与协议修订参考）
 
-（跑完后填写，编号 DR-W-001…，逐条对照 Linux DR-F-001～006）
+| # | 发现 | 影响 | 建议 |
+|---|---|---|---|
+| DR-W-001 | codex `--sandbox read-only` 在 Windows + codex-cli 0.154.0 **能启动、能读**（对照 DR-F-001 Linux bwrap 起不来 = 未复现），但**拒写一切文件**——reviewer 的产出 `review.plan.md` 落不了盘，实例对本节点交付物等同失联 | plan-reviewer#1 blocked→agent_lost，换 `--sandbox workspace-write` + prompt 约束（只准写列名产物）后全阶段顺畅 | Windows 上 codex 复核/决策角色的 launch 档定为 `workspace-write`，"只读"约束由 prompt 承担；`read-only` 仅适合纯问答探测。launch_fix 记 `agent_launch` note 即可，不用 plan_amend |
+| DR-W-002 | 编排派单照 Linux 写法给的 `escalate --agent monitor#1 decider=monitor#1` **不合法**：A69 要求 helper 恰为 `decider=decider#<n>`/`strategist=strategist#<n>`；监工按纪律原样贴 stderr 停下，未绕过（对照 DR-F-003：Linux 提议的 "monitor#1 escalate" 出口在现行校验下不存在） | 一次编排→监工往返修正 | 真正的合法出口 = `blocked → agent_lost`（迁移表内合法）再重拉；派单模板与 SKILL 文档应把这条写死，别再发明 monitor helper |
+| DR-W-003 | `herdr agent prompt` 对新启动 codex 发长中文派单，4 次监工派单中 3 次（W1/C1/F1）停在输入框未提交，补 `send-keys enter` 即提交；R1 一次直过（DR-F-004 在 Windows **复现**，约 75% 命中） | 每次约 30~60s 空转，有纪律兜住 | 「先 wait --until idle 再 prompt + 发后核真提交（seq+working+read 输入框空）」是必要纪律，建议保留并写进所有派单 |
+| DR-W-004 | `checkpoint` 不能落 terminal agent（A60：对 done 的 builder#1 写 checkpoint 被拒） | P1 整改路由须挂在 live reviewer 名下 `routed_to=<worker>#<n>`，实际整改 prompt 发 worker pane | 已写进本计划 C1/R1 派单纪律段；建议沉淀进 adapter |
+| DR-W-005 | 本机 `where.exe devin` 可解析（`AppData\Local\devin\cli\bin`），与派单"不在 PATH"的预期不同；`herdr agent start --kind devin` 实测直接可用，devin worker（builder/coder/scribe ×4 实例）全部一次拉起、无 Connection lost（对照 DR-F-002 未复现） | 无阻塞 | 登记为环境差异；正式跑维持 `--permission-mode dangerous` + 静默>20min→agent_lost 纪律 |
+| DR-W-006 | 编码：`PYTHONUTF8` 未设的 pwsh pane 里 `relay_log.py status` 中文输出正常，无 UnicodeEncodeError（对照 RLT_10 F-003 在 Windows + Python 3.14 **未复现**） | 派活 pane 无需注入 PYTHONUTF8 | 如实登记；若正式跑换 Python 版本需重测 |
+| DR-W-007 | 裸 `herdr agent start --kind codex`（监工）实际跑的是**账号默认模型 gpt-6-astra medium**，不是 roles.toml 监工档语义里的"低档" | 四阶段监工均跑在高档模型上（预演可接受，正式跑算偏离） | 正式跑在 launch 列/启动串显式 `-m` 钉模型档 |
+| DR-W-008 | worker 进场 `git rebase master` 被**同 worktree 内他人 WIP** 拒绝（builder、coder 两次命中）：活账本 `relay_log.jsonl` 实时追加 + untracked 文件本身就是 WIP 源；merge-base 核查证实 HEAD 已含 master 顶点，按 no-op 处置 | 不阻塞，但每棒都撞一次 | task_plan 契约头把「rebase 被 WIP 拒 → merge-base 等价核查」写成标准处置（本卡 task_plan 已这么做，效果良好） |
+| DR-W-009 | DR-F-005（后台 wait 进程被低内存杀掉）在 Windows 未复现：编排侧 devin 后台 `herdr agent wait` 与前台阻塞循环全程正常 | 无 | 保留前台阻塞循环为主、拍子内巡账本为辅的现行做法 |
+| DR-W-010 | DR-F-006 对照：plan-review 的 FAIL 仍是合同/措辞类 P1，但本次抓到**真问题**——GitHub-flow 豁免确实没记录、信号约定确实撞 A67 写入者独占 | light 档 plan-review 证明不是橡皮图章 | 不建议收窄到「三项核查」；保留写入者边界与豁免核查。顺带产出更优约定：完成信号改 `done.<role>.md` 独立文件，progress.md 归 scribe 独占——建议回写协议 |
+| DR-W-011 | GitHub 协作闸对演习卡的适用性：预演工件按派单硬边界不走 Issue/PR，但**豁免必须显式记录**才可核验（plan-review P1 逼出来，编排补 `GitHub-flow: user-waived` 行于本 README 卡 stub，commit 8e878c6） | 一次性补录 | 正式/预演任务卡 stub 建议预置 `GitHub-flow:` 字段位 |
 
-## BLOCKED
-
-（无）
+结论：relay-light 0.1.0 的账本、状态机、五阶段控制事件与 light Recipe 双路复核在 **Windows 上端到端跑通**；真实异常路径（read-only 拒写产出 → agent_lost → launch_fix 重拉、A69/A60 拒错后校正、FAIL→checkpoint→整改→复审 PASS）全部按协议语义工作。与 Linux 预演相比，Windows 侧 codex 沙箱可用但语义不同（能读不能写），编码坑未复现，devin 拉起无障碍，prompt 吞回车坑复现。RLT_12 正式跑的剩余注意点集中在：复核角色 launch 档改 workspace-write、监工显式钉模型档、派单模板修正 escalate/checkpoint 边界写法。
