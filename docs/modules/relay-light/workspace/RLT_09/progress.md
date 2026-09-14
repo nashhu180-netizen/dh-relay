@@ -80,3 +80,4 @@ DONE task=RLT_09 role=exec batch=5 status=READY_FOR_REVIEW evidence=E-B5-01,E-B5
 DONE task=RLT_09 role=audit batch=5 status=PASS evidence=check.C5.md next=orchestrator
 DONE task=RLT_09 role=exec batch=5 status=CONSTRUCTION_DONE evidence=E-B1-01..E-B5-06,commits=6edb32e,ab6343c,75eb1a0,bc89770,44be5ba,c1dafff next=orchestrator
 DONE task=RLT_09 role=review batch=R status=APPROVE_WITH_NITS evidence=reviews/code-round1-rlt09-review.md next=orchestrator
+DONE task=RLT_09 role=review batch=R status=APPROVE evidence=reviews/requirement-rlt09-review.md next=orchestrator
