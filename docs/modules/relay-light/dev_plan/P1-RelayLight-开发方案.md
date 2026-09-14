@@ -15,17 +15,17 @@
 >
 > 七条 A/B 旧事件（含 design 侧 `RLT-A-02`~`RLT-A-04`）的完整字段、替换缘由与本次确认来源见 [`../design/evidence/06-交叉审核记录-RLT03阶段合同补充.md`](../design/evidence/06-交叉审核记录-RLT03阶段合同补充.md)。
 <!-- dh:status
-汇报: RLT_10 已完成并 squash 合入 master（PR #17，`efb1a60`）；lint --json 合同、A94 规则全覆盖、A16 标准库静态检查、薄壳 `tools/tests/relay-light-log.ps1` 登记入全量 runner，三硬门 CI（Windows/Ubuntu runner + relay-light-python）全绿
-现状: RLT_01（25bdbcb）/RLT_07（6f26c4a）/RLT_08（5cf70b8）/RLT_10（efb1a60）均已合入；RLT_10 normal 三路复核全闭合、X1 复看 APPROVE、X2（Windows CI 修复）小审 PASS；RLT_12 准入证据（RLT_10 验收 + 全量 runner 绿）已具备
-进行到: P1 ▸ 第 1 批 ▸ RLT_01/RLT_02/RLT_03/RLT_05/RLT_07/RLT_08/RLT_10 已完成
-下一步: RLT_12（Windows Claude 主控首个真计划 demo，标准·高危）依赖已齐；高危开工须用户另取明确确认，开工首步为 install_skill --all 并展示两个绝对目标取得授权
+汇报: RLT_09 已完成并 squash 合入 master（PR #19，`c72f124`）；plan_amend/A120 放宽/status 重读/A122 白名单守门与 planner-amend 模板/stage_result amend 摘要落地，并入 F-003 UTF-8 输出防护（Windows CI 已验证）；design/01 经 RLT-A-07 最小 A-adjust 澄清 A121/A122 与 §4.5.2 禁区处理
+现状: RLT_01/07/08/10/09 均已合入；RLT_09 heavy 五路复核全闭合、X1（A123 supersede 孤儿化）与 X2（Windows 8.3 短路径误判 symlink）整改后小审 PASS、三硬门 CI 全绿；RLT_12 准入证据齐备，F-003 程序侧已根治
+进行到: P1 ▸ 第 1 批 RLT_01/02/03/05/07/08/10 已完成 ▸ 第 3 批 RLT_09 提前完成（Linux 可做）
+下一步: RLT_12（Windows Claude 主控首个真计划 demo，标准·高危）——须在 Windows 设备上、用户另取明确确认后开工；Linux 侧无不依赖 RLT_12 的未开始卡
 看什么: design/01-RelayLight-产品设计与验收.md + 本文件
-阻塞: RLT_07 F-002/F-003（decision_mode 模式门 + cancelled 归属闸）排后续卡；RLT_08 F-4（visual_map.md 沿先例不建、模块级 knowledge/ 归 RLT_11）；RLT_10 F-002（仓根无 .gitignore 忽略 __pycache__）与 F-003（relay_log.py Windows 默认代码页下 status 中文输出 UnicodeEncodeError，直接影响 RLT_12 Windows 真跑，程序侧修复待裁决）见 workspace/RLT_10/findings.md
+阻塞: RLT_07 F-002/F-003（decision_mode 模式门 + cancelled 归属闸）排后续卡；RLT_08 F-4（visual_map.md 沿先例不建、模块级 knowledge/ 归 RLT_11）；RLT_10 F-002（仓根无 .gitignore 忽略 __pycache__）；RLT_09 findings 见 workspace/RLT_09/findings.md
 -->
 
 > **本文件是 relay-light 的正式开发方案，已经用户确认。** 生效范围仅限任务定义与 `RLT_` 号段：**不授权任何任务开工、不授权改代码、verify、合并、推送或部署**，各卡仍按依赖与批次逐张走 D 开工的门。
 
-> **GitHub 关联**：RLT_05 / RLT-A-06 / RLT-B-06 共用 [Issue #8](https://github.com/nashhu180-netizen/dh-relay/issues/8)/PR #9；RLT_01=[Issue #12](https://github.com/nashhu180-netizen/dh-relay/issues/12)/PR #13（`25bdbcb`）；RLT_07=[Issue #10](https://github.com/nashhu180-netizen/dh-relay/issues/10)/PR #11（`6f26c4a`）；RLT_08=[Issue #14](https://github.com/nashhu180-netizen/dh-relay/issues/14)/PR #15（`5cf70b8`）；RLT_10=[Issue #16](https://github.com/nashhu180-netizen/dh-relay/issues/16)/PR #17（`efb1a60`）。收口 worktree/分支均已删。
+> **GitHub 关联**：RLT_05 / RLT-A-06 / RLT-B-06 共用 [Issue #8](https://github.com/nashhu180-netizen/dh-relay/issues/8)/PR #9；RLT_01=[Issue #12](https://github.com/nashhu180-netizen/dh-relay/issues/12)/PR #13（`25bdbcb`）；RLT_07=[Issue #10](https://github.com/nashhu180-netizen/dh-relay/issues/10)/PR #11（`6f26c4a`）；RLT_08=[Issue #14](https://github.com/nashhu180-netizen/dh-relay/issues/14)/PR #15（`5cf70b8`）；RLT_10=[Issue #16](https://github.com/nashhu180-netizen/dh-relay/issues/16)/PR #17（`efb1a60`）；RLT_09=[Issue #18](https://github.com/nashhu180-netizen/dh-relay/issues/18)/PR #19（`c72f124`，含 RLT-A-07）。收口 worktree/分支均已删。
 
 ## 0. B 方案审核与理解确认
 
@@ -106,7 +106,7 @@
 | RLT_12 | Windows Claude 主控跑首个真计划闭环 | 标准 | 未开始 | 1 | RLT_03、RLT_05、RLT_07、RLT_08、RLT_10 | — | — | 高危；首步承接 A32，**第一个端到端 demo** |
 | RLT_11 | 回流三条教训并核对持久化退场合同 | 轻 | 未开始 | 2 | RLT_07、RLT_12 | — | — | — |
 | RLT_13 | Windows Codex 主控复跑并验证纯配置换协作 | 标准 | 未开始 | 2 | RLT_12 | — | — | — |
-| RLT_09 | 实现运行中追加改计划与白名单守门 | 标准 | 未开始 | 3 | RLT_03、RLT_05、RLT_07 | — | — | — |
+| RLT_09 | 实现运行中追加改计划与白名单守门 | 标准 | 已完成 | 3 | RLT_03、RLT_05、RLT_07 | [workspace/RLT_09](../workspace/RLT_09/) | 2026-09-14 / PR #19 squash 合入（`c72f124`） | heavy 五路复核全闭合（code-round2 REQUEST_CHANGES→X1 修复复看 APPROVE）；Issue #18；并入 RLT_10 F-003 UTF-8 输出防护；含 RLT-A-07 最小 A-adjust（decision.1：F-001 选 B、A121 澄清）；A120 承接 RLT_03 交接断言已闭合 |
 | RLT_14 | 实跑 blocked/decider 的 auto 与 consult 两路 | 标准 | 未开始 | 3 | RLT_12 | — | — | — |
 | RLT_15 | 实跑复核返工超限与 strategist 人闸 | 标准 | 未开始 | 3 | RLT_05、RLT_12 | — | — | — |
 | RLT_16 | 实跑卡内追加节点的运行中改计划 | 标准 | 未开始 | 3 | RLT_09、RLT_12、RLT_14 | — | — | — |
