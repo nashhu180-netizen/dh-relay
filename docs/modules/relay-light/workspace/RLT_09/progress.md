@@ -11,6 +11,7 @@
 | 2026-09-14 | C / B1 exec | A119+A123 账本合同：`plan_amend` note 校验（文件名独立非 key token + `nodes=` 非空逐项）与非控制名写者→A119；`stage_result` 按同阶段 `plan_amend` 历史对称摘要校验 | RED(E-B1-01)→GREEN(E-B1-02)→Python 143 绿 + pwsh ALL PASS | E-B1-01..05；commit=6edb32e |
 | 2026-09-14 | C / B2 exec | A120 lint 连续性放宽：`stage_runs` 除末段外必须唯一、末段允许重现既有 stage_id（只识别表尾追加形态）；两正例 + 四硬约束反例；两处旧 fixture 收窄至实际负责断言（A89） | 基线 b6b7d66 RED(E-B2-01)→GREEN(E-B2-02)→Python 145 绿 + pwsh ALL PASS | E-B2-01..05；commit=ab6343c |
 | 2026-09-14 | C / B3 exec | A121 status 重读合同测试：非 WCRF 计划两次 status 间仅向同一 relay_plan.md 追加 X#2 节点行 + 必需 agent 行；断言新实例按计划序出现、代码/账本哈希不变、A75 回归保持 | 断言变异 RED(E-B3-01)→GREEN(E-B3-02)→Python 146 绿 + pwsh ALL PASS；relay_log.py 零改动 | E-B3-01..05；commit=75eb1a0 |
+| 2026-09-14 | C / B4 exec | A122 白名单守门 + planner-amend 模板：`lint --amend-check before|after` 下属模式实现 P1-02 冻结快照算法（三类闭集预检、双采样原始快照、actual==proposed、仓外恢复、object database 只读核对）；planner-amend 生命周期禁 blocked/escalate + 结构化 out-of-scope done.note；SKILL.md 模板 + 双 adapter 同构指针 | stub RED(E-B4-01)→GREEN(E-B4-02)→Python 159 绿 + pwsh ALL PASS；禁表冲突改写后复绿 | E-B4-01..05；commit=bc89770 |
 
 ## 证据账本
 
@@ -43,7 +44,8 @@
 |---|---|---|---|---|
 | B1 | 6edb32e | E-B1-01 / E-B1-02 | PASS（check.C1.md） | audit 小审 → B2 |
 | B2 | ab6343c | E-B2-01 / E-B2-02 | PASS（check.C2.md） | audit 小审 → B3 |
-| B3 | 75eb1a0 | E-B3-01 / E-B3-02 | 待审 | audit 小审 → B4 |
+| B3 | 75eb1a0 | E-B3-01 / E-B3-02 | PASS（check.C3.md） | audit 小审 → B4 |
+| B4 | bc89770 | E-B4-01 / E-B4-02 | 待审 | audit 小审 → B5 |
 
 ## 信号
 
@@ -63,3 +65,5 @@ DONE task=RLT_09 role=exec batch=2 status=READY_FOR_REVIEW evidence=E-B2-01,E-B2
 DONE task=RLT_09 role=audit batch=2 status=PASS evidence=check.C2.md next=orchestrator
 DONE task=RLT_09 role=exec batch=3 status=READY_FOR_REVIEW evidence=E-B3-01,E-B3-02,E-B3-03,E-B3-04,E-B3-05,commit=75eb1a0 next=orchestrator
 DONE task=RLT_09 role=audit batch=3 status=PASS evidence=check.C3.md next=orchestrator
+DONE task=RLT_09 role=exec batch=4 status=READY_FOR_REVIEW evidence=E-B4-01,E-B4-02,E-B4-03,E-B4-04,E-B4-05,commit=bc89770 next=orchestrator
+DONE task=RLT_09 role=audit batch=4 status=PASS evidence=check.C4.md next=orchestrator
