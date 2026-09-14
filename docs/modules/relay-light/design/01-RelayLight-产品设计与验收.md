@@ -1,11 +1,12 @@
 <!-- 01-RelayLight-产品设计与验收.md — relay-light 模块的正式设计输入；planning-event 与审核回链写在本文，不写在 README。 -->
 
-# RelayLight 产品设计与验收（**正式设计输入 · 更新至 2026-09-11**）
+# RelayLight 产品设计与验收（**正式设计输入 · 更新至 2026-09-13**）
 
 <!-- dh:topic tier=标准 review=RelayLight运行中改计划 -->
 <!-- dh:planning-event:v1 id=RLT-A-06 stage=A-full artifact=design/01-RelayLight-产品设计与验收.md review=evidence/07-交叉审核记录-RLT05合同缺口候选.md#review-rlt-a06 understanding=evidence/07-交叉审核记录-RLT05合同缺口候选.md#understanding-rlt-a06 -->
+<!-- dh:planning-event:v1 id=RLT-A-07 stage=A-adjust artifact=design/01-RelayLight-产品设计与验收.md review=evidence/08-交叉审核记录-RLT09-oracle澄清.md#review-rlt-a07 understanding=evidence/08-交叉审核记录-RLT09-oracle澄清.md#understanding-rlt-a07 -->
 
-> **历史规划事件索引（A-full；非活动声明，仅作追溯）**——旧事件的原始可解析 `planning-event` 声明注释已按 `RLT-A-06` 事件转为本索引；出处、含义与证据路径保持原值，未删除、未改写，Git 历史中仍可还原。**活动声明只剩上面一条 `RLT-A-06`；DevPlan 活动事件已是 `RLT-B-06`。**
+> **历史规划事件索引（A-full；非活动声明，仅作追溯）**——旧事件的原始可解析 `planning-event` 声明注释已按 `RLT-A-06` 事件转为本索引；出处、含义与证据路径保持原值，未删除、未改写，Git 历史中仍可还原。**活动声明为上面的 `RLT-A-06` 与本次最小澄清 `RLT-A-07`；DevPlan 活动事件仍是 `RLT-B-06`。**
 >
 > | 事件 | stage | 证据（交叉审核记录） | 处理 |
 > |---|---|---|---|
@@ -15,6 +16,8 @@
 > | `RLT-A-05` | A-full | `evidence/06-交叉审核记录-RLT03阶段合同补充.md#review-rlt-a05` / `#understanding-rlt-a05` | 转历史索引 |
 >
 > 八条 A/B 旧事件（含 DevPlan 侧 `RLT-B-01`~`RLT-B-04`）的完整字段、替换缘由与确认来源见 [`design/evidence/06-交叉审核记录-RLT03阶段合同补充.md`](evidence/06-交叉审核记录-RLT03阶段合同补充.md)与本轮 `evidence/07`。
+
+> **RLT-A-07 最小澄清 2026-09-13（用户已确认）**——RLT_09 W 审核发现 A122 的三类白名单与“失败时写方案文件”冲突，以及 A121 “仅追加节点行”与 A75 的合法计划要求冲突。用户选择：A122 保留三类闭集，拒绝时计划目标与输入方案文件均零变化，原因写入 `planner-amend done.note`，monitor 再记 `stage_result outcome=blocked`；A121 澄清为两次 status 之间只修改同一计划文件，追加新阶段节点行及保持计划合法所必需的对应 agent 行，不改代码、不改账本。**验收 ID 未新增、未删除、未改号。**完整记录见 [`evidence/08-交叉审核记录-RLT09-oracle澄清.md`](evidence/08-交叉审核记录-RLT09-oracle澄清.md)。
 
 > **RLT-A-06 修订 2026-09-11（用户已确认）**——A117 转 RLT_07；A91/A108 退役并拆为 A131～A134；新增 A135/A136 分别约束 relay-log 配置目录与 adapter 显式传参；H2 退役、H18 续发；补齐 A97 lint 映射。活动总账 122→126。完整复核、理解校验与整版确认见 [`evidence/07-交叉审核记录-RLT05合同缺口候选.md`](evidence/07-交叉审核记录-RLT05合同缺口候选.md)。
 
@@ -566,7 +569,7 @@ user_decision <coder>          ← 永远出现，不看 decision_mode
 - **lint 兜底**：**重试上限 3 次**，第 3 次仍不过就**视同「超出范围」**处理，不再硬修。
 - **收尾**：做完关闭，不常驻。
 - **账本身份**：`planner-amend#<n>` 走普通 agent 事件（`agent_launch` → `done`），但因为它是过门后**按需**拉起、不预先写进 agent 表，`add` 对它**豁免「agent 名必须在该节点 agent 表中」这条**（§3.5）；其余校验照旧。
-- **不进 blocked 链**：改计划实例**不允许写 `blocked` / `escalate`**——它是过门之后的执行者，不能再触发第二轮升级。做不到就按「超出范围」处理：在方案文件里写清原因、收工，`stage_result` 记 `blocked` 交用户。
+- **不进 blocked 链**：改计划实例**不允许写 `blocked` / `escalate`**——它是过门之后的执行者，不能再触发第二轮升级。做不到就按「超出范围」处理：计划目标文件与输入方案文件均不改，改计划实例以普通 `done.note` 写 `outcome=out-of-scope proposal=<方案文件名> reason=<原因>` 后收工；当班监工再把本阶段的 `stage_result` 记 `blocked` 交用户。
 
 **可碰文件白名单（按路径）**：
 
@@ -581,7 +584,7 @@ user_decision <coder>          ← 永远出现，不看 decision_mode
 
 **禁区（按路径）**：**`docs/modules/<模块>/design/` 整个目录**——包含 `design/01-产品设计与验收.md`（设计方案与验收清单同在此文件）、`design/README.md`、`design/evidence/`、`design/records/`、`design/drafts/`。**验收 ID 不得新增，也不得改动。**
 
-**碰到禁区就不改**——在方案文件里写「超出范围」并说明要改什么，然后收工；**当班监工把本阶段的 `stage_result` 记 `blocked`**，由编排通知用户（§2.1 的 `blocked` 分路）。
+**碰到禁区就不改**——计划目标文件与作为输入的方案文件全部保持零变化；改计划实例不写 `blocked` / `escalate`，也不写 `plan_amend`，只以自己的普通 `done.note` 写结构化原因 `outcome=out-of-scope proposal=<方案文件名> reason=<原因>` 后收工。**当班监工再把本阶段的 `stage_result` 记 `blocked`**，由编排通知用户（§2.1 的 `blocked` 分路）。失败原因用 `proposal=` 关联原方案，不回写方案文件。
 
 **禁区判定是整份方案的开关，不做部分执行**：方案里**只要有一处**落进禁区，**整份改动都不落笔**——不允许「先把白名单内的那几处改了，禁区那处留给用户」。理由是半改过的计划既不是旧计划也不是新计划，用户接手时无从判断现场。
 
@@ -592,7 +595,7 @@ user_decision <coder>          ← 永远出现，不看 decision_mode
 | **当前任务卡内容**（范围内，验收 ID 不变） | 改 `task_plan`；`relay_plan` 对应节点按 §4.4 追加或标 superseded；开发方案只在任务描述或依赖变了时同步一行 | 不用，走 §4.5.1 的门 |
 | **新增一张任务卡** | 开发方案加任务行；marker 的 `cards` 加新卡号；`relay_plan` 追加这张卡的 W／C／R／F 阶段行。**任务工作区七件套不由它建**，由新卡 W 阶段的 builder 照常建；编排开到新 W 阶段时才拉监工 | 不用 |
 | **开发方案的任务拆分／合并／先后／依赖**（范围内） | 直接改开发方案，`relay_plan` 的 `depends_on` 跟着改 | 不用。**此举绕过 dev-harness「改开发方案须 B-adjust 用户确认」的规则，是有意的显式决策**（§1.3、§14） |
-| **设计方案，或需要新增验收条目** | 不改；在方案文件写「超出范围」后收工；本阶段 `stage_result` 记 `blocked` 交用户。用户在接力外走 dev-harness A-full／A′（必要时 B-adjust）改完后裁决「继续」，当班监工在**同一阶段实例内**接着干；若改动大到计划整体不成立，重新拉规划 agent 出新计划，旧计划整体按 §4.4 标 superseded | **必须** |
+| **设计方案，或需要新增验收条目** | 计划目标与输入方案文件均不改；planner-amend 以普通 `done.note` 写结构化「超出范围」原因，本阶段由 monitor 写 `stage_result outcome=blocked` 交用户。用户在接力外走 dev-harness A-full／A′（必要时 B-adjust）改完后裁决「继续」，当班监工在**同一阶段实例内**接着干；若改动大到计划整体不成立，重新拉规划 agent 出新计划，旧计划整体按 §4.4 标 superseded | **必须** |
 
 #### 4.5.4 账本、编排与 lint 的配套
 
@@ -1024,11 +1027,11 @@ resume    coder#1          note=按 user_decision 的替代指示继续，计划
   （账本无 plan_amend，故 stage_result 的 note 不带 amend= 摘要）
 ```
 
-**「超出范围」分支**：若 decider 提出的改动落进禁区（要改设计方案，或要新增验收条目），改计划实例**不改任何文件**，在方案文件里写「超出范围」后收工，账本形态变成：
+**「超出范围」分支**：若 decider 提出的改动落进禁区（要改设计方案，或要新增验收条目），改计划实例保持全部计划目标文件与输入方案文件零变化，不写 `blocked` / `escalate` 或 `plan_amend`，只用自己的普通 `done.note` 记录结构化「超出范围」原因后收工；账本形态变成：
 
 ```text
 agent_launch planner-amend#1  note=改计划实例
-done      planner-amend#1     note=超出范围：需新增验收条目 HC-RL-A???，未改任何文件
+done      planner-amend#1     note=outcome=out-of-scope proposal=decision.2.md reason=需新增验收条目，计划目标与输入方案文件均未改
 stage_result monitor#1        note=stage_id=DHR_90:C#1 outcome=blocked 改计划超出范围，需用户走 dev-harness
   （编排通知用户等待；无 plan_amend，故 note 不带 amend= 摘要）
 ```
@@ -1166,8 +1169,8 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 | HC-RL-A118 | `blocked` 收尾路径：最新 `outcome=blocked` 时 `stage_close` 退出 2；补写 `outcome=done` 或 `outcome=cancelled` 后被接受；`cancelled` 的 `note` 必须引用 `user_decision` | 单测：blocked 下 close 被拒；两条终局各一例被接受；cancelled 缺引用被拒 |
 | HC-RL-A119 | `plan_amend` 事件校验：`agent` 必须是 `monitor#<n>`（`by=monitor`），`note` 必须同时含方案文件名与 `nodes=<节点号,节点号>`；**不进状态机**，同一 `(node, monitor#<n>)` 可重复出现且不影响 agent 事件配对 | 单测：`agent` 填 `coder#1` 被拒；`note` 缺文件名、缺 `nodes=` 各一例被拒；合法例连写两条均被接受且状态机派生不变 |
 | HC-RL-A120 | lint 放宽后仍守得住：同一 stage 的节点**追加在表尾**通过、被 superseded 行隔开通过；而**节点号重复（含已 superseded 的号）仍被拒**，`depends_on` 指向 superseded、跨阶段依赖指向后面的阶段、同卡阶段实例并行也仍被拒 | 单测：两条放宽正例各一；四条未放宽反例各一，断言退出 2 与编号 |
-| HC-RL-A121 | 编排开阶段前重读计划：**不修改 `relay_log.py` 代码、仅向计划文件追加新阶段的节点行后再次调用 `status`**，输出的 `stages` 含该新阶段且顺序正确；下一阶段由计划推导而非固定 `W→C→R→F` | 单测：同一 plan 目录，第一次 `status` 后仅追加 X 阶段节点行、再次 `status`，断言 `stages` 多出该实例；构造非 WCRF 顺序的计划断言推导跟随计划 |
-| HC-RL-A122 | 改计划白名单（按路径）：改计划实例只允许改 `docs/modules/<模块>/relay/<plan_id>/relay_plan.md`（含其 marker 的 `cards=`）、`docs/modules/<模块>/dev_plan/P<N>-*.md`、以及 `docs/modules/<模块>/workspace/<卡号>/task_plan.md` 且 **`<卡号>` 必须是改动前 marker `cards` 里已存在的卡**；新增卡的 `task_plan.md` 由该卡 W 阶段 builder 建，改计划实例写它即判失败。**`docs/modules/<模块>/design/` 整个目录是禁区**，被改动即验收失败（验收 ID 不得新增或改动）。禁区命中时**整份改动不落笔**，不做部分执行 | 结构检查：对改计划前后做 `git diff --name-only`，断言变更路径集合是白名单子集且与 `design/` 前缀无交集；新增卡场景断言变更不含新卡的 `task_plan.md`；构造一次改到 `design/01-RelayLight-产品设计与验收.md` 的反例，断言报错且白名单内文件也未被改动 |
+| HC-RL-A121 | 编排开阶段前重读计划：两次调用之间**不修改 `relay_log.py` 代码、不改账本，只修改同一份计划文件，追加新阶段节点行及保持计划合法所必需的对应 agent 行**；再次调用 `status` 后，输出的 `stages` 含该新阶段且顺序正确，下一阶段由计划推导而非固定 `W→C→R→F` | 单测：同一 plan 目录第一次 `status` 后，只在该 `relay_plan.md` 追加 X 阶段节点行及通过 A75 所必需的对应 agent 行，不改代码或账本；再次 `status`，断言 `stages` 多出该实例；构造非 WCRF 顺序的计划断言推导跟随计划 |
+| HC-RL-A122 | 改计划白名单（按路径）保持**三类闭集**：改计划实例只允许改 `docs/modules/<模块>/relay/<plan_id>/relay_plan.md`（含其 marker 的 `cards=`）、`docs/modules/<模块>/dev_plan/P<N>-*.md`、以及 `docs/modules/<模块>/workspace/<卡号>/task_plan.md` 且 **`<卡号>` 必须是改动前 marker `cards` 里已存在的卡**；新增卡的 `task_plan.md` 由该卡 W 阶段 builder 建，改计划实例写它即判失败。**`docs/modules/<模块>/design/` 整个目录是禁区**。禁区命中时整份拒绝，全部计划目标文件与输入方案文件均保持零变化，不做部分执行；planner-amend 不写 `blocked` / `escalate` / `plan_amend`，以普通 `done.note` 写 `outcome=out-of-scope proposal=<方案文件名> reason=<原因>`，再由 monitor 写 `stage_result outcome=blocked` | 结构检查：用紧邻本次改计划的 before/after 快照取实际变更集，成功分支断言 actual 与 proposed 精确相等、且集合是三类白名单子集并与 `design/` 前缀无交集；新增卡场景断言不含新卡的 `task_plan.md`。构造允许路径 + `design/01-RelayLight-产品设计与验收.md` 的混合反例，断言预检报错、所有计划目标文件和输入方案文件前后均零变化；账本另断言 planner-amend 只有合法 `done.note`，随后 monitor 的 `stage_result` 为 blocked，且无 planner-amend `blocked` / `escalate` / `plan_amend` |
 | HC-RL-A123 | `stage_result` 改动摘要格式：本阶段有 `plan_amend` 时 `note` 必须含 `amend=<方案文件名>` 与 `nodes=<节点号,节点号>`，缺则退出 2；无 `plan_amend` 时不得出现 `amend=` | 单测：有 amend 缺摘要被拒、格式合法被接受、无 amend 却写摘要被拒各一例 |
 | HC-RL-A124 | 仓内目录是唯一可编辑源；安装器只有仓内源→两侧副本的单向全量同步。一次同步中途失败后可通过重新执行整套 `--all` 收敛，不要求原子或回滚 | 临时 home 中人为改一侧副本并注入一次五文件复制中途失败，断言失败非零且仓内源未变；再次执行 `--all`，断言两侧五文件均与仓内源一致 |
 | HC-RL-A125 | Windows 与 ThinkPad 在同一 clean commit 各执行一次 `--all`，四个用户级目录的五文件哈希全等，四份当前 manifest 的 `source_head` 与五文件源哈希一致 | 两机分别展示命令与退出 0；比对四目录五文件哈希及四份当前 manifest；`source_dirty=true` 不计入本条证据 |
@@ -1311,7 +1314,7 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 3. **AGENTS.md 模块身份**：「本仓只有一个模块」与 `dh` 自动选模块的描述随双模块现状同步改。→ HC-RL-A29
 4. **一致性对照任务**：relay-light 与现役 Runner 是同一问题域的两条并行路径，B 段须出对照任务，逐条列两者对「节点 / 角色 / 事件 / 关闭」的定义差异并裁决「有意差异」还是「遗漏」。
 5. **教训候选回流**：把 §15 自查里的三条新教训提进 `knowledge/教训库-候选.md`。
-6. **改计划实例的提示词与白名单校验**：`planner-amend` 的提示词模板（输入四件、一次改完、跑 lint 修到过、碰禁区写「超出范围」）与白名单校验怎么落地（`git diff --stat` 比对还是别的形式），由开发方案定。→ HC-RL-A122
+6. **改计划实例的提示词与白名单校验**：`planner-amend` 的提示词模板须含输入四件、一次改完、跑 lint 修到过；碰禁区时三类计划目标与输入方案文件均零变化，不写 `blocked` / `escalate` / `plan_amend`，只在普通 `done.note` 写结构化「超出范围」原因，由 monitor 续写 `stage_result outcome=blocked`。白名单校验须用紧邻本次动作的改前/改后快照取得精确变更集。→ HC-RL-A122
 7. **绕过 B-adjust 的决定要写进 AGENTS.md**：relay-light **有意绕过** dev-harness「改开发方案须 B-adjust 用户确认」这条，须在 AGENTS.md 的 relay-light 编排协议段注明，免得后来人当成违规。→ HC-RL-A28 / §1.3
 
 ## 15. 查漏自查（对照 dev-harness `references/查漏清单.md`）

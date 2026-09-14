@@ -307,8 +307,8 @@
 - **验收口径**：
   - **机器证**｜来源：design/01 + `HC-RL-A119`｜plan_amend 写者、note、可重复与不进状态机正确。
   - **机器证**｜来源：design/01 + `HC-RL-A120`｜两项连续性放宽通过（同 stage 表尾追加、被 superseded 行隔开），四项硬约束仍拒绝并报有效编号。**承接 RLT_03 的交接断言**：①「被 superseded 行隔开」始终通过；②「其余条件合法的同 stage 表尾追加」在 RLT_09 前后按正式版本记录**拒绝→通过**；③四项硬约束全部保持拒绝及有效编号；④既有 A46 / A72 / A75 / 枚举与依赖回归保持；⑤运行中追加能力最终由 RLT_16 / RLT_19 实跑证明，交付方式仍按 §4.5——**当前阶段实例内**追加由当班监工直接接手、**后续阶段**由编排开到时按常规处理。取证须另造**满足全部其他规则、只有表尾位置差异**的合法追加正例；既有 `C1 → R1 → C2` 多违规 fixture 因 `C2.depends_on=R1` 同时违反硬约束，**不承诺原样翻绿**，必要时仅变更其实际负责的规则断言。
-  - **机器证**｜来源：design/01 + `HC-RL-A121`｜仅追加计划后 status 重读出新阶段与非固定顺序。
-  - **机器证**｜来源：design/01 + `HC-RL-A122`｜三类白名单、design 禁区与全有全无守门可执行。
+  - **机器证**｜来源：design/01 + `HC-RL-A121`｜两次 status 之间不改代码、不改账本，只修改同一计划文件并追加新阶段节点行及保持计划合法所必需的对应 agent 行；status 重读出新阶段与非固定顺序。
+  - **机器证**｜来源：design/01 + `HC-RL-A122`｜三类白名单闭集、design 禁区与全有全无守门可执行；拒绝分支全部计划目标及输入方案文件零变化，planner-amend 只以普通 `done.note` 写结构化超范围原因，不写 `blocked` / `escalate` / `plan_amend`，由 monitor 记 `stage_result outcome=blocked`。
   - **机器证**｜来源：design/01 + `HC-RL-A123`｜有/无 plan_amend 时 stage_result 摘要格式正确。
 - **变更范围**：程序、单测及仓内 skill 的 planner-amend 模板。
 - **允许路径**：<!-- dh:allowed-paths:v1 task=RLT_09 -->
@@ -316,9 +316,10 @@
   - `tools/relay-light/test_relay_log.py`
   - `tools/relay-light/skill/**`
   - `docs/modules/relay-light/workspace/RLT_09/**`
+  - （`docs/modules/relay-light/design/01-RelayLight-产品设计与验收.md` 与 `docs/modules/relay-light/design/evidence/08-交叉审核记录-RLT09-oracle澄清.md` 仅限 RLT-A-07 最小 A-adjust，用户 2026-09-13 授权）
 - **档位**：标准（运行中变更计划与组件接线）。
 - **任务类型**：重核 <!-- dh:task-type:v1 task=RLT_09 type=heavy -->
-- **实施提示**：**白名单三类路径全部在本仓 Git 内**，直接用 `git diff --name-only` 取改前/改后的精确变更集校验；触碰 `design/` 即整份拒绝。
+- **实施提示**：**白名单三类路径全部在本仓 Git 内**，用紧邻本次动作的可复现 before/after Git tree 快照取精确变更集，成功时 `actual == proposed`；触碰 `design/` 即在动笔前整份拒绝，全部计划目标和输入方案文件零变化，失败原因走 planner-amend `done.note` → monitor `stage_result outcome=blocked`。
 
 #### RLT_10 — 测试合同与仓库入口
 
@@ -619,7 +620,7 @@ A′ 增补的裁决过程见 [`design/evidence/01-交叉审核记录-RelayLight
 原第 5 条说「用户级目录不受本仓 Git 管理，白名单 diff 无处取证」。这不是设计缺口——正式输入本就把两类变更集分开，本计划按两条落实：
 
 - **`RLT_01` / `RLT_12` 开工首步｜仓内源用 Git、用户级副本用清单哈希**：RLT_01 在 Git 内实现唯一源与安装器，并用临时 home 证明失败后整套重跑（A124）；RLT_12 开工首步对真实两侧逐文件比对仓内源（A32）。不要求事务回滚或历史收据。
-- **`RLT_09`｜白名单守门的变更集只在仓内取证**：改计划实例的白名单三类路径（`relay_plan.md`、`dev_plan/P<N>-*.md`、已登记卡的 `task_plan.md`）**全部在本仓 Git 内**，`git diff --name-only` 即权威变更集；禁区 `design/` 也在仓内。用户级 skill 目录**不在改计划白名单里**，因此不需要非 Git 变更集。对应 `HC-RL-A122`。
+- **`RLT_09`｜白名单守门的变更集只在仓内取证**：改计划实例的白名单三类路径（`relay_plan.md`、`dev_plan/P<N>-*.md`、已登记卡的 `task_plan.md`）**全部在本仓 Git 内**，以紧邻本次动作的 before/after Git tree 快照差作为权威变更集；禁区 `design/` 也在仓内。拒绝分支全部计划目标与输入方案文件零变化；planner-amend 的结构化 `done.note` 和 monitor 的 blocked `stage_result` 属账本证据，不能从计划文件差分偷滤第四类文件。用户级 skill 目录**不在改计划白名单里**，因此不需要非 Git 变更集。对应 `HC-RL-A122`。
 
 一句话：**仓内源与改计划路径用 Git 取证，用户级派生副本用最终清单哈希取证，两者不混。**
 
