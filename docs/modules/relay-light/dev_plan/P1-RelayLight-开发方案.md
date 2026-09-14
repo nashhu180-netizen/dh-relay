@@ -18,7 +18,7 @@
 汇报: RLT_09 已完成并 squash 合入 master（PR #19，`c72f124`）；plan_amend/A120 放宽/status 重读/A122 白名单守门与 planner-amend 模板/stage_result amend 摘要落地，并入 F-003 UTF-8 输出防护（Windows CI 已验证）；design/01 经 RLT-A-07 最小 A-adjust 澄清 A121/A122 与 §4.5.2 禁区处理
 现状: RLT_01/07/08/10/09 均已合入；RLT_09 heavy 五路复核全闭合、X1（A123 supersede 孤儿化）与 X2（Windows 8.3 短路径误判 symlink）整改后小审 PASS、三硬门 CI 全绿；RLT_12 准入证据齐备，F-003 程序侧已根治
 进行到: P1 ▸ 第 1 批 RLT_01/02/03/05/07/08/10 已完成 ▸ 第 3 批 RLT_09 提前完成（Linux 可做）
-下一步: RLT_21（Linux 可做，承接预演六条发现 + RLT_07 F-002/F-003，RLT-B-07 已确认）或 RLT_12 二选一，互不依赖；RLT_12（Windows Claude 主控首个真计划 demo，标准·高危）——须在 Windows 设备上、用户另取明确确认后开工
+下一步: RLT_21（Linux 可做，承接预演六条发现 + RLT_07 F-002/F-003，RLT-B-07 已确认）或 RLT_12 二选一，互不依赖；RLT_12 若先跑，同次确认须写明接受 A112/NOT_RUN 已知缺口与证据口径；RLT_12（Windows Claude 主控首个真计划 demo，标准·高危）——须在 Windows 设备上、用户另取明确确认后开工
 看什么: design/01-RelayLight-产品设计与验收.md + 本文件
 阻塞: RLT_07 F-002/F-003（decision_mode 模式门 + cancelled 归属闸）→ RLT_21 承接；RLT_12 Linux 预演 DR-F-001～006 见 workspace/RLT_12/evidence/linux-dry-run/README.md（预演分支）；RLT_08 F-4（visual_map.md 沿先例不建、模块级 knowledge/ 归 RLT_11）；RLT_10 F-002（仓根无 .gitignore 忽略 __pycache__）；RLT_09 findings 见 workspace/RLT_09/findings.md
 -->
@@ -50,7 +50,7 @@
 
 - **交付什么**：Python 标准库单文件账本程序 `relay_log.py`（前四批 `add/status/lint`，第 5 批补 `watch`）、仓内单源的 relay-light skill 五件与两侧全量同步安装器、五阶段模板与 dev-harness 映射、仓内协议与测试登记、Windows/ThinkPad 四组合实跑及完整人验证据；`watch` 设计已冻结，**第 5 批必做**，独立成批以免前四批被它拖住。
 - **不含什么**：不改 dev-harness；不迁移或替换现役 dh-relay Runner/Ticket/Receipt；不做身份物理校验、停滞检测、锁、无 Herdr 退路、E11/E12/E13 接力；**前四批不依赖 `watch`**，各自可先验收，但 `watch` 本身不是可选项。
-- **承接设计**：唯一业务输入为 [`design/01-RelayLight-产品设计与验收.md`](../design/01-RelayLight-产品设计与验收.md)，承接其 118 条 `HC-RL-A*` 与 15 条 `HC-RL-H*`，共 126 条；README、`design/drafts/`、`evidence/` 只用于入口或形成史，不作业务输入。
+- **承接设计**：唯一业务输入为 [`design/01-RelayLight-产品设计与验收.md`](../design/01-RelayLight-产品设计与验收.md)，承接其 118 条 `HC-RL-A*` 与 15 条 `HC-RL-H*`，共 133 条；README、`design/drafts/`、`evidence/` 只用于入口或形成史，不作业务输入。
 - **实施策略一句话**：先用只读一致性对照钉住与现役 Runner 的有意差异，再形成可跑的最小账本与 skill，在第一批跑出 Windows Claude 真计划闭环，随后补主控互换、异常/改计划、Linux，第 5 批补 `watch`。
 - **任务前缀 / 模块 slug**：`RLT_`（从 `RLT_01` 起，全模块唯一）/ `relay-light`（verify scope=`relay-light`）。
 - **落点约束**：skill 五文件唯一源落 `tools/relay-light/skill/`；两个用户级目录只是安装器 `--all` 产出的派生副本，不得就地编辑或反向同步。adapter 显式传本侧用户级副本；直接调用按 design §6.2.1 的五情形解析，不直接读取仓内源。
@@ -104,7 +104,7 @@
 | RLT_07 | 编写仓内 skill、adapter 与五阶段模板 | 标准 | 已完成 | 1 | RLT_01、RLT_02、RLT_05 | [workspace/RLT_07](../workspace/RLT_07/) | 2026-09-13 / PR #11 squash 合入（`6f26c4a`） | heavy 五路复核全闭合；Issue #10；F-002/F-003 排后续卡 |
 | RLT_08 | 接入 AGENTS 判定、协议索引与双模块身份 | 标准 | 已完成 | 1 | RLT_07 | [workspace/RLT_08](../workspace/RLT_08/) | 2026-09-13 / PR #15 squash 合入（`5cf70b8`） | normal 三路复核全闭合；Issue #14；显式登记有意绕过 B-adjust |
 | RLT_10 | 建立 unittest、PowerShell 薄壳与全量测试入口 | 标准 | 已完成 | 1 | RLT_03、RLT_05、RLT_07 | [workspace/RLT_10](../workspace/RLT_10/) | 2026-09-13 / PR #17 squash 合入（`efb1a60`） | normal 三路复核全闭合；Issue #16；decision.1 选项 A 追加 `relay_log.py` 仅补 `lint --json`；Windows runner 首接入暴露 F-003（status 中文输出 cp1252 崩溃，薄壳以 PYTHONUTF8 兜底，程序侧待后续卡）；RLT_12 准入门已过 |
-| RLT_12 | Windows Claude 主控跑首个真计划闭环 | 标准 | 未开始 | 1 | RLT_03、RLT_05、RLT_07、RLT_08、RLT_10 | — | — | 高危；首步承接 A32，**第一个端到端 demo**；正式跑前应使用 RLT_21 产物（非依赖） |
+| RLT_12 | Windows Claude 主控跑首个真计划闭环 | 标准 | 未开始 | 1 | RLT_03、RLT_05、RLT_07、RLT_08、RLT_10 | — | — | 高危；首步承接 A32，**第一个端到端 demo**；RLT_21 非依赖，若先于 RLT_21 开工，同次确认须写明接受 A112/NOT_RUN 已知缺口并冻结证据口径 |
 | RLT_21 | 回流 Linux 预演发现：监工异常出口、启动修正记账、静默超时与派活纪律、决策模式门 | 标准 | 未开始 | 1 | RLT_07、RLT_09、RLT_10 | — | — | RLT-B-07 新增；Linux 可做；并入 RLT_07 F-002/F-003；输入 `workspace/RLT_12/evidence/linux-dry-run/README.md` DR-F-001～006 |
 | RLT_11 | 回流三条教训并核对持久化退场合同 | 轻 | 未开始 | 2 | RLT_07、RLT_12 | — | — | — |
 | RLT_13 | Windows Codex 主控复跑并验证纯配置换协作 | 标准 | 未开始 | 2 | RLT_12 | — | — | — |
@@ -674,6 +674,6 @@ A′ 增补的裁决过程见 [`design/evidence/01-交叉审核记录-RelayLight
 ## 9. 计划完工
 
 - [ ] 18 张卡全部销户（RLT_20 号已并入 RLT_12），含第 5 批的 RLT_18（用户已裁决 watch 接着做）。
-- [ ] 前四批交付 108 条机器验收与 13 条人验；第 5 批 RLT_18 补齐 watch 的 3 条机器验收与 2 条人验，**总账 133 条全部有等价证据**。
+- [ ] 前四批交付 115 条机器验收与 13 条人验；第 5 批 RLT_18 补齐 watch 的 3 条机器验收与 2 条人验，**总账 133 条全部有等价证据**。
 - [ ] Windows/Linux × Claude Code/Codex 四组合证据齐全；用户完成全部 15 条人判，其中 watch 的 2 条在第 5 批完成。
 - [ ] `verify(relay-light):` 只能在用户查看证据并明确授权后提交；本方案确认不授权 verify、merge、push 或 deploy，各卡仍单独开工。
