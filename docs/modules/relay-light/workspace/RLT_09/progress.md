@@ -15,6 +15,7 @@
 | 2026-09-14 | C / B5 exec | F-003 UTF-8 输出防护：`main()` 入口 `_configure_utf8_stdio()` 就地 reconfigure stdout/stderr；`RelayCliEncodingTests` 以 bytes 捕获 ascii/cp1252 子进程四路中文输出（status 文本/JSON、lint stderr/JSON） | RED(E-B5-01 八腿 UnicodeEncodeError)→GREEN(E-B5-02)→Python 162 绿 + pwsh ALL PASS | E-B5-01..06；commit=44be5ba |
 | 2026-09-14 | C / 收口 | 五批小审全 PASS（check.C1..C5）后收口：B1 6edb32e / B2 ab6343c / B3 75eb1a0 / B4 bc89770 / B5 44be5ba；证据 E-B1-01..E-B5-06 共 26 条；findings 记 F-001 闭合链 + B1..B5 五批注记，lesson 候选 L-B2-01/L-B3-01/L-B4-01/L-B5-01 四条；四集合 allowed-paths 闭集确认（design/01、design/evidence/08、dev_plan/P1 属 RLT-A-07 授权项），git status 干净 | 收口 | commits=6edb32e,ab6343c,75eb1a0,bc89770,44be5ba |
 | 2026-09-14 | R / X1 整改 | heavy 五路复核齐后整改：①code-round2 P2-1——`stage_amends` 归因改全节点表（superseded 行保留 stage_id），补 `test_a123_binds_plan_amend_whose_carrier_was_superseded`；②consistency P2-1——DevPlan :322/:623 两处「Git tree 快照」改 W4 冻结仓外原始快照表述；③lesson P2-1——登记 L-R-01/L-R-02；④review.md 回填五路结论 + 批次小审 + 独立复核区 + AI 提交区 | RED(E-X1-01 复现 P2-1)→GREEN(E-X1-02)→Python 163 绿 + pwsh ALL PASS | E-X1-01..05；commit=258a9be |
+| 2026-09-14 | R / X2 CI 修复 | PR #19 windows-latest 红（10/163 同根因）：`_prepare_snapshot_dir` symlink 父链检测由 `realpath != abspath` 字符串判等改逐级祖先 `lstat`+`S_ISLNK`——8.3 短名展开不再误报、真 symlink 仍拒；补 `test_snapshot_dir_tolerates_realpath_name_expansion`（realpath monkeypatch 模拟 8.3 形态，Linux RED→GREEN）；已 push origin wt/RLT_09 | CI RED(E-X2-01)→本地 RED(E-X2-02)→GREEN(E-X2-03)→Python 164 绿 + pwsh ALL PASS | E-X2-01..06；commit=0323498 |
 
 ## 证据账本
 
@@ -67,7 +68,8 @@
 | B3 | 75eb1a0 | E-B3-01 / E-B3-02 | PASS（check.C3.md） | audit 小审 → B4 |
 | B4 | bc89770 | E-B4-01 / E-B4-02 | PASS（check.C4.md） | audit 小审 → B5 |
 | B5 | 44be5ba | E-B5-01 / E-B5-02 | PASS（check.C5.md） | audit 小审 → 卡收束 |
-| X1 | 258a9be | E-X1-01 / E-X1-02 | 待 code-round2 复看 | orchestrator 裁决 |
+| X1 | 258a9be | E-X1-01 / E-X1-02 | PASS（check.X1.md + code-round2 复看 APPROVE） | orchestrator 裁决 → PR #19 CI |
+| X2 | 0323498 | E-X2-02 / E-X2-03 | 待复核 | orchestrator → CI 复跑 |
 
 ## 信号
 
@@ -100,3 +102,4 @@ DONE task=RLT_09 role=review batch=R status=REQUEST_CHANGES evidence=reviews/cod
 DONE task=RLT_09 role=exec batch=X1 status=READY_FOR_REVIEW evidence=E-X1-01,E-X1-02,E-X1-03,E-X1-04,E-X1-05,commit=258a9be next=orchestrator
 DONE task=RLT_09 role=audit batch=X1 status=PASS evidence=check.X1.md next=orchestrator
 DONE task=RLT_09 role=review batch=X1 status=APPROVE evidence=reviews/code-round2-rlt09-review.md next=orchestrator
+DONE task=RLT_09 role=exec batch=X2 status=READY_FOR_REVIEW evidence=E-X2-01,E-X2-02,E-X2-03,E-X2-04,E-X2-05,E-X2-06,commit=0323498 next=orchestrator
