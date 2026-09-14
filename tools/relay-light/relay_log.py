@@ -191,6 +191,23 @@ def _fail(exc: RelayError) -> int:
     return exc.exit_code
 
 
+def _configure_utf8_stdio() -> None:
+    """F-003: keep CLI stdout/stderr UTF-8 under ASCII or legacy locale encodings.
+
+    Only streams that actually support `reconfigure` are touched; test doubles
+    and already-closed streams are left as-is — the original objects are never
+    closed or replaced.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8")
+        except (OSError, ValueError, AttributeError):
+            continue
+
+
 def _expand_user(value: str, home: Path) -> Path:
     if value == "~":
         return home
@@ -2730,6 +2747,7 @@ def _status_command(plan_dir: str, as_json: bool, config: RelayConfig) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    _configure_utf8_stdio()
     parser = RelayArgumentParser(prog="relay_log.py")
     subparsers = parser.add_subparsers(dest="command", required=True)
     add_parser = subparsers.add_parser("add")

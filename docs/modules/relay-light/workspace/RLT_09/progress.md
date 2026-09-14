@@ -37,6 +37,12 @@
 | E-B4-03 | B4 | `python3 -m unittest tools/relay-light/test_relay_log.py` | exit 0，`Ran 159 tests in 227.561s`，`OK (skipped=2)` | Python 全量回归绿；首轮曾三红灯——`test_static_forbidden_primitive_and_pane_guards` 禁表命中 tempfile/mkstemp/os.replace，改写为 O_EXCL 顺序号副本 + unlink-重建恢复后复绿 |
 | E-B4-04 | B4 | `pwsh -NoProfile -File tools/tests/run-relay-tests.ps1` | exit 0，末行 `RELAY ALL PASS (SKIPPED: 1)` | PowerShell 全量绿（relay-light Python 159 + install_skill 7） |
 | E-B4-05 | B4 | `rm -rf tools/relay-light/__pycache__`；`git diff --check`；`git status --porcelain` | __pycache__ 已删；`--check` 无输出；改动仅 `relay_log.py`、`test_relay_log.py`、`SKILL.md`、两 adapter 五份允许路径 | 边界与 whitespace 洁净 |
+| E-B5-01 | B5 | `python3 -m unittest -v tools.relay-light.test_relay_log.RelayCliEncodingTests`（无入口防护的实现） | exit 1，`FAILED (failures=8)`：ascii/cp1252 ×（status 文本、status --json、lint stderr、lint --json）八腿全抛 `UnicodeEncodeError: 'charmap' codec can't encode`（exit 1 traceback）；utf-8 环境 sanity 腿 ok | RED：fixture 先证 UTF-8 可过；四路中文输出在非 UTF-8 stdio 下写入失败 |
+| E-B5-02 | B5 | 同上命令（`_configure_utf8_stdio()` 挂入 `main()` 后） | exit 0，`Ran 3 tests ... OK` | GREEN：ascii/cp1252 下 status/lint 按合同 exit（0/2），stdout/stderr bytes 显式 UTF-8 解码成功且含 `卡X`；env 白名单剔除 PYTHONUTF8 后单独注入，不依赖薄壳 PYTHONUTF8=1 |
+| E-B5-03 | B5 | task_plan B5 收束八用例命令（两 B1 + 两 B2 + B3 + guard 类 + 模板 + 编码类） | exit 0，`Ran 19 tests in 27.388s`，`OK` | 整卡定向用例全绿：五条 HC + F-003 映射闭合 |
+| E-B5-04 | B5 | `python3 -m unittest tools/relay-light/test_relay_log.py` | exit 0，`Ran 162 tests in 230.196s`，`OK (skipped=2)` | Python 全量回归绿（159→162，新增 3 条编码用例） |
+| E-B5-05 | B5 | `pwsh -NoProfile -File tools/tests/run-relay-tests.ps1` | exit 0，末行 `RELAY ALL PASS (SKIPPED: 1)` | PowerShell 全量绿（relay-light Python 162 + install_skill 7） |
+| E-B5-06 | B5 | `rm -rf tools/relay-light/__pycache__`；`git diff --check`；`git status --porcelain` | __pycache__ 已删；`--check` 无输出；改动仅 `relay_log.py` + `test_relay_log.py` 两份允许路径 | 边界与 whitespace 洁净 |
 
 ## 批次 Handoff
 

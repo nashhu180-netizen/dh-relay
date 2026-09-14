@@ -4966,5 +4966,100 @@ class SkillAdapterTests(unittest.TestCase):
         )
 
 
+class RelayCliEncodingTests(RelayCliTestCase):
+    """RLT_09 B5 / F-003：入口 UTF-8 防护——ascii/cp1252 stdio 下 status/lint 的
+    中文输出仍按合同 exit 且 bytes 可 UTF-8 解码；不继承薄壳 PYTHONUTF8。"""
+
+    def _run_bytes(
+        self, *arguments: str, io_encoding: str | None
+    ) -> subprocess.CompletedProcess[bytes]:
+        """Real CLI subprocess with byte capture; PYTHONUTF8 is never inherited."""
+        env = {
+            key: value
+            for key, value in os.environ.items()
+            if key not in {"PYTHONUTF8", "PYTHONIOENCODING"}
+        }
+        if io_encoding is not None:
+            env["PYTHONIOENCODING"] = io_encoding
+        return subprocess.run(
+            [
+                sys.executable,
+                str(Path(__file__).with_name("relay_log.py")),
+                *arguments,
+                "--config-dir",
+                str(SKILL_DIR),
+            ],
+            capture_output=True,
+            check=False,
+            env=env,
+        )
+
+    def _write_chinese_plan(self) -> None:
+        """A fully valid plan whose card carries non-ASCII text."""
+        self.write_plan(
+            marker=(
+                "<!-- relay-light:plan v1 skill=0.1.0 generated=2026-09-10 "
+                "session=app recipe=normal cards=卡X -->"
+            ),
+            node_rows=["| W1 | 卡X | 卡X:W#1 | build | agent:builder | | |"],
+            agent_rows=["| builder | W1 | builder | | task_plan.md | | |"],
+        )
+
+    def _write_chinese_lint_violation(self) -> None:
+        """marker lists DHR_90 only; the 卡X node row trips A87 echoing the card."""
+        self.write_plan(
+            node_rows=["| W1 | 卡X | 卡X:W#1 | build | agent:builder | | |"],
+            agent_rows=["| builder | W1 | builder | | task_plan.md | | |"],
+        )
+
+    def test_fixture_baseline_succeeds_in_utf8_environment(self) -> None:
+        """Fixture sanity: identical commands already pass under UTF-8 stdio."""
+        self._write_chinese_plan()
+        plan_dir = str(self.plan_path.parent)
+        for argv in (
+            ("status", "--plan", plan_dir),
+            ("status", "--plan", plan_dir, "--json"),
+        ):
+            with self.subTest(argv=argv):
+                result = self._run_bytes(*argv, io_encoding="utf-8")
+                self.assertEqual(0, result.returncode)
+                self.assertIn("卡X", result.stdout.decode("utf-8"))
+        self._write_chinese_lint_violation()
+        result = self._run_bytes("lint", "--plan", plan_dir, io_encoding="utf-8")
+        self.assertEqual(2, result.returncode)
+        self.assertIn("卡X", result.stderr.decode("utf-8"))
+
+    def test_status_stdout_is_utf8_decodable_under_ascii_and_cp1252(self) -> None:
+        self._write_chinese_plan()
+        plan_dir = str(self.plan_path.parent)
+        for encoding in ("ascii", "cp1252"):
+            for argv in (
+                ("status", "--plan", plan_dir),
+                ("status", "--plan", plan_dir, "--json"),
+            ):
+                with self.subTest(encoding=encoding, argv=argv):
+                    result = self._run_bytes(*argv, io_encoding=encoding)
+                    self.assertEqual(
+                        0, result.returncode, result.stderr.decode("utf-8", "replace")
+                    )
+                    self.assertIn("卡X", result.stdout.decode("utf-8"))
+
+    def test_lint_stderr_and_json_are_utf8_decodable_under_ascii_and_cp1252(self) -> None:
+        self._write_chinese_lint_violation()
+        plan_dir = str(self.plan_path.parent)
+        for encoding in ("ascii", "cp1252"):
+            with self.subTest(encoding=encoding, mode="stderr"):
+                result = self._run_bytes("lint", "--plan", plan_dir, io_encoding=encoding)
+                self.assertEqual(2, result.returncode)
+                self.assertIn("卡X", result.stderr.decode("utf-8"))
+            with self.subTest(encoding=encoding, mode="json"):
+                result = self._run_bytes(
+                    "lint", "--plan", plan_dir, "--json", io_encoding=encoding
+                )
+                self.assertEqual(2, result.returncode)
+                document = json.loads(result.stdout.decode("utf-8"))
+                self.assertIn("卡X", json.dumps(document, ensure_ascii=False))
+
+
 if __name__ == "__main__":
     unittest.main()
