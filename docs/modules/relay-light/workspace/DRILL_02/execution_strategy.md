@@ -11,11 +11,11 @@ DRILL_02 走 relay-light 计划 `dryrun-win-01` 的固定流水：`W1 → C1 →
 |---|---|---|---|
 | orchestrator | 编排：管阶段、stage 开闭、裁决出口 | 计划/账本/派单（其自身权限） | 不替 worker 施工或复核 |
 | monitor#1 | 监工：本阶段节点内拉 agent、wait、写账本 | `relay/dryrun-win-01/` 账本与 dispatch | 不施工、不审核业务内容、不越阶段 |
-| builder#1 | W1：七件套 + task_plan | `workspace/DRILL_02/**` | 不碰 `.gitignore` 与 `tools/`；不提前进 C1；不代签复核 |
+| builder#1 | W1：七件套 + task_plan | `workspace/DRILL_02/**` 中七件套与 `done.builder.md`（`progress.md` 为 scribe 独占） | 不碰 `.gitignore` 与 `tools/`；不提前进 C1；不代签复核 |
 | plan-reviewer#1 | W1：审计划，产出 `review.plan.md`（PASS/FAIL） | 该审核记录（只读仓代码） | 不改计划与代码；FAIL 由监工回 builder |
 | coder | C1：`.gitignore` 追加段 + 两条验收取证 | `.gitignore`、`workspace/DRILL_02/**` | 不改 `tools/`；不删 `__pycache__/` 凑判据；不 stash/清理他人 WIP |
 | checker | C1：批次小审，产出 `check.C1.md` | 该审核记录（只读） | 不修代码，不替 R1 两路复核 |
-| scribe | C1/R1/F1：progress 汇总、review.md 汇总、收口备料 | `workspace/DRILL_02/**` 指定文件 | 不改施工结论，不代签 |
+| scribe | C1/R1/F1：`progress.md` 独占维护（日志/E-ID 登记）、review.md 汇总、收口备料 | `workspace/DRILL_02/**` 指定文件（含 `progress.md` 唯一写权） | 不改施工结论，不代签 |
 | decider | C1 `on:blocked` 才拉起：裁决 BLOCKED | 指定 decision 记录 | 不扩 allowed-paths，不越用户/合同闸 |
 | reviewer（lesson / consistency） | R1：light Recipe 两路独立复核 | `review.lesson.md` / `review.consistency.md` | 只读不改；不删路径不降级 |
 
@@ -27,7 +27,7 @@ W1: builder DONE(W_READY)
   → monitor node_close + stage_result(done)
 C1: coder DONE(READY_FOR_REVIEW|BLOCKED)
   ├─ BLOCKED → decider 裁决 → 监工按裁决重派
-  └─ checker DONE(PASS|FAIL)（FAIL 回 coder）→ scribe 汇总 progress
+  └─ checker DONE(PASS|FAIL)（FAIL 回 coder）→ scribe 汇总 progress.md
 R1: lesson + consistency 两路并发 DONE → scribe 汇总 review.md
 F1: scribe 收口备料（as-built/AI 提交区/汇报证据区）
 ```
@@ -38,10 +38,10 @@ F1: scribe 收口备料（as-built/AI 提交区/汇报证据区）
 
 ## 结构化信号
 
-所有 worker 在 `progress.md`「信号」节末追加独占一行：
+durable signal 不共写：**每角色只写自有的 `done.<role>.md`**（文件名取 relay_plan agent 表名；scribe 跨节点由 batch 区分），**`progress.md` 归 scribe 独占**，其余角色不写。每角色在自有 done 文件写一行：
 
 ```text
-DONE task=DRILL_02 role=<builder|plan-reviewer|coder|checker|scribe|decider|reviewer> batch=<W|C1|R1|F1> status=<W_READY|PASS|FAIL|READY_FOR_REVIEW|BLOCKED|DONE> evidence=<逗号分隔,含 commit=SHA> next=monitor
+DONE task=DRILL_02 role=<builder|plan-reviewer|coder|checker|scribe|decider|lesson|consistency> batch=<W|C1|R1|F1> status=<W_READY|PASS|FAIL|READY_FOR_REVIEW|BLOCKED|DONE> evidence=<逗号分隔,含 commit=SHA> next=monitor
 ```
 
 status 取值以当班监工派单逐字为准；写完信号立即停止，不自行启动下一角色或阶段。

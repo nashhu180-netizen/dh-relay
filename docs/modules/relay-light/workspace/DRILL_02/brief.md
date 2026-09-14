@@ -8,7 +8,7 @@
 |---|---|---|
 | DRILL_02 | relay-light 计划 `dryrun-win-01`（非正式预演） | [演习卡 README](../RLT_12/evidence/win-dry-run/README.md) §演习卡 DRILL_02 |
 
-- **DevPlan / GitHub 户头**：无。演习卡 README 声明本卡不在 DevPlan 任务表内、仅本次 Windows 非正式预演使用，卡状态不计入 RLT_12；无 Issue，本卡也不据此自称获得 GitHub 流程豁免——预演事实如实登记。
+- **DevPlan / GitHub 户头**：本卡不在 DevPlan 任务表内、仅本次 Windows 非正式预演使用，卡状态不计入 RLT_12。GitHub 协作步骤（Issue/push/PR/CI/服务端合并）已获用户整体豁免，记录见演习卡 README 卡段 `GitHub-flow: user-waived (2026-09-14, scope=dryrun-win-01 全部预演工件与 DRILL_02)`（落盘 commit `8e878c6`）；该豁免仅限 GitHub-flow 一节，不推及 D-start、verify、验收、发布等其他闸。
 - **施工现场**：`D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\dryrun-rlt12-win`（分支 `dryrun/rlt12-win`，基线 master `51d8062`，派单 commit `1e1b4d7` 在其上）。
 - **档位 / Recipe**：轻；`task_type=light`（演习卡内 `dh:task-type:v1` stub 冻结），R 阶段 = 教训 + 一致性两路。
 
