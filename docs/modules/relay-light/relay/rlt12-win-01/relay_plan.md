@@ -45,7 +45,8 @@
 | C1 | RLT_21 | RLT_21:C#1 | construction | agent:checker | W1 | 批 1：A137 stage_result 分校验与 ref=、A138 NOT_RUN 出口与 launch_fix 计数、A139 launch_fix 不触发 plan_amend 且 status --json 暴露、A140 silence_timeout_min 与静默超时模板 |
 | C2 | RLT_21 | RLT_21:C#1 | construction | agent:checker | C1 | 批 2：A141 两份 adapter 三段原文、A142 decision_mode 模式门与 cancelled 归属闸并去 RLT_07 两条 skip、A143 light 档 plan-reviewer 分级模板 |
 | R1 | RLT_21 | RLT_21:R#1 | review | agent:scribe | C2 | normal Recipe 双路并行：requirement + lesson；机器体检与四道闸脚本、miner 汇总由 scribe 在本节点内先体检后收敛 |
-| F1 | RLT_21 | RLT_21:F#1 | handoff | agent:scribe | R1 | 收口备料；skill 改动的两侧重同步须先取用户当次明确授权，未授权则停在仓内验证 |
+| X1 | RLT_21 | RLT_21:X#1 | rework | agent:requirement | R1 | 第 1 轮返工：R1 两路复核均 FAIL、合计 5 条 P1（requirement 路 P1-1 C1 durable 复审闭环缺失、P1-2 code-round1 未执行；lesson 路 P1-3 done 时机堵死返工、P1-4 审批菜单编号漂移、P1-5 herdr PermissionDenied 轮询退避三条教训未进候选），基线 commit fc70185 |
+| F1 | RLT_21 | RLT_21:F#1 | handoff | agent:scribe | X1 | 收口备料；skill 改动的两侧重同步须先取用户当次明确授权，未授权则停在仓内验证 |
 
 ## agent 表
 
@@ -64,4 +65,8 @@
 | requirement | R1 | reviewer | codex -m gpt-5.6-sol --sandbox workspace-write | review.requirement.md | | normal Recipe 路 1 |
 | lesson | R1 | reviewer | codex -m gpt-5.6-sol --sandbox workspace-write | review.lesson.md | | normal Recipe 路 2 |
 | scribe | R1 | scribe | devin --model swe-2-medium | review.md 含体检与四道闸脚本及 miner 汇总 | | 空 trigger 是模板约定例外：监工在全部 reviewer done 后按本 note 拉起 |
+| coder | X1 | coder | devin --model swe-2-max | 整改产出与 findings、lesson 行 | | 新节点新实例，attempt 从 1 起；cwd = RLT_21 树；只写 findings.md、lesson_candidates.md 与自己的完成信号，progress.md 不碰（A67） |
+| requirement | X1 | reviewer | codex -m gpt-5.6-sol -c model_reasoning_effort=medium --sandbox workspace-write | review.requirement.X1.md | on:done:coder | cwd = RLT_21 树；fresh 实例；沙箱给 workspace-write，「只读」约束由 prompt 承担——只准写本行 output 这一个文件（DR-W-001） |
+| lesson | X1 | reviewer | codex -m gpt-5.6-sol -c model_reasoning_effort=medium --sandbox workspace-write | review.lesson.X1.md | on:done:coder | cwd = RLT_21 树；fresh 实例；只读约束同上，只准写本行 output；不许改 lesson_candidates.md（coder 的登记位） |
+| decider | X1 | decider | codex -m gpt-6-astra --sandbox workspace-write | decision.1.md | on:blocked | cwd = RLT_21 树；只读约束由 prompt 承担，只写本行 output；不改代码、不 commit；方案送回同一个 coder 记 checkpoint |
 | scribe | F1 | scribe | devin --model swe-2-medium | as-built、AI 提交区、交付汇报、证据展示区 | | |
