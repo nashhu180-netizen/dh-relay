@@ -54,6 +54,8 @@ relay-light 是一套接力编排协议：人拉起规划与编排，编排在�
 | plan-reviewer | W<n> | plan-reviewer | | review.plan.md | on:done:builder | |
 ```
 
+**plan-reviewer 分级（light 档）**：light 卡的 `task_plan` 审查按两级严重度分类——纯措辞、格式、引用陈旧项一律 P2 不阻断 PASS；以下四类仍 P1 阻断：allowed-paths 越界；写入者边界（谁写 `progress`/`findings`/`lesson`）；节点/阶段边界缺漏或矛盾；验收命令与完成信号缺失或矛盾。**light 只按此分级，heavy/normal 不变。**
+
 ### C 阶段模板
 
 每个施工批次一个节点；coder 与 checker 批内同时在场（trigger 留空），scribe 等 coder done 后拉起，decider 仅在 blocked 时拉起；`close=agent:checker`（checker 通过才进下一批）。
@@ -164,6 +166,12 @@ agent_launch → checkpoint* → ( blocked → escalate → decision → [user_d
 - **strategist 链**（监工的 attempt / 返工轮数计数触发，**无 `blocked` 起头**——`escalate` 直接作链首）：`escalate`（coder 名下）→ `agent_launch`（strategist 名下）→ `decision`（coder 名下，`note` 复述同一 helper）→ `done`（strategist 名下）→ `user_decision`（coder 名下，**永远出现、不看 mode**）→ `resume`（coder 名下，继续，不新增 attempt）或 `cancelled`（coder 名下，停卡）。
 
 `checkpoint` 是批内往返的唯一载体：可重复任意次，不新增 attempt、不新增 `agent_launch`。
+
+**`ledger_silent` 处置**：`status` 按账本最近事件计算静默，超过 `dh-mapping.toml` 的 `limits.silence_timeout_min`（默认 30 分钟）的在场 agent 标 `ledger_silent`——这是提示、不是挂死判定。处置原文：
+
+```text
+ledger_silent → 核 Herdr 状态 + pane 末行 + 允许路径产出 三者是否也无变化 → 三者均无变化才中断并记 agent_lost silent_timeout → 同 pane 重拉 #n+1；任一仍在变化不得中断。
+```
 
 ## planner-amend 改计划模板
 
