@@ -16,9 +16,9 @@
 > 七条 A/B 旧事件（含 design 侧 `RLT-A-02`~`RLT-A-04`）的完整字段、替换缘由与本次确认来源见 [`../design/evidence/06-交叉审核记录-RLT03阶段合同补充.md`](../design/evidence/06-交叉审核记录-RLT03阶段合同补充.md)。
 <!-- dh:status
 汇报: RLT_09 已完成并 squash 合入 master（PR #19，`c72f124`）；plan_amend/A120 放宽/status 重读/A122 白名单守门与 planner-amend 模板/stage_result amend 摘要落地，并入 F-003 UTF-8 输出防护（Windows CI 已验证）；design/01 经 RLT-A-07 最小 A-adjust 澄清 A121/A122 与 §4.5.2 禁区处理
-现状: RLT_01/07/08/10/09 均已合入；RLT_09 heavy 五路复核全闭合、X1（A123 supersede 孤儿化）与 X2（Windows 8.3 短路径误判 symlink）整改后小审 PASS、三硬门 CI 全绿；RLT_12 准入证据齐备，F-003 程序侧已根治
+现状: RLT_01/07/08/10/09 均已合入；RLT_09 heavy 五路复核全闭合、X1（A123 supersede 孤儿化）与 X2（Windows 8.3 短路径误判 symlink）整改后小审 PASS、三硬门 CI 全绿；**RLT_12 已 D-start（2026-09-14，Issue #23，工作区 workspace/RLT_12 七件套已建）**，A32 首步已执行（exit 0、五文件 sha256 三处一致），F-003 程序侧已根治
 进行到: P1 ▸ 第 1 批 RLT_01/02/03/05/07/08/10 已完成 ▸ 第 3 批 RLT_09 提前完成（Linux 可做）
-下一步: RLT_21（Linux 可做，承接预演六条发现 + RLT_07 F-002/F-003，RLT-B-07 已确认）或 RLT_12 二选一，互不依赖；RLT_12 若先跑，同次确认须写明接受 A112/NOT_RUN 已知缺口与证据口径；RLT_12（Windows Claude 主控首个真计划 demo，标准·高危）——须在 Windows 设备上、用户另取明确确认后开工
+下一步: RLT_12 进行中——planner 产出 relay/rlt12-win-01/relay_plan.md 并 lint 绿后，编排按 adapter-claude-code 跑 W→C→R→（X）→F；计划内唯一业务卡 = RLT_21（Issue #21，施工在 .dh-worktrees/RLT_21），其程序改动与运行中计划隔离；收口前须用户确认后提交 verify(relay-light):
 看什么: design/01-RelayLight-产品设计与验收.md + 本文件
 阻塞: RLT_07 F-002/F-003（decision_mode 模式门 + cancelled 归属闸）→ RLT_21 承接；RLT_12 Linux 预演 DR-F-001～006 见 workspace/RLT_12/evidence/linux-dry-run/README.md（预演分支）；RLT_08 F-4（visual_map.md 沿先例不建、模块级 knowledge/ 归 RLT_11）；RLT_10 F-002（仓根无 .gitignore 忽略 __pycache__）；RLT_09 findings 见 workspace/RLT_09/findings.md
 -->
@@ -104,7 +104,7 @@
 | RLT_07 | 编写仓内 skill、adapter 与五阶段模板 | 标准 | 已完成 | 1 | RLT_01、RLT_02、RLT_05 | [workspace/RLT_07](../workspace/RLT_07/) | 2026-09-13 / PR #11 squash 合入（`6f26c4a`） | heavy 五路复核全闭合；Issue #10；F-002/F-003 排后续卡 |
 | RLT_08 | 接入 AGENTS 判定、协议索引与双模块身份 | 标准 | 已完成 | 1 | RLT_07 | [workspace/RLT_08](../workspace/RLT_08/) | 2026-09-13 / PR #15 squash 合入（`5cf70b8`） | normal 三路复核全闭合；Issue #14；显式登记有意绕过 B-adjust |
 | RLT_10 | 建立 unittest、PowerShell 薄壳与全量测试入口 | 标准 | 已完成 | 1 | RLT_03、RLT_05、RLT_07 | [workspace/RLT_10](../workspace/RLT_10/) | 2026-09-13 / PR #17 squash 合入（`efb1a60`） | normal 三路复核全闭合；Issue #16；decision.1 选项 A 追加 `relay_log.py` 仅补 `lint --json`；Windows runner 首接入暴露 F-003（status 中文输出 cp1252 崩溃，薄壳以 PYTHONUTF8 兜底，程序侧待后续卡）；RLT_12 准入门已过 |
-| RLT_12 | Windows Claude 主控跑首个真计划闭环 | 标准 | 未开始 | 1 | RLT_03、RLT_05、RLT_07、RLT_08、RLT_10 | — | — | 高危；首步承接 A32，**第一个端到端 demo**；RLT_21 非依赖，若先于 RLT_21 开工，同次确认须写明接受 A112/NOT_RUN 已知缺口并冻结证据口径 |
+| RLT_12 | Windows Claude 主控跑首个真计划闭环 | 标准 | 进行中 | 1 | RLT_03、RLT_05、RLT_07、RLT_08、RLT_10 | [workspace/RLT_12](../workspace/RLT_12/) | — | 高危；首步承接 A32，**第一个端到端 demo**；RLT_21 非依赖，若先于 RLT_21 开工，同次确认须写明接受 A112/NOT_RUN 已知缺口并冻结证据口径；Issue #23；计划内卡 RLT_21；D-start 2026-09-14 |
 | RLT_21 | 回流 Linux 预演发现：监工异常出口、启动修正记账、静默超时与派活纪律、决策模式门 | 标准 | 未开始 | 1 | RLT_07、RLT_09、RLT_10 | — | — | RLT-B-07 新增；Linux 可做；并入 RLT_07 F-002/F-003；输入 `workspace/RLT_12/evidence/linux-dry-run/README.md` DR-F-001～006 |
 | RLT_11 | 回流三条教训并核对持久化退场合同 | 轻 | 未开始 | 2 | RLT_07、RLT_12 | — | — | — |
 | RLT_13 | Windows Codex 主控复跑并验证纯配置换协作 | 标准 | 未开始 | 2 | RLT_12 | — | — | — |
