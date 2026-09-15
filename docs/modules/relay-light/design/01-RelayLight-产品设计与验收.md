@@ -290,6 +290,8 @@ user_decision <coder>          ← 永远出现，不看 decision_mode
 
 **`checkpoint` 是批内往返的唯一载体**：checker 给方案、coder 按方案修、decider 方案送回后继续，全部记 `checkpoint`，`note` 写轮次或决策文件名。`checkpoint` **可重复任意次，不新增 attempt、不新增 `agent_launch`**。attempt 只在**节点级返工**（X 阶段新节点）时从该节点的 1 重新起算。
 
+**「待复核」信号与三个 token**（RLT-A-09）：送审方与判定方同处一个节点时（W / C / X），送审方**不再靠先记 `done`** 来触发判定方，而是写一条**非终态**的 `checkpoint`，`note` 带 `ready_for_review=<判定方 agent 名>`；判定方在 `done` 的 `note` 里带 `reviewed=<送审方实例全名>` 与 `ready_seq=<该信号的 seq>`，回指自己答的是哪一轮。**账本事件层词表不变**——仍是那 19 个词，信号落在 `checkpoint` 现有的合法迁移里，agent 事件状态机的迁移表一行不改，终态封口一字不改。**判定角色闭集 = `{plan-reviewer, checker, reviewer}`**：`roles.toml` 十一个角色里只有这三个产出 PASS / FAIL 结论并可能打回；`scribe` 是收敛者，`decider` / `strategist` 是决策者，都不判定，均不在集内；集合随 `roles.toml` 变化由未来 A 事件同步，不由施工者临场扩充。**一条信号只对一个判定方，N 路就写 N 条 `checkpoint`**。这三个 token **不是**上面决策链的 helper token（`decider=` / `strategist=`），不参与决策归属校验。**R 阶段不适用**——R 节点没有同节点送审方（见 §5.2）。写入与配对的合同见 §3.5，验收见 HC-RL-A144 / A145 / A146。
+
 ### 3.5 账本合同（实现细节，冻结）
 
 **attempt 分配**：`--agent` 传**完整** `<名字>#<attempt>`，由监工分配 = 该 `(node, 名字)` 已有最大 attempt + 1。`add` 校验 `agent_launch` 的 attempt **必须恰好等于最大值 + 1**，否则退出 `2`。
@@ -302,6 +304,9 @@ user_decision <coder>          ← 永远出现，不看 decision_mode
 - **控制事件的 `by` 必须与该事件的法定写入者一致**（§3.4 表），越权退出 `2`；
 - `trigger` 为 `on:done:<X>` 的 agent，写 `agent_launch` 时 **X 在本节点必须已有 `done`**（`agent_lost` / `cancelled` 不算）；
 - `trigger` 为 `on:blocked` 的 agent，写 `agent_launch` 时**本节点必须存在一个 agent 其最新事件为 `blocked` 或 `escalate` 且尚未 `resume`**；
+- `trigger` 为 `on:review_ready:<X>` 的 agent（RLT-A-09），写 `agent_launch` 时**本节点必须存在一条 `checkpoint`**——其 `agent` 为 `X` 在本节点的**当前实例** `X#<a>`（该名下最大 attempt），其 `note` 的 `ready_for_review=` 值**恰等于本 agent 名**，且该 `checkpoint` 是 `X#<a>` 这个**实例的最新 agent 事件**（按实例判，不按名字跨 attempt 判）；由此 `X#<a>` 必未终态。任一不成立退出 `2`（A144）。**`on:done:<X>` 的前置一条不改**，两种 trigger 各判各的；
+- `checkpoint` 的 `note` 含 `ready_for_review=` 时（RLT-A-09）：该前缀的 token **恰好一个**（≥2 退出 `2`——note 解析对重名 key 只保留首个，多写会静默丢失，必须写入时拒绝）；值指向的 agent 须在**本节点** agent 表中且其 `role` 在判定角色闭集内；写入者自身**不得**是判定角色；该 `checkpoint` **不伴随 `agent_launch`、不增 attempt**。`add` 层**不设轮次硬上限**（上限由 §7.3 的第三套计数以只读投影承担）（A145）；
+- **判定角色写 `done` 的配对闸**（RLT-A-09）：**当且仅当本节点存在至少一条指向该 agent 的 `ready_for_review=` 信号时生效**。生效时 `note` 须含 `reviewed=<S>#<a>` 与 `ready_seq=<n>`；`<n>` 指向的事件须是一条 `checkpoint`，其 `agent` 字段**逐字等于** `<S>#<a>`、其 `ready_for_review=` 值等于本 agent 名，且是 `(node, <S>#<a>, 本 agent)` 组合下**最新**的一条信号；`<S>#<a>` 须在本节点**已 `done`** 且其 `seq` **早于**本条。任一不成立退出 `2`（A146）。**校验位点在写 `done` 当场，不在 `node_close` 兜底**；本节点没有任何指向它的信号时**闸不生效**，该 agent 按现行规则写 `done`——R 阶段与一切旧计划因此天然不受影响（A148）；
 - `agent_launch` 在本节点尚无 `node_start` 时退出 `2`；
 - **`plan_amend` 的 `agent` 必须是 `monitor#<n>`**（`by=monitor`），且 `note` 必须同时含**方案文件名**与 `nodes=<新节点号,新节点号>` 列表，缺一退出 `2`（§4.5）。
 
@@ -424,6 +429,8 @@ user_decision <coder>          ← 永远出现，不看 decision_mode
 | `depends_on` 跨阶段指向未闭合阶段 | HC-RL-A89 |
 | `trigger` 值非法 / `on:done:` 引用不存在 agent | HC-RL-A35 |
 | `on:done:` 跨节点引用 | HC-RL-A71 |
+| `on:review_ready:` 引用不存在 agent，或 trigger 取值不在四态内（含 `on:review-ready:` 一类拼写变体） | HC-RL-A35 |
+| `on:review_ready:` 跨节点引用（含 R 形态：该节点内根本没有可引用的同节点送审方） | HC-RL-A71 |
 | 节点无非 superseded 的 agent（空节点） | HC-RL-A75 |
 | `stage` 值不在阶段枚举内 | HC-RL-A129 |
 | 同一阶段的节点未按 stage 分组连续（忽略 superseded 行；§4.5 的追加行落在表尾不算违规）〔产品终态；阶段性交付范围见本表后的阶段性交付注记〕 | HC-RL-A129 |
@@ -507,14 +514,14 @@ user_decision <coder>          ← 永远出现，不看 decision_mode
 | `role` | 角色名（对应 `roles.toml` 的键） |
 | `launch` | 发起方式；留空则取 `roles.toml` 的默认。**实际启动方式与本列不同时不改计划**：监工在该 `agent_launch.note` 写 `launch_fix=<原因>`，视为运行事实记账而非改计划（RLT-A-08；不触发 `plan_amend`，lint 不校验本列与账本一致） |
 | `output` | 产出文件 |
-| `trigger` | 留空 = 节点开始即发起；`on:blocked` = 上游 agent 卡住时；`on:done:<名字>` = 等指定**同节点** agent `done` 后发起。**批内持续在场的角色（coder、checker）一律留空**——它们要在对方拿到终态前就在场 |
+| `trigger` | 留空 = 节点开始即发起；`on:blocked` = 上游 agent 卡住时；`on:done:<名字>` = 等指定**同节点** agent `done` 后发起；**`on:review_ready:<名字>`**（RLT-A-09）= 等指定**同节点** agent 发出指向本 agent 的「待复核」信号后发起，**被等的那个 agent 不必进终态**。**批内持续在场的角色（coder、checker）一律留空**——它们要在对方拿到终态前就在场。新 trigger 只用于送审方与判定方同处一个节点的 **W / C / X**，**R 阶段不用**——R 节点没有同节点送审方，写了会被「只允许同节点引用」直接拒掉 |
 | `note` | 备注。废弃行写 `superseded` |
 
 **不写 `model` 列**——模型统一从 `roles.toml` 按 `role` 取，避免同一角色在多处各写各的。
 
 ### 4.3 硬约束与 lint
 
-单元格**禁止出现竖线**（解析按竖线切列）。lint 逐条查：表头齐、**节点号全计划唯一**（含已 superseded 的号）、`stage` 为合法 `stage_id` 且其 `<card>` 前缀与 `card` 列一致、**同一阶段实例的节点按 stage 分组连续**、**同卡阶段实例串行**（`depends_on` 链无分叉）、`card` 在 marker 的 `cards` 里、`close` 与 `trigger` 合法且引用存在、`on:done:` 只引用同节点、`depends_on` 指向存在且非 superseded 的节点且不成环、**跨阶段依赖只能指向已在前面的阶段**、`agent.node` 存在、同节点内 agent 名唯一、**每个节点至少一个非 superseded 的 agent**。
+单元格**禁止出现竖线**（解析按竖线切列）。lint 逐条查：表头齐、**节点号全计划唯一**（含已 superseded 的号）、`stage` 为合法 `stage_id` 且其 `<card>` 前缀与 `card` 列一致、**同一阶段实例的节点按 stage 分组连续**、**同卡阶段实例串行**（`depends_on` 链无分叉）、`card` 在 marker 的 `cards` 里、`close` 与 `trigger` 合法且引用存在、`on:done:` **与 `on:review_ready:`** 只引用同节点、`depends_on` 指向存在且非 superseded 的节点且不成环、**跨阶段依赖只能指向已在前面的阶段**、`agent.node` 存在、同节点内 agent 名唯一、**每个节点至少一个非 superseded 的 agent**。
 
 **「连续」这条按 stage 分组判定，不看物理行号相邻**（为 §4.5 运行中改计划放宽）：忽略 superseded 行后，同一 `stage_id` 的非 superseded 节点在表中构成一段连续区间即算通过，**追加行落在表尾也通过**。其余规则一条不放松——**节点号重复（含已 superseded 的号）仍然拒绝**，`depends_on` 不得指向 superseded、跨阶段依赖只指向前面的阶段、同卡阶段实例串行也都照旧。正是这几条没放松，编排才能从计划无歧义地推出下一阶段。
 
@@ -633,6 +640,9 @@ user_decision <coder>          ← 永远出现，不看 decision_mode
 - 一个节点可挂任意多个 agent、可并行；复核批就是「一个节点挂 N 个 reviewer」。
 - 每份文件在一个节点内**只有一个写入者**：`findings.md` / `lesson_candidates.md` 归 coder，`progress.md` 归 scribe，reviewer 各写各的 `review.<路径>.md`。
 - decider、checker、strategist 都不写账本，也不做复核。
+- **判定 PASS 之前，送审方与判定方都不记终态**（RLT-A-09）。送审方与判定方同处一个节点时（W / C / X），送审方每一轮产出写一条带 `ready_for_review=<判定方>` 的 `checkpoint` 送审；判定方 FAIL 时**保持 live**，把每条 P1 落成挂在自己名下的 `checkpoint`（`note` 写路由信息），整改意见发回**同一个** live 送审方；送审方改完再发一条新信号，由**同一个判定实例**复审，**不重拉、不新增 `agent_launch`、不增 attempt**。
+- **PASS 之后的终态顺序固定：先送审方、后判定方**（RLT-A-09）。判定方在两者之间保持 live，是它「已判 PASS 但尚未封口」的唯一可观察形态；`on:done:<送审方>` 的下游（如 C 的 scribe）也正是在送审方封口这一刻才命中。程序侧的保证见 §3.5 的配对闸（A146）。
+- **R 阶段不走这条**：R 节点只有多路 reviewer 与一个 scribe，**没有同节点送审方**，reviewer 复核的是上一节点的产出；R 打回本来就有合法出口（写 `stage_result` 附打回清单，由编排追加 X 节点）。R 模板一字不改，配对闸对它不生效。
 
 ### 5.2.1 阶段收尾的固定顺序
 
@@ -673,6 +683,8 @@ outcome=blocked（监工）→ 编排通知用户 → 用户裁决
 2. 若 `close` 列非空，则该 agent 有 **`done`** 终态（`agent_lost` / `cancelled` 不满足条件 2）。
 
 条件 1 永不豁免——施工节点写 `close=agent:scribe` 时，coder 与 checker 也挂在该节点上，scribe 终态但它们未交付时仍不可关。正因为条件 1 永远在，`all_agents_done` 这种枚举值恒真、纯属重复，不设。
+
+**双判据本身一字不改**（RLT-A-09）：新增的只是**进终态的时机**——本节点存在指向某判定方的「待复核」信号时，该判定方的 `done` 必须晚于它所复核的那个送审方实例的 `done`（§3.5 的配对闸，A146）。两条判据仍在 `node_close` 判，配对闸在写 `done` 当场判，**位点不同、互不替代**；没有信号的节点（R 阶段与一切旧计划）判据与时机都照旧。
 
 **阶段关闭**：该实例全部节点 `closed`、监工写下最新 `outcome ∈ {done, cancelled}` 的 `stage_result` 后，编排写 `stage_close`。
 
@@ -776,8 +788,9 @@ attempt_max = 3            # 节点实例内同一 agent 名的重拉上限
 [limits.on_exceed]
 action = "strategist-then-user"
 note = """
-两套计数独立、不叠加、不互相重置：attempt 抓「实例挂了重拉」，
-rework 抓「复核打回」。任一先到上限即停，出口相同：
+三套计数独立、不叠加、不互相重置：attempt 抓「实例挂了重拉」，
+rework 抓「X 阶段复核打回」，节点内送审轮次抓「判定方在同一节点里反复打回」。
+任一先到上限即停，出口相同：
 监工拉 strategist → strategist 输出全局方案或建议停卡 → 永远交用户裁决。
 """
 ```
@@ -870,16 +883,17 @@ herdr agent wait <agent> --timeout 1200000
 
 **编排挂掉**：账本停在某个 `stage_start` / `monitor_launch` 之后。人重拉编排，它读 `status --json` 定位当前阶段续跑；**不重复写 `stage_start`**（每阶段仅一次）。
 
-**两套止损计数，各自独立，谁先到谁触发，不叠加**：
+**三套止损计数，各自独立，谁先到谁触发，不叠加**（RLT-A-09 由两套扩为三套）：
 
 | 计数 | 范围 | 上限 | 递增时机 |
 |---|---|---|---|
 | **attempt** | 节点实例内同一 agent 名 | 3（每节点独立，跨节点不累计） | 仅在本节点 `agent_lost` / `cancelled` / 阶段 `failed` 后重拉时 +1；**批内 `checkpoint` 往返不增**；节点级返工是新节点实例、从 1 起 |
 | **X 轮数** | 复核返工轮 | `dh-mapping.toml` 的 `max_rounds`（当前 2） | 每开一个 X 阶段 +1 |
+| **节点内送审轮次** | 节点内同一判定方 | `dh-mapping.toml` 的 `rework_max_rounds`（当前 2；**与 X 轮数共用取值，不新增配置键、不改取值**） | 每写一条指向该判定方的 `ready_for_review=` 信号 +1，**首轮计入**；耗尽判据是「条数 ≥ 上限 **且** 该判定方在本节点仍无 `done`」（RLT-A-09） |
 
 **静默超时**（RLT-A-08）：`status` 只看账本，最近事件距今超过 `dh-mapping.toml` 的 `limits.silence_timeout_min`（默认 30）即标 `ledger_silent` 提示；提示不等于挂死。监工收到提示后再核三件事：Herdr 报告的 agent 状态、pane 末行、允许路径内产出文件，**三者均无变化**才判定挂死：先向其发送中断使 `wait` 返回，再写 `agent_lost`（`note` 含 `silent_timeout`），同 pane 重拉 `#n+1`，重发派活并注明「先检查已有部分产物」；任一仍在变化则不得中断。这是 attempt 递增的合法前因之一（A113 的 `agent_lost` 分支），不是新的计数。
 
-**出口相同**：任一先到上限即停 → 拉 **strategist** → **交用户裁决**。两者不叠加计算，也不互相重置。
+**出口相同**：任一先到上限即停 → 拉 **strategist** → **交用户裁决**。三者不叠加计算，也不互相重置。**第三套只投影、不拒写**（RLT-A-09）：与前两套一样是只读派生，`add` 从不因轮次拒绝任何 ready 信号；超限后第 N+1 条仍照常落账，由监工读到耗尽标记后拉 strategist，`escalate` 作链首、`user_decision` 永远出现（§3.4 的 strategist 链不变）。三套计数**都不进 `status --json` 的冻结 schema**，处境一致。
 
 ### 7.4 终端空间拓扑与 pane 布局
 
@@ -916,15 +930,17 @@ C1 node_start
   agent_launch checker#1      （trigger 留空）
 
   coder 写完第 1 轮，pane 打四行小结
-    → checkpoint coder#1    note=round=1 小结已出
+    → checkpoint coder#1    note=ready_for_review=checker round=1 小结已出   ← seq S1，非终态送审信号
   监工把小结与 diff 送 checker
-    → checkpoint checker#1  note=round=1 偏离：X 处未按 task_plan 第 2 条
+    → checkpoint checker#1  note=routed_to=coder#1 round=1 偏离：X 处未按 task_plan 第 2 条
+                            （FAIL，checker 保持 live，不记 done）
   监工把方案 prompt 回同一个 coder（不换人、不加 attempt）
     → checkpoint coder#1    note=round=1 按方案已修
+    → checkpoint coder#1    note=ready_for_review=checker round=2 已可复核    ← seq S2，第 2 轮送审
 
-  checker 再核，通过
-    → done checker#1        note=round=2 通过
-    → done coder#1          note=本批完成，四行小结已收
+  checker 再核，通过（同一个 checker#1 实例复审，不重拉、不新增 agent_launch）
+    → done coder#1          note=本批完成，四行小结已收                   ← 送审方先封口
+    → done checker#1        note=reviewed=coder#1 ready_seq=S2 PASS        ← 判定方后封口
   agent_launch scribe#1     （on:done:coder）
     → done scribe#1         note=progress.md 已写
   node_close C1             （close=agent:checker，条件 1 要求三者全终态）
@@ -937,6 +953,7 @@ C1 node_start
 - **checker 通过才进下一批**，不是「修完就进」。checker 的账本 `done` 语义就是「本批方向通过」。
 - **批内的「方案 → 修」一律走 `checkpoint`**，`note` 记 checker 轮次；`agent_launch` 与 attempt **都不增加**。
 - coder 在 checker 通过前**拿不到终态事件**——这是状态机能成立的前提（终态后同一 agent 不得再有事件）。所以 checker 的 trigger 是**留空**（节点开始即在场），不是 `on:done:coder`。
+- **判定 PASS 之前谁都不记 `done`**（RLT-A-09）：coder 每一轮产出用一条带 `ready_for_review=checker` 的 `checkpoint` 送审；checker FAIL 时保持 live，把整改意见落成自己名下的 `checkpoint` 路由回同一个 coder；PASS 后按 **coder 先、checker 后**依次封口，checker 的 `done.note` 用 `reviewed=` 与 `ready_seq=` 回指它答的是哪一条信号。C 阶段 checker 的 trigger **仍然留空**，因此**发不发信号由纪律定**；一旦发了，封口顺序就由程序咬住（§3.5 的 A145 / A146）。
 
 ### 9.2 blocked → decider → 按 `decision_mode` 分路（同样不换人）
 
@@ -960,10 +977,14 @@ resume    coder#1     note=按 decision.1.md 继续
 R 阶段：四路 reviewer 并行 → scribe 收敛 review.md
    有 P0/P1 → 编排开 X1 阶段（新终端空间、新监工）
 X1：**开新的 coder 实例**（节点级返工，attempt 从该节点的 1 起）修 + reviewer 再审
+   X 节点内 coder 与 reviewer 同处一表：coder 写 checkpoint 带 ready_for_review=<打回路> 送审，
+   该路 reviewer 的 trigger 为 on:review_ready:coder；FAIL 则 reviewer 保持 live 路由回同一 coder，
+   PASS 后按 coder 先、reviewer 后封口（§5.2、§3.5）
    过 → stage_close X1 → 回 R 收敛
    不过 → X2（第 2 轮，max_rounds=2 已达）
 X2 仍不过（X 轮数达 max_rounds=2）→ 监工拉 strategist
-   （另一条等价入口：某节点内 attempt 达 3 —— 两套计数谁先到谁触发，不叠加）
+   （另两条等价入口：某节点内 attempt 达 3，或某节点内对同一判定方的送审轮次达 rework_max_rounds
+     —— 三套计数谁先到谁触发，不叠加）
    输入：brief、task_plan、全部 review、账本
    输出：全局方案 或 建议停卡
    → **永远交用户裁决**（不看 decision_mode）
@@ -1075,7 +1096,7 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 | agent | node | role | launch | output | trigger | note |
 |---|---|---|---|---|---|---|
 | builder | W1 | builder | | task_plan.md | | |
-| plan-reviewer | W1 | plan-reviewer | | review.plan.md | on:done:builder | |
+| plan-reviewer | W1 | plan-reviewer | | review.plan.md | on:review_ready:builder | |
 | coder | C1 | coder | zcode | (代码与 findings) | | |
 | checker | C1 | checker | | check.C1.md | | |
 | scribe | C1 | scribe | | progress.md | on:done:coder | |
@@ -1090,16 +1111,17 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 {"seq":3,"ts":"2026-09-09T09:00:40+08:00","node":"W1","event":"monitor_launch","agent":"orchestrator#1","by":"orchestrator","note":"stage_id=DHR_90:W#1 ws=relay-w1"}
 {"seq":4,"ts":"2026-09-09T09:01:02+08:00","node":"W1","event":"node_start","agent":"monitor#1","by":"monitor","note":""}
 {"seq":5,"ts":"2026-09-09T09:01:20+08:00","node":"W1","event":"agent_launch","agent":"builder#1","by":"monitor","note":"attempt=1"}
-{"seq":6,"ts":"2026-09-09T09:40:11+08:00","node":"W1","event":"done","agent":"builder#1","by":"monitor","note":"七件套齐，task_plan.md 已写"}
-{"seq":7,"ts":"2026-09-09T09:40:30+08:00","node":"W1","event":"agent_launch","agent":"plan-reviewer#1","by":"monitor","note":"on:done:builder"}
-{"seq":8,"ts":"2026-09-09T10:02:15+08:00","node":"W1","event":"done","agent":"plan-reviewer#1","by":"monitor","note":"review.plan.md 已读，无 P0"}
-{"seq":9,"ts":"2026-09-09T10:02:30+08:00","node":"W1","event":"node_close","agent":"monitor#1","by":"monitor","note":"双判据成立"}
-{"seq":10,"ts":"2026-09-09T10:02:35+08:00","node":"W1","event":"stage_result","agent":"monitor#1","by":"monitor","note":"stage_id=DHR_90:W#1 outcome=done task_plan 已过审"}
-{"seq":11,"ts":"2026-09-09T10:02:50+08:00","node":"W1","event":"stage_close","agent":"orchestrator#1","by":"orchestrator","note":"stage_id=DHR_90:W#1"}
-{"seq":12,"ts":"2026-09-09T10:03:05+08:00","node":"C1","event":"stage_start","agent":"orchestrator#1","by":"orchestrator","note":"stage_id=DHR_90:C#1"}
+{"seq":6,"ts":"2026-09-09T09:40:11+08:00","node":"W1","event":"checkpoint","agent":"builder#1","by":"monitor","note":"ready_for_review=plan-reviewer round=1 七件套齐，task_plan.md 已写"}
+{"seq":7,"ts":"2026-09-09T09:40:30+08:00","node":"W1","event":"agent_launch","agent":"plan-reviewer#1","by":"monitor","note":"on:review_ready:builder"}
+{"seq":8,"ts":"2026-09-09T10:02:05+08:00","node":"W1","event":"done","agent":"builder#1","by":"monitor","note":"task_plan.md 定稿，送审方先封口"}
+{"seq":9,"ts":"2026-09-09T10:02:15+08:00","node":"W1","event":"done","agent":"plan-reviewer#1","by":"monitor","note":"reviewed=builder#1 ready_seq=6 PASS review.plan.md 已读，无 P0"}
+{"seq":10,"ts":"2026-09-09T10:02:30+08:00","node":"W1","event":"node_close","agent":"monitor#1","by":"monitor","note":"双判据成立"}
+{"seq":11,"ts":"2026-09-09T10:02:35+08:00","node":"W1","event":"stage_result","agent":"monitor#1","by":"monitor","note":"stage_id=DHR_90:W#1 outcome=done task_plan 已过审"}
+{"seq":12,"ts":"2026-09-09T10:02:50+08:00","node":"W1","event":"stage_close","agent":"orchestrator#1","by":"orchestrator","note":"stage_id=DHR_90:W#1"}
+{"seq":13,"ts":"2026-09-09T10:03:05+08:00","node":"C1","event":"stage_start","agent":"orchestrator#1","by":"orchestrator","note":"stage_id=DHR_90:C#1"}
 ```
 
-写入者交接看得很清楚：seq 1-3 编排、4-10 监工（末条是 `stage_result`）、11-12 编排。**时间上不重叠**，且收尾四步顺序为 `node_close` → `stage_result` → `stage_close` → 关空间。
+写入者交接看得很清楚：seq 1-3 编排、4-11 监工（末条是 `stage_result`）、12-13 编排。**时间上不重叠**，且收尾四步顺序为 `node_close` → `stage_result` → `stage_close` → 关空间。W 段同时是「待复核」信号的最小形态（RLT-A-09）：seq 6 是 builder 的**非终态**送审信号，seq 7 靠 `on:review_ready:builder` 拉起 plan-reviewer，seq 8 / 9 按**送审方先、判定方后**依次封口，seq 9 的 `reviewed=` 与 `ready_seq=6` 回指它答的是哪一条信号。
 
 **agent_lost 后重拉、attempt +1** 的形态（另一张卡的片段）：
 
@@ -1270,7 +1292,7 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 | HC-RL-A147 | 第三套止损计数（RLT-A-09 新增；**只投影、不拒写**）：`loss_stop()` 新增 `review_rounds[(node, 判定方)]` = 该组合下的 ready 信号条数（**首轮计入**），`review_exhausted` 判据为「条数 ≥ `limits.rework_max_rounds` 且该判定方在本节点仍无 `done`」；耗尽时 `LossStop.triggered` 为真，出口为监工拉 strategist → `escalate` 作链首 → 交用户裁决（A97 / A114 不变）。**不新增配置键、不改取值**；`add` 不因轮次拒绝任何写入 | 单测：`rework_max_rounds` 取 2 与 3 两种配置，**同一实现**分别断言耗尽发生在第 2 条与第 3 条未通过的信号处；断言超限后第 N+1 条 ready 仍被 `add` 接受且账本增行；断言耗尽后 strategist 链可正常以 `escalate` 起头；断言三套计数互不叠加、互不重置（与 A107 共用 fixture） |
 | HC-RL-A148 | 向后兼容（RLT-A-09 新增；trigger 词表是**扩集不是替换**）：`on:done:<X>` 的 lint 与运行时语义与 A70 逐字一致，旧计划与已落盘账本原样通过、不需迁移；**R 模板与一切不存在 ready 信号的节点不受 A146 影响**（A146 的生效条件给出结构性保证）；同一节点内**混用** `on:done:` 与 `on:review_ready:` 两种 trigger 均被接受，两路各按自己的前置被校验；`lint` 不对 `on:done:` 报错，也不报「建议迁移」（lint 只有 0 / 2 / 3 三个退出码，无警告通道） | 单测：`rlt12-win-01` 的 `relay_plan.md` 原样过 lint 且退出 0；该计划的账本 71 行原样重放，断言逐条被接受、R 段不触发 A146；一份混用两种 trigger 的合成 plan 过 lint 并跑通一条完整账本，`on:done:` 那路按 A70 判、`on:review_ready:` 那路按 A144 判，各构造一个反例断言编号不串 |
 | HC-RL-A149 | 模板与 adapter 同步（RLT-A-09 新增；适用范围 = 送审方与判定方同处一个节点的 **W / C / X**，**R 不适用**）：`SKILL.md` 的 **W 阶段模板**中 plan-reviewer 的 trigger 由 `on:done:builder` 改为 `on:review_ready:builder`；**X 阶段模板**中被打回那路 reviewer 的 trigger 由 `on:done:coder` 改为 `on:review_ready:coder`；**C 阶段模板** trigger 列不改（checker 仍留空，A95 一字不改）但补「PASS 前不记 done」纪律原文；**R 阶段模板一字不改**。`SKILL.md` 硬规则段与两份 adapter 的监工模板各含「判定方判定 PASS 前，送审方与判定方均不记 `done`；FAIL 走 live 判定方的 `checkpoint` 路由回同一送审方；PASS 后按送审方→判定方顺序记终态」原文 | ①结构检查：五阶段模板逐一读取，断言 W 的 plan-reviewer 行与 X 的 reviewer 行取新 trigger、C 的 checker 仍留空、**R 三行与现状逐字一致**；`SKILL.md` 与两份 adapter 三处各命中该段原文。②最小账本序列测试：对 W、C、X 各跑一条合成账本，覆盖三种情形——判定方 `agent_lost` 后按 A49 合法重拉并重新消费新信号；一路 FAIL 后由**同一实例**复审至 PASS（断言无第二条 `agent_launch`）；X 两路中一路 FAIL 一路 PASS 时，另一路不被重拉也不被提前封口 |
-| HC-RL-A150 | lint 覆盖新 trigger（RLT-A-09 新增）：`trigger` 四态——空 / `on:blocked` / `on:done:<名字>` / `on:review_ready:<名字>`，非法值与引用不存在的 agent 名均拒（A35 承接）；`on:review_ready:` 与 `on:done:` 同样**只允许同节点引用**，跨节点报错（A71 承接） | 单测：四种合法 trigger 各一正例；`on:review_ready:nobody`、跨节点引用、拼写变体（如 `on:review-ready:`）各一反例，断言编号分别为 A35 / A71 / A35；**R 形态反例**：给一个没有同节点送审方的节点的 reviewer 写 `on:review_ready:coder`，断言被 A71 拒——这是「R 不适用本修订」的机械证据 |
+| HC-RL-A150 | lint 覆盖新 trigger（RLT-A-09 新增）：`trigger` 四态——空 / `on:blocked` / `on:done:<名字>` / `on:review_ready:<名字>`，非法值与引用不存在的 agent 名均拒（A35 承接）；`on:review_ready:` 与 `on:done:` 同样**只允许同节点引用**，跨节点报错（A71 承接） | 单测：四种合法 trigger 各一正例；`on:review_ready:nobody`、跨节点引用、拼写变体（如 `on:review-ready:`）各一反例，断言编号分别为 A35 / A71 / A35；**R 形态反例**：给一个没有同节点送审方的节点的 reviewer 写 `on:review_ready:coder`，断言被 A71 拒——这是「R 不适用本修订」的机械证据；另断言 §3.5 的 lint 规则映射表中 `on:review_ready:` 的两行（分别咬 A35 与 A71）存在 |
 
 ### 11.2 人类验收栏
 
@@ -1356,6 +1378,6 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 | 密钥红线 | §13 与 skill 核心引用宪章第 6 条，HC-RL-A27 以规则原文检查为主、grep 为 smoke。 |
 | 跨语言复用风险 | 账本是 Python、现役 Runner 是 PowerShell，只能借手法不能借代码；且只借纯追加、不借原子替换。 |
 | 验收二分与原子化 | 已按机器证/人判分栏，人验栏只留业务判断。AI 栏凡含两个以上可独立失败断言的均已拆分。共享 E-ID：E-链路（HC-RL-A30 / HC-RL-H1）、E-账本（HC-RL-A31 / HC-RL-H10）。 |
-| 验收 ID 稳定性 | 包内唯一，新条目一律续号；RLT-A-06 退役 A91/A108/H2，续发 A131～A136/H18，不复用旧号。完整退役清单见 §11，A131～A134 保留 `split-from`，H18 保留 `supersedes`。 |
+| 验收 ID 稳定性 | 包内唯一，新条目一律续号；RLT-A-06 退役 A91/A108/H2，续发 A131～A136/H18，不复用旧号；RLT-A-08 续发 A137～A143、RLT-A-09 续发 A144～A150，两者**均只续号，不退役、不改号、不复用**。完整退役清单见 §11，A131～A134 保留 `split-from`，H18 保留 `supersedes`。 |
 | 一致性对照 | 已列为 §14 第 4 条开发方案同步项。 |
 | 数据口径契约 | 本模块不涉及指标口径，N/A。 |
