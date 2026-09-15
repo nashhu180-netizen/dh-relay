@@ -79,9 +79,9 @@
 | 4 | HC-RL-A140 | AI | `a80fcde`；`-k RelayLedgerSilenceTests` → `Ran 3` `OK` exit=0；E11/E14/E15 三处模板命中 | 是（附 P2-2 澄清项） |
 | 5 | HC-RL-A141 | AI | `0e0f24a`；`SkillAdapterTests.test_a141_dispatch_wait_and_sandbox_fallback_discipline`；E16 两 adapter 各三段 | 是（机器证） |
 | 6 | HC-RL-A142 | AI | `0e0f24a`；两条去 skip 负例 + `test_a114_cancelled_uses_triggering_agent`；E11 skipped=0；变异 E21 | 是（机器证） |
-| 7 | HC-RL-A143 | AI | `0e0f24a`+`4105da8`；`SkillCoreDocTests.test_a143_light_plan_review_severity_classification`；E16 `SKILL.md:57`；F-009 复算 3 P1+2 P2 | 部分：结构达成；数值 oracle 待用户裁决 |
+| 7 | HC-RL-A143 | AI | `0e0f24a`+`4105da8`；`SkillCoreDocTests.test_a143_light_plan_review_severity_classification`；E16 `SKILL.md:57`；F-009 复算 3 P1+2 P2 | 是（2026-09-15 补记：结构达成如上；数值 oracle 已由用户裁决「修订期望值」闭合，design/01 的 A143 期望值改为 `3 P1 + 2 P2`，与本卡复算一致——RLT-A-10 最小澄清） |
 
-**材料齐没齐**：[ ]（AI侧材料齐备；用户验收未做；F-009/A143口径分歧待裁决）
+**材料齐没齐**：[x]（2026-09-15 按实核：AI 侧材料齐备——七件套在案、三路复核记录在案、单测 181 全绿 skipped=0、verify `e8eda0e` 与 squash `124a5c9` 在案；用户已于 2026-09-15 整体授权验收并授权 AI 代记，未逐条签；F-009/A143 口径分歧已由用户裁决「修订 oracle 期望值」闭合，design/01 的 A143 改为 `3 P1 + 2 P2`（RLT-A-10 最小澄清）。仍未闭合的只剩 F-003（仓根 `.gitignore` 忽略 `__pycache__` 的归属，不在本卡 allowed-paths）与三条澄清性 P2）
 
 ## scribe 体检（R1 · 四道闸）
 
@@ -136,7 +136,7 @@ miner 汇总：既有候选 4 条全部保留（无应并项）；lesson 路新�
 
 ### 遗留项（逐条，未闭合/待裁决）
 
-- F-009/A143：按冻结四类逐项计级 3 P1+2 P2，与 oracle 期望 1 P1+4 P2 不可兼得；X1 requirement 路维持原判「合同口径冲突、非施工缺陷」，收口责任在用户——待用户二选一（修订 A143 复算期望或给出去重/折级规则）。
+- ~~F-009/A143：按冻结四类逐项计级 3 P1+2 P2，与 oracle 期望 1 P1+4 P2 不可兼得；X1 requirement 路维持原判「合同口径冲突、非施工缺陷」，收口责任在用户——待用户二选一（修订 A143 复算期望或给出去重/折级规则）。~~ → **已闭合（2026-09-15 后补记）**：用户取「修订 oracle 期望值」出口，design/01 的 `HC-RL-A143` 期望值改为 `3 P1 + 2 P2` 并写明逐条计级口径（RLT-A-10 最小澄清）；未补去重/折级规则，本卡复算与计级明细一字未改。
 - X1 requirement 路 p2=4：P2-1 上述口径分歧；P2-2 A140 `ledger_silent` 终态提示范围；P2-3 normal 三路与 R-stage 两 reviewer 的层级术语差异；P2-4 派单 `-k "A or B or C"` 不被 unittest 解析（0 tests/exit 1，已用三条独立 `-k` 补足证据）。
 - R1 requirement 路 p2=3（P2-1~P2-3，同上述口径面）；C2 小审残留 p2=1（同 A143 口径分歧）。
 - F-003：仓根 `.gitignore` 忽略 `__pycache__/` 的归属待裁决（不在本卡 allowed-paths，未动）。
@@ -174,5 +174,7 @@ miner 汇总：既有候选 4 条全部保留（无应并项）；lesson 路新�
 - 确认记录：确认方式 = 对话 chat-confirm（2026-09-15）。用户答复原话「授权，你帮我代签」——整体授权验收通过并授权 AI 代记，未逐条给出结论。同一次对话中用户就 F-009/A143 口径分歧裁决「改」，即取「修订 oracle 期望值」出口，design/01 的 A143 已改为 `3 P1 + 2 P2`（RLT-A-10 最小澄清）。
 - verify 提交 SHA：`e8eda0e`（`verify(relay-light): RLT_21 机器闸取证——A137~A143 七条与全量单测`）；`git log --grep="^verify"` 可查
 - 签名：hyf（chat-confirm 代签）　　时间：2026-09-15
+
+- 确认结论：**通过**。依据：本卡**无风险放行账表**（该模板段与「填了实质风险 → 须写『带风险放行』」的措辞规则只存在于 RLT_12 的 `review.md`，本文件未设此表，故该规则无触发点）；本卡七条验收全部达成——A143 的数值 oracle 已随用户同日裁决闭合，F-001/F-002 由本卡实现关闭，单测 181 全绿 skipped=0。仍挂账但**不属本卡 allowed-paths、亦非本卡缺陷**的只有 F-003（仓根 `.gitignore` 忽略 `__pycache__` 的归属）与三条澄清性 P2（A140 `ledger_silent` 提示范围、层级术语差异、`-k` 多表达式解析），均已在「遗留项」逐条在册。
 
 → 解锁状态：**已验收**（2026-09-15 用户整体授权、AI 代记，未逐条签；verify `e8eda0e` 在案）
