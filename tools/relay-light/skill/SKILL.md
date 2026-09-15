@@ -165,6 +165,12 @@ agent_launch → checkpoint* → ( blocked → escalate → decision → [user_d
 
 `checkpoint` 是批内往返的唯一载体：可重复任意次，不新增 attempt、不新增 `agent_launch`。
 
+**`ledger_silent` 处置**：`status` 按账本最近事件计算静默，超过 `dh-mapping.toml` 的 `limits.silence_timeout_min`（默认 30 分钟）的在场 agent 标 `ledger_silent`——这是提示、不是挂死判定。处置原文：
+
+```text
+ledger_silent → 核 Herdr 状态 + pane 末行 + 允许路径产出 三者是否也无变化 → 三者均无变化才中断并记 agent_lost silent_timeout → 同 pane 重拉 #n+1；任一仍在变化不得中断。
+```
+
 ## planner-amend 改计划模板
 
 改计划实例 `planner-amend#<n>` 由当班监工在过门后按需拉起，复用 planner 角色档，不发明新角色。输入恰四件：方案文件（decider / strategist 产出，**只读不改**）、当前 `relay_plan.md`、开发方案 `dev_plan/P<N>-*.md`、涉及的已有卡 `docs/modules/<模块>/workspace/<卡号>/task_plan.md`。

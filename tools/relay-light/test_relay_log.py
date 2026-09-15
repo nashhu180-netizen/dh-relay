@@ -2148,7 +2148,9 @@ STATUS_RESULT_KEYS = {"stage_id", "outcome", "note", "amend", "nodes"}
 # `amend`/`nodes` belong to `stages[].result` alone.
 STATUS_LAST_RESULT_KEYS = {"stage_id", "outcome", "note"}
 STATUS_NODE_KEYS = {"node", "card", "stage", "type", "state", "closable", "reasons"}
-STATUS_AGENT_KEYS = {"node", "agent", "last_event", "last_ts", "idle_seconds"}
+STATUS_AGENT_KEYS = {
+    "node", "agent", "last_event", "last_ts", "idle_seconds", "launch_fix", "ledger_silent",
+}
 # A44: status wording restates ledger facts only; these are quality-judgement words.
 JUDGEMENT_WORDS = ("合格", "不合格", "质量", "优秀", "正确", "错误", "通过", "pass", "fail", "quality")
 
@@ -2245,11 +2247,14 @@ class RelayStatusProjectionTests(RelayCliTestCase):
                 ],
                 "agents": [
                     {"node": "W1", "agent": "builder#1", "last_event": "done",
-                     "last_ts": "2026-09-09T09:40:11+08:00", "idle_seconds": 3821},
+                     "last_ts": "2026-09-09T09:40:11+08:00", "idle_seconds": 3821,
+                     "launch_fix": None, "ledger_silent": False},
                     {"node": "W1", "agent": "plan-reviewer#1", "last_event": "done",
-                     "last_ts": "2026-09-09T10:02:15+08:00", "idle_seconds": 2497},
+                     "last_ts": "2026-09-09T10:02:15+08:00", "idle_seconds": 2497,
+                     "launch_fix": None, "ledger_silent": False},
                     {"node": "C1", "agent": "coder#1", "last_event": "checkpoint",
-                     "last_ts": "2026-09-09T10:31:12+08:00", "idle_seconds": 760},
+                     "last_ts": "2026-09-09T10:31:12+08:00", "idle_seconds": 760,
+                     "launch_fix": None, "ledger_silent": False},
                 ],
                 "errors": [],
             },
@@ -5061,6 +5066,562 @@ class SkillAdapterTests(unittest.TestCase):
         self.assertEqual(
             pointer_lines["adapter-claude-code.md"], pointer_lines["adapter-codex.md"]
         )
+
+
+class RelayStageResultRefTests(RelayCliTestCase):
+    """RLT_21 C1 — HC-RL-A137：stage_result 按 outcome 分校验与 ref= 引用合同。"""
+
+    def add_ok(self, event: str, *, node: str, agent: str, note: str = "") -> None:
+        result = self.run_add(event, node=node, agent=agent, note=note)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual("", result.stdout)
+
+    def assert_rejected(
+        self, event: str, *, node: str, agent: str, note: str = "", code: str
+    ) -> subprocess.CompletedProcess[str]:
+        ledger_path = self.plan_path.parent / "relay_log.jsonl"
+        before = ledger_path.read_bytes() if ledger_path.exists() else None
+        result = self.run_add(event, node=node, agent=agent, note=note)
+        self.assertEqual(2, result.returncode, result.stderr)
+        self.assertEqual("", result.stdout)
+        self.assertRegex(result.stderr, rf"^error: {re.escape(code)} ")
+        after = ledger_path.read_bytes() if ledger_path.exists() else None
+        self.assertEqual(before, after, "a rejected add must not touch ledger bytes")
+        return result
+
+    def _write_plan(self) -> None:
+        """W1 + C1/C2 同属 DHR_90:C#1；C2 始终未启动，保证实例存在未关节点。"""
+        self.write_plan(
+            node_rows=[
+                "| W1 | DHR_90 | DHR_90:W#1 | build | agent:builder | | |",
+                "| C1 | DHR_90 | DHR_90:C#1 | construction | agent:coder | W1 | |",
+                "| C2 | DHR_90 | DHR_90:C#1 | construction | agent:coder | C1 | |",
+            ],
+            agent_rows=[
+                "| builder | W1 | builder | | task_plan.md | | |",
+                "| coder | C1 | coder | | code.md | | |",
+                "| coder | C2 | coder | | code.md | | |",
+            ],
+        )
+
+    def _close_w_stage(self) -> None:
+        self.add_ok("plan_loaded", node="W1", agent="orchestrator#1", note="skill=0.1.0")
+        self.add_ok("stage_start", node="W1", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
+        self.add_ok("monitor_launch", node="W1", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
+        self.add_ok("node_start", node="W1", agent="monitor#1")
+        self.add_ok("agent_launch", node="W1", agent="builder#1")
+        self.add_ok("done", node="W1", agent="builder#1")
+        self.add_ok("node_close", node="W1", agent="monitor#1")
+        self.add_ok(
+            "stage_result", node="W1", agent="monitor#1",
+            note="stage_id=DHR_90:W#1 outcome=done 工作区就绪",
+        )
+        self.add_ok("stage_close", node="W1", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
+
+    def _open_c_stage(self) -> None:
+        self.add_ok("stage_start", node="C1", agent="orchestrator#1", note="stage_id=DHR_90:C#1")
+        self.add_ok("monitor_launch", node="C1", agent="orchestrator#1", note="stage_id=DHR_90:C#1")
+        self.add_ok("node_start", node="C1", agent="monitor#1")
+
+    def _blocked_coder(self) -> None:
+        self.add_ok("agent_launch", node="C1", agent="coder#1")
+        self.add_ok("blocked", node="C1", agent="coder#1", note="环境起不来")
+
+    def test_a137_blocked_with_valid_ref_accepted_while_nodes_open(self) -> None:
+        """节点未关 + blocked + 合法 ref= → 接受；同场景 done 仍拒 A112。"""
+        self._write_plan()
+        self._close_w_stage()
+        self._open_c_stage()
+        self._blocked_coder()
+        self.assert_rejected(
+            "stage_result", node="C1", agent="monitor#1", code="HC-RL-A112",
+            note="stage_id=DHR_90:C#1 outcome=done 未关却报完成",
+        )
+        self.add_ok(
+            "stage_result", node="C1", agent="monitor#1",
+            note="stage_id=DHR_90:C#1 outcome=blocked ref=coder#1:blocked 等用户裁决",
+        )
+        # blocked 引用的合法形态之二：ref 指向本实例内一条 agent_lost
+        self.reset_ledger()
+        self._close_w_stage()
+        self._open_c_stage()
+        self.add_ok("agent_launch", node="C1", agent="coder#1")
+        self.add_ok("agent_lost", node="C1", agent="coder#1", note="NOT_RUN 沙箱起不来")
+        self.add_ok(
+            "stage_result", node="C1", agent="monitor#1",
+            note="stage_id=DHR_90:C#1 outcome=blocked ref=coder#1:agent_lost 等用户裁决",
+        )
+        # failed 与 blocked 同一路：节点未关 + 合法 ref 即接受
+        self.add_ok(
+            "stage_result", node="C1", agent="monitor#1",
+            note="stage_id=DHR_90:C#1 outcome=failed ref=coder#1:agent_lost 复核不过",
+        )
+
+    def test_a137_missing_ref_and_unknown_instance_each_exit_two(self) -> None:
+        """缺 ref=、ref 指向本实例内不存在的 agent、跨实例引用，各退 2 报 A137。"""
+        self._write_plan()
+        self._close_w_stage()
+        self._open_c_stage()
+        self._blocked_coder()
+        self.assert_rejected(
+            "stage_result", node="C1", agent="monitor#1", code="HC-RL-A137",
+            note="stage_id=DHR_90:C#1 outcome=blocked 等用户裁决",
+        )
+        self.assert_rejected(
+            "stage_result", node="C1", agent="monitor#1", code="HC-RL-A137",
+            note="stage_id=DHR_90:C#1 outcome=blocked ref=coder#9:blocked 引用不存在",
+        )
+        # builder#1 属于已关闭的 W#1，不属于本实例 C#1
+        self.assert_rejected(
+            "stage_result", node="C1", agent="monitor#1", code="HC-RL-A137",
+            note="stage_id=DHR_90:C#1 outcome=blocked ref=builder#1:blocked 跨实例引用",
+        )
+        self.assert_rejected(
+            "stage_result", node="C1", agent="monitor#1", code="HC-RL-A137",
+            note="stage_id=DHR_90:C#1 outcome=blocked ref=coder#1:done 非法后缀",
+        )
+
+    def test_a137_ref_overridden_by_resume_or_terminal_each_exit_two(self) -> None:
+        """ref 引用已不是该 agent 最新事件（resume / 终态覆盖）各退 2 报 A137。"""
+        self._write_plan()
+        self._close_w_stage()
+        self._open_c_stage()
+        self._blocked_coder()
+        # 终态覆盖：coder#1 从 blocked 走到 agent_lost，ref=coder#1:blocked 已陈旧
+        self.add_ok("agent_lost", node="C1", agent="coder#1", note="NOT_RUN 起不来")
+        self.assert_rejected(
+            "stage_result", node="C1", agent="monitor#1", code="HC-RL-A137",
+            note="stage_id=DHR_90:C#1 outcome=blocked ref=coder#1:blocked 已被终态覆盖",
+        )
+        # resume 覆盖：blocked→escalate→decision→resume 后 blocked 不再是最新事件
+        self.reset_ledger()
+        self._close_w_stage()
+        self._open_c_stage()
+        self._blocked_coder()
+        self.add_ok("escalate", node="C1", agent="coder#1", note="decider=decider#1")
+        self.add_ok("decision", node="C1", agent="coder#1", note="decider=decider#1 decision.1.md")
+        self.add_ok("resume", node="C1", agent="coder#1", note="按 decision.1.md 继续")
+        self.assert_rejected(
+            "stage_result", node="C1", agent="monitor#1", code="HC-RL-A137",
+            note="stage_id=DHR_90:C#1 outcome=blocked ref=coder#1:blocked 已被 resume 覆盖",
+        )
+
+    def test_a137_stage_close_after_blocked_still_rejected(self) -> None:
+        """blocked stage_result 被接受后，stage_close 仍被拒（未关先撞 A89 前置闸）。"""
+        self._write_plan()
+        self._close_w_stage()
+        self._open_c_stage()
+        self._blocked_coder()
+        self.add_ok(
+            "stage_result", node="C1", agent="monitor#1",
+            note="stage_id=DHR_90:C#1 outcome=blocked ref=coder#1:blocked 等用户裁决",
+        )
+        self.assert_rejected(
+            "stage_close", node="C1", agent="orchestrator#1", code="HC-RL-A89",
+            note="stage_id=DHR_90:C#1",
+        )
+
+    def test_a137_blocked_on_fully_closed_stage_keeps_old_contract(self) -> None:
+        """全节点已关时 blocked/failed 沿用旧合同——ref= 只在「允许节点未关」时兜底。"""
+        self._write_plan()
+        self._close_w_stage()
+        self._open_c_stage()
+        self.add_ok("agent_launch", node="C1", agent="coder#1")
+        self.add_ok("done", node="C1", agent="coder#1")
+        self.add_ok("node_close", node="C1", agent="monitor#1")
+        self.add_ok("node_start", node="C2", agent="monitor#1")
+        self.add_ok("agent_launch", node="C2", agent="coder#1")  # C2 未关，实例仍有未关节点
+        # C2 有在场 agent → done 仍拒 A112；先把 C2 也关掉
+        self.assert_rejected(
+            "stage_result", node="C1", agent="monitor#1", code="HC-RL-A112",
+            note="stage_id=DHR_90:C#1 outcome=done 还有节点未关",
+        )
+        self.add_ok("done", node="C2", agent="coder#1")
+        self.add_ok("node_close", node="C2", agent="monitor#1")
+        # 全关后 blocked 无 ref 仍接受（与 RLT_07 冻结的 A118 用例一致）
+        self.add_ok(
+            "stage_result", node="C1", agent="monitor#1",
+            note="stage_id=DHR_90:C#1 outcome=blocked 等用户裁决",
+        )
+        self.assert_rejected(
+            "stage_close", node="C1", agent="orchestrator#1", code="HC-RL-A118",
+            note="stage_id=DHR_90:C#1",
+        )
+        self.add_ok(
+            "stage_result", node="C1", agent="monitor#1",
+            note="stage_id=DHR_90:C#1 outcome=done 用户裁决后继续",
+        )
+        self.add_ok("stage_close", node="C1", agent="orchestrator#1", note="stage_id=DHR_90:C#1")
+
+
+class RelayNotRunRetryTests(RelayCliTestCase):
+    """RLT_21 C1 — HC-RL-A138：NOT_RUN 止损出口与用户授权 launch_fix 组。"""
+
+    def add_ok(self, event: str, *, node: str, agent: str, note: str = "") -> None:
+        result = self.run_add(event, node=node, agent=agent, note=note)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual("", result.stdout)
+
+    def assert_rejected(
+        self, event: str, *, node: str, agent: str, note: str = "", code: str
+    ) -> subprocess.CompletedProcess[str]:
+        ledger_path = self.plan_path.parent / "relay_log.jsonl"
+        before = ledger_path.read_bytes() if ledger_path.exists() else None
+        result = self.run_add(event, node=node, agent=agent, note=note)
+        self.assertEqual(2, result.returncode, result.stderr)
+        self.assertEqual("", result.stdout)
+        self.assertRegex(result.stderr, rf"^error: {re.escape(code)} ")
+        after = ledger_path.read_bytes() if ledger_path.exists() else None
+        self.assertEqual(before, after, "a rejected add must not touch ledger bytes")
+        return result
+
+    def status_payload(self) -> dict[str, object]:
+        result = self.run_cli("status", "--plan", str(self.plan_path.parent), "--json")
+        self.assertEqual(0, result.returncode, result.stderr)
+        return json.loads(result.stdout)
+
+    def _write_plan(self) -> None:
+        self.write_plan(
+            node_rows=[
+                "| W1 | DHR_90 | DHR_90:W#1 | build | agent:builder | | |",
+                "| C1 | DHR_90 | DHR_90:C#1 | construction | agent:coder | W1 | |",
+            ],
+            agent_rows=[
+                "| builder | W1 | builder | | task_plan.md | | |",
+                "| coder | C1 | coder | | code.md | | |",
+            ],
+        )
+
+    def _open_c_node(self) -> None:
+        self.add_ok("plan_loaded", node="W1", agent="orchestrator#1", note="skill=0.1.0")
+        self.add_ok("stage_start", node="W1", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
+        self.add_ok("monitor_launch", node="W1", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
+        self.add_ok("node_start", node="W1", agent="monitor#1")
+        self.add_ok("agent_launch", node="W1", agent="builder#1")
+        self.add_ok("done", node="W1", agent="builder#1")
+        self.add_ok("node_close", node="W1", agent="monitor#1")
+        self.add_ok(
+            "stage_result", node="W1", agent="monitor#1",
+            note="stage_id=DHR_90:W#1 outcome=done",
+        )
+        self.add_ok("stage_close", node="W1", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
+        self.add_ok("stage_start", node="C1", agent="orchestrator#1", note="stage_id=DHR_90:C#1")
+        self.add_ok("monitor_launch", node="C1", agent="orchestrator#1", note="stage_id=DHR_90:C#1")
+        self.add_ok("node_start", node="C1", agent="monitor#1")
+
+    def _not_run_loss(self, agent: str) -> None:
+        self.add_ok("agent_launch", node="C1", agent=agent)
+        self.add_ok("agent_lost", node="C1", agent=agent, note="NOT_RUN 沙箱起不来")
+
+    def _exhaust_coder(self) -> None:
+        """三连 NOT_RUN 把 (C1, coder) 打到 attempt_max 止损。"""
+        for n in (1, 2, 3):
+            self._not_run_loss(f"coder#{n}")
+
+    def test_a138_not_run_exhaustion_rejects_next_launch_a107(self) -> None:
+        """连续 attempt_max 条 NOT_RUN agent_lost 后，下一条 agent_launch 退 2 报 A107；
+        非 NOT_RUN 的失联重置连击；此刻 blocked ref= 指向最后一条 agent_lost 被接受。"""
+        self._write_plan()
+        self._open_c_node()
+        # 一条普通失联打断连击：随后三条 NOT_RUN 才构成连续止损
+        self.add_ok("agent_launch", node="C1", agent="coder#1")
+        self.add_ok("agent_lost", node="C1", agent="coder#1", note="pane 失联")
+        for n in (2, 3):
+            self._not_run_loss(f"coder#{n}")
+        self.add_ok("agent_launch", node="C1", agent="coder#4")  # 连击=2，仍可重拉
+        self.add_ok("agent_lost", node="C1", agent="coder#4", note="NOT_RUN 环境仍不可用")
+        # 连击=3=attempt_max：无授权一律拒
+        self.assert_rejected(
+            "agent_launch", node="C1", agent="coder#5", code="HC-RL-A107", note="",
+        )
+        self.assert_rejected(
+            "agent_launch", node="C1", agent="coder#5", code="HC-RL-A107",
+            note="launch_fix=bypass_sandbox 无授权引用",
+        )
+        # 止损出口的合法收尾：blocked ref=<agent>#<attempt_max 内最新失联实例>:agent_lost
+        self.add_ok(
+            "stage_result", node="C1", agent="monitor#1",
+            note="stage_id=DHR_90:C#1 outcome=blocked ref=coder#4:agent_lost 等用户裁决",
+        )
+
+    def test_a138_user_decision_authorizes_one_fix_group(self) -> None:
+        """user_decision launch_fix=<token> 记在被止损 agent 名下，授权一组重拉预算；
+        无授权、token 不一致、缺 token 各退 2；attempt 续增且组内重新止损计数。"""
+        self._write_plan()
+        self._open_c_node()
+        self._exhaust_coder()
+        self.add_ok(
+            "stage_result", node="C1", agent="monitor#1",
+            note="stage_id=DHR_90:C#1 outcome=blocked ref=coder#3:agent_lost 等用户裁决",
+        )
+        self.add_ok(
+            "user_decision", node="C1", agent="coder#3",
+            note="launch_fix=bypass_sandbox 用户裁决：换沙箱档重拉",
+        )
+        self.assert_rejected(
+            "agent_launch", node="C1", agent="coder#4", code="HC-RL-A107",
+            note="launch_fix=workspace-write token 不一致",
+        )
+        self.assert_rejected(
+            "agent_launch", node="C1", agent="coder#4", code="HC-RL-A107", note="缺 token",
+        )
+        self.add_ok(
+            "agent_launch", node="C1", agent="coder#4", note="launch_fix=bypass_sandbox",
+        )
+        # 组内止损重新计 attempt_max：#4/#5/#6 连丢后 #7 拒
+        for n in (4, 5):
+            self.add_ok("agent_lost", node="C1", agent=f"coder#{n}", note="NOT_RUN 仍起不来")
+            self.add_ok(
+                "agent_launch", node="C1", agent=f"coder#{n + 1}",
+                note="launch_fix=bypass_sandbox",
+            )
+        self.add_ok("agent_lost", node="C1", agent="coder#6", note="NOT_RUN 仍起不来")
+        self.assert_rejected(
+            "agent_launch", node="C1", agent="coder#7", code="HC-RL-A107",
+            note="launch_fix=bypass_sandbox 组预算已尽",
+        )
+
+    def test_a138_second_fix_group_and_premature_authorization_rejected(self) -> None:
+        """每个 (node,agent) 至多一个 launch_fix 组；未止损时的授权 user_decision 同样退 2。"""
+        self._write_plan()
+        self._open_c_node()
+        # 未止损：coder#1 只丢一条，授权 user_decision 不成立
+        self._not_run_loss("coder#1")
+        self.assert_rejected(
+            "user_decision", node="C1", agent="coder#1", code="HC-RL-A107",
+            note="launch_fix=bypass_sandbox 预算未耗尽",
+        )
+        # 走完一组授权后，第二条带 launch_fix 的 user_decision 被拒
+        self._not_run_loss("coder#2")
+        self._not_run_loss("coder#3")
+        self.add_ok(
+            "user_decision", node="C1", agent="coder#3", note="launch_fix=bypass_sandbox",
+        )
+        self.add_ok(
+            "agent_launch", node="C1", agent="coder#4", note="launch_fix=bypass_sandbox",
+        )
+        self.add_ok("agent_lost", node="C1", agent="coder#4", note="NOT_RUN 仍起不来")
+        self.assert_rejected(
+            "user_decision", node="C1", agent="coder#4", code="HC-RL-A107",
+            note="launch_fix=workspace-write 第二组",
+        )
+
+    def test_a138_status_reasons_list_not_run_count_and_fix_group(self) -> None:
+        """status 不可关原因列出 NOT_RUN 计数与 fix 组（未授权 / 已授权两态）。"""
+        self._write_plan()
+        self._open_c_node()
+        self._exhaust_coder()
+        payload = self.status_payload()
+        reasons = payload["nodes"][1]["reasons"]
+        self.assertTrue(
+            any("NOT_RUN" in reason and "3" in reason and "未授权" in reason for reason in reasons),
+            reasons,
+        )
+        self.add_ok(
+            "user_decision", node="C1", agent="coder#3", note="launch_fix=bypass_sandbox",
+        )
+        self.add_ok(
+            "agent_launch", node="C1", agent="coder#4", note="launch_fix=bypass_sandbox",
+        )
+        self.add_ok("agent_lost", node="C1", agent="coder#4", note="NOT_RUN 仍起不来")
+        reasons = self.status_payload()["nodes"][1]["reasons"]
+        self.assertTrue(
+            any(
+                "NOT_RUN" in reason and "bypass_sandbox" in reason for reason in reasons
+            ),
+            reasons,
+        )
+
+
+class RelayLaunchFixStatusTests(RelayCliTestCase):
+    """RLT_21 C1 — HC-RL-A139：launch_fix= 运行事实记账与 status --json 暴露。"""
+
+    def add_ok(self, event: str, *, node: str, agent: str, note: str = "") -> None:
+        result = self.run_add(event, node=node, agent=agent, note=note)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual("", result.stdout)
+
+    def status_payload(self) -> dict[str, object]:
+        result = self.run_cli("status", "--plan", str(self.plan_path.parent), "--json")
+        self.assertEqual(0, result.returncode, result.stderr)
+        return json.loads(result.stdout)
+
+    def _write_plan(self) -> None:
+        self.write_plan(
+            node_rows=[
+                "| W1 | DHR_90 | DHR_90:W#1 | build | agent:builder | | |",
+                "| C1 | DHR_90 | DHR_90:C#1 | construction | agent:coder | W1 | |",
+            ],
+            agent_rows=[
+                "| builder | W1 | builder | | task_plan.md | | |",
+                "| coder | C1 | coder | | code.md | | |",
+                "| checker | C1 | checker | | check.md | | |",
+            ],
+        )
+
+    def _open_c_node(self) -> None:
+        self.add_ok("plan_loaded", node="W1", agent="orchestrator#1", note="skill=0.1.0")
+        self.add_ok("stage_start", node="W1", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
+        self.add_ok("monitor_launch", node="W1", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
+        self.add_ok("node_start", node="W1", agent="monitor#1")
+        self.add_ok("agent_launch", node="W1", agent="builder#1")
+        self.add_ok("done", node="W1", agent="builder#1")
+        self.add_ok("node_close", node="W1", agent="monitor#1")
+        self.add_ok(
+            "stage_result", node="W1", agent="monitor#1",
+            note="stage_id=DHR_90:W#1 outcome=done",
+        )
+        self.add_ok("stage_close", node="W1", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
+        self.add_ok("stage_start", node="C1", agent="orchestrator#1", note="stage_id=DHR_90:C#1")
+        self.add_ok("monitor_launch", node="C1", agent="orchestrator#1", note="stage_id=DHR_90:C#1")
+        self.add_ok("node_start", node="C1", agent="monitor#1")
+
+    def test_a139_launch_fix_is_freeform_note_token_exposed_in_status_json(self) -> None:
+        """agent_launch.note 可含 launch_fix=<token>：add 不校验计划 launch 列、
+        不要求 plan_amend；status --json 该 agent 条目暴露 launch_fix，无则 null。"""
+        self._write_plan()
+        self._open_c_node()
+        self.add_ok(
+            "agent_launch", node="C1", agent="coder#1",
+            note="launch_fix=workspace-write 沙箱换档",
+        )
+        self.add_ok("agent_launch", node="C1", agent="checker#1")
+        agents = {agent["agent"]: agent for agent in self.status_payload()["agents"]}
+        self.assertEqual("workspace-write", agents["coder#1"]["launch_fix"])
+        self.assertIsNone(agents["checker#1"]["launch_fix"])
+        self.assertIsNone(agents["builder#1"]["launch_fix"])
+
+    def test_a139_lint_ignores_launch_column_vs_ledger_mismatch(self) -> None:
+        """lint 不因计划 launch 列与账本 launch_fix 事实不一致而失败。"""
+        self._write_plan()  # 计划 launch 列留空 → 取 roles.toml 默认档
+        self._open_c_node()
+        self.add_ok(
+            "agent_launch", node="C1", agent="coder#1",
+            note="launch_fix=workspace-write 与计划默认档不一致",
+        )
+        result = self.run_lint_cli(self.plan_path.parent)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual("", result.stderr)
+
+
+class RelayLedgerSilenceTests(RelayCliTestCase):
+    """RLT_21 C1 — HC-RL-A140：limits.silence_timeout_min 与 ledger_silent 监工提示。"""
+
+    def _write_plan(self) -> None:
+        self.write_plan(
+            node_rows=[
+                "| W1 | DHR_90 | DHR_90:W#1 | build | agent:builder | | |",
+                "| C1 | DHR_90 | DHR_90:C#1 | construction | agent:coder | W1 | |",
+            ],
+            agent_rows=[
+                "| builder | W1 | builder | | task_plan.md | | |",
+                "| coder | C1 | coder | | code.md | | |",
+                "| checker | C1 | checker | | check.md | | |",
+            ],
+        )
+
+    def _write_ledger(self) -> None:
+        self.write_ledger_rows(
+            (
+                ("2026-09-11T08:00:00+08:00", "W1", "plan_loaded", "orchestrator#1", "skill=0.1.0"),
+                ("2026-09-11T08:01:00+08:00", "W1", "stage_start", "orchestrator#1", "stage_id=DHR_90:W#1"),
+                ("2026-09-11T08:02:00+08:00", "W1", "monitor_launch", "orchestrator#1", "stage_id=DHR_90:W#1"),
+                ("2026-09-11T08:03:00+08:00", "W1", "node_start", "monitor#1", ""),
+                ("2026-09-11T08:04:00+08:00", "W1", "agent_launch", "builder#1", ""),
+                ("2026-09-11T08:05:00+08:00", "W1", "done", "builder#1", ""),
+                ("2026-09-11T08:06:00+08:00", "W1", "node_close", "monitor#1", ""),
+                ("2026-09-11T08:07:00+08:00", "W1", "stage_result", "monitor#1", "stage_id=DHR_90:W#1 outcome=done"),
+                ("2026-09-11T08:08:00+08:00", "W1", "stage_close", "orchestrator#1", "stage_id=DHR_90:W#1"),
+                ("2026-09-11T08:10:00+08:00", "C1", "stage_start", "orchestrator#1", "stage_id=DHR_90:C#1"),
+                ("2026-09-11T08:11:00+08:00", "C1", "monitor_launch", "orchestrator#1", "stage_id=DHR_90:C#1"),
+                ("2026-09-11T08:12:00+08:00", "C1", "node_start", "monitor#1", ""),
+                ("2026-09-11T08:13:00+08:00", "C1", "agent_launch", "coder#1", ""),
+                ("2026-09-11T09:25:00+08:00", "C1", "agent_launch", "checker#1", ""),
+            )
+        )
+
+    def _status(self, now: datetime, config: relay_log.RelayConfig) -> relay_log.Status:
+        return relay_log.derive_status(
+            lint_plan(self.plan_path, config),
+            relay_log.read_ledger(self.plan_path.parent / "relay_log.jsonl"),
+            now=now,
+            limits=config.limits,
+        )
+
+    def test_a140_silence_timeout_loads_with_default_and_override(self) -> None:
+        """dh-mapping.toml 可加载 limits.silence_timeout_min；缺省 30；非法类型拒。"""
+        self.assertEqual(30, repo_config().limits.silence_timeout_min)
+        # 配置拷贝：删掉该键回退默认、改成 5 生效、非整数 fail closed
+        for name, mutate, expected in (
+            ("silence-absent", lambda text: text.replace("silence_timeout_min = 30\n", ""), 30),
+            ("silence-five", lambda text: text.replace("silence_timeout_min = 30", "silence_timeout_min = 5"), 5),
+        ):
+            with self.subTest(name=name):
+                target = Path(self.tempdir.name) / name
+                shutil.copytree(SKILL_DIR, target)
+                mapping = target / "dh-mapping.toml"
+                mapping.write_text(mutate(mapping.read_text(encoding="utf-8")), encoding="utf-8")
+                self.assertEqual(expected, relay_log.load_config(target).limits.silence_timeout_min)
+        bad = Path(self.tempdir.name) / "silence-bad"
+        shutil.copytree(SKILL_DIR, bad)
+        mapping = bad / "dh-mapping.toml"
+        mapping.write_text(
+            mapping.read_text(encoding="utf-8").replace(
+                "silence_timeout_min = 30", 'silence_timeout_min = "half"'
+            ),
+            encoding="utf-8",
+        )
+        with self.assertRaises(RelayError) as raised:
+            relay_log.load_config(bad)
+        self.assertEqual("HC-RL-A92", raised.exception.code)
+
+    def test_a140_ledger_silent_marks_only_live_agents_over_threshold(self) -> None:
+        """打桩时钟：账本最近事件超过阈值的在场 agent 标 ledger_silent；
+        未超阈值的与已终态的不标——纯提示，非挂死判定。"""
+        self._write_plan()
+        self._write_ledger()
+        config = repo_config()
+        now = datetime(2026, 9, 11, 9, 43, 0, tzinfo=timezone(timedelta(hours=8)))
+        agents = {a.agent: a for a in self._status(now, config).agents}
+        # coder#1 静默 90 分钟 > 30 阈值；checker#1 静默 18 分钟；builder#1 已 done 终态
+        self.assertTrue(agents["coder#1"].ledger_silent)
+        self.assertFalse(agents["checker#1"].ledger_silent)
+        self.assertFalse(agents["builder#1"].ledger_silent)
+        document = relay_log.status_document(self._status(now, config))
+        silent_flags = {a["agent"]: a["ledger_silent"] for a in document["agents"]}
+        self.assertEqual(
+            {"builder#1": False, "coder#1": True, "checker#1": False}, silent_flags
+        )
+        rendered = relay_log.render_status_text(self._status(now, config), "plan")
+        self.assertIn("ledger_silent", rendered)
+        # 阈值自定义 5 分钟：连 checker#1 也超时
+        target = Path(self.tempdir.name) / "silence-five"
+        shutil.copytree(SKILL_DIR, target)
+        mapping = target / "dh-mapping.toml"
+        mapping.write_text(
+            mapping.read_text(encoding="utf-8").replace(
+                "silence_timeout_min = 30", "silence_timeout_min = 5"
+            ),
+            encoding="utf-8",
+        )
+        five = relay_log.load_config(target)
+        agents = {a.agent: a for a in self._status(now, five).agents}
+        self.assertTrue(agents["checker#1"].ledger_silent)
+        self.assertFalse(agents["builder#1"].ledger_silent)
+
+    def test_a140_monitor_templates_carry_silence_protocol(self) -> None:
+        """SKILL.md 与两份 adapter 都含 ledger_silent 处置原文的四个关键锚点。"""
+        for rel in (
+            "SKILL.md",
+            "references/adapter-claude-code.md",
+            "references/adapter-codex.md",
+        ):
+            with self.subTest(template=rel):
+                text = (SKILL_DIR / rel).read_text(encoding="utf-8")
+                self.assertIn("ledger_silent", text)
+                self.assertIn("silent_timeout", text)
+                self.assertIn("三者均无变化", text)
+                self.assertIn("不得中断", text)
 
 
 class RelayCliEncodingTests(RelayCliTestCase):
