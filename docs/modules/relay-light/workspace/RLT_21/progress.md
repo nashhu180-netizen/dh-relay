@@ -69,7 +69,7 @@
 | E22 | 边界检查（X1） | `git diff --check` ×3（working / `master...HEAD` / cached）+ 四集合 name-only | 三条 `diff --check` 均 exit=0 无输出；`master...HEAD` 仅 `tools/relay-light/**` 与本工作区；untracked 全在本工作区 | 四集合无越界（`review.requirement.X1.md` §2、X1 commit message） |
 | E23 | 测试（F1 scribe 复跑） | `python -m unittest -v tools/relay-light/test_relay_log.py`（`PYTHONUTF8=1 PYTHONDONTWRITEBYTECODE=1`） | 自然终态 `Ran 181 tests in 445.998s` `OK`，无 `skipped=` 行即 skipped=0，exit=0 | 收口前全量基线绿 |
 | E24 | 边界检查（F1） | `git diff --check` ×3（working / `master...HEAD` / cached）+ 四集合 name-only | 三条 `diff --check` 均 exit=0 无输出；`master...HEAD` 仅 `tools/relay-light/{relay_log.py,test_relay_log.py,skill/**}` 与本工作区；working 仅 `progress.md`/`review.md`/`findings.md`（本节点允许写的三个文件）；index 空；untracked 恰为开工时六个文件（done.coder.X1 / done.lesson.X1 / done.requirement.X1 / done.scribe.R1 / review.lesson.X1 / review.requirement.X1） | commit 前四集合无越界 |
-| E25 | 提交 | F1 收口 commit（SHA 以 `done.scribe.F1.md` 与 `git log` 为准） | 清单：`progress.md` / `review.md` / `findings.md` / `done.scribe.F1.md` + 六个开工未跟踪文件（`done.coder.X1.md`、`done.lesson.X1.md`、`done.requirement.X1.md`、`done.scribe.R1.md`、`review.lesson.X1.md`、`review.requirement.X1.md`），逐个 `git add`、不用 `-A`/`.` | 收口备料全部入树 |
+| E25 | 提交 | F1 收口 commit `bbedb73`（`docs(relay-light): RLT_21 F1 — 收口备料…`）；done 信号与 SHA 回填在紧随的下一笔小提交 | 清单：`progress.md` / `review.md` / `findings.md` + 六个开工未跟踪文件（`done.coder.X1.md`、`done.lesson.X1.md`、`done.requirement.X1.md`、`done.scribe.R1.md`、`review.lesson.X1.md`、`review.requirement.X1.md`），逐个 `git add`、不用 `-A`/`.`；9 files, +219/-17 | 收口备料全部入树 |
 
 ### X1 偏离项（真实登记）
 
