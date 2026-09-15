@@ -54,6 +54,8 @@ relay-light 是一套接力编排协议：人拉起规划与编排，编排在�
 | plan-reviewer | W<n> | plan-reviewer | | review.plan.md | on:done:builder | |
 ```
 
+**plan-reviewer 分级（light 档）**：light 卡的 `task_plan` 审查按两级严重度分类——纯措辞、格式、引用陈旧项一律 P2 不阻断 PASS；以下四类仍 P1 阻断：allowed-paths 越界；写入者边界（谁写 `progress`/`findings`/`lesson`）；节点/阶段边界缺漏或矛盾；验收命令与完成信号缺失或矛盾。**light 只按此分级，heavy/normal 不变。**
+
 ### C 阶段模板
 
 每个施工批次一个节点；coder 与 checker 批内同时在场（trigger 留空），scribe 等 coder done 后拉起，decider 仅在 blocked 时拉起；`close=agent:checker`（checker 通过才进下一批）。

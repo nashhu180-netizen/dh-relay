@@ -60,11 +60,14 @@ class RelayCliTestCase(unittest.TestCase):
         node_rows: list[str] | None = None,
         agent_rows: list[str] | None = None,
         marker: str | None = None,
+        decision_mode: str | None = None,
     ) -> Path:
-        marker = marker or (
-            "<!-- relay-light:plan v1 skill=0.1.0 generated=2026-09-10 "
-            "session=app recipe=normal cards=DHR_90 -->"
-        )
+        if marker is None:
+            mode = f" decision_mode={decision_mode}" if decision_mode else ""
+            marker = (
+                "<!-- relay-light:plan v1 skill=0.1.0 generated=2026-09-10 "
+                f"session=app{mode} recipe=normal cards=DHR_90 -->"
+            )
         if node_rows is None:
             node_rows = [
             "| W1 | DHR_90 | DHR_90:W#1 | build | agent:builder | | |",
@@ -129,10 +132,13 @@ class RelayCliTestCase(unittest.TestCase):
         ledger_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
         return ledger_path
 
-    def write_single_node_plan(self, agents: list[str], *, close: str = "") -> None:
+    def write_single_node_plan(
+        self, agents: list[str], *, close: str = "", decision_mode: str | None = None
+    ) -> None:
         self.write_plan(
             node_rows=[f"| W1 | DHR_90 | DHR_90:W#1 | build | {close} | | |"],
             agent_rows=agents,
+            decision_mode=decision_mode,
         )
 
     def start_ledger(self) -> None:
@@ -1198,17 +1204,18 @@ class RelayPlanLintTests(RelayCliTestCase):
         self.start_ledger()
         self.assertEqual(0, self.run_add("node_start", agent="monitor#1").returncode)
         self.assertEqual(0, self.run_add("agent_launch", agent="coder#1").returncode)
-        # A112: a stage failure is only recordable after the instance's last node_close.
-        self.assertEqual(0, self.run_add("done", agent="coder#1").returncode)
+        # A112: a stage failure is only recordable after the instance's last node_close;
+        # A137: the failed result must ref the instance whose newest event is agent_lost.
+        self.assertEqual(0, self.run_add("agent_lost", agent="coder#1").returncode)
         self.assertEqual(0, self.run_add("node_close", agent="monitor#1").returncode)
         self.assertEqual(
             0,
-            self.run_add("stage_result", agent="monitor#1", note="stage_id=DHR_90:W#1 outcome=failed").returncode,
+            self.run_add("stage_result", agent="monitor#1", note="stage_id=DHR_90:W#1 outcome=failed ref=coder#1:agent_lost").returncode,
         )
         self.assertEqual(0, self.run_add("agent_launch", agent="coder#2").returncode)
         self.assertEqual(
             0,
-            self.run_add("stage_result", agent="monitor#1", note="stage_id=DHR_90:W#1 outcome=failed").returncode,
+            self.run_add("stage_result", agent="monitor#1", note="stage_id=DHR_90:W#1 outcome=failed ref=coder#1:agent_lost").returncode,
         )
         before_duplicate_attempt = ledger_path.read_bytes()
         duplicate_attempt = self.run_add("agent_launch", agent="coder#2")
@@ -1285,13 +1292,19 @@ class RelayPlanLintTests(RelayCliTestCase):
 
     def test_decision_and_user_decision_must_resume_before_original_agent_done(self) -> None:
         cases = (
-            ("decision", ["agent_launch", "blocked", "escalate", "decision"]),
-            ("user_decision", ["agent_launch", "blocked", "escalate", "decision", "user_decision"]),
+            ("decision", ["agent_launch", "blocked", "escalate", "decision"], "auto"),
+            (
+                "user_decision",
+                ["agent_launch", "blocked", "escalate", "decision", "user_decision"],
+                "consult",
+            ),
         )
-        for name, prefix in cases:
+        for name, prefix, mode in cases:
             with self.subTest(name=name):
                 self.reset_ledger()
-                self.write_single_node_plan(["| coder | W1 | coder | | code.md | | |"])
+                self.write_single_node_plan(
+                    ["| coder | W1 | coder | | code.md | | |"], decision_mode=mode
+                )
                 self.start_ledger()
                 self.assertEqual(0, self.run_add("node_start", agent="monitor#1").returncode)
                 helper_note = "decider=decider#1"
@@ -1510,7 +1523,8 @@ class RelayPlanLintTests(RelayCliTestCase):
                     [
                         f"| coder | W1 | coder | | code.md | | |",
                         f"| {helper_prefix} | W1 | {helper_prefix} | | {helper_prefix}.md | | |",
-                    ]
+                    ],
+                    decision_mode="consult",
                 )
                 self.start_ledger()
                 self.assertEqual(0, self.run_add("node_start", agent="monitor#1").returncode)
@@ -2801,6 +2815,16 @@ class RelayLifecycleTests(RelayCliTestCase):
         self.add_ok("done", node=node, agent="coder#1")
         self.add_ok("node_close", node=node)
 
+    def close_node_with_loss(self, node: str) -> None:
+        """HC-RL-A137 夹具：节点内留一条 coder#1 agent_lost（实例最新事件），
+        coder#2 done 满足 close=agent:coder——供 blocked/failed 的合法 ref= 目标。"""
+        self.add_ok("node_start", node=node)
+        self.add_ok("agent_launch", node=node, agent="coder#1")
+        self.add_ok("agent_lost", node=node, agent="coder#1", note="pane 失联")
+        self.add_ok("agent_launch", node=node, agent="coder#2")
+        self.add_ok("done", node=node, agent="coder#2")
+        self.add_ok("node_close", node=node)
+
     def drive_open_c_instance(self) -> None:
         """Start `DHR_90:C#1` and close its first node; `C2` is left open."""
         self.add_ok("stage_start", node="C1", agent="orchestrator#1", note="stage_id=DHR_90:C#1")
@@ -2871,8 +2895,8 @@ class RelayLifecycleTests(RelayCliTestCase):
         self.write_stage_plan()
         self.drive_closed_w_stage()
         self.drive_open_c_instance()
-        self.close_node("C2")
-        self.add_ok("stage_result", note="stage_id=DHR_90:C#1 outcome=blocked 表结构有二义")
+        self.close_node_with_loss("C2")
+        self.add_ok("stage_result", note="stage_id=DHR_90:C#1 outcome=blocked ref=coder#1:agent_lost 表结构有二义")
         self.assert_rejected("stage_close", code="HC-RL-A118", agent="orchestrator#1",
                              note="stage_id=DHR_90:C#1")
         self.assert_rejected(
@@ -2898,8 +2922,8 @@ class RelayLifecycleTests(RelayCliTestCase):
         self.reset_ledger()
         self.drive_closed_w_stage()
         self.drive_open_c_instance()
-        self.close_node("C2")
-        self.add_ok("stage_result", note="stage_id=DHR_90:C#1 outcome=blocked 先阻塞")
+        self.close_node_with_loss("C2")
+        self.add_ok("stage_result", note="stage_id=DHR_90:C#1 outcome=blocked ref=coder#1:agent_lost 先阻塞")
         self.assert_rejected("stage_close", code="HC-RL-A118", agent="orchestrator#1",
                              note="stage_id=DHR_90:C#1")
         self.add_ok("stage_result", note="stage_id=DHR_90:C#1 outcome=done 用户裁决后继续")
@@ -2963,8 +2987,13 @@ class RelayLifecycleTests(RelayCliTestCase):
                 self.write_stage_plan()
                 self.drive_closed_w_stage()
                 self.drive_open_c_instance()
-                self.close_node("C2")
                 note = f"stage_id=DHR_90:C#1 outcome={outcome}"
+                if outcome in {"blocked", "failed"}:
+                    # A137: 非终态结果必须 ref 本实例内最新为 blocked/agent_lost 的 agent
+                    self.close_node_with_loss("C2")
+                    note += " ref=coder#1:agent_lost"
+                else:
+                    self.close_node("C2")
                 if outcome == "cancelled":
                     note += " 引用上条 user_decision，停卡"
                 self.add_ok("stage_result", note=note)
@@ -2977,19 +3006,19 @@ class RelayLifecycleTests(RelayCliTestCase):
         self.write_stage_plan()
         self.drive_closed_w_stage()
         self.drive_open_c_instance()
-        self.close_node("C2")
-        self.add_ok("stage_result", note="stage_id=DHR_90:C#1 outcome=failed 复核未过")
+        self.close_node_with_loss("C2")
+        self.add_ok("stage_result", note="stage_id=DHR_90:C#1 outcome=failed ref=coder#1:agent_lost 复核未过")
         failed_once = self.status_payload()
         self.assertEqual("relaunch_monitor", failed_once["suggested_action"])
         self.assertEqual(0, failed_once["monitor_relaunch_count"])
         self.add_ok("monitor_launch", node="C1", agent="orchestrator#1", note="stage_id=DHR_90:C#1")
-        self.add_ok("stage_result", note="stage_id=DHR_90:C#1 outcome=failed 重拉后仍未过")
+        self.add_ok("stage_result", note="stage_id=DHR_90:C#1 outcome=failed ref=coder#1:agent_lost 重拉后仍未过")
         failed_twice = self.status_payload()
         self.assertEqual(1, failed_twice["monitor_relaunch_count"])
         self.assertEqual("notify_user", failed_twice["suggested_action"])
         self.assertIn(failed_twice["suggested_action"], SUGGESTED_ACTIONS)
 
-        self.add_ok("stage_result", note="stage_id=DHR_90:C#1 outcome=blocked 先阻塞")
+        self.add_ok("stage_result", note="stage_id=DHR_90:C#1 outcome=blocked ref=coder#1:agent_lost 先阻塞")
         self.add_ok("stage_result", note="stage_id=DHR_90:C#1 outcome=done 用户裁决后继续")
         self.assertEqual("done", self.status_payload()["last_stage_result"]["outcome"])
 
@@ -3012,9 +3041,11 @@ class RelayLifecycleTests(RelayCliTestCase):
         self.add_ok("monitor_launch", node="R1", agent="orchestrator#1", note="stage_id=DHR_90:R#1")
         self.add_ok("node_start", node="R1")
         self.add_ok("agent_launch", node="R1", agent="requirement#1")
-        self.add_ok("done", node="R1", agent="requirement#1")
+        self.add_ok("agent_lost", node="R1", agent="requirement#1", note="pane 失联")
+        self.add_ok("agent_launch", node="R1", agent="requirement#2")
+        self.add_ok("done", node="R1", agent="requirement#2")
         self.add_ok("node_close", node="R1")
-        self.add_ok("stage_result", node="R1", note="stage_id=DHR_90:R#1 outcome=failed 复核未过")
+        self.add_ok("stage_result", node="R1", note="stage_id=DHR_90:R#1 outcome=failed ref=requirement#1:agent_lost 复核未过")
 
         self.add_ok("stage_start", node="R2", agent="orchestrator#1", note="stage_id=DHR_90:R#2")
         self.add_ok("monitor_launch", node="R2", agent="orchestrator#1", note="stage_id=DHR_90:R#2")
@@ -3242,14 +3273,14 @@ class RelayLifecycleTests(RelayCliTestCase):
         recovered = self.status_payload()
         self.assertEqual(0, recovered["monitor_relaunch_count"])
         self.assertEqual("DHR_90:C#1", recovered["current_stage"])
-        self.close_node("C2")
-        self.add_ok("stage_result", node="C1", note="stage_id=DHR_90:C#1 outcome=failed 复核未过")
+        self.close_node_with_loss("C2")
+        self.add_ok("stage_result", node="C1", note="stage_id=DHR_90:C#1 outcome=failed ref=coder#1:agent_lost 复核未过")
         failed_once = self.status_payload()
         self.assertEqual("relaunch_monitor", failed_once["suggested_action"])
         self.assertEqual(0, failed_once["monitor_relaunch_count"])
         self.add_ok("monitor_launch", node="C1", agent="orchestrator#1", note="stage_id=DHR_90:C#1")
         self.add_ok(
-            "stage_result", node="C1", note="stage_id=DHR_90:C#1 outcome=failed 重拉后仍未过"
+            "stage_result", node="C1", note="stage_id=DHR_90:C#1 outcome=failed ref=coder#1:agent_lost 重拉后仍未过"
         )
         failed_twice = self.status_payload()
         self.assertEqual(1, failed_twice["monitor_relaunch_count"])
@@ -3475,8 +3506,11 @@ class RelayLifecycleTests(RelayCliTestCase):
         self.reset_ledger()
         self.start_ledger()
         self.add_ok("node_start", node="W1")
+        # builder#1 留 agent_lost 作合法 ref 目标，#2 done 满足 close=agent:builder
         self.add_ok("agent_launch", node="W1", agent="builder#1")
-        self.add_ok("done", node="W1", agent="builder#1")
+        self.add_ok("agent_lost", node="W1", agent="builder#1", note="pane 失联")
+        self.add_ok("agent_launch", node="W1", agent="builder#2")
+        self.add_ok("done", node="W1", agent="builder#2")
         self.add_ok("agent_launch", node="W1", agent="planner-amend#1")
         self.add_ok(
             "done", node="W1", agent="planner-amend#1",
@@ -3485,7 +3519,7 @@ class RelayLifecycleTests(RelayCliTestCase):
         self.add_ok("node_close", node="W1")
         self.add_ok(
             "stage_result", agent="monitor#1",
-            note="stage_id=DHR_90:W#1 outcome=blocked proposal=decision.1.md 超出白名单",
+            note="stage_id=DHR_90:W#1 outcome=blocked ref=builder#1:agent_lost proposal=decision.1.md 超出白名单",
         )
         forbidden = [
             row for row in self.ledger_rows()
@@ -4507,6 +4541,23 @@ class SkillCoreDocTests(unittest.TestCase):
         )
         self.assertRegex(text, r"progress\.md.{0,40}scribe|scribe.{0,40}progress\.md")
 
+    def test_a143_light_plan_review_severity_classification(self) -> None:
+        """HC-RL-A143: SKILL.md 的 plan-reviewer 模板写明 light 档两级分级——
+        措辞/格式/引用陈旧一律 P2 不阻断；allowed-paths、写入者边界、
+        节点/阶段边界、验收命令与完成信号四类仍 P1；附 heavy/normal 不变。"""
+        text = self.skill_text()
+        self.assertIn("P2 不阻断", text)
+        for anchor in (
+            "allowed-paths",
+            "写入者边界",
+            "节点/阶段边界",
+            "验收命令与完成信号",
+            "P1 阻断",
+            "heavy/normal 不变",
+        ):
+            with self.subTest(anchor=anchor):
+                self.assertIn(anchor, text)
+
     def test_ledger_note_contract_documented(self) -> None:
         """add 强制的 note 合同、控制事件写入者与决策归属必须在 SKILL.md 可查（一致性 P1 整改钉住）。"""
         text = self.skill_text()
@@ -4859,10 +4910,6 @@ class SkillTemplateTests(RelayCliTestCase):
                 ]
                 self.assertEqual(["coder#1"], launches)
 
-    @unittest.skip(
-        "F-002: consult 模式缺 user_decision 的 resume 负例腿需 relay_log.py 的 "
-        "decision_mode 分支，超出本卡 allowed-paths；实现补齐后去 skip 即活"
-    )
     def test_a114_consult_resume_without_user_decision_rejected(self) -> None:
         self._write_template_plan(decision_mode="consult")
         self._close_w_stage()
@@ -4875,10 +4922,6 @@ class SkillTemplateTests(RelayCliTestCase):
         self.add_ok("decision", node="C1", agent="coder#1", note="decider=decider#1 decision.1.md")
         self.assert_rejected("resume", node="C1", agent="coder#1")
 
-    @unittest.skip(
-        "F-002: auto 模式 decider 链上 user_decision 的拒收需 relay_log.py 的 "
-        "decision_mode 分支，超出本卡 allowed-paths；实现补齐后去 skip 即活"
-    )
     def test_a114_auto_mode_rejects_user_decision_on_decider_chain(self) -> None:
         self._write_template_plan(decision_mode="auto")
         self._close_w_stage()
@@ -4890,6 +4933,22 @@ class SkillTemplateTests(RelayCliTestCase):
         self.add_ok("agent_launch", node="C1", agent="decider#1")
         self.add_ok("decision", node="C1", agent="coder#1", note="decider=decider#1 decision.1.md")
         self.assert_rejected("user_decision", node="C1", agent="coder#1", note="auto 不该有")
+
+    def test_a114_cancelled_uses_triggering_agent(self) -> None:
+        """A142: cancelled 纳入 A69 决策归属闸——触发 coder 名下可写，非触发 agent 退 2。"""
+        self._write_template_plan()
+        self._close_w_stage()
+        self._open_c1()
+        self.add_ok("agent_launch", node="C1", agent="coder#1")
+        self.add_ok("agent_launch", node="C1", agent="checker#1")
+        self.add_ok("blocked", node="C1", agent="coder#1")
+        self.add_ok("escalate", node="C1", agent="coder#1", note="decider=decider#1")
+        self.add_ok("agent_launch", node="C1", agent="decider#1")
+        self.add_ok("decision", node="C1", agent="coder#1", note="decider=decider#1 decision.1.md")
+        self.add_ok("done", node="C1", agent="decider#1")
+        self.assert_rejected("cancelled", node="C1", agent="checker#1", note="越权取消", code="HC-RL-A69")
+        self.assert_rejected("cancelled", node="C1", agent="decider#2", note="helper 身份", code="HC-RL-A69")
+        self.add_ok("cancelled", node="C1", agent="coder#1", note="按 decision.1.md 取消本节点")
 
     def test_a114_strategist_chain_on_rework_template(self) -> None:
         """A114 strategist 链：记在触发 coder 名下、user_decision 永必需、无 blocked 起头。"""
@@ -5054,6 +5113,23 @@ class SkillAdapterTests(unittest.TestCase):
                 self.assertIsNone(re.search(r"relay_log\.py\s+watch", text))
                 self.assertIsNone(re.search(r"<RELAY_LOG>\s+watch", text))
 
+    def test_a141_dispatch_wait_and_sandbox_fallback_discipline(self) -> None:
+        """HC-RL-A141: 两 adapter 各含三段原文——
+        ① agent start 后 wait --until idle 再 prompt，prompt 后读 pane 末行核真提交；
+        ② 编排等待优先账本文件事件监听 + 监工连续空闲 ≥2 分钟且无新账本行告警；
+        ③ 沙箱型只读启动不可用的预检替代（bypass 沙箱 + 提示词只读约束 + launch_fix=）。"""
+        segments = (
+            ("--until idle", "pane 末行", "send-keys"),
+            ("账本", "监听", "2 分钟", "无新账本行"),
+            ("bypass", "只读", "launch_fix="),
+        )
+        for name in self.ADAPTER_SIDES:
+            text = self._adapter_texts()[name]
+            for index, anchors in enumerate(segments, start=1):
+                for anchor in anchors:
+                    with self.subTest(adapter=name, segment=index, anchor=anchor):
+                        self.assertIn(anchor, text)
+
     def test_planner_amend_reference_isomorphic(self) -> None:
         """RLT_09 B4 / A122：两 adapter 只保留指向 SKILL.md 核心模板的同构引用行。"""
         texts = self._adapter_texts()
@@ -5207,7 +5283,7 @@ class RelayStageResultRefTests(RelayCliTestCase):
         )
 
     def test_a137_stage_close_after_blocked_still_rejected(self) -> None:
-        """blocked stage_result 被接受后，stage_close 仍被拒（未关先撞 A89 前置闸）。"""
+        """blocked stage_result 被接受后，stage_close 仍被拒——A118 先于节点全关前置检查。"""
         self._write_plan()
         self._close_w_stage()
         self._open_c_stage()
@@ -5217,31 +5293,39 @@ class RelayStageResultRefTests(RelayCliTestCase):
             note="stage_id=DHR_90:C#1 outcome=blocked ref=coder#1:blocked 等用户裁决",
         )
         self.assert_rejected(
-            "stage_close", node="C1", agent="orchestrator#1", code="HC-RL-A89",
+            "stage_close", node="C1", agent="orchestrator#1", code="HC-RL-A118",
             note="stage_id=DHR_90:C#1",
         )
 
-    def test_a137_blocked_on_fully_closed_stage_keeps_old_contract(self) -> None:
-        """全节点已关时 blocked/failed 沿用旧合同——ref= 只在「允许节点未关」时兜底。"""
+    def test_a137_fully_closed_stage_result_still_requires_ref(self) -> None:
+        """全节点已关时 blocked/failed 同样强制合法最新 ref——缺 ref 各退 2 报 A137。"""
         self._write_plan()
         self._close_w_stage()
         self._open_c_stage()
         self.add_ok("agent_launch", node="C1", agent="coder#1")
         self.add_ok("done", node="C1", agent="coder#1")
         self.add_ok("node_close", node="C1", agent="monitor#1")
+        # C2 留一个 agent_lost 的 coder#1（#2 done 满足 close=agent:coder）：
+        # 本阶段实例内 coder#1 的最新事件 = agent_lost，可作合法 ref 目标。
         self.add_ok("node_start", node="C2", agent="monitor#1")
-        self.add_ok("agent_launch", node="C2", agent="coder#1")  # C2 未关，实例仍有未关节点
-        # C2 有在场 agent → done 仍拒 A112；先把 C2 也关掉
-        self.assert_rejected(
-            "stage_result", node="C1", agent="monitor#1", code="HC-RL-A112",
-            note="stage_id=DHR_90:C#1 outcome=done 还有节点未关",
-        )
-        self.add_ok("done", node="C2", agent="coder#1")
+        self.add_ok("agent_launch", node="C2", agent="coder#1")
+        self.add_ok("agent_lost", node="C2", agent="coder#1", note="NOT_RUN 沙箱起不来")
+        self.add_ok("agent_launch", node="C2", agent="coder#2")
+        self.add_ok("done", node="C2", agent="coder#2")
         self.add_ok("node_close", node="C2", agent="monitor#1")
-        # 全关后 blocked 无 ref 仍接受（与 RLT_07 冻结的 A118 用例一致）
+        # 全关节点实例：缺 ref= 的 blocked 与 failed 各退 2 报 A137
+        self.assert_rejected(
+            "stage_result", node="C1", agent="monitor#1", code="HC-RL-A137",
+            note="stage_id=DHR_90:C#1 outcome=blocked 等用户裁决",
+        )
+        self.assert_rejected(
+            "stage_result", node="C1", agent="monitor#1", code="HC-RL-A137",
+            note="stage_id=DHR_90:C#1 outcome=failed 复核未过",
+        )
+        # 合法最新 ref 接受；stage_close 对 blocked 仍 A118
         self.add_ok(
             "stage_result", node="C1", agent="monitor#1",
-            note="stage_id=DHR_90:C#1 outcome=blocked 等用户裁决",
+            note="stage_id=DHR_90:C#1 outcome=blocked ref=coder#1:agent_lost 等用户裁决",
         )
         self.assert_rejected(
             "stage_close", node="C1", agent="orchestrator#1", code="HC-RL-A118",

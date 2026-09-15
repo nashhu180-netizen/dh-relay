@@ -44,6 +44,10 @@ bash -lc "python3 <RELAY_LOG> status --plan <plan_dir> --json --config-dir ~/.cl
 - **codex kind**：`herdr agent start <名> --kind codex --pane <pane_id>` 直接可用，无 shim 坑；复核只读形态尾部加 `-- --sandbox read-only`。
 - 角色 → 发起方式查 `roles.toml`，本文件不写死模型。
 
+## 环境预检（拉起前）
+
+拉起每个 agent 前先核启动形态在本环境可用：沙箱型只读启动（如 codex 复核形态的 `-- --sandbox read-only`）若起不来（账本连续 `NOT_RUN` 即信号），改用 bypass 沙箱启动（如 `--dangerously-bypass-approvals-and-sandbox`），只读约束改由派活 prompt 明文承担（「不改任何文件、只读被审对象」），并在该 `agent_launch` 的 `note` 记 `launch_fix=<token>` 运行事实——不改计划 `launch` 列、不走 `plan_amend`。
+
 ## 派活 prompt 模板（监工 → agent）
 
 ```text
@@ -63,6 +67,10 @@ bash -lc "python3 <RELAY_LOG> status --plan <plan_dir> --json --config-dir ~/.cl
 硬规则：`wait` 返回时必须有接收者（watch 推送 / 前台阻塞循环 / 后台退出唤醒三选一）；watch 未实现时不得结束回合空等。
 ```
 
+## 派活提交纪律
+
+`agent start` 后先 `herdr agent wait <名> --until idle`——等启动横幅与初始化提示消化完再 `herdr agent prompt` 发派单；prompt 发出后必须读 pane 末行确认派单已真提交（`herdr agent read <名>` 看末行/输入框已清空），未提交补一发 `herdr agent send-keys <名> enter` 并复核，仍不动按下方 stalled 处置走 `agent_lost`。
+
 ## 等待与接收者（硬规则）
 
 `herdr agent wait` 是阻塞式 CLI、不是推送——**返回那一刻必须有接收者**，没人听信号就丢。三种满足方式：
@@ -72,6 +80,8 @@ bash -lc "python3 <RELAY_LOG> status --plan <plan_dir> --json --config-dir ~/.cl
 3. **Claude 侧后台**：`run_in_background` 挂 wait，进程退出会唤醒本 session
 
 watch 未实现前**一律走方式 2 或 3**，不得结束回合空等。`agent wait --until blocked` 只作可选模式，不是默认。
+
+**编排等待纪律**：编排侧等监工时优先用账本文件事件监听（盯 `relay_log.jsonl` 新行到达），不用后台 `wait`/轮询进程（会被系统回收丢唤醒）；并配「监工连续空闲 ≥2 分钟且无新账本行」告警——命中即巡检该监工 pane 末行与 Herdr 状态，按 stalled/ledger_silent 口径处置，不空等。
 
 ## stalled 处置
 

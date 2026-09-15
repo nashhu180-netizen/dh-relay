@@ -60,7 +60,7 @@ CONTROL_AGENT_NAMES = frozenset({"orchestrator", "monitor"})
 RELAUNCH_EXEMPT_AGENT_NAMES = frozenset(
     {"orchestrator", "monitor", "planner-amend", "strategist"}
 )
-DECISION_EVENTS = frozenset({"escalate", "decision", "user_decision", "resume"})
+DECISION_EVENTS = frozenset({"escalate", "decision", "user_decision", "resume", "cancelled"})
 DECISION_HELPER_NAMES = frozenset({"decider", "strategist"})
 DEFAULT_CONFIG_DIRS = (".claude/skills/relay-light", ".codex/skills/relay-light")
 CONFIG_PATH_SAFE = "/:~-._"
@@ -1769,6 +1769,30 @@ def _validate_decision_ownership(
             )
 
 
+def _validate_decision_mode(
+    plan: Plan, entries: list[dict[str, object]], node: NodeSpec, event: str, agent: str
+) -> None:
+    """HC-RL-A114/A142: ``decision_mode`` gates apply only to decider chains.
+
+    ``consult``: ``resume`` on a decider chain requires a ``user_decision`` first.
+    ``auto``: ``user_decision`` on a decider chain is rejected — strategist chains
+    still require it via A97 regardless of mode."""
+    helper = _active_decision_owners(entries, node.node).get(agent)
+    if helper is None or helper.partition("#")[0] != "decider":
+        return
+    if event == "resume" and plan.decision_mode == "consult":
+        latest = _latest_for_instance(entries, node.node, agent)
+        if latest is None or latest["event"] != "user_decision":
+            raise _error(
+                "HC-RL-A114",
+                "consult mode: resume on a decider chain requires a user_decision",
+            )
+    if event == "user_decision" and plan.decision_mode == "auto":
+        raise _error(
+            "HC-RL-A114", "auto mode: user_decision is not allowed on a decider chain"
+        )
+
+
 def _validate_strategist_conclusion(
     entries: list[dict[str, object]], node: NodeSpec, event: str, agent: str
 ) -> None:
@@ -2021,6 +2045,7 @@ def _validate_event_semantics(
         if event == "done" and _agent_parts(agent)[0] == "planner-amend":
             _validate_planner_amend_done_note(note)
         _validate_decision_ownership(entries, node, event, agent, note)
+        _validate_decision_mode(plan, entries, node, event, agent)
         _validate_strategist_conclusion(entries, node, event, agent)
         _validate_agent_transition(plan, entries, node, event, agent, note, attempt_max)
 
@@ -2068,15 +2093,15 @@ def _validate_result_ref(
     nodes_by_name: dict[str, NodeSpec],
     outcome: str,
 ) -> None:
-    """HC-RL-A137: a `blocked`/`failed` result written before the last node_close must
-    carry `ref=<agent>#<n>:(blocked|agent_lost)` naming an instance whose newest event
+    """HC-RL-A137: every `blocked`/`failed` result must carry
+    `ref=<agent>#<n>:(blocked|agent_lost)` naming an instance whose newest event
     inside this stage instance is exactly the cited one — a missing, foreign, malformed,
     resumed-over or terminally overridden reference each fail closed."""
     ref = tokens.get("ref")
     if ref is None:
         raise _error(
             "HC-RL-A137",
-            f"{outcome} stage_result with unclosed nodes must carry "
+            f"{outcome} stage_result must carry "
             "ref=<agent>#<n>:(blocked|agent_lost)",
         )
     match = RESULT_REF_RE.fullmatch(ref)
@@ -2162,9 +2187,9 @@ def _validate_stage_event(
                     "HC-RL-A112",
                     f"stage_result must follow the last node_close of {stage_id}; still open: {unclosed}",
                 )
-        elif unclosed:
-            # HC-RL-A137: blocked/failed may precede node_close only when the note
-            # cites a live blocked or a lost agent inside this very instance.
+        else:
+            # HC-RL-A137: blocked/failed always cite a live blocked or lost agent
+            # inside this very instance — whether or not nodes remain open.
             _validate_result_ref(entries, stage_id, tokens, nodes_by_name, outcome)
         # HC-RL-A123: the amend summary mirrors this instance's own plan_amend history.
         # A superseded row keeps its stage_id and node names stay unique (A46), so
@@ -2216,15 +2241,15 @@ def _validate_stage_event(
         raise _error(code, f"stage {stage_id} already closed")
     if "monitor_launch" not in seen:
         raise _error(code, f"stage_close requires a monitor_launch of {stage_id}")
+    result = latest_stage_result(entries, stage_id, nodes_by_name)
+    if result is not None and parse_stage_result_note(str(result["note"])).outcome == "blocked":
+        raise _error("HC-RL-A118", f"stage_close cannot follow outcome=blocked for {stage_id}")
     unclosed = [node.node for node in instances[stage_id] if not _node_closed(entries, node.node)]
     if unclosed:
         raise _error(code, f"stage_close requires every node closed; still open: {unclosed}")
-    result = latest_stage_result(entries, stage_id, nodes_by_name)
     if result is None:
         raise _error("HC-RL-A112", f"stage_close requires a stage_result for {stage_id}")
     outcome = parse_stage_result_note(str(result["note"])).outcome
-    if outcome == "blocked":
-        raise _error("HC-RL-A118", f"stage_close cannot follow outcome=blocked for {stage_id}")
     if outcome not in TERMINAL_RESULT_OUTCOMES:
         raise _error("HC-RL-A112", f"stage_close needs outcome=done/cancelled, got {outcome!r}")
 
