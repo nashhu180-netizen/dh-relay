@@ -15,6 +15,11 @@
 | 2026-09-15 | lesson#1 | lesson 路复核收口：**FAIL P1=3 P2=0**——三条教训缺口（done 时机切断返工边、审批菜单编号漂移、PermissionDenied 轮询退避）未进 `lesson_candidates.md`；L-001~L-004 全保留、F-009/L-004 到点 | `review.lesson.md`、`done.lesson.R1.md` | 路由：coder 补三条独立候选后重派 lesson 复审 |
 | 2026-09-15 | scribe#1 | R1 体检四道闸（本仓无 dev-harness dh CLI，按具名命令等价执行）：闸1 `python -m unittest -v tools/relay-light/test_relay_log.py` exit=0（181/OK/skipped=0）；闸2 grep 结构命中（A140 三处、A141 两 adapter 各三段、A143 SKILL.md:57）；闸3 三 `diff --check` exit=0 + 四集合无越界；闸4 监工报告 lint=ok / R1 open / requirement+lesson done / scribe live | E14~E18 | review.md 汇总 |
 | 2026-09-15 | scribe#1 | review.md 收口登记：Recipe 三行（code-round1 按 requirement 路裁决登记未执行待补派，不自称覆盖）、批次小审 W PASS / C1 FAIL(P1=3)转C2 / C2 PASS(P1=0 P2=1)、独立复核两路、有效单测候选按报告、AI 提交区七条挂证据、体检段、miner 段（4 在册 + 3 待登 = 7 条） | E14~E18、review.md | commit |
+| 2026-09-15 | monitor | X1 拉起：coder#1 返工（R1 五条 P1）+ requirement/lesson 两路 fresh 复审 | monitor-X1.md 派单 | coder 返工 |
+| 2026-09-15 | coder#1 | X1 返工（零代码改动）：补 F-010/F-011/F-012 三条证据条目钉 check.C1 旧 P1（只登记证据不自判 CLOSED）；`lesson_candidates.md` 新增 L-005/L-006/L-007 | E19 | requirement/lesson 复审 |
+| 2026-09-15 | requirement#2 | X1 requirement 路复审：**PASS P1=0 P2=4**——独立裁决 check.C1 三条旧 P1 全 CLOSED（证据 F-010~F-012）；按编排裁决合并承担 code-round1 职责，变异实验 RED→GREEN 已验 | `review.requirement.X1.md`、E20~E22 | F1 收口 |
+| 2026-09-15 | lesson#2 | X1 lesson 路复审：**PASS P1=0 P2=0**——L-005~L-007 全 CLOSED、L-001~L-004 未改、新候选 N/A | `review.lesson.X1.md` | F1 收口 |
+| 2026-09-15 | scribe#1 | F1 拉起：收口备料——补 progress 日志与证据账（E19~E25 连续续号）、review.md AI 提交区挂 commit/用例/命令并新增交付汇报与证据展示区、findings 仅 F-009 状态登记；`git rebase master` 按 DR-W-008 判 no-op（merge-base HEAD master = master 顶点 6094887）；复跑 181 全量与三集合 diff --check | E19~E25 | commit + done.scribe.F1.md |
 
 ## 施工批次状态（预填，不代表已执行）
 
@@ -58,6 +63,20 @@
 | E16 | 结构检查（闸2 · A141/A143） | grep 两 adapter 三段锚点 + `SKILL.md:57` | claude adapter `:49/:72/:84`、codex adapter `:48/:71/:83` 各三段；`SKILL.md:57` 命中「P2 不阻断」+四类 P1 | A141 两 adapter 三段、A143 分级模板在位 |
 | E17 | 边界检查（闸3） | `git diff --check` ×3（working / `master...HEAD` / cached）+ 四集合 name-only | 三条 `diff --check` 均 exit=0；base 仅 `tools/relay-light/**` 与本工作区；working=`progress.md`；index 空；untracked 全在本工作区 | 四集合无越界 |
 | E18 | 账本侧（闸4 · 监工报告口径） | 监工在 RLT_12 树跑 `lint` / `status` | lint=ok；R1 open；requirement/lesson done；scribe live | scribe 不跨树跑账本，按监工派单口径登记 |
+| E19 | 提交 | commit `435fad6`（`docs(relay-light): RLT_21 X1 — check.C1 旧 P1 逐项证据补录与 L-005~L-007 教训候选`） | `git show --stat 435fad6`：2 files, +6/-0——仅 `findings.md` +3（F-010~F-012）、`lesson_candidates.md` +3（L-005~L-007）；零代码改动 | X1 返工范围为证据与教训候选，与 R1 路由一致 |
+| E20 | 测试（X1 requirement 复跑） | `python -m unittest -v tools/relay-light/test_relay_log.py` | 变异前 `Ran 181 tests in 523.509s` `OK` exit=0；恢复后 `Ran 181 tests in 478.237s` `OK` exit=0；skipped=0（`review.requirement.X1.md` §1） | 全量基线绿，requirement 路独立实测 |
+| E21 | 变异实验（X1 · 有效单测） | `python -m unittest -v tools/relay-light/test_relay_log.py -k test_a114_cancelled_uses_triggering_agent` | 选点 `relay_log.py:63` `DECISION_EVENTS` 剔除 `cancelled` → RED：`Ran 1 test in 4.711s` `FAILED (failures=1)` exit=1（`test_relay_log.py:4949` 期望非触发 `checker#1` 被 A69 拒 rc=2、实被放行 rc=0）；恢复后同命令 `Ran 1 test in 5.960s` `OK` exit=0；`git hash-object` 与 `HEAD:tools/relay-light/relay_log.py` 同 `1dd7c719…` | 有效单测 RED→GREEN 已验（`review.requirement.X1.md` §2） |
+| E22 | 边界检查（X1） | `git diff --check` ×3（working / `master...HEAD` / cached）+ 四集合 name-only | 三条 `diff --check` 均 exit=0 无输出；`master...HEAD` 仅 `tools/relay-light/**` 与本工作区；untracked 全在本工作区 | 四集合无越界（`review.requirement.X1.md` §2、X1 commit message） |
+| E23 | 测试（F1 scribe 复跑） | `python -m unittest -v tools/relay-light/test_relay_log.py`（`PYTHONUTF8=1 PYTHONDONTWRITEBYTECODE=1`） | 自然终态 `Ran 181 tests in 445.998s` `OK`，无 `skipped=` 行即 skipped=0，exit=0 | 收口前全量基线绿 |
+| E24 | 边界检查（F1） | `git diff --check` ×3（working / `master...HEAD` / cached）+ 四集合 name-only | 三条 `diff --check` 均 exit=0 无输出；`master...HEAD` 仅 `tools/relay-light/{relay_log.py,test_relay_log.py,skill/**}` 与本工作区；working 仅 `progress.md`/`review.md`/`findings.md`（本节点允许写的三个文件）；index 空；untracked 恰为开工时六个文件（done.coder.X1 / done.lesson.X1 / done.requirement.X1 / done.scribe.R1 / review.lesson.X1 / review.requirement.X1） | commit 前四集合无越界 |
+| E25 | 提交 | F1 收口 commit（SHA 以 `done.scribe.F1.md` 与 `git log` 为准） | 清单：`progress.md` / `review.md` / `findings.md` / `done.scribe.F1.md` + 六个开工未跟踪文件（`done.coder.X1.md`、`done.lesson.X1.md`、`done.requirement.X1.md`、`done.scribe.R1.md`、`review.lesson.X1.md`、`review.requirement.X1.md`），逐个 `git add`、不用 `-A`/`.` | 收口备料全部入树 |
+
+### X1 偏离项（真实登记）
+
+- 零代码改动是正确结果：R1 路由给 coder 的返工范围是证据补录（F-010~F-012）与教训候选（L-005~L-007），均落在本工作区文档，`relay_log.py`/`test_relay_log.py`/skill 无变更（E19）。
+- P1-1（C1 durable 复审闭环缺失）由 X1 requirement 路独立裁决三条旧 P1 全 CLOSED（证据 F-010/F-011/F-012）；`check.C1.md` 按「不改既有复核结论」保持 FAIL 原判，未回写。
+- P1-2（normal Recipe 缺 code-round1）按编排裁决由 requirement 路合并承担代码轮职责（RLT_12 `dispatch/monitor-X1.md` 口径），未新建 `review.code-round1.md`；变异实验登记在 `review.requirement.X1.md` §2。
+- X1 节点无 scribe 名额，过程账由监工 `stage_result` 与终端交接承载（`review.lesson.X1.md` §漏网事实反查引 `monitor-X1.md:171-172,:537`）；本节为 F1 补录。
 
 ## 信号
 

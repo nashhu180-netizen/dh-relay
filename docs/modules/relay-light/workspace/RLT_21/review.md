@@ -55,33 +55,33 @@
 
 ## AI 提交区　⚠️ This is not human approval
 
-**Confidence Challenge**：R1 两路独立复核均 FAIL——requirement 路 P1=2（C1 durable 复审闭环缺失、code-round1 未执行）P2=3；lesson 路 P1=3（三条协议/交互/监控教训未进候选）。任何测试绿、check 小审 PASS 或 review 结论都不等于用户验收、verify、push、PR、CI、merge 或发布；A143 数值 oracle 与冻结计级规则的冲突（P2-1）须编排提交用户裁决，worker 未改 oracle。
+**Confidence Challenge**：X1 收口复审两路全 PASS——requirement 路 P1=0 P2=4（按编排裁决合并承担 code-round1 职责，变异实验 RED→GREEN 已验）、lesson 路 P1=0 P2=0；R1 打回的五条 P1 全部闭合（check.C1 三条旧 P1 由 requirement 路独立裁决 CLOSED，证据 F-010~F-012；三条教训 L-005~L-007 已进 `lesson_candidates.md`）。任何测试绿、check 小审 PASS 或 review 结论都不等于用户验收、verify、push、PR、CI、merge 或发布；F-009/A143 口径分歧（冻结四类逐条计级 3 P1+2 P2 vs oracle 期望 1 P1+4 P2）待用户二选一裁决，worker 未改 oracle/期望数字。
 
 **需求对齐证据**（收口时填实）
 
 | 需求 / 人验项 | 场景与操作路径 | 证据 | 结论 |
 |---|---|---|---|
-| HC-RL-A137 | 单测五例 + stage_close/A118 保持 | E11、E14（181 tests OK skipped=0）；`review.requirement.md` A137 PASS | 达成（机器证） |
-| HC-RL-A138 | NOT_RUN 计数→blocked 出口→launch_fix 授权链单测组 + status 不可关原因 | E11、E14；`review.requirement.md` A138 PASS | 达成（机器证） |
-| HC-RL-A139 | agent_launch 带/不带 launch_fix 各一例 + status --json 字段 + lint 零告警 | E11、E14；`review.requirement.md` A139 PASS | 达成（机器证） |
-| HC-RL-A140 | 配置加载 + 打桩时钟提示出现/不出现 + 三处模板结构检查 | E11、E14、E15（三处模板行号命中）；`review.requirement.md` A140 PASS | 达成（附 P2-2 终态范围澄清待裁决） |
-| HC-RL-A141 | 两份 adapter 三段原文结构检查 | E11、E14、E16（两 adapter 各三段行号）；`review.requirement.md` A141 PASS | 达成（机器证） |
-| HC-RL-A142 | 两条去 skip 负例转绿 + cancelled 正反例 | E11、E14（skipped=0 实证去钉）；`review.requirement.md` A142 PASS | 达成（机器证） |
-| HC-RL-A143 | 模板结构检查 + 预演 review.plan.md 复算 1 P1+4 P2 | E11、E14、E16（SKILL.md:57 命中）；F-009 逐条复算 = 3 P1+2 P2；`review.requirement.md` A143 PARTIAL | 部分达成：模板结构 PASS；复算期望与冻结计级不可兼得（P2-1），待裁决 |
+| HC-RL-A137 | 单测五例 + stage_close/A118 保持 | commit `a80fcde`（实现）+ `0e0f24a`（check.C1 返工：blocked/failed 无条件强制合法最新 ref=，见 F-004/F-010）；用例组 `RelayStageResultRefTests`（5 例，含 `test_a137_fully_closed_stage_result_still_requires_ref`、`test_a137_stage_close_after_blocked_still_rejected`）；复跑 `python -m unittest -v tools/relay-light/test_relay_log.py -k RelayStageResultRefTests` → `Ran 5 tests` `OK` exit=0（X1 实测 28.492s/32.192s）；E11、E14 全量 181 OK；`review.requirement.X1.md` §1 三旧 P1-1/P1-2 裁 CLOSED | 达成（机器证） |
+| HC-RL-A138 | NOT_RUN 计数→blocked 出口→launch_fix 授权链单测组 + status 不可关原因 | commit `a80fcde`；用例组 `RelayNotRunRetryTests`（4 例）；复跑 `-k RelayNotRunRetryTests` → `Ran 4 tests` `OK` exit=0（X1 实测 22.075s/29.602s）；E11、E14 全量 181 OK | 达成（机器证） |
+| HC-RL-A139 | agent_launch 带/不带 launch_fix 各一例 + status --json 字段 + lint 零告警 | commit `a80fcde`；用例组 `RelayLaunchFixStatusTests`（2 例）；复跑 `-k RelayLaunchFixStatusTests` → `Ran 2 tests` `OK` exit=0（X1 实测 6.409s/9.591s）；监工 lint=ok（E18、F1 账本原文） | 达成（机器证） |
+| HC-RL-A140 | 配置加载 + 打桩时钟提示出现/不出现 + 三处模板结构检查 | commit `a80fcde`；用例组 `RelayLedgerSilenceTests`（3 例）；复跑 `-k RelayLedgerSilenceTests` → `Ran 3 tests` `OK` exit=0（X1 实测 0.073s/0.058s）；E15 三处模板行号命中（SKILL.md:173、adapter-claude-code.md:95、adapter-codex.md:94） | 达成（附 P2-2 终态范围澄清待裁决） |
+| HC-RL-A141 | 两份 adapter 三段原文结构检查 | commit `0e0f24a`；用例 `SkillAdapterTests.test_a141_dispatch_wait_and_sandbox_fallback_discipline`（原始 RED `Ran 1 test` `FAILED (failures=10)` exit=1，F-008a 在案）；E16 结构检查两 adapter 各三段行号（claude :49/:72/:84、codex :48/:71/:83）；`check.C2.md` PASS | 达成（机器证） |
+| HC-RL-A142 | 两条去 skip 负例转绿 + cancelled 正反例 | commit `0e0f24a`；用例 `test_a114_consult_resume_without_user_decision_rejected`、`test_a114_auto_mode_rejects_user_decision_on_decider_chain`（RLT_07 两钉去 skip 即绿）、`test_a114_cancelled_uses_triggering_agent`；E11 `skipped=0` 实证去钉；变异实验 E21 RED→GREEN | 达成（机器证） |
+| HC-RL-A143 | 模板结构检查 + 预演 review.plan.md 复算 1 P1+4 P2 | commit `0e0f24a`+`4105da8`（整改：逐条复算卡点登记）；用例 `SkillCoreDocTests.test_a143_light_plan_review_severity_classification`；E16 `SKILL.md:57` 命中「P2 不阻断」+四类 P1；F-009 按冻结四类逐条复算 = 3 P1+2 P2，与 oracle 1 P1+4 P2 不可兼得；X1 requirement 路维持「合同口径冲突、非施工缺陷」（`review.requirement.X1.md` P2-1） | 部分达成：模板结构 PASS；复算期望与冻结计级不可兼得（P2-1），待用户裁决 |
 
 **完成条件逐条挂证据**（收口时补 E-ID 与达成结论）
 
 | # | 完成条件 | 谁验 | 证据 | 达成? |
 |---|---|---|---|---|
-| 1 | HC-RL-A137 | AI | E11/E14 + requirement 路 PASS | 是（机器证） |
-| 2 | HC-RL-A138 | AI | E11/E14 + requirement 路 PASS | 是（机器证） |
-| 3 | HC-RL-A139 | AI | E11/E14 + requirement 路 PASS | 是（机器证） |
-| 4 | HC-RL-A140 | AI | E11/E14/E15 + requirement 路 PASS | 是（附 P2-2 澄清项） |
-| 5 | HC-RL-A141 | AI | E11/E14/E16 + requirement 路 PASS | 是（机器证） |
-| 6 | HC-RL-A142 | AI | E11/E14 + requirement 路 PASS | 是（机器证） |
-| 7 | HC-RL-A143 | AI | E11/E14/E16 + F-009 + requirement 路 PARTIAL | 部分：结构达成；数值 oracle 待裁决 |
+| 1 | HC-RL-A137 | AI | `a80fcde`+`0e0f24a`（返工）；`-k RelayStageResultRefTests` → `Ran 5` `OK` exit=0；E11/E14/E20；`review.requirement.X1.md` §1 CLOSED | 是（机器证） |
+| 2 | HC-RL-A138 | AI | `a80fcde`；`-k RelayNotRunRetryTests` → `Ran 4` `OK` exit=0；E11/E14/E20 | 是（机器证） |
+| 3 | HC-RL-A139 | AI | `a80fcde`；`-k RelayLaunchFixStatusTests` → `Ran 2` `OK` exit=0；E11/E14/E20；lint=ok | 是（机器证） |
+| 4 | HC-RL-A140 | AI | `a80fcde`；`-k RelayLedgerSilenceTests` → `Ran 3` `OK` exit=0；E11/E14/E15 三处模板命中 | 是（附 P2-2 澄清项） |
+| 5 | HC-RL-A141 | AI | `0e0f24a`；`SkillAdapterTests.test_a141_dispatch_wait_and_sandbox_fallback_discipline`；E16 两 adapter 各三段 | 是（机器证） |
+| 6 | HC-RL-A142 | AI | `0e0f24a`；两条去 skip 负例 + `test_a114_cancelled_uses_triggering_agent`；E11 skipped=0；变异 E21 | 是（机器证） |
+| 7 | HC-RL-A143 | AI | `0e0f24a`+`4105da8`；`SkillCoreDocTests.test_a143_light_plan_review_severity_classification`；E16 `SKILL.md:57`；F-009 复算 3 P1+2 P2 | 部分：结构达成；数值 oracle 待用户裁决 |
 
-**材料齐没齐**：[ ]（requirement/lesson 两路 FAIL 未闭合、code-round1 未执行、C1 durable 复审缺失，不齐）
+**材料齐没齐**：[ ]（AI侧材料齐备；用户验收未做；F-009/A143口径分歧待裁决）
 
 ## scribe 体检（R1 · 四道闸）
 
@@ -110,6 +110,52 @@
 | （新）`herdr agent wait` PermissionDenied 退避 | review.lesson.md P1-3：Os code 5 轮询/退避/不判 agent_lost | 与 L-003 的证据留存不同源，独立候选 | 待 coder 补登 |
 
 miner 汇总：既有候选 4 条全部保留（无应并项）；lesson 路新识别候选缺口 3 条；合计 **7 条**（4 在册 + 3 待登）。scribe 只汇总不改 `lesson_candidates.md`（A67 写入者边界）。
+
+> X1 后补记：三条待登候选已由 coder 落 `lesson_candidates.md` L-005/L-006/L-007，lesson 路复审全部 CLOSED；在册合计 7 条（L-001~L-007）。
+
+## 交付汇报（F1 收口备料）
+
+### 阶段用时（账本原文口径）
+
+| 阶段实例 | 区间 | 用时 |
+|---|---|---|
+| W#1 | 2026-09-15T10:10:21+08:00（seq2）→ 10:31:26（seq11） | 约21分钟 |
+| C#1 | 10:37:08（seq12）→ 14:41:20（seq34） | 约4小时04分（C1 10:38:23→11:50:29 约72分；C2 11:59:29→14:40:17 约161分） |
+| R#1 | 14:51:11（seq35）→ 15:33:36（seq51） | 约42分 |
+| X#1 | 15:45:02（seq52）→ 16:28:36（seq63） | 约44分 |
+| 合计 | — | 约6小时18分 |
+
+### 收口漏斗
+
+- W1：七件套 + task_plan 建齐，`review.plan.md` PASS（commit `424807f`）。
+- C1：小审 FAIL p1=3——A49/A60 使节点内返工不可行，三条 P1 带入 C2（commit `a80fcde`）。
+- C2：整改后复审 PASS p1=0 p2=1（commits `0e0f24a` + `4105da8`），关闭 C1 三条 P1。
+- R1：requirement FAIL p1=2 p2=3 + lesson FAIL p1=3，合 5 条 P1 打回；scribe 四道闸全过（commit `fc70185`）。R1 outcome=done 仅表示复核阶段完成，不等于「通过」。
+- X1：coder 返工零代码改动（证据补录 F-010~F-012 + 教训候选 L-005~L-007）；requirement 路 PASS p1=0 p2=4、lesson 路 PASS p1=0 p2=0；5 条 P1 全闭合；变异实验 RED→GREEN 已验（commit `435fad6`）。
+- F1：本节点收口备料，commit 见 `done.scribe.F1.md` 与 progress E25。
+
+### 遗留项（逐条，未闭合/待裁决）
+
+- F-009/A143：按冻结四类逐项计级 3 P1+2 P2，与 oracle 期望 1 P1+4 P2 不可兼得；X1 requirement 路维持原判「合同口径冲突、非施工缺陷」，收口责任在用户——待用户二选一（修订 A143 复算期望或给出去重/折级规则）。
+- X1 requirement 路 p2=4：P2-1 上述口径分歧；P2-2 A140 `ledger_silent` 终态提示范围；P2-3 normal 三路与 R-stage 两 reviewer 的层级术语差异；P2-4 派单 `-k "A or B or C"` 不被 unittest 解析（0 tests/exit 1，已用三条独立 `-k` 补足证据）。
+- R1 requirement 路 p2=3（P2-1~P2-3，同上述口径面）；C2 小审残留 p2=1（同 A143 口径分歧）。
+- F-003：仓根 `.gitignore` 忽略 `__pycache__/` 的归属待裁决（不在本卡 allowed-paths，未动）。
+
+### 未做且需用户明确授权（逐项）
+
+- push 到 GitHub `origin`
+- 创建目标为 `master` 的 PR 并关联 Issue #21
+- 服务端合并 / CI / merge 入 master
+- `verify(relay-light):` 收口提交
+- 两侧用户级 skill 重同步（`install_skill.py --all`，须先展示解析后两个绝对目标并取得用户当次明确授权）
+- 用户验收签字（人类签名区结果列全部留空，AI 未预勾）
+
+## 证据展示区（F1 收口备料）
+
+- 全量基线：`python -m unittest -v tools/relay-light/test_relay_log.py` → `Ran 181 tests` `OK` skipped=0 exit=0（scribe R1 复跑 500.043s；requirement X1 变异前 523.509s / 恢复后 478.237s；F1 复跑见 E23）。
+- 变异实验（有效单测）：选点 `relay_log.py:63` `DECISION_EVENTS` 剔除 `cancelled`；命令 `python -m unittest -v tools/relay-light/test_relay_log.py -k test_a114_cancelled_uses_triggering_agent` → 自然终态 `Ran 1 test in 4.711s` `FAILED (failures=1)` exit=1；恢复后同命令 `Ran 1 test in 5.960s` `OK` exit=0，随后全量 181 `OK` exit=0（`review.requirement.X1.md` §2、E21）。
+- 三集合 `git diff --check`（working / `master...HEAD` / cached）+ 四集合边界：R1 E17、X1 E22、F1 E24 均 exit=0 无越界。
+- 账本原文（监工在 RLT_12 树核验，scribe 不跨树跑账本）：计划 `docs/modules/relay-light/relay/rlt12-win-01` skill=0.1.0 session=rlt12-win-01；卡 RLT_21 `decision_mode=auto`；当班写入者 orchestrator（RLT_21:F#1）；W/C/R/X 均 closed result=done；F#1 open result=—；节点 F1 handoff ready；`lint: ok`；F1 `stage_start`/`monitor_launch` 均有 `stage_id=RLT_21:F#1`。
 
 ---
 
