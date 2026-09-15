@@ -137,3 +137,31 @@ seq=60 event=done agent=requirement#1 note=review.requirement.X1.md PASS p1=0 p2
 ## 停止线
 
 本记录只复核候选稿，不代表晋级、不代表 D-start、不代表验收；未替用户作信号名、计数归属或任何落盘决策。
+
+## 定向复审（attempt 2）
+
+- 范围：仅复核 attempt 1 的 P1-1～P1-3、P2-1～P2-5；未重开全面复核。
+- 对象：`A09-复核触发信号与返工生命周期修订候选.md` v2（当前 434 行）。
+- 结论：**REVISE；剩余 P1=2，P2=1。**
+
+### P1 逐条
+
+| 原项 | 状态 | 依据与判断 |
+|---|---|---|
+| P1-1：A146 的配对对象与执行位点 | **OPEN** | **已闭合部分**：v2 改为按 `role` 的判定角色闭集配对，明确 C checker / R 多路 reviewer / X reviewer，且 A146 改到判定方 `done` 写入时校验，不再放在 `_validate_node_close`；这正面修复了上一轮的 close=scribe 和“不能即时拒绝”两点（候选稿 `:125-191`、`:313`、`:367-376`）。**仍阻断**：R 模板现只有 reviewer 与 scribe 两类 agent，没有同节点 coder（`tools/relay-light/skill/SKILL.md:74-87`）；但 v2 要把 R reviewer 改成 `on:review_ready:coder`（候选稿 `:382`），并在示例中写 `agent_launch coder#1`（`:199-205`），却没有把 coder 行加入 R 模板或影响面。现实现对非豁免 agent 强制其名字在本节点 agent 表（`relay_log.py:1584-1585`、`:1628-1646`），lint 对 trigger 又要求引用同节点 agent（`:591-603`）。所以 R 模板将直接触发 A71，示例里的 R/coder checkpoint 也会触发 A59，不能落地。**这不是新增范围**，而是上一轮 P1-1 所要求的“覆盖 R 多路 reviewer”仍未完成；上一轮已指出 R 的 scribe close/多路问题，但未单列 source agent 缺失，v2 新增的 `:201` 流程才把该缺口显化。**整改**：在保持 A71 同节点约束的前提下，明确 R 的 live source agent 如何进入该节点、模板 agent 行/生命周期/测试如何同步；或放弃 R 的新 trigger（后者不满足当前提案目标）。未完成前 A146 的 R 多路正例不可运行。 |
+| P1-2：ready token 的语法、路由与重复语义 | **OPEN** | **已闭合部分**：一信号一 reviewer、token 值等于启动 reviewer、重复同名 token 写入即拒、判定角色闭集、`reviewed`/`ready_seq` 均已写成可测试合同（候选稿 `:154-195`、`:311-313`）。作者不采纳“已消费”标记的理由对“同一 live reviewer 的第二轮不新增 launch”成立，A58/A49 也足以拦住同名 reviewer 的无因重拉（`:195`）。**仍阻断**：A144 只要求“存在一条”匹配 checkpoint，且 source 未终态（`:177-182`、`:311`），没有要求该 checkpoint 属于 source 的当前实例或仍是 source 的最新事件。现 `_latest_by_name` 只按名称跨 attempt 取最新行（`relay_log.py:1588-1603`）。因此 `coder#1` 发 ready 后 lost、`coder#2` 重拉并 live，或 `coder#1` 在 ready 后又写普通 checkpoint/blocked，旧 ready 仍可拉起 reviewer；A146 也只按 source 名和 `ready_seq` 绑定，可能把旧实例的 ready 与新实例的 `reviewed=coder#2` 拼接。该序列不是“当前产出待复核”。**整改**：A144/A146 均要求 `ready_seq` 对应的 event agent 与 `reviewed=<S>#<a>` 为同一完整实例；launch 时该 ready 必须是该实例的最新 agent event（或定义等价的未被后续工作覆盖状态）。补旧 attempt、后续普通 checkpoint、blocked 后旧 ready 三个拒绝反例。 |
+| P1-3：A145/A147 轮次与 strategist 出口 | **CLOSED** | v2 正确撤掉“第 N+1 条拒写再升级”和空 diff 断言，定义首轮计入、`review_rounds[(node,Rv)]`、`count >= limit` 且 reviewer 未 done 时投影耗尽；写入仍允许，`LossStop.triggered` 后走既有 strategist 链（候选稿 `:268-286`、`:314`、`:373`）。这与现 `loss_stop()` 的 attempt/X 只读投影模型一致（`relay_log.py:2563-2613`），并已指定 2/3 两配置、超限仍写入、三套互不叠加和 strategist 起链的验收。作者不把它塞进 `status --json` 的理由成立：现有两套计数同样不进该冻结 schema；本轮只新增同构第三计数，未制造半暴露字段（候选稿 `:284-288`）。 |
+
+### P2 逐条
+
+| 原项 | 状态 | 依据与判断 |
+|---|---|---|
+| P2-1：将“会失效”区分为“必失败/需扩测” | **OPEN** | v2 对 662/1333/1440/4776/1162 的分类已正确，A62 撤回后 status schema 也正确列为不受影响（候选稿 `:344-357`）。但 `test_attempt_and_x_loss_stops_trigger_independently` 现只断言 `attempts`、`x_rounds`、两个 exhausted 字段和 `triggered`（`test_relay_log.py:3642-3699`）；给 `LossStop` 增加 `review_rounds`/`review_exhausted` 不会令这些既有断言必失败。因此候选稿 `:352` 的“断言将失败”仍应改为“仅补第三计数断言”，除非实施时另行把该测试改为精确 schema 断言。 |
+| P2-2：A144 的情形数及重复 launch | **CLOSED** | A144 现列合法 + 六个拒绝情形，并把重复 launch 另列为 A58/A49 而非误报 A144（候选稿 `:311`）；补齐了上一轮指出的 route mismatch 和重放检查。 |
+| P2-3：A62/status 的半实现 | **CLOSED** | v2 删除 `review_ready` 字段与 status 区分承诺，保留 A62；理由明确且与当前 schema 一致（候选稿 `:284-288`、`:341`、`:374`；`relay_log.py:2173-2179`、`:2640` 起）。这是对上一轮整改“定义稳定 shape 或删除承诺”的合法第二分支，不需要强行扩展 A62。 |
+| P2-4：模板最低账本序列 | **CLOSED** | A149 已加入 `agent_lost` 后合法重拉、同实例 FAIL→PASS 无第二次 launch、R 两路一 FAIL 一 PASS 不互扰的最小账本序列验收（候选稿 `:316`）。P1-1 修复 R source agent 后，该测试可直接钉住上一轮要求的三种行为。 |
+| P2-5：把未验证陈述改为条件性 | **CLOSED** | 向后兼容明确降为“待验证目标命题”，只将既有 `lint: ok` 作为当前实现的事实；候选稿也明确 A144～A150 尚未编写/运行（候选稿 `:294-299`、`:430-432`）。不再把条件性兼容或自动继承写成已验证。 |
+
+### 定向停止线
+
+本 attempt 只判上述 8 项。P1-1、P1-2 的开放均是原 P1 的直接未闭合部分，不另立新范围或替用户裁决；除补足上述合同与模板闭集外，本记录不授权晋级、D-start、验收或任何实现动作。
