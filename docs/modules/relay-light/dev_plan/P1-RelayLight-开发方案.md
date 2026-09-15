@@ -16,9 +16,9 @@
 > 七条 A/B 旧事件（含 design 侧 `RLT-A-02`~`RLT-A-04`）的完整字段、替换缘由与本次确认来源见 [`../design/evidence/06-交叉审核记录-RLT03阶段合同补充.md`](../design/evidence/06-交叉审核记录-RLT03阶段合同补充.md)。
 <!-- dh:status
 汇报: RLT_09 已完成并 squash 合入 master（PR #19，`c72f124`）；plan_amend/A120 放宽/status 重读/A122 白名单守门与 planner-amend 模板/stage_result amend 摘要落地，并入 F-003 UTF-8 输出防护（Windows CI 已验证）；design/01 经 RLT-A-07 最小 A-adjust 澄清 A121/A122 与 §4.5.2 禁区处理
-现状: RLT_01/07/08/10/09 均已合入；RLT_12 真计划 `rlt12-win-01` 五阶段（W/C/R/X/F）已全闭合，RLT_21 在同一真计划内完成八笔提交、单测 181 全绿，**两卡均未 verify、未验收、未合并**——两卡的 D-start 改动仍在各自未合并的分支 wt/RLT_12 与 wt/RLT_21 上，故 §3.1 索引里这两行的状态列仍显示「未开始」，待其分支合入 master 后同步，本次不在此分支改；RLT_12 的 C1 节点暴露「复核打回后节点内无合法返工路径」（findings F-008），经 RLT-A-09 裁决另起 RLT_22 承接
-进行到: P1 ▸ 第 1 批 RLT_01/02/03/05/07/08/10 已完成 ▸ 第 3 批 RLT_09 提前完成（Linux 可做）
-下一步: 先把 RLT_12 与 RLT_21 走完 verify 与用户验收并合并（两卡均已 D-start，证据已在树内）；RLT-A-09 晋级后开 RLT_22（依赖 RLT_21，第 1 批），在第 3 批异常路径实跑（RLT_15/RLT_16/RLT_19）之前修好 C/X 的节点内返工路径
+现状: RLT_01/07/08/10/09 均已合入；**RLT_12 与 RLT_21 已于 2026-09-15 squash 合入 master**（PR #25 `7981556`、PR #27 `124a5c9`）——真计划 `rlt12-win-01` 五阶段 W/C/R/X/F 全闭合、账本 71 行 lint ok，RLT_21 七条验收落地、单测 181 全绿 skipped=0；两卡均有 `verify(relay-light):` 提交，**但五条人判（H1/H13/H5/H14/H10）与 RLT_21 的人验项尚未逐条签署，`review.md` 人类签名区仍空白**
+进行到: P1 ▸ 第 1 批 RLT_01/02/03/05/07/08/10/21/12 已合入 ▸ 第 3 批 RLT_09 提前完成（Linux 可做）
+下一步: RLT_22 已 D-start（Issue #24，分支 wt/RLT_22）可开工，须赶在第 3 批异常路径实跑（RLT_15/RLT_16/RLT_19）之前落地；另有两处待用户裁决——RLT_21 findings F-009（A143 复算口径 3 P1+2 P2 对 oracle 的 1 P1+4 P2）与 RLT_12 的五条人判
 看什么: design/01-RelayLight-产品设计与验收.md + 本文件
 阻塞: RLT_07 F-002/F-003（decision_mode 模式门 + cancelled 归属闸）→ RLT_21 承接；RLT_12 Linux 预演 DR-F-001～006 见 workspace/RLT_12/evidence/linux-dry-run/README.md（预演分支）；RLT_08 F-4（visual_map.md 沿先例不建、模块级 knowledge/ 归 RLT_11）；RLT_10 F-002（仓根无 .gitignore 忽略 __pycache__）；RLT_09 findings 见 workspace/RLT_09/findings.md
 -->
@@ -105,8 +105,8 @@
 | RLT_07 | 编写仓内 skill、adapter 与五阶段模板 | 标准 | 已完成 | 1 | RLT_01、RLT_02、RLT_05 | [workspace/RLT_07](../workspace/RLT_07/) | 2026-09-13 / PR #11 squash 合入（`6f26c4a`） | heavy 五路复核全闭合；Issue #10；F-002/F-003 排后续卡 |
 | RLT_08 | 接入 AGENTS 判定、协议索引与双模块身份 | 标准 | 已完成 | 1 | RLT_07 | [workspace/RLT_08](../workspace/RLT_08/) | 2026-09-13 / PR #15 squash 合入（`5cf70b8`） | normal 三路复核全闭合；Issue #14；显式登记有意绕过 B-adjust |
 | RLT_10 | 建立 unittest、PowerShell 薄壳与全量测试入口 | 标准 | 已完成 | 1 | RLT_03、RLT_05、RLT_07 | [workspace/RLT_10](../workspace/RLT_10/) | 2026-09-13 / PR #17 squash 合入（`efb1a60`） | normal 三路复核全闭合；Issue #16；decision.1 选项 A 追加 `relay_log.py` 仅补 `lint --json`；Windows runner 首接入暴露 F-003（status 中文输出 cp1252 崩溃，薄壳以 PYTHONUTF8 兜底，程序侧待后续卡）；RLT_12 准入门已过 |
-| RLT_12 | Windows Claude 主控跑首个真计划闭环 | 标准 | 未开始 | 1 | RLT_03、RLT_05、RLT_07、RLT_08、RLT_10 | — | — | 高危；首步承接 A32，**第一个端到端 demo**；RLT_21 非依赖，若先于 RLT_21 开工，同次确认须写明接受 A112/NOT_RUN 已知缺口并冻结证据口径 |
-| RLT_21 | 回流 Linux 预演发现：监工异常出口、启动修正记账、静默超时与派活纪律、决策模式门 | 标准 | 未开始 | 1 | RLT_07、RLT_09、RLT_10 | — | — | RLT-B-07 新增；Linux 可做；并入 RLT_07 F-002/F-003；输入 `workspace/RLT_12/evidence/linux-dry-run/README.md` DR-F-001～006 |
+| RLT_12 | Windows Claude 主控跑首个真计划闭环 | 标准 | 已完成 | 1 | RLT_03、RLT_05、RLT_07、RLT_08、RLT_10 | [workspace/RLT_12](../workspace/RLT_12/) | 2026-09-15 / PR #25 squash 合入（`7981556`） | 高危；首步承接 A32，**第一个端到端 demo**；真计划 rlt12-win-01 五阶段全闭合、账本 71 行；Issue #23；verify `dd3ac3c`；**五条人判未签、未验收**；本轮暴露六条缺口见 workspace/RLT_12/findings.md F-008~F-015，其中 F-008 由 RLT-A-09 与 RLT_22 承接 |
+| RLT_21 | 回流 Linux 预演发现：监工异常出口、启动修正记账、静默超时与派活纪律、决策模式门 | 标准 | 已完成 | 1 | RLT_07、RLT_09、RLT_10 | [workspace/RLT_21](../workspace/RLT_21/) | 2026-09-15 / PR #27 squash 合入（`124a5c9`） | RLT-B-07 新增；在 RLT_12 真计划内作唯一业务卡完成；Issue #21；verify `e8eda0e`；单测 181 全绿 skipped=0；**人验项未签**；遗留 P2 = findings F-009（A143 复算口径分歧）待用户裁决；分支名 `wt/RLT_21-win`（远端 `wt/RLT_21` 另有一条并行工作线未动） |
 | RLT_22 | 复核触发改非终态「待复核」信号并打通节点内返工生命周期 | 标准 | 未开始 | 1 | RLT_21 | — | — | RLT-A-09 新增；承接 F-008 三规则互锁；计划内适用范围 W/C/X（R 模板不动）；输入 `workspace/RLT_12/findings.md` F-008 与账本 `relay/rlt12-win-01/relay_log.jsonl` |
 | RLT_11 | 回流三条教训并核对持久化退场合同 | 轻 | 未开始 | 2 | RLT_07、RLT_12 | — | — | — |
 | RLT_13 | Windows Codex 主控复跑并验证纯配置换协作 | 标准 | 未开始 | 2 | RLT_12 | — | — | — |

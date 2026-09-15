@@ -60,7 +60,7 @@ CONTROL_AGENT_NAMES = frozenset({"orchestrator", "monitor"})
 RELAUNCH_EXEMPT_AGENT_NAMES = frozenset(
     {"orchestrator", "monitor", "planner-amend", "strategist"}
 )
-DECISION_EVENTS = frozenset({"escalate", "decision", "user_decision", "resume"})
+DECISION_EVENTS = frozenset({"escalate", "decision", "user_decision", "resume", "cancelled"})
 DECISION_HELPER_NAMES = frozenset({"decider", "strategist"})
 DEFAULT_CONFIG_DIRS = (".claude/skills/relay-light", ".codex/skills/relay-light")
 CONFIG_PATH_SAFE = "/:~-._"
@@ -163,6 +163,8 @@ class RelayLimits:
     rework_max_rounds: int
     attempt_max: int
     on_exceed: str
+    # HC-RL-A140: ledger-silence prompt threshold in minutes; optional, default 30.
+    silence_timeout_min: int = 30
 
 
 @dataclass(frozen=True)
@@ -305,7 +307,12 @@ def _parse_mapping(
     action = on_exceed.get("action")
     if not isinstance(action, str) or not action:
         raise _error("HC-RL-A92", "limits.on_exceed.action must be a non-empty string", exit_code=3)
-    return tuple(stages), tuple(recipes), RelayLimits(counters[0], counters[1], action)
+    silence_timeout_min = limits.get("silence_timeout_min", 30)
+    if not isinstance(silence_timeout_min, int) or isinstance(silence_timeout_min, bool):
+        raise _error("HC-RL-A92", "limits.silence_timeout_min must be an integer", exit_code=3)
+    return tuple(stages), tuple(recipes), RelayLimits(
+        counters[0], counters[1], action, silence_timeout_min
+    )
 
 
 def load_config(config_dir: str | Path) -> RelayConfig:
@@ -1762,6 +1769,30 @@ def _validate_decision_ownership(
             )
 
 
+def _validate_decision_mode(
+    plan: Plan, entries: list[dict[str, object]], node: NodeSpec, event: str, agent: str
+) -> None:
+    """HC-RL-A114/A142: ``decision_mode`` gates apply only to decider chains.
+
+    ``consult``: ``resume`` on a decider chain requires a ``user_decision`` first.
+    ``auto``: ``user_decision`` on a decider chain is rejected — strategist chains
+    still require it via A97 regardless of mode."""
+    helper = _active_decision_owners(entries, node.node).get(agent)
+    if helper is None or helper.partition("#")[0] != "decider":
+        return
+    if event == "resume" and plan.decision_mode == "consult":
+        latest = _latest_for_instance(entries, node.node, agent)
+        if latest is None or latest["event"] != "user_decision":
+            raise _error(
+                "HC-RL-A114",
+                "consult mode: resume on a decider chain requires a user_decision",
+            )
+    if event == "user_decision" and plan.decision_mode == "auto":
+        raise _error(
+            "HC-RL-A114", "auto mode: user_decision is not allowed on a decider chain"
+        )
+
+
 def _validate_strategist_conclusion(
     entries: list[dict[str, object]], node: NodeSpec, event: str, agent: str
 ) -> None:
@@ -1780,8 +1811,104 @@ def _validate_strategist_conclusion(
         )
 
 
+def _not_run_budget(
+    entries: list[dict[str, object]], node_name: str, name: str
+) -> tuple[int, str | None]:
+    """HC-RL-A138: one ``(node, agent name)`` pair's NOT_RUN state.
+
+    ``streak`` counts the trailing run of ``agent_lost`` rows whose note carries a bare
+    ``NOT_RUN`` token — any other loss reason breaks the run, and an authorizing
+    ``user_decision`` restarts it for its ``launch_fix`` group. ``fix_token`` is the
+    token of the single ``launch_fix`` group ever authorized for the pair, or None.
+    """
+    streak = 0
+    fix_token: str | None = None
+    for entry in entries:
+        if entry["node"] != node_name or entry["event"] not in AGENT_EVENTS:
+            continue
+        entry_name, _ = _agent_parts(str(entry["agent"]))
+        if entry_name != name:
+            continue
+        event = str(entry["event"])
+        if event == "agent_lost":
+            streak = streak + 1 if "NOT_RUN" in str(entry["note"]).split() else 0
+        elif event == "user_decision":
+            token = _note_tokens(str(entry["note"])).get("launch_fix")
+            if token:
+                fix_token = token
+                streak = 0
+    return streak, fix_token
+
+
+def _validate_launch_budget(
+    entries: list[dict[str, object]],
+    node_name: str,
+    name: str,
+    note: str,
+    attempt_max: int,
+) -> None:
+    """HC-RL-A138: the relaunch gate after A49 eligibility.
+
+    Without an authorized ``launch_fix`` group, a run of ``attempt_max`` consecutive
+    NOT_RUN losses stops the pair; once a group exists, every later launch must carry
+    the same token and the group grants exactly one more ``attempt_max`` budget.
+    """
+    streak, fix_token = _not_run_budget(entries, node_name, name)
+    launch_fix = _note_tokens(note).get("launch_fix")
+    if fix_token is not None:
+        if launch_fix != fix_token:
+            raise _error(
+                "HC-RL-A107",
+                f"relaunch of {name} must carry the authorized launch_fix={fix_token}",
+            )
+        if streak >= attempt_max:
+            raise _error(
+                "HC-RL-A107",
+                f"launch_fix group {fix_token} exhausted for {name} "
+                f"({streak} consecutive NOT_RUN losses)",
+            )
+    elif streak >= attempt_max:
+        raise _error(
+            "HC-RL-A107",
+            f"{name} hit the NOT_RUN relaunch stop ({streak} consecutive losses); "
+            "a user_decision carrying launch_fix=<token> is required",
+        )
+
+
+def _validate_fix_authorization(
+    entries: list[dict[str, object]],
+    node_name: str,
+    name: str,
+    agent: str,
+    note: str,
+    attempt_max: int,
+) -> None:
+    """HC-RL-A138: a ``user_decision`` on a lost agent is legal only as the user's
+    ``launch_fix=<token>`` authorization of one new budget group for an exhausted pair."""
+    if not _note_tokens(note).get("launch_fix"):
+        raise _error("HC-RL-A60", f"agent {agent} is terminal")
+    streak, fix_token = _not_run_budget(entries, node_name, name)
+    if fix_token is not None:
+        raise _error(
+            "HC-RL-A107",
+            f"(node {node_name}, agent {name}) already has launch_fix group {fix_token}",
+        )
+    if streak < attempt_max:
+        raise _error(
+            "HC-RL-A107",
+            f"launch_fix authorization requires {attempt_max} consecutive NOT_RUN "
+            f"losses for {name}, got {streak}",
+        )
+
+
 def _validate_agent_transition(
-    plan: Plan, entries: list[dict[str, object]], node: NodeSpec, event: str, agent: str
+    plan: Plan,
+    entries: list[dict[str, object]],
+    node: NodeSpec,
+    event: str,
+    agent: str,
+    note: str,
+    attempt_max: int,
 ) -> None:
     name, attempt = _agent_parts(agent)
     if event == "agent_launch":
@@ -1805,10 +1932,15 @@ def _validate_agent_transition(
         prior_agent = f"{name}#{prior_attempt}"
         prior = _latest_for_instance(entries, node.node, prior_agent)
         assert prior is not None
-        if prior["event"] not in {"agent_lost", "cancelled"} and not _stage_failed_after(
-            entries, node.stage_id, prior
-        ):
+        eligible = prior["event"] in {"agent_lost", "cancelled"} or (
+            # HC-RL-A138: the authorizing user_decision sits on the lost instance;
+            # it keeps the pair eligible and the budget gate below checks the token.
+            prior["event"] == "user_decision"
+            and bool(_note_tokens(str(prior["note"])).get("launch_fix"))
+        )
+        if not eligible and not _stage_failed_after(entries, node.stage_id, prior):
             raise _error("HC-RL-A49", f"agent {name} is not eligible for relaunch")
+        _validate_launch_budget(entries, node.node, name, note, attempt_max)
         return
 
     latest = _latest_for_instance(entries, node.node, agent)
@@ -1816,6 +1948,11 @@ def _validate_agent_transition(
         raise _error("HC-RL-A60", f"agent {agent} has not launched in node {node.node}")
     prior_event = str(latest["event"])
     if prior_event in TERMINAL_EVENTS:
+        if event == "user_decision" and prior_event == "agent_lost":
+            _validate_fix_authorization(
+                entries, node.node, name, agent, note, attempt_max
+            )
+            return
         raise _error("HC-RL-A60", f"agent {agent} is terminal")
     allowed = {
         "checkpoint": {"agent_launch", "checkpoint", "resume"},
@@ -1830,6 +1967,13 @@ def _validate_agent_transition(
     }
     if prior_event not in allowed[event]:
         raise _error("HC-RL-A60", f"event {event} cannot follow {prior_event} for {agent}")
+    if event == "user_decision" and _note_tokens(note).get("launch_fix"):
+        _, fix_token = _not_run_budget(entries, node.node, name)
+        if fix_token is not None:
+            raise _error(
+                "HC-RL-A107",
+                f"(node {node.node}, agent {name}) already has launch_fix group {fix_token}",
+            )
 
 
 def _validate_node_close(plan: Plan, entries: list[dict[str, object]], node: NodeSpec) -> None:
@@ -1852,17 +1996,29 @@ def _validate_node_close(plan: Plan, entries: list[dict[str, object]], node: Nod
 
 
 def _validate_runtime_event(
-    plan: Plan, entries: list[dict[str, object]], node_name: str, event: str, agent: str, note: str
+    plan: Plan,
+    entries: list[dict[str, object]],
+    node_name: str,
+    event: str,
+    agent: str,
+    note: str,
+    attempt_max: int,
 ) -> None:
     node = _active_node(plan, node_name)
     _authorize_agent(plan, node, event, agent)
     _validate_writer(event, agent)
-    _validate_event_semantics(plan, entries, node, event, agent, note)
+    _validate_event_semantics(plan, entries, node, event, agent, note, attempt_max)
     _validate_writer_handoff(plan, entries, node_name, event, note)
 
 
 def _validate_event_semantics(
-    plan: Plan, entries: list[dict[str, object]], node: NodeSpec, event: str, agent: str, note: str
+    plan: Plan,
+    entries: list[dict[str, object]],
+    node: NodeSpec,
+    event: str,
+    agent: str,
+    note: str,
+    attempt_max: int,
 ) -> None:
     """Per-event contract: node gates, stage ordering, agent state machine."""
     if event == "plan_loaded":
@@ -1889,8 +2045,9 @@ def _validate_event_semantics(
         if event == "done" and _agent_parts(agent)[0] == "planner-amend":
             _validate_planner_amend_done_note(note)
         _validate_decision_ownership(entries, node, event, agent, note)
+        _validate_decision_mode(plan, entries, node, event, agent)
         _validate_strategist_conclusion(entries, node, event, agent)
-        _validate_agent_transition(plan, entries, node, event, agent)
+        _validate_agent_transition(plan, entries, node, event, agent, note, attempt_max)
 
 
 def _validate_writer(event: str, agent: str) -> None:
@@ -1924,6 +2081,53 @@ def _stage_id_from_note(note: str, event: str, code: str) -> str:
     if not stage_id:
         raise _error(code, f"{event} note must contain stage_id=<card>:<stage>#<k>")
     return stage_id
+
+
+RESULT_REF_RE = re.compile(r"(?P<agent>[^#\s]+#[1-9][0-9]*):(?P<event>blocked|agent_lost)")
+
+
+def _validate_result_ref(
+    entries: list[dict[str, object]],
+    stage_id: str,
+    tokens: dict[str, str],
+    nodes_by_name: dict[str, NodeSpec],
+    outcome: str,
+) -> None:
+    """HC-RL-A137: every `blocked`/`failed` result must carry
+    `ref=<agent>#<n>:(blocked|agent_lost)` naming an instance whose newest event
+    inside this stage instance is exactly the cited one — a missing, foreign, malformed,
+    resumed-over or terminally overridden reference each fail closed."""
+    ref = tokens.get("ref")
+    if ref is None:
+        raise _error(
+            "HC-RL-A137",
+            f"{outcome} stage_result must carry "
+            "ref=<agent>#<n>:(blocked|agent_lost)",
+        )
+    match = RESULT_REF_RE.fullmatch(ref)
+    if match is None:
+        raise _error(
+            "HC-RL-A137",
+            f"ref={ref!r} must be <agent>#<n>:(blocked|agent_lost)",
+        )
+    ref_agent, ref_event = match.group("agent"), match.group("event")
+    ref_rows = [
+        entry
+        for entry in _stage_entries(entries, stage_id, nodes_by_name)
+        if entry["agent"] == ref_agent
+    ]
+    if not ref_rows:
+        raise _error(
+            "HC-RL-A137",
+            f"ref={ref} cites {ref_agent}, which has no event inside {stage_id}",
+        )
+    latest_event = str(ref_rows[-1]["event"])
+    if latest_event != ref_event:
+        raise _error(
+            "HC-RL-A137",
+            f"ref={ref} is stale: {ref_agent}'s newest event inside {stage_id} is "
+            f"{latest_event}",
+        )
 
 
 def latest_stage_result(
@@ -1977,11 +2181,16 @@ def _validate_stage_event(
         if outcome == "cancelled" and "user_decision" not in note:
             raise _error("HC-RL-A118", "cancelled stage_result note must cite the user_decision")
         unclosed = [node.node for node in instances[stage_id] if not _node_closed(entries, node.node)]
-        if unclosed:
-            raise _error(
-                "HC-RL-A112",
-                f"stage_result must follow the last node_close of {stage_id}; still open: {unclosed}",
-            )
+        if outcome in TERMINAL_RESULT_OUTCOMES:
+            if unclosed:
+                raise _error(
+                    "HC-RL-A112",
+                    f"stage_result must follow the last node_close of {stage_id}; still open: {unclosed}",
+                )
+        else:
+            # HC-RL-A137: blocked/failed always cite a live blocked or lost agent
+            # inside this very instance — whether or not nodes remain open.
+            _validate_result_ref(entries, stage_id, tokens, nodes_by_name, outcome)
         # HC-RL-A123: the amend summary mirrors this instance's own plan_amend history.
         # A superseded row keeps its stage_id and node names stay unique (A46), so
         # attribution uses the full table — superseding the carrier cannot orphan it.
@@ -2032,15 +2241,15 @@ def _validate_stage_event(
         raise _error(code, f"stage {stage_id} already closed")
     if "monitor_launch" not in seen:
         raise _error(code, f"stage_close requires a monitor_launch of {stage_id}")
+    result = latest_stage_result(entries, stage_id, nodes_by_name)
+    if result is not None and parse_stage_result_note(str(result["note"])).outcome == "blocked":
+        raise _error("HC-RL-A118", f"stage_close cannot follow outcome=blocked for {stage_id}")
     unclosed = [node.node for node in instances[stage_id] if not _node_closed(entries, node.node)]
     if unclosed:
         raise _error(code, f"stage_close requires every node closed; still open: {unclosed}")
-    result = latest_stage_result(entries, stage_id, nodes_by_name)
     if result is None:
         raise _error("HC-RL-A112", f"stage_close requires a stage_result for {stage_id}")
     outcome = parse_stage_result_note(str(result["note"])).outcome
-    if outcome == "blocked":
-        raise _error("HC-RL-A118", f"stage_close cannot follow outcome=blocked for {stage_id}")
     if outcome not in TERMINAL_RESULT_OUTCOMES:
         raise _error("HC-RL-A112", f"stage_close needs outcome=done/cancelled, got {outcome!r}")
 
@@ -2102,7 +2311,9 @@ def append_event(plan_dir: str, node: str, event: str, agent: str, note: str, co
     entries = read_ledger(ledger_path)
     if not entries and event != "plan_loaded":
         raise _error("HC-RL-A84", "first ledger event must be plan_loaded")
-    _validate_runtime_event(plan, entries, node, event, agent, note)
+    _validate_runtime_event(
+        plan, entries, node, event, agent, note, config.limits.attempt_max
+    )
     if event == "plan_loaded":
         note = _plan_loaded_note(note, plan_dir, config)
     entry = {
@@ -2177,6 +2388,12 @@ class AgentState:
     last_event: str
     last_ts: str
     idle_seconds: int
+    # HC-RL-A139: the launch_fix=<token> recorded on this instance's own
+    # agent_launch note — a runtime fact, never a plan column (None when absent).
+    launch_fix: str | None
+    # HC-RL-A140: the ledger's newest event for a live agent is older than
+    # limits.silence_timeout_min — a monitor prompt, never a hung verdict.
+    ledger_silent: bool
 
 
 @dataclass(frozen=True)
@@ -2247,12 +2464,14 @@ def derive_last_writer(
 
 
 def _unclosable_reasons(
-    entries: list[dict[str, object]], node: NodeSpec
+    entries: list[dict[str, object]], node: NodeSpec, attempt_max: int | None = None
 ) -> tuple[str, ...]:
     """§5.3 double criteria, reported in `_validate_node_close`'s own check order.
 
     Condition 1 is never waived, so its reasons come first; condition 2 is only
     surfaced once condition 1 holds, which is what the §10.3 sample shows.
+    HC-RL-A138 adds a third read-only reason: a pair sitting on its NOT_RUN stop
+    (or inside an authorized launch_fix group) is stuck until the user rules.
     """
     launched: list[str] = []
     for entry in entries:
@@ -2271,6 +2490,16 @@ def _unclosable_reasons(
         latest = _latest_by_name(entries, node.node, close_name)
         if latest is None or latest["event"] != "done":
             reasons.append(f"{close_name} 无 done 终态")
+    if attempt_max is not None:
+        for name in sorted({_agent_parts(agent)[0] for agent in launched}):
+            latest = _latest_by_name(entries, node.node, name)
+            if latest is None or latest["event"] != "agent_lost":
+                continue
+            streak, fix_token = _not_run_budget(entries, node.node, name)
+            if fix_token is None and streak < attempt_max:
+                continue
+            group = fix_token if fix_token is not None else "未授权"
+            reasons.append(f"{name} NOT_RUN×{streak}（fix 组 {group}）")
     return tuple(reasons)
 
 
@@ -2367,11 +2596,17 @@ def _suggested_action(result: StageResult | None, relaunches: int) -> str:
     return "relaunch_monitor" if relaunches == 0 else "notify_user"
 
 
-def derive_status(plan: Plan, entries: list[dict[str, object]], now: datetime | None = None) -> Status:
+def derive_status(
+    plan: Plan,
+    entries: list[dict[str, object]],
+    now: datetime | None = None,
+    limits: RelayLimits | None = None,
+) -> Status:
     """Project the whole status document from one plan and its complete ledger.
 
-    `now` is injectable so clock and silence stay deterministic. This is a read-only
-    projection: it neither validates lifecycle order nor judges any produce.
+    `now` is injectable so clock and silence stay deterministic; `limits` feeds the
+    read-only NOT_RUN reasons (A138). This is a read-only projection: it neither
+    validates lifecycle order nor judges any produce.
     """
     moment = now if now is not None else datetime.now().astimezone()
     active_nodes = tuple(node for node in plan.nodes if not node.superseded)
@@ -2482,23 +2717,33 @@ def derive_status(plan: Plan, entries: list[dict[str, object]], now: datetime | 
         _ledger_warnings(entries, nodes_by_name, stage_instances, stage_starts, stage_closes)
     )
 
-    launches: dict[tuple[str, str], int] = {}
+    launches: dict[tuple[str, str], dict[str, object]] = {}
     for entry in entries:
         if entry["event"] != "agent_launch" or str(entry["node"]) not in nodes_by_name:
             continue
-        launches.setdefault((str(entry["node"]), str(entry["agent"])), int(entry["seq"]))
+        launches.setdefault((str(entry["node"]), str(entry["agent"])), entry)
     agents: list[AgentState] = []
-    for (node_name, agent), _ in sorted(launches.items(), key=lambda item: (node_order[item[0][0]], item[1])):
+    for (node_name, agent), launch_row in sorted(
+        launches.items(), key=lambda item: (node_order[item[0][0]], int(item[1]["seq"]))
+    ):
         latest = _latest_for_instance(entries, node_name, agent)
         assert latest is not None
         last_ts = str(latest["ts"])
+        last_event = str(latest["event"])
+        idle = _idle_seconds(last_ts, moment, errors, latest["seq"])
         agents.append(
             AgentState(
                 node=node_name,
                 agent=agent,
-                last_event=str(latest["event"]),
+                last_event=last_event,
                 last_ts=last_ts,
-                idle_seconds=_idle_seconds(last_ts, moment, errors, latest["seq"]),
+                idle_seconds=idle,
+                launch_fix=_note_tokens(str(launch_row["note"])).get("launch_fix"),
+                ledger_silent=(
+                    limits is not None
+                    and last_event not in TERMINAL_EVENTS
+                    and idle > limits.silence_timeout_min * 60
+                ),
             )
         )
 
@@ -2509,7 +2754,11 @@ def derive_status(plan: Plan, entries: list[dict[str, object]], now: datetime | 
             stage_id=node.stage_id,
             type=node.type,
             state=node_states[node.node],
-            closable=not (reasons := _unclosable_reasons(entries, node)),
+            closable=not (
+                reasons := _unclosable_reasons(
+                    entries, node, limits.attempt_max if limits is not None else None
+                )
+            ),
             reasons=reasons,
         )
         for node in active_nodes
@@ -2684,6 +2933,8 @@ def status_document(status: Status) -> dict[str, object]:
                 "last_event": agent.last_event,
                 "last_ts": agent.last_ts,
                 "idle_seconds": agent.idle_seconds,
+                "launch_fix": agent.launch_fix,
+                "ledger_silent": agent.ledger_silent,
             }
             for agent in status.agents
         ],
@@ -2736,9 +2987,10 @@ def render_status_text(status: Status, plan_dir: str) -> str:
             for agent in status.agents:
                 if agent.node != node.node:
                     continue
+                silent = " ledger_silent" if agent.ledger_silent else ""
                 lines.append(
                     f"    在场 agent：{agent.agent}  最近 {agent.last_event} @ {_clock(agent.last_ts)}"
-                    f"（静默 {_duration(agent.idle_seconds)}）"
+                    f"（静默 {_duration(agent.idle_seconds)}{silent}）"
                 )
     return "\n".join(lines) + "\n"
 
@@ -2749,7 +3001,7 @@ def _status_command(plan_dir: str, as_json: bool, config: RelayConfig) -> int:
         entries = read_ledger(Path(plan_dir) / "relay_log.jsonl")
     except RelayError as exc:
         return _fail(exc)
-    status = derive_status(plan, entries)
+    status = derive_status(plan, entries, limits=config.limits)
     if as_json:
         print(json.dumps(status_document(status), ensure_ascii=False))
     else:

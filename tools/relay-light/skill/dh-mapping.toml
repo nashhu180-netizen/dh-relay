@@ -24,6 +24,7 @@ reviewers = ["lesson", "consistency"]
 [limits]
 rework_max_rounds = 2      # X 阶段轮数上限
 attempt_max = 3            # 节点实例内同一 agent 名的重拉上限
+silence_timeout_min = 30   # 监工静默提示阈值（分钟）：仅提示非挂死判定
 
 [limits.on_exceed]
 action = "strategist-then-user"

@@ -43,6 +43,10 @@ bash -lc "python3 <RELAY_LOG> status --plan <plan_dir> --json --config-dir ~/.co
   ```
 - 角色 → 发起方式查 `roles.toml`，本文件不写死模型。
 
+## 环境预检（拉起前）
+
+拉起每个 agent 前先核启动形态在本环境可用：沙箱型只读启动（codex 复核形态的 `-- --sandbox read-only`）若起不来（账本连续 `NOT_RUN` 即信号），改用 bypass 沙箱启动（`--dangerously-bypass-approvals-and-sandbox`），只读约束改由派活 prompt 明文承担（「不改任何文件、只读被审对象」），并在该 `agent_launch` 的 `note` 记 `launch_fix=<token>` 运行事实——不改计划 `launch` 列、不走 `plan_amend`。
+
 ## 派活 prompt 模板（监工 → agent）
 
 ```text
@@ -62,6 +66,10 @@ bash -lc "python3 <RELAY_LOG> status --plan <plan_dir> --json --config-dir ~/.co
 硬规则：`wait` 返回时必须有接收者（watch 推送 / 前台阻塞循环 / 后台退出唤醒三选一）；watch 未实现时不得结束回合空等。
 ```
 
+## 派活提交纪律
+
+`agent start` 后先 `herdr agent wait <名> --until idle`——等启动横幅与初始化提示消化完再 `herdr agent prompt` 发派单；prompt 发出后必须读 pane 末行确认派单已真提交（`herdr agent read <名>` 看末行/输入框已清空），未提交补一发 `herdr agent send-keys <名> enter` 并复核，仍不动按下方 stalled 处置走 `agent_lost`。
+
 ## 等待与接收者（硬规则）
 
 `herdr agent wait` 是阻塞式 CLI、不是推送——**返回那一刻必须有接收者**，没人听信号就丢。三种满足方式：
@@ -72,9 +80,19 @@ bash -lc "python3 <RELAY_LOG> status --plan <plan_dir> --json --config-dir ~/.co
 
 watch 未实现前 Codex 侧**一律走方式 2 前台阻塞循环**，不得结束回合空等。`agent wait --until blocked` 只作可选模式，不是默认。
 
+**编排等待纪律**：编排侧等监工时优先用账本文件事件监听（盯 `relay_log.jsonl` 新行到达），不用后台 `wait`/轮询进程（会被系统回收丢唤醒）；并配「监工连续空闲 ≥2 分钟且无新账本行」告警——命中即巡检该监工 pane 末行与 Herdr 状态，按 stalled/ledger_silent 口径处置，不空等。
+
 ## stalled 处置
 
 `herdr agent prompt` 发出后必须验证「真提交」：`herdr agent get <名>` 看 `state_change_seq` 是否变化、`status` 是否转 `working`。codex TUI 下长中文 prompt 可能停在输入框未提交（herdr 报 `agent_prompt_stalled` 或 seq 不动）——补一发 `herdr agent send-keys <名> enter`，再 `agent get` 复验，没动就再补；注意一发 enter 可能被吃成多行换行。终极判据 = `herdr agent read` 看输入框已清空。输入通道整体冻结时**别纠缠**：该实例弃用（账本记 `agent_lost`），开新 pane 拉 fresh 实例续派。
+
+## ledger_silent 处置
+
+`status` 按账本最近事件计算静默，超过 `limits.silence_timeout_min`（默认 30 分钟）的在场 agent 标 `ledger_silent`——提示非挂死判定。处置原文：
+
+```text
+ledger_silent → 核 Herdr 状态 + pane 末行 + 允许路径产出 三者是否也无变化 → 三者均无变化才中断并记 agent_lost silent_timeout → 同 pane 重拉 #n+1；任一仍在变化不得中断。
+```
 
 ## 红线
 
