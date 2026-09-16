@@ -62,3 +62,56 @@
 ## 裁决
 
 **FAIL**。先闭合 P1-1～P1-4，再重新执行模式 A plan-review；P2 行号更新不单独阻断，但应随整改一并完成，避免 worker 按旧锚点误改。
+
+---
+
+## 第二轮
+
+- 审核对象：builder 修订提交 `d1e8630` 的 `task_plan.md`
+- 审核范围：逐项回归首轮 P1-1～P1-4、P2-1，并核对修订是否引入新问题
+- 结论：**FAIL**
+
+### 首轮发现回归
+
+#### P1-1 — PARTIAL，仍未闭合
+
+- **已闭合部分**：`task_plan.md:104-138` 的目标与全量 unittest 均改为从 `tools/relay-light` 目录执行 `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest ...`；连字符目录不再被当作 dotted module，命令入口可执行。
+- **仍缺口**：B1/B3 检查点与共通流程在 unittest 后另跑 `pwsh -NoProfile -File tools/tests/run-relay-tests.ps1`，该命令没有设置 `PYTHONDONTWRITEBYTECODE=1`。全量 runner 会进入 `tools/tests/relay-light-log.ps1`，后者直接执行两次 `$python -m unittest ...` 且自身不设置 `PYTHONDONTWRITEBYTECODE`，因此仍可重新生成 `tools/relay-light/__pycache__`。四集合核对位于 runner 之后，仍会命中允许路径外文件。
+- **新引入的问题**：`task_plan.md:142` 要求每批 worker 先删除未跟踪的 `tools/relay-light/__pycache__`。该目录不在 DevPlan/brief 冻结的允许路径闭集内；删除进场前既有的未跟踪内容也是范围外写动作，不能用来替代无副作用的验证命令。
+- **整改**：给 PowerShell 全量 runner 同样设置进程环境，例如 Linux 侧用 `PYTHONDONTWRITEBYTECODE=1 pwsh -NoProfile -File tools/tests/run-relay-tests.ps1`，并删除每批主动删除闭集外缓存的步骤。若进场已有缓存，只登记为 pre-existing 并在四集合核对中区分本卡新增，不由 worker 删除。
+
+#### P1-2 — CLOSED
+
+`task_plan.md:94,135` 已统一为 W/C/X 各一条最小账本序列，并明确分配三种场景：W 覆盖判定方 lost 后重拉并消费新信号，C 覆盖同实例 FAIL→PASS 且无第二次 launch，X 覆盖两路一 FAIL 一 PASS 互不干扰。与已闭合 F-003、DevPlan §RLT_22 及 design/01 A149 一致。
+
+#### P1-3 — CLOSED
+
+`task_plan.md:104` 已补 design/01 §3.5 lint 映射表的限定抽取与两条精确结构断言，分别绑定 A35、A71，并保持 design 只读。A150 的末项机器证不再缺失。
+
+#### P1-4 — CLOSED
+
+`task_plan.md:84,92,106` 已冻结 B1 中间态：所有 `on:review_ready:` launch 统一退 2 报 A144、不落账、不串入 A70；B2 再以完整四项前置替换占位。B1 不再 fail-open。
+
+#### P2-1 — CLOSED
+
+首轮列出的 `relay_log.py` 锚点均已按当前基线更新并复核正确：`lint_plan:516`、trigger `598-610`、runtime plan `1515-1522`、latest helpers `1595/1604`、trigger `1656-1672`、transition/node-close/runtime/semantics `1904/1979/1998/2014`、append `2306-2316`、tokens `2420`、LossStop/loss_stop `2790/2812`、Status/status_document `2400/2889`、AgentSpec role `132/454`。
+
+### 全面复看新增发现
+
+#### P0
+
+无。
+
+#### P1
+
+除仍未闭合的 P1-1 外，无新增独立 P1。
+
+#### P2-2 — skill/config 行号仍有残留漂移
+
+- `task_plan.md:23,132` 仍把 skill 模板写作 W `44-56`、C `57-73`、R `74-88`、X `89-104`；当前完整模板块实际为 W `44-55`、C `59-74`、R `76-89`、X `91-105`。现有范围会跨入前一块的 fence/说明并漏掉本块收尾。
+- `task_plan.md:25` 把 `dh-mapping.toml` 的 limits 范围写作 `23-33`；当前 `[limits]` 从 `24` 起，`[limits.on_exceed]` 从 `29` 起且 note 到 `35` 结束。
+- 漂移不单独阻断施工，但应更新为当前完整块，避免 R 模板“逐字不改”基线截取错误。
+
+### 第二轮裁决
+
+**FAIL**。P1-2、P1-3、P1-4 与原 P2-1 已闭合；P1-1 仍因 PowerShell runner 可重建 bytecode、且计划要求删除允许路径外缓存而阻断。闭合 P1-1 后再执行模式 A；P2-2 建议同时修正。
