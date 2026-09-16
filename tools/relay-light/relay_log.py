@@ -62,6 +62,9 @@ RELAUNCH_EXEMPT_AGENT_NAMES = frozenset(
 )
 DECISION_EVENTS = frozenset({"escalate", "decision", "user_decision", "resume", "cancelled"})
 DECISION_HELPER_NAMES = frozenset({"decider", "strategist"})
+# HC-RL-A145/A146 (RLT-A-09): the judgement-side closed set — the only roles that
+# issue PASS/FAIL and may bounce work back. Membership is read off AgentSpec.role.
+REVIEW_ROLES = frozenset({"plan-reviewer", "checker", "reviewer"})
 DEFAULT_CONFIG_DIRS = (".claude/skills/relay-light", ".codex/skills/relay-light")
 CONFIG_PATH_SAFE = "/:~-._"
 RECIPE_TIERS = frozenset({"heavy", "normal", "light"})
@@ -600,14 +603,27 @@ def lint_plan(path: str | Path, config: RelayConfig) -> Plan:
         for agent in agents_by_node[node.node]:
             if not agent.trigger or agent.trigger == "on:blocked":
                 continue
-            prefix = "on:done:"
-            if not agent.trigger.startswith(prefix) or not agent.trigger[len(prefix) :]:
+            # HC-RL-A150: four trigger states — empty and on:blocked return above;
+            # the two named prefixes share the A35/A71 checks below.
+            prefix = next(
+                (
+                    candidate
+                    for candidate in ("on:done:", "on:review_ready:")
+                    if agent.trigger.startswith(candidate)
+                    and agent.trigger[len(candidate) :]
+                ),
+                None,
+            )
+            if prefix is None:
                 raise _error("HC-RL-A35", f"line {agent.line}: invalid trigger {agent.trigger}")
             target_name = agent.trigger[len(prefix) :]
             if target_name not in agent_names_anywhere:
                 raise _error("HC-RL-A35", f"line {agent.line}: unknown trigger agent {target_name}")
             if target_name not in {candidate.agent for candidate in agents_by_node[node.node]}:
-                raise _error("HC-RL-A71", f"line {agent.line}: on:done must reference the same node")
+                raise _error(
+                    "HC-RL-A71",
+                    f"line {agent.line}: {prefix[:-1]} must reference the same node",
+                )
 
     stages_by_card: dict[str, list[str]] = {}
     for node in active_nodes:
@@ -1666,6 +1682,35 @@ def _require_trigger(plan: Plan, entries: list[dict[str, object]], node: NodeSpe
         ):
             return
         raise _error("HC-RL-A77", f"agent {name} requires a currently blocked escalation")
+    if spec.trigger.startswith("on:review_ready:"):
+        # HC-RL-A144: the launch needs a `ready_for_review=<this agent>` signal
+        # written by <S>'s *current* instance (its max attempt in this node) and
+        # sitting as that instance's latest agent event — per-instance, never
+        # cross-attempt (_latest_for_instance, not _latest_by_name). Since that
+        # latest event is a checkpoint, the instance is necessarily non-terminal.
+        sender = spec.trigger.removeprefix("on:review_ready:")
+        attempts = [
+            _agent_parts(str(entry["agent"]))[1]
+            for entry in entries
+            if entry["node"] == node.node
+            and entry["event"] == "agent_launch"
+            and _agent_parts(str(entry["agent"]))[0] == sender
+        ]
+        latest = (
+            _latest_for_instance(entries, node.node, f"{sender}#{max(attempts)}")
+            if attempts
+            else None
+        )
+        if (
+            latest is not None
+            and latest["event"] == "checkpoint"
+            and _note_tokens(str(latest["note"])).get("ready_for_review") == name
+        ):
+            return
+        raise _error(
+            "HC-RL-A144",
+            f"agent {name} requires a ready_for_review signal from {sender}",
+        )
     target = spec.trigger.removeprefix("on:done:")
     latest = _latest_by_name(entries, node.node, target)
     if latest is None or latest["event"] != "done":
@@ -1901,6 +1946,117 @@ def _validate_fix_authorization(
         )
 
 
+def _validate_ready_signal(
+    plan: Plan, node: NodeSpec, event: str, agent: str, note: str
+) -> None:
+    """HC-RL-A145: write-side contract of a `ready_for_review=` checkpoint signal.
+
+    The token count runs on the raw note — `_note_tokens` keeps only the first
+    key, so a duplicated key would silently disappear there.
+    """
+    if event != "checkpoint":
+        return
+    signals = [
+        token for token in note.split() if token.startswith("ready_for_review=")
+    ]
+    if not signals:
+        return
+    if len(signals) != 1:
+        raise _error(
+            "HC-RL-A145",
+            "checkpoint note must carry exactly one ready_for_review=<agent> token",
+        )
+    reviewer = signals[0].removeprefix("ready_for_review=")
+    specs = {spec.agent: spec for spec in _node_agents(plan, node.node)}
+    target = specs.get(reviewer)
+    if target is None or target.role not in REVIEW_ROLES:
+        raise _error(
+            "HC-RL-A145",
+            f"ready_for_review={reviewer} must name a review-role agent "
+            f"of node {node.node}",
+        )
+    writer = specs.get(_agent_parts(agent)[0])
+    if writer is not None and writer.role in REVIEW_ROLES:
+        raise _error(
+            "HC-RL-A145",
+            f"review-role agent {writer.agent} must not write "
+            "ready_for_review signals",
+        )
+
+
+def _validate_review_pairing(
+    entries: list[dict[str, object]], node: NodeSpec, event: str, agent: str, note: str
+) -> None:
+    """HC-RL-A146: the pairing gate on a judgement agent's `done` (RLT-A-09).
+
+    The gate is live only while this node holds at least one
+    `ready_for_review=<this agent name>` signal — with none, it is fully inert
+    and `done` follows the unchanged rules (R nodes and legacy plans untouched).
+    When live, the note must carry `reviewed=<S>#<a>` and `ready_seq=<n>`: <n>
+    must point at a `checkpoint` whose `agent` field literally equals `<S>#<a>`
+    and whose `ready_for_review=` value equals this agent's name — the latest
+    such signal in the (node, <S>#<a>, <Rv>) combination — and `<S>#<a>` must
+    already be `done` in this node (its row precedes this one). The check runs
+    at `done`-write time inside `_validate_event_semantics`, never deferred to
+    `_validate_node_close`; after `_validate_agent_transition` so a terminal
+    agent still reports A60.
+    """
+    if event != "done":
+        return
+    name, _ = _agent_parts(agent)
+    if not any(
+        entry["node"] == node.node
+        and entry["event"] == "checkpoint"
+        and _note_tokens(str(entry["note"])).get("ready_for_review") == name
+        for entry in entries
+    ):
+        return
+    tokens = _note_tokens(note)
+    reviewed = tokens.get("reviewed", "")
+    ready_seq = tokens.get("ready_seq", "")
+    if not AGENT_INSTANCE_RE.fullmatch(reviewed):
+        raise _error(
+            "HC-RL-A146",
+            f"review pairing done requires reviewed=<agent>#<n>, got {reviewed or 'none'}",
+        )
+    if not (ready_seq.isascii() and ready_seq.isdigit()):
+        raise _error(
+            "HC-RL-A146",
+            f"review pairing done requires ready_seq=<n>, got {ready_seq or 'none'}",
+        )
+    pointed = next(
+        (entry for entry in entries if entry["seq"] == int(ready_seq)), None
+    )
+    combo = [
+        entry
+        for entry in entries
+        if entry["node"] == node.node
+        and entry["event"] == "checkpoint"
+        and entry["agent"] == reviewed
+        and _note_tokens(str(entry["note"])).get("ready_for_review") == name
+    ]
+    if (
+        pointed is None
+        or pointed["node"] != node.node
+        or pointed["event"] != "checkpoint"
+        or pointed["agent"] != reviewed
+        or _note_tokens(str(pointed["note"])).get("ready_for_review") != name
+        or not combo
+        or pointed is not combo[-1]
+    ):
+        raise _error(
+            "HC-RL-A146",
+            f"ready_seq={ready_seq} must point at the latest ready_for_review "
+            f"signal from {reviewed} to {name}",
+        )
+    reviewed_latest = _latest_for_instance(entries, node.node, reviewed)
+    if reviewed_latest is None or reviewed_latest["event"] != "done":
+        raise _error(
+            "HC-RL-A146",
+            f"reviewed instance {reviewed} must already be done in node {node.node}",
+        )
+
+
 def _validate_agent_transition(
     plan: Plan,
     entries: list[dict[str, object]],
@@ -2044,10 +2200,12 @@ def _validate_event_semantics(
     if event in AGENT_EVENTS:
         if event == "done" and _agent_parts(agent)[0] == "planner-amend":
             _validate_planner_amend_done_note(note)
+        _validate_ready_signal(plan, node, event, agent, note)
         _validate_decision_ownership(entries, node, event, agent, note)
         _validate_decision_mode(plan, entries, node, event, agent)
         _validate_strategist_conclusion(entries, node, event, agent)
         _validate_agent_transition(plan, entries, node, event, agent, note, attempt_max)
+        _validate_review_pairing(entries, node, event, agent, note)
 
 
 def _validate_writer(event: str, agent: str) -> None:
@@ -2788,29 +2946,36 @@ def derive_status(
 
 @dataclass(frozen=True)
 class LossStop:
-    """§7.3/A107: the two independent counters and which of them is spent.
+    """§7.3/A107: the three independent counters and which of them is spent.
 
     ``attempts`` counts ``agent_launch`` rows per ``(node, agent name)``; a pair is
     exhausted once it sits at ``limits.attempt_max`` while its latest row still calls
     for a relaunch — the same causes HC-RL-A49 grants: ``agent_lost``/``cancelled`` or a
     later ``stage_result outcome=failed`` on the node's stage. ``x_rounds`` holds, per
     card, the highest opened ``X#k`` round; a card is exhausted once that round reaches
-    ``limits.rework_max_rounds`` and still fails. The counters never add up and never
-    reset each other: either one alone opens the strategist exit.
+    ``limits.rework_max_rounds`` and still fails. ``review_rounds`` (HC-RL-A147)
+    counts ``ready_for_review=<name>`` signals per ``(node, judgement name)``; a
+    combo is exhausted once the count reaches ``limits.rework_max_rounds`` while the
+    judgement still has no ``done`` in that node. The counters never add up and
+    never reset each other: any one alone opens the strategist exit.
     """
 
     attempts: dict[tuple[str, str], int]
     x_rounds: dict[str, int]
+    review_rounds: dict[tuple[str, str], int]
     attempt_exhausted: tuple[tuple[str, str], ...]
     x_exhausted: tuple[str, ...]
+    review_exhausted: tuple[tuple[str, str], ...]
 
     @property
     def triggered(self) -> bool:
-        return bool(self.attempt_exhausted or self.x_exhausted)
+        return bool(
+            self.attempt_exhausted or self.x_exhausted or self.review_exhausted
+        )
 
 
 def loss_stop(plan: Plan, entries: list[dict[str, object]], config: RelayConfig) -> LossStop:
-    """HC-RL-A107: read-only evaluation of both loss-stop counters against the config."""
+    """HC-RL-A107: read-only evaluation of all three loss-stop counters against the config."""
     nodes_by_name = _active_node_map(plan)
     attempts: dict[tuple[str, str], int] = {}
     for entry in entries:
@@ -2854,11 +3019,38 @@ def loss_stop(plan: Plan, entries: list[dict[str, object]], config: RelayConfig)
         )
         if k >= config.limits.rework_max_rounds and outcome == "failed":
             x_exhausted.append(card)
+    # HC-RL-A147: the third counter — ready_for_review signals per
+    # (node, judgement name), first round included. Projection only: `add`
+    # never rejects on it. A combo is spent once its count reaches
+    # limits.rework_max_rounds while that judgement still has no `done`
+    # in the node — a sealed judgement means the review concluded.
+    review_rounds: dict[tuple[str, str], int] = {}
+    for entry in entries:
+        if entry["event"] != "checkpoint":
+            continue
+        target = _note_tokens(str(entry["note"])).get("ready_for_review")
+        if target is None:
+            continue
+        combo = (str(entry["node"]), target)
+        review_rounds[combo] = review_rounds.get(combo, 0) + 1
+    review_exhausted = [
+        combo
+        for combo in sorted(review_rounds)
+        if review_rounds[combo] >= config.limits.rework_max_rounds
+        and not any(
+            entry["node"] == combo[0]
+            and entry["event"] == "done"
+            and _agent_parts(str(entry["agent"]))[0] == combo[1]
+            for entry in entries
+        )
+    ]
     return LossStop(
         attempts=attempts,
         x_rounds={card: k for card, (k, _) in opened.items()},
+        review_rounds=review_rounds,
         attempt_exhausted=tuple(attempt_exhausted),
         x_exhausted=tuple(x_exhausted),
+        review_exhausted=tuple(review_exhausted),
     )
 
 

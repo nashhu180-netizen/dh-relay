@@ -29,7 +29,7 @@ silence_timeout_min = 30   # 监工静默提示阈值（分钟）：仅提示非
 [limits.on_exceed]
 action = "strategist-then-user"
 note = """
-两套计数独立、不叠加、不互相重置：attempt 抓「实例挂了重拉」，
-rework 抓「复核打回」。任一先到上限即停，出口相同：
+三套计数独立、不叠加、不互相重置：attempt 抓「实例挂了重拉」，
+rework 抓「复核打回」，送审轮数抓「判定方迟迟不收口」。任一先到上限即停，出口相同：
 监工拉 strategist → strategist 输出全局方案或建议停卡 → 永远交用户裁决。
 """

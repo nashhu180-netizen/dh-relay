@@ -690,6 +690,73 @@ class RelayPlanLintTests(RelayCliTestCase):
                 "| checker | C1 | checker | | check.md | on:done:builder | |",
             ],
         )
+        # HC-RL-A150: trigger is a four-state enum — one legal value of each passes.
+        self.write_plan(
+            agent_rows=[
+                "| builder | W1 | builder | | task_plan.md | | |",
+                "| coder | C1 | coder | | code.md | | |",
+                "| checker | C1 | checker | | check.md | on:review_ready:coder | |",
+                "| scribe | C1 | scribe | | notes.md | on:done:coder | |",
+                "| decider | C1 | decider | | decision.md | on:blocked | |",
+            ],
+        )
+        lint_plan(self.plan_path, repo_config())
+        for bad_trigger in (
+            "on:review_ready:nobody",
+            "on:review-ready:coder",
+            "on:review_ready:",
+        ):
+            with self.subTest(trigger=bad_trigger):
+                self.assert_rule(
+                    "HC-RL-A35",
+                    agent_rows=[
+                        "| builder | W1 | builder | | task_plan.md | | |",
+                        "| coder | C1 | coder | | code.md | | |",
+                        f"| checker | C1 | checker | | check.md | {bad_trigger} | |",
+                    ],
+                )
+        self.assert_rule(
+            "HC-RL-A71",
+            agent_rows=[
+                "| builder | W1 | builder | | task_plan.md | | |",
+                "| coder | C1 | coder | | code.md | | |",
+                "| checker | C1 | checker | | check.md | on:review_ready:builder | |",
+            ],
+        )
+        # R form: the reviewer names a coder that only exists in another node —
+        # A71 rejects mechanically since no same-node sender can exist.
+        self.assert_rule(
+            "HC-RL-A71",
+            node_rows=[
+                "| W1 | DHR_90 | DHR_90:W#1 | build | | | |",
+                "| C1 | DHR_90 | DHR_90:C#1 | construction | | W1 | |",
+                "| R1 | DHR_90 | DHR_90:R#1 | review | | C1 | |",
+            ],
+            agent_rows=[
+                "| builder | W1 | builder | | task_plan.md | | |",
+                "| coder | C1 | coder | | code.md | | |",
+                "| requirement | R1 | reviewer | | review.requirement.md | on:review_ready:coder | |",
+                "| lesson | R1 | reviewer | | review.lesson.md | | |",
+            ],
+        )
+
+    def test_a150_lint_mapping_table_binds_review_ready_rows(self) -> None:
+        """A150: the §3.5 lint-rule mapping table binds both `on:review_ready:` rows."""
+        design_path = (
+            Path(__file__).resolve().parents[2]
+            / "docs/modules/relay-light/design/01-RelayLight-产品设计与验收.md"
+        )
+        section = design_path.read_text(encoding="utf-8").split("### 3.5", 1)[1].split("### 3.6", 1)[0]
+        bound: dict[str, str] = {}
+        for line in section.splitlines():
+            if not line.startswith("|") or "on:review_ready:" not in line:
+                continue
+            cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+            bound[cells[-1]] = cells[0]
+        self.assertIn("HC-RL-A35", bound)
+        self.assertIn("HC-RL-A71", bound)
+        self.assertIn("引用不存在", bound["HC-RL-A35"])
+        self.assertIn("跨节点", bound["HC-RL-A71"])
 
     def test_lint_cli_smoke_uses_success_and_plan_error_contracts(self) -> None:
         self.write_plan()
@@ -1349,6 +1416,7 @@ class RelayPlanLintTests(RelayCliTestCase):
                 "| coder | W1 | coder | | code.md | | |",
                 "| scribe | W1 | scribe | | notes.md | on:done:coder | |",
                 "| decider | W1 | decider | | decision.md | on:blocked | |",
+                "| checker | W1 | checker | | check.md | on:review_ready:coder | |",
             ]
         )
         self.start_ledger()
@@ -1362,6 +1430,12 @@ class RelayPlanLintTests(RelayCliTestCase):
         self.assertRegex(waiting_scribe.stderr, r"^error: HC-RL-A70 ")
         self.assertEqual(0, self.run_add("done", agent="coder#1").returncode)
         self.assertEqual(0, self.run_add("agent_launch", agent="scribe#1").returncode)
+        # HC-RL-A144: even with coder done, an on:review_ready: launch stays
+        # fail-closed without a ready_for_review signal — never the A70
+        # on:done: branch.
+        review_launch = self.run_add("agent_launch", agent="checker#1")
+        self.assertEqual(2, review_launch.returncode)
+        self.assertRegex(review_launch.stderr, r"^error: HC-RL-A144 ")
 
         self.reset_ledger()
         self.start_ledger()
@@ -1457,6 +1531,21 @@ class RelayPlanLintTests(RelayCliTestCase):
                 "| scribe | W1 | scribe | | notes.md | on:done:coder | |",
             ]
         )
+        self.start_ledger()
+        self.assertEqual(0, self.run_add("node_start", agent="monitor#1").returncode)
+        self.assertEqual(0, self.run_add("agent_launch", agent="coder#1").returncode)
+        self.assertEqual(0, self.run_add("done", agent="coder#1").returncode)
+        self.assertEqual(0, self.run_add("node_close", agent="monitor#1").returncode)
+
+        # HC-RL-A65 (RLT-A-09 补例): an `on:review_ready:` agent whose signal
+        # never came is equally outside the close criteria — never dangling.
+        self.write_single_node_plan(
+            [
+                "| coder | W1 | coder | | code.md | | |",
+                "| reviewer | W1 | reviewer | | review.md | on:review_ready:coder | |",
+            ]
+        )
+        self.reset_ledger()
         self.start_ledger()
         self.assertEqual(0, self.run_add("node_start", agent="monitor#1").returncode)
         self.assertEqual(0, self.run_add("agent_launch", agent="coder#1").returncode)
@@ -1604,6 +1693,669 @@ class RelayPlanLintTests(RelayCliTestCase):
                 self.assertEqual(0, self.run_add("escalate", agent="coder#1", note=f"{helper_prefix}={helper_instance}").returncode)
                 self.reset_ledger()
 
+
+class RelayReviewReadySignalTests(RelayCliTestCase):
+    """RLT_22 — review-ready signal lifecycle: A144 launch gate, A145 write
+    contract, A146 pairing gate (the B1 fail-closed placeholder was replaced by
+    the full A144 precondition in B2)."""
+
+    def write_w_plan(self) -> None:
+        self.write_plan(
+            node_rows=["| W1 | DHR_90 | DHR_90:W#1 | build | | | |"],
+            agent_rows=[
+                "| builder | W1 | builder | | task_plan.md | | |",
+                "| plan-reviewer | W1 | plan-reviewer | | review.md | on:review_ready:builder | |",
+                "| checker | W1 | checker | | check.md | | |",
+            ],
+        )
+
+    def open_node_with_builder(self) -> None:
+        self.start_ledger()
+        self.assertEqual(0, self.run_add("node_start", agent="monitor#1").returncode)
+        self.assertEqual(0, self.run_add("agent_launch", agent="builder#1").returncode)
+
+    def ledger_rows(self) -> list[dict[str, object]]:
+        path = self.plan_path.parent / "relay_log.jsonl"
+        if not path.exists():
+            return []
+        return [
+            json.loads(line)
+            for line in path.read_text(encoding="utf-8").splitlines()
+        ]
+
+    def test_a144_launch_gate_replaces_b1_placeholder(self) -> None:
+        """A144 (B2): a current-instance signal arms the launch; without one the
+        launch still exits 2 as A144 — never A70 — and leaves the ledger
+        byte-identical. Repeat launches stay A58/A49's job, not A144's."""
+        self.write_w_plan()
+        self.open_node_with_builder()
+        baseline = (self.plan_path.parent / "relay_log.jsonl").read_bytes()
+        launch = self.run_add("agent_launch", agent="plan-reviewer#1")
+        self.assertEqual(2, launch.returncode)
+        self.assertRegex(launch.stderr, r"^error: HC-RL-A144 ")
+        self.assertNotIn("HC-RL-A70", launch.stderr)
+        self.assertEqual(
+            baseline,
+            (self.plan_path.parent / "relay_log.jsonl").read_bytes(),
+        )
+        # The valid signal arms the launch now — the B1 unconditional reject is gone.
+        self.assertEqual(
+            0,
+            self.run_add(
+                "checkpoint",
+                agent="builder#1",
+                note="ready_for_review=plan-reviewer 送审",
+            ).returncode,
+        )
+        self.assertEqual(
+            0, self.run_add("agent_launch", agent="plan-reviewer#1").returncode
+        )
+        # Repeat launches are gated by A58/A49 — the code must not be A144.
+        rejected = self.run_add("agent_launch", agent="plan-reviewer#3")
+        self.assertEqual(2, rejected.returncode)
+        self.assertRegex(rejected.stderr, r"^error: HC-RL-A58 ")
+        rejected = self.run_add("agent_launch", agent="plan-reviewer#2")
+        self.assertEqual(2, rejected.returncode)
+        self.assertRegex(rejected.stderr, r"^error: HC-RL-A49 ")
+        self.assertNotIn("HC-RL-A144", rejected.stderr)
+
+    def test_a144_rejects_without_a_current_instance_signal(self) -> None:
+        """A144's nine rejections each exit 2 as A144 — never A70."""
+        cases: list[tuple[str, bool, list[tuple[str, str]]]] = [
+            ("plain checkpoint only", True, [("checkpoint", "no token")]),
+            ("no agent events at all", False, []),
+            (
+                "signal then done",
+                True,
+                [("checkpoint", "ready_for_review=plan-reviewer"), ("done", "sealed")],
+            ),
+            (
+                "signal then agent_lost",
+                True,
+                [("checkpoint", "ready_for_review=plan-reviewer"), ("agent_lost", "gone")],
+            ),
+            (
+                "signal then cancelled",
+                True,
+                [("checkpoint", "ready_for_review=plan-reviewer"), ("cancelled", "halted")],
+            ),
+            (
+                "signal names another reviewer",
+                True,
+                [("checkpoint", "ready_for_review=checker")],
+            ),
+            (
+                "signal covered by a later plain checkpoint",
+                True,
+                [
+                    ("checkpoint", "ready_for_review=plan-reviewer"),
+                    ("checkpoint", "progress only"),
+                ],
+            ),
+            (
+                "blocked after the signal",
+                True,
+                [("checkpoint", "ready_for_review=plan-reviewer"), ("blocked", "stuck")],
+            ),
+        ]
+        for label, launched, steps in cases:
+            with self.subTest(case=label):
+                self.write_w_plan()
+                self.reset_ledger()
+                self.start_ledger()
+                self.assertEqual(
+                    0, self.run_add("node_start", agent="monitor#1").returncode
+                )
+                if launched:
+                    self.assertEqual(
+                        0, self.run_add("agent_launch", agent="builder#1").returncode
+                    )
+                for event, note in steps:
+                    self.assertEqual(
+                        0,
+                        self.run_add(event, agent="builder#1", note=note).returncode,
+                        note,
+                    )
+                rejected = self.run_add("agent_launch", agent="plan-reviewer#1")
+                self.assertEqual(2, rejected.returncode)
+                self.assertRegex(rejected.stderr, r"^error: HC-RL-A144 ")
+                self.assertNotIn("HC-RL-A70", rejected.stderr)
+
+        # Ninth rejection — stale-attempt replay: builder#1's signal must not arm
+        # builder#2; the current instance's latest event is its own launch.
+        self.write_w_plan()
+        self.reset_ledger()
+        self.start_ledger()
+        self.assertEqual(0, self.run_add("node_start", agent="monitor#1").returncode)
+        self.assertEqual(0, self.run_add("agent_launch", agent="builder#1").returncode)
+        self.assertEqual(
+            0,
+            self.run_add(
+                "checkpoint",
+                agent="builder#1",
+                note="ready_for_review=plan-reviewer",
+            ).returncode,
+        )
+        self.assertEqual(
+            0, self.run_add("agent_lost", agent="builder#1", note="gone").returncode
+        )
+        self.assertEqual(0, self.run_add("agent_launch", agent="builder#2").returncode)
+        rejected = self.run_add("agent_launch", agent="plan-reviewer#1")
+        self.assertEqual(2, rejected.returncode)
+        self.assertRegex(rejected.stderr, r"^error: HC-RL-A144 ")
+        self.assertNotIn("HC-RL-A70", rejected.stderr)
+
+    def test_a145_ready_signal_write_contract(self) -> None:
+        """A145: one `ready_for_review=` token per note, naming a same-node
+        judgement-role agent, written only by a non-judgement agent."""
+        self.write_w_plan()
+        self.open_node_with_builder()
+
+        self.assertEqual(
+            0,
+            self.run_add(
+                "checkpoint", agent="builder#1", note="ready_for_review=plan-reviewer"
+            ).returncode,
+        )
+        for bad_note in (
+            "ready_for_review=plan-reviewer ready_for_review=checker",
+            "ready_for_review=ghost",
+            "ready_for_review=builder",
+        ):
+            with self.subTest(note=bad_note):
+                rejected = self.run_add(
+                    "checkpoint", agent="builder#1", note=bad_note
+                )
+                self.assertEqual(2, rejected.returncode)
+                self.assertRegex(rejected.stderr, r"^error: HC-RL-A145 ")
+        # A judgement-role agent never writes the signal itself.
+        self.assertEqual(0, self.run_add("agent_launch", agent="checker#1").returncode)
+        rejected = self.run_add(
+            "checkpoint", agent="checker#1", note="ready_for_review=plan-reviewer"
+        )
+        self.assertEqual(2, rejected.returncode)
+        self.assertRegex(rejected.stderr, r"^error: HC-RL-A145 ")
+
+    def test_a145_signals_burn_no_attempt_and_have_no_add_cap(self) -> None:
+        """A145/A102: signals accompany no agent_launch, keep attempt at 1, and
+        `add` accepts more than `rework_max_rounds` (=2) consecutive signals."""
+        self.write_w_plan()
+        self.open_node_with_builder()
+        for round_ in (1, 2, 3):
+            self.assertEqual(
+                0,
+                self.run_add(
+                    "checkpoint",
+                    agent="builder#1",
+                    note=f"ready_for_review=plan-reviewer round={round_}",
+                ).returncode,
+            )
+        launches = [
+            row["agent"]
+            for row in self.ledger_rows()
+            if row["event"] == "agent_launch" and row["agent"].startswith("builder#")
+        ]
+        self.assertEqual(["builder#1"], launches)
+        # Relaunch after a loss lands exactly on #2 — the signals burned nothing.
+        self.assertEqual(0, self.run_add("agent_lost", agent="builder#1", note="失联").returncode)
+        self.assertEqual(0, self.run_add("agent_launch", agent="builder#2").returncode)
+
+    def _signal(self, sender: str, reviewer: str, node: str = "W1", note: str = "") -> int:
+        """Write a `ready_for_review` checkpoint and return its ledger seq."""
+        suffix = f" {note}" if note else ""
+        self.assertEqual(
+            0,
+            self.run_add(
+                "checkpoint",
+                node=node,
+                agent=sender,
+                note=f"ready_for_review={reviewer}{suffix}",
+            ).returncode,
+        )
+        return self._signal_seq(sender, reviewer, node)
+
+    def _signal_seq(self, agent: str, reviewer: str, node: str = "W1") -> int:
+        """Seq of the latest `ready_for_review=<reviewer>` checkpoint by <agent>."""
+        rows = [
+            row
+            for row in self.ledger_rows()
+            if row["node"] == node
+            and row["event"] == "checkpoint"
+            and row["agent"] == agent
+            and relay_log._note_tokens(str(row["note"])).get("ready_for_review")
+            == reviewer
+        ]
+        assert rows, f"no signal from {agent} to {reviewer} in {node}"
+        return int(str(rows[-1]["seq"]))
+
+    def _review_fixture(self) -> None:
+        """Fresh W-shaped ledger: node open, builder#1 live, nothing written yet."""
+        self.write_w_plan()
+        self.reset_ledger()
+        self.start_ledger()
+        self.assertEqual(0, self.run_add("node_start", agent="monitor#1").returncode)
+        self.assertEqual(0, self.run_add("agent_launch", agent="builder#1").returncode)
+
+    def _start_ledger_for(self, stage_id: str, node: str = "W1") -> None:
+        result = self.run_add(
+            "plan_loaded", node=node, agent="orchestrator#1", note="skill=0.1.0"
+        )
+        self.assertEqual(0, result.returncode, result.stderr)
+        for event in ("stage_start", "monitor_launch"):
+            result = self.run_add(
+                event, node=node, agent="orchestrator#1", note=f"stage_id={stage_id}"
+            )
+            self.assertEqual(0, result.returncode, result.stderr)
+
+    def test_a146_pairing_done_accepted_in_order(self) -> None:
+        """A146 positive: after PASS the sender seals first, then the reviewer's
+        `done` pairs `reviewed=<S>#<a>` + `ready_seq=<n>` at the latest signal."""
+        self._review_fixture()
+        self._signal("builder#1", "plan-reviewer")
+        self.assertEqual(0, self.run_add("agent_launch", agent="plan-reviewer#1").returncode)
+        # FAIL keeps the reviewer live; the reworked answer is a fresh signal.
+        self.assertEqual(
+            0,
+            self.run_add(
+                "checkpoint", agent="plan-reviewer#1", note="FAIL 整改"
+            ).returncode,
+        )
+        self._signal("builder#1", "plan-reviewer", note="round2")
+        self.assertEqual(0, self.run_add("done", agent="builder#1", note="返工完成").returncode)
+        done = self.run_add(
+            "done",
+            agent="plan-reviewer#1",
+            note="reviewed=builder#1 "
+            f"ready_seq={self._signal_seq('builder#1', 'plan-reviewer')} PASS",
+        )
+        self.assertEqual(0, done.returncode, done.stderr)
+
+    def test_a146_pairing_gate_rejections(self) -> None:
+        """A146's seven rejections each exit 2 as A146 — at done-write time."""
+
+        def assert_a146(done: subprocess.CompletedProcess[str]) -> None:
+            self.assertEqual(2, done.returncode)
+            self.assertRegex(done.stderr, r"^error: HC-RL-A146 ")
+
+        # Missing reviewed= / missing ready_seq= / malformed reviewed= / bare note.
+        self._review_fixture()
+        seq = self._signal("builder#1", "plan-reviewer")
+        self.assertEqual(0, self.run_add("agent_launch", agent="plan-reviewer#1").returncode)
+        self.assertEqual(0, self.run_add("done", agent="builder#1").returncode)
+        for note in (
+            f"ready_seq={seq} PASS",
+            "reviewed=builder#1 PASS",
+            f"reviewed=builder ready_seq={seq} PASS",
+            "PASS",
+        ):
+            with self.subTest(note=note):
+                assert_a146(self.run_add("done", agent="plan-reviewer#1", note=note))
+
+        # ready_seq pointing at an old round's signal, not the latest.
+        self._review_fixture()
+        first = self._signal("builder#1", "plan-reviewer")
+        self.assertEqual(0, self.run_add("agent_launch", agent="plan-reviewer#1").returncode)
+        self.assertEqual(
+            0, self.run_add("checkpoint", agent="plan-reviewer#1", note="FAIL").returncode
+        )
+        self._signal("builder#1", "plan-reviewer", note="round2")
+        self.assertEqual(0, self.run_add("done", agent="builder#1").returncode)
+        assert_a146(
+            self.run_add(
+                "done",
+                agent="plan-reviewer#1",
+                note=f"reviewed=builder#1 ready_seq={first} PASS",
+            )
+        )
+
+        # ready_seq pointing at a signal addressed to another reviewer.
+        self._review_fixture()
+        other = self._signal("builder#1", "checker")
+        self._signal("builder#1", "plan-reviewer")
+        self.assertEqual(0, self.run_add("agent_launch", agent="plan-reviewer#1").returncode)
+        self.assertEqual(0, self.run_add("done", agent="builder#1").returncode)
+        assert_a146(
+            self.run_add(
+                "done",
+                agent="plan-reviewer#1",
+                note=f"reviewed=builder#1 ready_seq={other} PASS",
+            )
+        )
+
+        # ready_seq pointing at a non-checkpoint row.
+        self._review_fixture()
+        self._signal("builder#1", "plan-reviewer")
+        self.assertEqual(0, self.run_add("agent_launch", agent="plan-reviewer#1").returncode)
+        self.assertEqual(0, self.run_add("done", agent="builder#1").returncode)
+        assert_a146(
+            self.run_add(
+                "done",
+                agent="plan-reviewer#1",
+                note="reviewed=builder#1 ready_seq=1 PASS",
+            )
+        )
+
+        # Cross-instance splice: ready_seq cites builder#1's signal while
+        # reviewed= names builder#2.
+        self._review_fixture()
+        old = self._signal("builder#1", "plan-reviewer")
+        self.assertEqual(0, self.run_add("agent_lost", agent="builder#1", note="gone").returncode)
+        self.assertEqual(0, self.run_add("agent_launch", agent="builder#2").returncode)
+        self._signal("builder#2", "plan-reviewer")
+        self.assertEqual(0, self.run_add("agent_launch", agent="plan-reviewer#1").returncode)
+        self.assertEqual(0, self.run_add("done", agent="builder#2").returncode)
+        assert_a146(
+            self.run_add(
+                "done",
+                agent="plan-reviewer#1",
+                note=f"reviewed=builder#2 ready_seq={old} PASS",
+            )
+        )
+
+        # The reviewed instance is still live — the reviewer cannot seal first.
+        self._review_fixture()
+        seq = self._signal("builder#1", "plan-reviewer")
+        self.assertEqual(0, self.run_add("agent_launch", agent="plan-reviewer#1").returncode)
+        assert_a146(
+            self.run_add(
+                "done",
+                agent="plan-reviewer#1",
+                note=f"reviewed=builder#1 ready_seq={seq} PASS",
+            )
+        )
+
+        # The reviewed instance is agent_lost, not done.
+        self._review_fixture()
+        seq = self._signal("builder#1", "plan-reviewer")
+        self.assertEqual(0, self.run_add("agent_launch", agent="plan-reviewer#1").returncode)
+        self.assertEqual(0, self.run_add("agent_lost", agent="builder#1", note="gone").returncode)
+        assert_a146(
+            self.run_add(
+                "done",
+                agent="plan-reviewer#1",
+                note=f"reviewed=builder#1 ready_seq={seq} PASS",
+            )
+        )
+
+    def test_a146_malformed_ready_seq_exits_two_not_crash(self) -> None:
+        """P2-1: `ready_seq` values that `str.isdigit()` accepts but `int()`
+        rejects (Unicode numerals like ²/四/½/①, and mixes like 1²) must exit 2
+        as HC-RL-A146 — never crash out at exit 1 — and append no row."""
+        self._review_fixture()
+        seq = self._signal("builder#1", "plan-reviewer")
+        self.assertEqual(0, self.run_add("agent_launch", agent="plan-reviewer#1").returncode)
+        self.assertEqual(0, self.run_add("done", agent="builder#1").returncode)
+        baseline = (self.plan_path.parent / "relay_log.jsonl").read_bytes()
+        for bad in ("²", "四", "½", "①", f"{seq}²", "1,000"):
+            with self.subTest(ready_seq=bad):
+                done = self.run_add(
+                    "done",
+                    agent="plan-reviewer#1",
+                    note=f"reviewed=builder#1 ready_seq={bad} PASS",
+                )
+                self.assertEqual(2, done.returncode, done.stderr)
+                self.assertRegex(done.stderr, r"^error: HC-RL-A146 ")
+        self.assertEqual(
+            baseline, (self.plan_path.parent / "relay_log.jsonl").read_bytes()
+        )
+
+    def test_a146_gate_is_inert_without_a_signal_for_this_agent(self) -> None:
+        """No signal naming this agent → no gate: R-shaped reviewers and every
+        other review-role agent keep writing ordinary `done`s."""
+        self._review_fixture()
+        self.assertEqual(0, self.run_add("agent_launch", agent="checker#1").returncode)
+        self.assertEqual(0, self.run_add("done", agent="checker#1", note="PASS").returncode)
+
+        # A signal naming plan-reviewer still does not gate checker's done.
+        self._review_fixture()
+        self._signal("builder#1", "plan-reviewer")
+        self.assertEqual(0, self.run_add("agent_launch", agent="checker#1").returncode)
+        self.assertEqual(0, self.run_add("done", agent="checker#1", note="PASS").returncode)
+
+    def test_a146_two_lanes_bind_their_own_ready_seq(self) -> None:
+        """X node, two reviewer lanes — each `done` pairs with its own latest
+        signal; one lane runs two rounds, the other one."""
+        self.write_plan(
+            node_rows=["| X1 | DHR_90 | DHR_90:X#1 | rework | | | |"],
+            agent_rows=[
+                "| coder | X1 | coder | | rework.md | | |",
+                "| requirement | X1 | reviewer | | review.md | on:review_ready:coder | |",
+                "| lesson | X1 | reviewer | | review.md | on:review_ready:coder | |",
+            ],
+        )
+        self._start_ledger_for("DHR_90:X#1", node="X1")
+        self.assertEqual(0, self.run_add("node_start", node="X1", agent="monitor#1").returncode)
+        self.assertEqual(0, self.run_add("agent_launch", node="X1", agent="coder#1").returncode)
+        # Lane requirement, round 1 → FAIL, the reviewer stays live.
+        self._signal("coder#1", "requirement", node="X1")
+        self.assertEqual(
+            0, self.run_add("agent_launch", node="X1", agent="requirement#1").returncode
+        )
+        self.assertEqual(
+            0,
+            self.run_add(
+                "checkpoint", node="X1", agent="requirement#1", note="FAIL"
+            ).returncode,
+        )
+        # Lane requirement round 2, then lane lesson's only round.
+        self._signal("coder#1", "requirement", node="X1", note="round2")
+        self._signal("coder#1", "lesson", node="X1")
+        self.assertEqual(
+            0, self.run_add("agent_launch", node="X1", agent="lesson#1").returncode
+        )
+        self.assertEqual(0, self.run_add("done", node="X1", agent="coder#1").returncode)
+        for reviewer in ("requirement", "lesson"):
+            done = self.run_add(
+                "done",
+                node="X1",
+                agent=f"{reviewer}#1",
+                note="reviewed=coder#1 "
+                f"ready_seq={self._signal_seq('coder#1', reviewer, node='X1')} PASS",
+            )
+            self.assertEqual(0, done.returncode, done.stderr)
+
+    def test_a146_rejects_at_done_write_time(self) -> None:
+        """The pairing gate fires on the `done` write itself — the row never
+        lands (ledger byte-identical), and a corrected `done` then succeeds."""
+        self._review_fixture()
+        seq = self._signal("builder#1", "plan-reviewer")
+        self.assertEqual(0, self.run_add("agent_launch", agent="plan-reviewer#1").returncode)
+        self.assertEqual(0, self.run_add("done", agent="builder#1").returncode)
+        baseline = (self.plan_path.parent / "relay_log.jsonl").read_bytes()
+        rejected = self.run_add("done", agent="plan-reviewer#1", note="PASS")
+        self.assertEqual(2, rejected.returncode)
+        self.assertRegex(rejected.stderr, r"^error: HC-RL-A146 ")
+        self.assertEqual(
+            baseline,
+            (self.plan_path.parent / "relay_log.jsonl").read_bytes(),
+        )
+        self.assertEqual(
+            0,
+            self.run_add(
+                "done",
+                agent="plan-reviewer#1",
+                note=f"reviewed=builder#1 ready_seq={seq} PASS",
+            ).returncode,
+        )
+
+    def test_a145_helper_scan_sees_decider_only(self) -> None:
+        """A69's helper-token scan does not claim `ready_for_review=`: a note
+        carrying it plus `decider=` is accepted, the helper token staying inert."""
+        self.write_w_plan()
+        self.open_node_with_builder()
+        self.assertEqual(
+            0,
+            self.run_add(
+                "checkpoint",
+                agent="builder#1",
+                note="ready_for_review=plan-reviewer decider=decider#1",
+            ).returncode,
+        )
+        # Parser-level pins: a checkpoint never reaches the A69 helpers, so the
+        # isolation contract is asserted on the functions themselves.
+        mixed = "ready_for_review=plan-reviewer decider=decider#1"
+        self.assertEqual("decider#1", relay_log._decision_helper(mixed))
+        self.assertEqual("decider#1", relay_log._validate_decision_helper(mixed))
+        for signal_note in (
+            "ready_for_review=plan-reviewer",
+            "ready_for_review=plan-reviewer reviewed=builder#1 ready_seq=3",
+        ):
+            with self.subTest(note=signal_note):
+                self.assertIsNone(relay_log._decision_helper(signal_note))
+                with self.assertRaises(RelayError) as raised:
+                    relay_log._validate_decision_helper(signal_note)
+                self.assertEqual("HC-RL-A69", raised.exception.code)
+
+
+class RelayBackwardCompatTests(RelayCliTestCase):
+    """RLT_22 B3 — HC-RL-A148: `on:done:` semantics are untouched, a frozen
+    pre-A09 plan/ledger replays as-is, and both trigger forms mix in one node
+    under their own gates. Fixtures are byte-copies committed under the card
+    workspace — never cross-tree references."""
+
+    RLT12_FIXTURE = (
+        Path(__file__).resolve().parents[2]
+        / "docs/modules/relay-light/workspace/RLT_22/fixtures/rlt12-win-01"
+    )
+
+    def _install_fixture_plan(self) -> Path:
+        """Copy the frozen rlt12-win-01 plan verbatim into this plan dir."""
+        shutil.copyfile(self.RLT12_FIXTURE / "relay_plan.md", self.plan_path)
+        return self.plan_path.parent
+
+    def test_a148_rlt12_win_01_plan_lints_clean(self) -> None:
+        """The pre-A09 plan passes lint unmodified — no migration, no warning."""
+        plan_dir = self._install_fixture_plan()
+        result = self.run_lint_cli(plan_dir)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual("lint: ok\n", result.stdout)
+        self.assertEqual("", result.stderr)
+
+    def test_a148_rlt12_win_01_ledger_replays_verbatim(self) -> None:
+        """All 71 rows of the frozen ledger are accepted through `add`, in
+        order — the R/X segments' plain reviewer `done`s never meet A146."""
+        self._install_fixture_plan()
+        fixture_rows = [
+            json.loads(line)
+            for line in (self.RLT12_FIXTURE / "relay_log.jsonl")
+            .read_text(encoding="utf-8")
+            .splitlines()
+        ]
+        self.assertEqual(71, len(fixture_rows))
+        for row in fixture_rows:
+            result = self.run_add(
+                str(row["event"]),
+                node=str(row["node"]),
+                agent=str(row["agent"]),
+                note=str(row["note"]),
+            )
+            self.assertEqual(
+                0,
+                result.returncode,
+                f"seq={row['seq']} rejected: {result.stderr}",
+            )
+            self.assertEqual("", result.stdout)
+        replayed = [
+            json.loads(line)
+            for line in (self.plan_path.parent / "relay_log.jsonl")
+            .read_text(encoding="utf-8")
+            .splitlines()
+        ]
+        self.assertEqual(71, len(replayed))
+        # Same event stream, same node/agent/by attribution; seq restamps to
+        # the same 1..71 order, ts is rewritten by the replay itself.
+        for key in ("node", "event", "agent", "by"):
+            self.assertEqual(
+                [row[key] for row in fixture_rows],
+                [row[key] for row in replayed],
+            )
+        self.assertEqual(list(range(1, 72)), [int(row["seq"]) for row in replayed])
+        # Notes survive verbatim except plan_loaded's provenance tokens, which
+        # §6.2.1 always rewrites to the actual dirs used by this invocation.
+        for fixture_row, replayed_row in zip(fixture_rows, replayed):
+            if fixture_row["event"] == "plan_loaded":
+                self.assertIn("skill=0.1.0", str(replayed_row["note"]))
+                continue
+            self.assertEqual(fixture_row["note"], replayed_row["note"])
+        # The R/X reviewer `done`s carried no pairing tokens and were accepted
+        # anyway — proof A146 stayed inert without a same-node ready signal.
+        reviewer_dones = [
+            row
+            for row in fixture_rows
+            if row["event"] == "done"
+            and row["node"] in {"R1", "X1"}
+            and str(row["agent"]).split("#")[0] in {"requirement", "lesson"}
+        ]
+        self.assertEqual(4, len(reviewer_dones))
+        for row in reviewer_dones:
+            self.assertNotIn("reviewed=", str(row["note"]))
+            self.assertNotIn("ready_seq=", str(row["note"]))
+
+    def test_a148_mixed_trigger_lanes_judge_independently(self) -> None:
+        """One node, both trigger forms: the `on:done:` lane answers to A70,
+        the `on:review_ready:` lane to A144 — neither code bleeds over."""
+        self.write_plan(
+            node_rows=[
+                "| W1 | DHR_90 | DHR_90:W#1 | build | agent:plan-reviewer | | |"
+            ],
+            agent_rows=[
+                "| builder | W1 | builder | | task_plan.md | | |",
+                "| plan-reviewer | W1 | plan-reviewer | | review.plan.md | on:review_ready:builder | |",
+                "| scribe | W1 | scribe | | progress.md | on:done:builder | |",
+            ],
+        )
+        lint = self.run_lint_cli(self.plan_path.parent)
+        self.assertEqual(0, lint.returncode, lint.stderr)
+        self.start_ledger()
+        for call in (
+            ("node_start", "monitor#1", ""),
+            ("agent_launch", "builder#1", ""),
+        ):
+            result = self.run_add(call[0], agent=call[1], note=call[2])
+            self.assertEqual(0, result.returncode, result.stderr)
+        # Before either precondition holds, each lane reports its own code.
+        review_lane = self.run_add("agent_launch", agent="plan-reviewer#1")
+        self.assertEqual(2, review_lane.returncode)
+        self.assertRegex(review_lane.stderr, r"^error: HC-RL-A144 ")
+        self.assertNotIn("HC-RL-A70", review_lane.stderr)
+        done_lane = self.run_add("agent_launch", agent="scribe#1")
+        self.assertEqual(2, done_lane.returncode)
+        self.assertRegex(done_lane.stderr, r"^error: HC-RL-A70 ")
+        self.assertNotIn("HC-RL-A144", done_lane.stderr)
+        # Both arms then fire independently off the same live builder.
+        for event, agent, note in (
+            ("checkpoint", "builder#1", "ready_for_review=plan-reviewer"),
+            ("agent_launch", "plan-reviewer#1", ""),
+            ("done", "builder#1", "七件套合格"),
+            ("agent_launch", "scribe#1", ""),
+        ):
+            result = self.run_add(event, agent=agent, note=note)
+            self.assertEqual(0, result.returncode, result.stderr)
+        signal_seq = max(
+            int(row["seq"])
+            for row in self.ledger_rows()
+            if row["event"] == "checkpoint" and row["agent"] == "builder#1"
+        )
+        for event, agent, note in (
+            (
+                "done",
+                "plan-reviewer#1",
+                f"reviewed=builder#1 ready_seq={signal_seq} PASS",
+            ),
+            ("done", "scribe#1", "progress 已记"),
+            ("node_close", "monitor#1", ""),
+        ):
+            result = self.run_add(event, agent=agent, note=note)
+            self.assertEqual(0, result.returncode, result.stderr)
+
+    def ledger_rows(self) -> list[dict[str, object]]:
+        path = self.plan_path.parent / "relay_log.jsonl"
+        if not path.exists():
+            return []
+        return [
+            json.loads(line)
+            for line in path.read_text(encoding="utf-8").splitlines()
+        ]
 
 
 class RelayConfigTests(RelayCliTestCase):
@@ -3704,8 +4456,10 @@ class RelayLimitsTests(RelayCliTestCase):
         stop = probe(lint_plan(self.plan_path, config), entries, config)
         self.assertEqual({("C1", "coder"): 3}, stop.attempts)
         self.assertEqual({}, stop.x_rounds)
+        self.assertEqual({}, stop.review_rounds)
         self.assertEqual((("C1", "coder"),), stop.attempt_exhausted)
         self.assertEqual((), stop.x_exhausted)
+        self.assertEqual((), stop.review_exhausted)
         self.assertTrue(stop.triggered)
 
         # Only the X counter reaches its limit: both planned X rounds open and fail.
@@ -3733,8 +4487,10 @@ class RelayLimitsTests(RelayCliTestCase):
         stop = probe(lint_plan(self.plan_path, config), entries, config)
         self.assertEqual({("X1", "coder"): 1, ("X2", "coder"): 1}, stop.attempts)
         self.assertEqual({"DHR_90": 2}, stop.x_rounds)
+        self.assertEqual({}, stop.review_rounds)
         self.assertEqual((), stop.attempt_exhausted)
         self.assertEqual(("DHR_90",), stop.x_exhausted)
+        self.assertEqual((), stop.review_exhausted)
         self.assertTrue(stop.triggered)
 
         # Neither counter at its limit: relaunch debt and a failed X#1 both stay open.
@@ -3762,9 +4518,117 @@ class RelayLimitsTests(RelayCliTestCase):
         stop = probe(lint_plan(self.plan_path, config), entries, config)
         self.assertEqual({("C1", "coder"): 2, ("X1", "coder"): 1}, stop.attempts)
         self.assertEqual({"DHR_90": 1}, stop.x_rounds)
+        self.assertEqual({}, stop.review_rounds)
         self.assertEqual((), stop.attempt_exhausted)
         self.assertEqual((), stop.x_exhausted)
+        self.assertEqual((), stop.review_exhausted)
         self.assertFalse(stop.triggered)
+
+    def test_a147_review_rounds_is_a_projection_never_a_write_gate(self) -> None:
+        """HC-RL-A147: the third counter exhausts at the configured round count,
+        `add` never rejects the next signal, and a PASS clears only the verdict."""
+        probe = getattr(relay_log, "loss_stop", None)
+        self.assertIsNotNone(probe, "relay_log.loss_stop is not implemented")
+
+        for rounds in (2, 3):
+            with self.subTest(rework_max_rounds=rounds):
+                self.reset_ledger()
+                self.write_plan(
+                    node_rows=["| W1 | DHR_90 | DHR_90:W#1 | build | agent:plan-reviewer | | |"],
+                    agent_rows=[
+                        "| builder | W1 | builder | | task_plan.md | | |",
+                        "| plan-reviewer | W1 | plan-reviewer | | review.plan.md | on:review_ready:builder | |",
+                    ],
+                )
+                config = relay_log.load_config(
+                    self.config_with_rework_limit(f"limit-{rounds}", rounds)
+                )
+                self.start_ledger()
+                self.add_ok("node_start", node="W1", agent="monitor#1")
+                self.add_ok("agent_launch", node="W1", agent="builder#1")
+
+                # Each unanswered signal increments the combo; the limit-th one
+                # exhausts it while the reviewer still has no `done`.
+                for index in range(1, rounds + 1):
+                    self.add_ok(
+                        "checkpoint",
+                        node="W1", agent="builder#1",
+                        note=f"ready_for_review=plan-reviewer round={index}",
+                    )
+                    entries = relay_log.read_ledger(
+                        self.plan_path.parent / "relay_log.jsonl"
+                    )
+                    stop = probe(lint_plan(self.plan_path, config), entries, config)
+                    self.assertEqual(
+                        {("W1", "plan-reviewer"): index}, stop.review_rounds
+                    )
+                    if index < rounds:
+                        self.assertEqual((), stop.review_exhausted)
+                        self.assertFalse(stop.triggered)
+                    else:
+                        self.assertEqual(
+                            (("W1", "plan-reviewer"),), stop.review_exhausted
+                        )
+                        self.assertTrue(stop.triggered)
+                        # The other two counters never moved.
+                        self.assertEqual((), stop.attempt_exhausted)
+                        self.assertEqual((), stop.x_exhausted)
+
+                # Projection only: signal N+1 is still accepted and the ledger grows.
+                before = len(self.ledger_rows())
+                self.add_ok(
+                    "checkpoint",
+                    node="W1", agent="builder#1",
+                    note=f"ready_for_review=plan-reviewer round={rounds + 1}",
+                )
+                self.assertEqual(before + 1, len(self.ledger_rows()))
+
+                # Exhaustion opens the strategist exit: escalate leads the chain
+                # straight off the live sender, no `blocked` prologue.
+                self.add_ok(
+                    "escalate",
+                    node="W1", agent="builder#1",
+                    note="strategist=strategist#1 送审轮次超限",
+                )
+                self.add_ok("agent_launch", node="W1", agent="strategist#1")
+                self.add_ok(
+                    "decision",
+                    node="W1", agent="builder#1",
+                    note="strategist=strategist#1 strategy.1.md",
+                )
+                self.add_ok("done", node="W1", agent="strategist#1")
+                self.add_ok("user_decision", node="W1", agent="builder#1", note="approve: 继续")
+                self.add_ok("resume", node="W1", agent="builder#1", note="按 strategy.1.md 继续")
+
+                # A PASS clears the exhaustion but never the round count.
+                self.add_ok(
+                    "checkpoint",
+                    node="W1", agent="builder#1",
+                    note="ready_for_review=plan-reviewer final",
+                )
+                self.add_ok("agent_launch", node="W1", agent="plan-reviewer#1")
+                self.add_ok("done", node="W1", agent="builder#1")
+                signal_seq = max(
+                    int(row["seq"])
+                    for row in self.ledger_rows()
+                    if row["event"] == "checkpoint"
+                    and row["agent"] == "builder#1"
+                    and "ready_for_review=plan-reviewer" in str(row["note"])
+                )
+                self.add_ok(
+                    "done",
+                    node="W1", agent="plan-reviewer#1",
+                    note=f"reviewed=builder#1 ready_seq={signal_seq} PASS",
+                )
+                entries = relay_log.read_ledger(
+                    self.plan_path.parent / "relay_log.jsonl"
+                )
+                stop = probe(lint_plan(self.plan_path, config), entries, config)
+                self.assertEqual(
+                    {("W1", "plan-reviewer"): rounds + 2}, stop.review_rounds
+                )
+                self.assertEqual((), stop.review_exhausted)
+                self.assertFalse(stop.triggered)
 
     def test_attempt_loss_stop_counts_stage_failed_relaunch_debt(self) -> None:
         """HC-RL-A107: a stage failed after the last attempt also spends the counter."""
@@ -4741,16 +5605,43 @@ class SkillTemplateTests(RelayCliTestCase):
             for line in (self.plan_path.parent / "relay_log.jsonl").read_text(encoding="utf-8").splitlines()
         ]
 
+    def _latest_signal_seq(self, node: str, sender: str, reviewer: str) -> int:
+        """Seq of the newest `ready_for_review=<reviewer>` checkpoint by <sender>."""
+        rows = [
+            row
+            for row in self.ledger_rows()
+            if row["node"] == node
+            and row["event"] == "checkpoint"
+            and row["agent"] == sender
+            and "ready_for_review=" + reviewer in str(row["note"]).split()
+        ]
+        assert rows, f"no signal from {sender} to {reviewer} in {node}"
+        return int(str(rows[-1]["seq"]))
+
     def _close_w_stage(self) -> None:
-        """plan_loaded → W#1 fully closed (builder + plan-reviewer), per W template."""
+        """plan_loaded → W#1 fully closed, per the W template's review-ready
+        protocol: the builder's signal arms the reviewer launch (A144); on PASS
+        the sender seals first, then the reviewer pairs reviewed=/ready_seq=."""
         self.add_ok("plan_loaded", node="W1", agent="orchestrator#1", note="skill=0.1.0")
         self.add_ok("stage_start", node="W1", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
         self.add_ok("monitor_launch", node="W1", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
         self.add_ok("node_start", node="W1", agent="monitor#1")
         self.add_ok("agent_launch", node="W1", agent="builder#1")
-        self.add_ok("done", node="W1", agent="builder#1")
+        self.add_ok(
+            "checkpoint",
+            node="W1",
+            agent="builder#1",
+            note="ready_for_review=plan-reviewer 送审",
+        )
         self.add_ok("agent_launch", node="W1", agent="plan-reviewer#1")
-        self.add_ok("done", node="W1", agent="plan-reviewer#1")
+        self.add_ok("done", node="W1", agent="builder#1")
+        self.add_ok(
+            "done",
+            node="W1",
+            agent="plan-reviewer#1",
+            note="reviewed=builder#1 "
+            f"ready_seq={self._latest_signal_seq('W1', 'builder#1', 'plan-reviewer')} PASS",
+        )
         self.add_ok("node_close", node="W1", agent="monitor#1")
         self.add_ok("stage_result", node="W1", agent="monitor#1", note="stage_id=DHR_90:W#1 outcome=done")
         self.add_ok("stage_close", node="W1", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
@@ -4826,6 +5717,66 @@ class SkillTemplateTests(RelayCliTestCase):
         self.assertEqual("", agents["checker"][5])
         self.assertEqual("on:done:coder", agents["scribe"][5])
         self.assertEqual("on:blocked", agents["decider"][5])
+
+    def test_a149_w_and_x_triggers_switch_r_template_verbatim(self) -> None:
+        """A149: W's plan-reviewer and X's bounced lane take `on:review_ready:`;
+        C's trigger column is untouched and all three R rows stay verbatim."""
+        blocks = self._template_rows()
+        w_agents = {self._cells(row)[0]: self._cells(row) for row in blocks["W"]["agent"]}
+        self.assertEqual("", w_agents["builder"][5])
+        self.assertEqual("on:review_ready:builder", w_agents["plan-reviewer"][5])
+        x_agents = {self._cells(row)[0]: self._cells(row) for row in blocks["X"]["agent"]}
+        self.assertEqual("", x_agents["coder"][5])
+        self.assertEqual("on:review_ready:coder", x_agents["<打回路>"][5])
+        self.assertEqual("on:blocked", x_agents["decider"][5])
+        # C: the trigger column is frozen — checker still empty (A95).
+        c_agents = {self._cells(row)[0]: self._cells(row) for row in blocks["C"]["agent"]}
+        self.assertEqual("", c_agents["checker"][5])
+        self.assertEqual("on:done:coder", c_agents["scribe"][5])
+        self.assertEqual("on:blocked", c_agents["decider"][5])
+        # R: node row + both agent rows, byte-for-byte against the frozen text.
+        self.assertEqual(
+            ["| R<n> | <card> | <card>:R#<k> | review | agent:scribe | <prev> | |"],
+            blocks["R"]["node"],
+        )
+        self.assertEqual(
+            [
+                "| <reviewer> | R<n> | reviewer | | review.<路>.md | | 按 recipe 展开为并行多行 |",
+                "| scribe | R<n> | scribe | | review.md（含体检/四道闸脚本与 miner 汇总） | | 空 trigger 是约定例外——trigger 词表表达不了「等全员 done」：监工在全部 reviewer done 后按本 note 拉起 |",
+            ],
+            blocks["R"]["agent"],
+        )
+
+    def test_a149_review_sealing_discipline_verbatim(self) -> None:
+        """A149: the sealing discipline paragraph lands verbatim in SKILL.md's
+        hard rules and in both adapters' monitor-side templates."""
+        discipline = (
+            "判定方判定 PASS 前，送审方与判定方均不记 `done`；"
+            "FAIL 走 live 判定方的 `checkpoint` 路由回同一送审方；"
+            "PASS 后按送审方→判定方顺序记终态"
+        )
+        targets = (
+            SKILL_DIR / "SKILL.md",
+            SKILL_DIR / "references" / "adapter-claude-code.md",
+            SKILL_DIR / "references" / "adapter-codex.md",
+        )
+        for path in targets:
+            with self.subTest(file=path.name):
+                self.assertIn(discipline, path.read_text(encoding="utf-8"))
+
+    def test_a149_dh_mapping_note_names_three_counters(self) -> None:
+        """A149: `[limits.on_exceed].note` says three counters and names the
+        review-rounds one; keys and values stay byte-stable."""
+        mapping = tomllib.loads(
+            (SKILL_DIR / "dh-mapping.toml").read_text(encoding="utf-8")
+        )
+        note = mapping["limits"]["on_exceed"]["note"]
+        self.assertIn("三套", note)
+        self.assertNotIn("两套", note)
+        self.assertIn("送审", note)
+        self.assertEqual(2, mapping["limits"]["rework_max_rounds"])
+        self.assertEqual(3, mapping["limits"]["attempt_max"])
+        self.assertEqual("strategist-then-user", mapping["limits"]["on_exceed"]["action"])
 
     # --- 运行时合同（模板驱动的行为断言） ---
 
@@ -4985,6 +5936,207 @@ class SkillTemplateTests(RelayCliTestCase):
             [("agent_launch", "strategist#1"), ("done", "strategist#1")],
             [(row["event"], row["agent"]) for row in lifecycle],
         )
+
+    # --- A149: W/C/X minimal ledger sequences under the new review protocol ---
+
+    def test_a149_w_minimal_ledger_relaunch_reconsumes_fresh_signal(self) -> None:
+        """A149/W: plan-reviewer#1 is lost; A49 relaunches #2 off the builder's
+        fresh signal — then PASS seals sender first, reviewer second."""
+        self._write_template_plan()
+        self.add_ok("plan_loaded", node="W1", agent="orchestrator#1", note="skill=0.1.0")
+        self.add_ok("stage_start", node="W1", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
+        self.add_ok("monitor_launch", node="W1", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
+        self.add_ok("node_start", node="W1", agent="monitor#1")
+        self.add_ok("agent_launch", node="W1", agent="builder#1")
+        self.add_ok(
+            "checkpoint",
+            node="W1",
+            agent="builder#1",
+            note="ready_for_review=plan-reviewer round=1",
+        )
+        self.add_ok("agent_launch", node="W1", agent="plan-reviewer#1")
+        self.add_ok("agent_lost", node="W1", agent="plan-reviewer#1", note="pane 失联")
+        # A49 legal relaunch; the fresh signal — not the stale round-1 one —
+        # is what arms attempt #2.
+        self.add_ok(
+            "checkpoint",
+            node="W1",
+            agent="builder#1",
+            note="ready_for_review=plan-reviewer round=2",
+        )
+        self.add_ok("agent_launch", node="W1", agent="plan-reviewer#2")
+        self.add_ok("done", node="W1", agent="builder#1")
+        self.add_ok(
+            "done",
+            node="W1",
+            agent="plan-reviewer#2",
+            note="reviewed=builder#1 "
+            f"ready_seq={self._latest_signal_seq('W1', 'builder#1', 'plan-reviewer')} PASS",
+        )
+        self.add_ok("node_close", node="W1", agent="monitor#1")
+        self.add_ok(
+            "stage_result",
+            node="W1",
+            agent="monitor#1",
+            note="stage_id=DHR_90:W#1 outcome=done",
+        )
+        self.add_ok(
+            "stage_close", node="W1", agent="orchestrator#1", note="stage_id=DHR_90:W#1"
+        )
+        launches = [
+            row["agent"]
+            for row in self.ledger_rows()
+            if row["node"] == "W1"
+            and row["event"] == "agent_launch"
+            and str(row["agent"]).startswith("plan-reviewer#")
+        ]
+        self.assertEqual(["plan-reviewer#1", "plan-reviewer#2"], launches)
+
+    def test_a149_c_minimal_ledger_fail_reviews_same_instance(self) -> None:
+        """A149/C: checker#1 FAILs over its own checkpoint routed back to
+        coder#1, the same coder reworks, the same checker seals PASS — no
+        second agent_launch for either."""
+        self._write_template_plan()
+        self._close_w_stage()
+        self._open_c1()
+        self.add_ok("agent_launch", node="C1", agent="coder#1")
+        self.add_ok("agent_launch", node="C1", agent="checker#1")
+        self.add_ok(
+            "checkpoint",
+            node="C1",
+            agent="coder#1",
+            note="ready_for_review=checker round=1",
+        )
+        self.add_ok(
+            "checkpoint",
+            node="C1",
+            agent="checker#1",
+            note="FAIL routed_to=coder#1 P1-1",
+        )
+        self.add_ok(
+            "checkpoint",
+            node="C1",
+            agent="coder#1",
+            note="ready_for_review=checker round=2",
+        )
+        self.add_ok("done", node="C1", agent="coder#1")
+        self.add_ok(
+            "done",
+            node="C1",
+            agent="checker#1",
+            note="reviewed=coder#1 "
+            f"ready_seq={self._latest_signal_seq('C1', 'coder#1', 'checker')} PASS",
+        )
+        self.add_ok("agent_launch", node="C1", agent="scribe#1")
+        self.add_ok("done", node="C1", agent="scribe#1")
+        self.add_ok("node_close", node="C1", agent="monitor#1")
+        self.add_ok(
+            "stage_result",
+            node="C1",
+            agent="monitor#1",
+            note="stage_id=DHR_90:C#1 outcome=done",
+        )
+        self.add_ok(
+            "stage_close", node="C1", agent="orchestrator#1", note="stage_id=DHR_90:C#1"
+        )
+        for name in ("coder", "checker"):
+            launches = [
+                row["agent"]
+                for row in self.ledger_rows()
+                if row["node"] == "C1"
+                and row["event"] == "agent_launch"
+                and str(row["agent"]).startswith(f"{name}#")
+            ]
+            self.assertEqual([f"{name}#1"], launches)
+
+    def test_a149_x_minimal_ledger_one_lane_fails_one_passes(self) -> None:
+        """A149/X: two reviewer lanes on the X trigger — one FAILs and
+        re-reviews the rework as the same instance, one PASSes outright;
+        neither is relaunched nor sealed ahead of the sender."""
+        self.write_plan(
+            node_rows=[
+                "| X1 | DHR_90 | DHR_90:X#1 | rework | agent:requirement | | |"
+            ],
+            agent_rows=[
+                "| coder | X1 | coder | | rework.1.md | | |",
+                "| requirement | X1 | reviewer | | review.rework.1.md | on:review_ready:coder | |",
+                "| lesson | X1 | reviewer | | review.rework.1.md | on:review_ready:coder | |",
+            ],
+        )
+        self.add_ok("plan_loaded", node="X1", agent="orchestrator#1", note="skill=0.1.0")
+        self.add_ok("stage_start", node="X1", agent="orchestrator#1", note="stage_id=DHR_90:X#1")
+        self.add_ok("monitor_launch", node="X1", agent="orchestrator#1", note="stage_id=DHR_90:X#1")
+        self.add_ok("node_start", node="X1", agent="monitor#1")
+        self.add_ok("agent_launch", node="X1", agent="coder#1")
+        # A144 binds the sender's *latest* event: N lanes interleave
+        # signal → launch, never N signals then N launches.
+        self.add_ok(
+            "checkpoint",
+            node="X1",
+            agent="coder#1",
+            note="ready_for_review=requirement round=1",
+        )
+        self.add_ok("agent_launch", node="X1", agent="requirement#1")
+        self.add_ok(
+            "checkpoint",
+            node="X1",
+            agent="coder#1",
+            note="ready_for_review=lesson round=1",
+        )
+        self.add_ok("agent_launch", node="X1", agent="lesson#1")
+        # Lane requirement FAILs back to the same coder; lane lesson's PASS
+        # verdict exists but it cannot seal ahead of the sender.
+        self.add_ok(
+            "checkpoint",
+            node="X1",
+            agent="requirement#1",
+            note="FAIL routed_to=coder#1 P1-1",
+        )
+        rejected = self.run_add(
+            "done",
+            node="X1",
+            agent="lesson#1",
+            note="reviewed=coder#1 "
+            f"ready_seq={self._latest_signal_seq('X1', 'coder#1', 'lesson')} PASS",
+        )
+        self.assertEqual(2, rejected.returncode)
+        self.assertRegex(rejected.stderr, r"^error: HC-RL-A146 ")
+        # Rework answers the failed lane with a fresh signal; both reviewers
+        # stay the same live instances — no relaunch anywhere.
+        self.add_ok(
+            "checkpoint",
+            node="X1",
+            agent="coder#1",
+            note="ready_for_review=requirement round=2",
+        )
+        self.add_ok("done", node="X1", agent="coder#1")
+        for reviewer in ("requirement", "lesson"):
+            self.add_ok(
+                "done",
+                node="X1",
+                agent=f"{reviewer}#1",
+                note="reviewed=coder#1 "
+                f"ready_seq={self._latest_signal_seq('X1', 'coder#1', reviewer)} PASS",
+            )
+        self.add_ok("node_close", node="X1", agent="monitor#1")
+        self.add_ok(
+            "stage_result",
+            node="X1",
+            agent="monitor#1",
+            note="stage_id=DHR_90:X#1 outcome=done",
+        )
+        self.add_ok(
+            "stage_close", node="X1", agent="orchestrator#1", note="stage_id=DHR_90:X#1"
+        )
+        for name in ("coder", "requirement", "lesson"):
+            launches = [
+                row["agent"]
+                for row in self.ledger_rows()
+                if row["node"] == "X1"
+                and row["event"] == "agent_launch"
+                and str(row["agent"]).startswith(f"{name}#")
+            ]
+            self.assertEqual([f"{name}#1"], launches)
 
     def test_a114_strategist_chain_cancelled_finale(self) -> None:
         """A114 strategist 链终局之二：user_decision 后 cancelled 记回原 coder。"""
