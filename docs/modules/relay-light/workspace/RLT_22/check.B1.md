@@ -47,3 +47,31 @@
 ## 裁决
 
 **FAIL**。B1 行为实现与两条全量复跑均绿，但 P1-1 使 A145/A69 隔离证据产生假绿窗口。补上真实 helper 解析断言、更新证据并重新派 B1 小审后再进入 B2。
+
+---
+
+## 第二轮
+
+- 复审对象：`e26ba55`（B1 P1-1 整改）
+- 结论：**PASS**
+
+### P1-1 — CLOSED
+
+- `test_relay_log.py:1808-1810` 对同一混合 note 直接断言 `_decision_helper(mixed)` 与 `_validate_decision_helper(mixed)` 均只返回 `decider#1`，不再依赖不会进入 A69 helper 的 `checkpoint` 事件路径。
+- `test_relay_log.py:1811-1819` 直接覆盖仅含 `ready_for_review=` 以及同时含 `reviewed=` / `ready_seq=` 的 note：低层 helper 返回 `None`，校验 helper 报 `HC-RL-A69`。三个新 token 均被钉在 A69 扫描集之外。
+- E-007 的定向变异有效：临时把新 token 纳入两个 helper 的扫描前缀后，同一用例因混合 note 被解析为两个 helper token 而 exit 1；复原后单例通过。该 RED 直接击中新增断言，不是 setup、fixture 或旁路失败；生产文件 `relay_log.py` 无净改动。
+
+### 证据计数与独立复跑
+
+- E-003 的目标集仍为 7 例：整改是在既有 `test_a145_helper_scan_sees_decider_only` 内新增断言，没有新增测试方法，计数保持 7 正确。
+- 独立复跑 `cd tools/relay-light && PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_relay_log`：exit 0，`Ran 186 tests in 347.053s`，`OK`；与 E-004 的 186 例口径一致。
+- 独立复跑 `PYTHONDONTWRITEBYTECODE=1 pwsh -NoProfile -File tools/tests/run-relay-tests.ps1`：exit 0；relay-light 段 186 例 `test_relay_log` 与 7 例 `test_install_skill` 全部 OK，最终 `RELAY ALL PASS (SKIPPED: 1)`；与 E-005 计数一致。
+
+### 新问题与范围
+
+- `e26ba55` 仅在测试中补足 P1-1 的解析层 oracle，并更新本卡证据工件；未修改生产实现。
+- `git diff --check` 无输出；复跑未产生 `__pycache__`。未发现编号串线、证据计数漂移或新的 P1/P2 问题。
+
+### 第二轮裁决
+
+**PASS**。第一轮 P1-1 已闭合，E-007 证明断言改坏必红，B1 可交回编排进入下一节点。
