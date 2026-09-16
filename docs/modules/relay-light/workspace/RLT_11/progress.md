@@ -95,3 +95,10 @@ DONE task=RLT_11 role=reviewer-consistency node=R2b status=OK ts=2026-09-16T17:2
 DONE task=RLT_11 role=orchestrator node=F1 status=OK ts=2026-09-16T17:22:00+08:00
   summary: 两路复核闭合、四集合核对通过，进入 commit/push/PR 收口
   artifacts: findings.md, progress.md
+
+## 人类验收落记（AI 代记）
+
+- **2026-09-16**：用户在对话中明确答复「**确认验收**」，并指示清理 worktree。该确认是对 RLT_11 整卡的验收结论，非仅放行动作。据此 DevPlan 任务表 RLT_11 行由「已完成」转「已验收」。
+- 代记依据：AGENTS.md 宪章#4——确认来自用户对话明文，非 AI 代签；本卡无 `review.md` 人类签名区（`light` 档两路复核报告分列 `review.lesson.md` / `review.consistency.md`），故无勾选动作。
+- 边界：本卡不属高危五类，无 `verify(relay-light):` 提交要求；`light` 档无「有效单测」硬要求，未跑单测。findings F-001～F-007 仍为「已登记 · 待裁决」，不因本次验收而关闭。
+- 收口动作：PR #34 本体合入 `856d9b3`；PR #35 DevPlan 回填合入 `1de4c89`；worktree `.dh-worktrees/RLT_11` 已删、分支 `wt/RLT_11` 已清（遗留的 `.dh-worktrees/RLT_21` 与 `dryrun-rlt12` 同日一并清树，两分支保留）。
