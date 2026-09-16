@@ -165,3 +165,4 @@ DONE task=RLT_22 role=audit batch=3 status=PASS evidence=check.B3.md next=orches
 DONE task=RLT_22 role=exec batch=3 status=CONSTRUCTION_DONE evidence=check.B1.md,check.B2.md,check.B3.md,776b020 next=orchestrator
 DONE task=RLT_22 role=review batch=R status=APPROVE_WITH_NITS evidence=review.code-round1.md next=orchestrator
 DONE task=RLT_22 role=review batch=R status=APPROVE_WITH_NITS evidence=review.requirement.md next=orchestrator
+DONE task=RLT_22 role=review batch=R status=APPROVE_WITH_NITS evidence=review.lesson.md next=orchestrator

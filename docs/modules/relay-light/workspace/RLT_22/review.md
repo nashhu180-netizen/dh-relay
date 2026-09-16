@@ -26,11 +26,11 @@
 |---|---|---|---|---|---|---|
 | code-round1 | 三批小审闭合、`CONSTRUCTION_DONE` 之后；fresh，非施工者、非小审者 | 整卡 diff。重点六项：①A146 的**执行位点**确在 agent `done` 的语义校验一线而非 `_validate_node_close`；②新校验一律用 `_latest_for_instance`，无一处沿用 `_latest_by_name`；③`_note_tokens`「首个同名 key 胜出」行为未改，重复 token 拒在写入侧；④`_validate_agent_transition` 迁移表、`Status` / `status_document`、`roles.toml`、`dh-mapping.toml` 的键与取值零改动；⑤`on:done:` 分支与 A70 逐字一致；⑥反例编号不串（重复 `agent_launch` 报 A58/A49，终态后挂事件报 A60） | rlt22-review（devin swe-2-max，fresh，非施工者非小审者） | log:dispatch/review.md | APPROVE_WITH_NITS（P2×1：畸形 `ready_seq` Unicode 数字致未捕获 ValueError，exit 1 traceback 而非 exit 2+A146；P3×1：test:1433 注释残留 B1 placeholder 措辞） | review.code-round1.md |
 | requirement（需求方向） | normal Review Batch 独立路径 | 逐字对齐 design/01 §11 的 `HC-RL-A144`~`A150` 七条「怎么验」列；核 A35/A65/A71/A107 四条修订的承接证据是否到位；核卡「非目标」六条（A2/A62/A95/A102 不改，A49/A60/A70 不豁免不削弱，R 模板不动，不强制迁移）逐条有反向证据；核 A102 是否由 A145 正例**显式**证明而非假定继承（findings F-006） | rlt22-review2（devin swe-2-max，fresh，非施工者非小审者非 code-round1 复核者） | log:dispatch/review.md | APPROVE_WITH_NITS（P2×1：与 code-round1 P2-1 同源，`ready_seq` Unicode 数字走未捕获 ValueError 退 1 破退出码合同，fail-closed 不削弱枚举反例，在飞修复未提交；P3×3：上游措辞差/并发变异假红环境项/陈旧注释） | review.requirement.md |
-| lesson（教训） | normal Review Batch 独立路径 | 核 `lesson_candidates.md` 候选的现场证据、去重与可复用性；核三批登记位是否「无候选也写了本批无」；若全程 absent，须形成可核查 N/A（`库版本=<在册条目数>` + 无候选/无重犯），不得空过 | | | | |
+| lesson（教训） | normal Review Batch 独立路径 | 核 `lesson_candidates.md` 候选的现场证据、去重与可复用性；核三批登记位是否「无候选也写了本批无」；若全程 absent，须形成可核查 N/A（`库版本=<在册条目数>` + 无候选/无重犯），不得空过 | rlt22-review2（devin swe-2-max，fresh，非施工者非小审者非 code-round1 复核者） | log:dispatch/review.md | APPROVE_WITH_NITS（LC-01/LC-02 证据与登记齐全、三批登记位含两处「本批无」；核心既往教训根治、两次轻犯均被卡内捕获改正并登记；P3×2：LC-02 缺去重自注、两条可登记未登记项待裁） | review.lesson.md |
 
 **需求复核结论**：approved｜证据=review.requirement.md｜由 rlt22-review2（devin swe-2-max，fresh）｜派出=log:dispatch/review.md｜prior_finding_refs=F-008（RLT_12，本卡动机）｜direction_verdict=approved-无漂移
 
-**教训复核结论**：<过 / 跳过（库空）>｜命中条目｜由 <复核者>｜派出=<e:E-xxx / log:路径>｜库版本=<在册条目数>｜<无候选|无重犯>
+**教训复核结论**：过｜命中条目=LC-01/LC-02（均有证据、已登记、ready-for-review）；既往相关条目 RLT_12 L-002/L-008/L-009/L-010 与 RLT_21 L-002~L-005 遵守，RLT_21 L-001 与库内候选-6/候选-46 各一次轻犯、卡内捕获改正并已登记为 LC-02/LC-01｜由 rlt22-review2（devin swe-2-max，fresh）｜派出=log:dispatch/review.md｜库版本=87（候选-1~候选-87，候选-40 已裁决、候选-80 附属不单计、余待裁决）｜非「无候选」——本卡 2 候选在册；非「无重犯」——两次轻犯均已捕获改正登记，无沉默重犯
 
 **code_review 初审结论**：<approved / changes-requested / 需人裁决>｜派出=<e:E-xxx / log:路径>
 
