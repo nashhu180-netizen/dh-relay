@@ -9,6 +9,7 @@
 |---|---|---|---|---|
 | 2026-09-15 | 编排派出的 workspace builder | D-001 建工作区七件套（见下「D-001 开工事实登记」）；未改任何程序、未跑任何验收命令、未做 git 写操作 | 本目录七个文件 | 编排核七件套 → 派 B1 施工 worker |
 | 2026-09-16 | 编排 `orchestrator#1`（Claude Code 主控会话） | 取得用户当次明确授权后执行 skill 两侧重同步 `python tools/relay-light/install_skill.py --all`（源 = 主检出 master `72c6c4d`，工作区干净）：exit 0，源与 `.claude` / `.codex` 两副本五文件 sha256 三处一致，两份 manifest 已记。该动作闭合的是 **RLT_21 `review.md`「未做且需用户明确授权」中的「两侧用户级 skill 重同步」**一项；本卡尚未开工、未改任何程序 | E-001 | 编排核七件套 → 派 B1 施工 worker |
+| 2026-09-16 | 编排 `orchestrator#1`（Claude Code 主控会话） | 按宪章#7 把 `wt/RLT_22` rebase 到 master `72c6c4d`（`git rebase --autostash master`，4 笔重放无冲突；本卡工作区内容与 rebase 前逐字节一致，`git diff e14bcd3 HEAD -- .../RLT_22` 为空），并以 `--force-with-lease` 覆盖远端（本条提交随该次推送上行）。**D-001「基线」一栏仍记 `544ccdb` 不改**——那是 D-start 当时的事实，不随 rebase 改写；施工 worker 进场无需再 rebase，但仍按铁律自查 | `git merge-base HEAD master` = `72c6c4d` | 编排核七件套 → 派 B1 施工 worker |
 
 ## D-001 开工事实登记
 
