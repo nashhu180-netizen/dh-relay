@@ -93,3 +93,35 @@ EXIT=1
 ## 裁决
 
 **APPROVE_WITH_NITS**。六个必审靶子与七条 HC 断言强度逐条闭合，独立复跑与变异实验佐证「改坏必红」；遗留 P2-1（`ready_seq` 畸形输入的退出码合同）与 P3-1（陈旧注释）建议整改但不阻塞。本结论仅为代码轮 1 一路的事实登记，不替编排做验收裁决。
+
+---
+
+## X1 复看（2026-09-16 · 整改提交 `2a8f7e6`）
+
+> 复看者：rlt22-review（devin swe-2-max），同 R 批 code-round1 复核者。范围只限 X1 整改（`git show 2a8f7e6`：`relay_log.py` 一行守卫、`test_relay_log.py` 新用例 + 注释措辞、`progress.md` 证据）与全量复跑；只读不改代码（变异实验跑后已复原）。
+
+### P2-1 — CLOSED
+
+- 守卫 `relay_log.py:2022` 已由 `not ready_seq.isdigit()` 改为 `not (ready_seq.isascii() and ready_seq.isdigit())`——ASCII 域内 `isdigit()` 等价于全 `0-9`，`int()` 不再可能逃逸成未捕获 `ValueError`；空串、`+3`、`1,000` 等仍走原 A146 拒绝路径。
+- 本机复现翻转：`add done --agent plan-reviewer#1 --note "reviewed=builder#1 ready_seq=² PASS"` → `error: HC-RL-A146 review pairing done requires ready_seq=<n>, got ²`，**EXIT=2**（X1 前为 EXIT=1 + traceback），账本行数不变（探针账本 8 行前后一致，被拒 `done` 不落行）。
+- 新增用例 `test_a146_malformed_ready_seq_exits_two_not_crash`：六个畸形值（`²`/`四`/`½`/`①`/`{seq}²`/`1,000`）各断言 `returncode == 2` + `^error: HC-RL-A146 `，循环后断言账本**逐字节**不变——畸形输入反例 + 不落行两条要求均以真断言承接。
+- 「改坏必红」复证：把守卫临时还原为 `not ready_seq.isdigit()`（施加 hash `5174ea1b…`，即 X1 前 blob），该用例 FAILED（failures=3，`²`/`①`/`{seq}²` 各 `2 != 1`，stderr 为 ValueError traceback）；复原后（还原 hash `f6e22a85…`，HEAD blob）用例转绿、`git status` 干净。
+
+### P3-1 — CLOSED
+
+`test_relay_log.py:1433` 注释已改为「fail-closed without a ready_for_review signal — never the A70 on:done: branch.」，如实描述现行 A144 闸，「B1 placeholder」残留措辞已清。
+
+### 新引入问题
+
+无。X1 diff 仅一行守卫加严 + 一处注释 + 一个测试方法，全部落在允许路径闭集；未触碰 `review.*.md`、迁移表、`Status`/`status_document` 或任何既有合同面。
+
+### X1 复跑证据（本机 · `PYTHONDONTWRITEBYTECODE=1`）
+
+| 命令 | 结果 |
+|---|---|
+| `cd tools/relay-light && PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_relay_log` | exit 0；`Ran 203 tests in 570.592s`，`OK`（202 + 新增 1 例）——与 E-024 一致 |
+| `PYTHONDONTWRITEBYTECODE=1 pwsh -NoProfile -File tools/tests/run-relay-tests.ps1`（仓根） | exit 0；`RELAY ALL PASS (SKIPPED: 1)`；relay-light 段 203 例 `test_relay_log` + 7 例 `test_install_skill` 全 OK——与 E-025 一致 |
+
+### X1 复看裁决
+
+**APPROVE**。P2-1、P3-1 均以「实现修复 + 真断言 + 变异复证」闭合，无新增问题；R 批 code-round1 结论由 APPROVE_WITH_NITS 转为 **APPROVE**。
