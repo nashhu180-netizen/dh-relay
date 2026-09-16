@@ -20,9 +20,9 @@
 | C-009 | 同文件 `_note_tokens`（`:2420`）、`_decision_helper`（`:1675`）/ `_validate_decision_helper`（`:1683`） | 「首个同名 key 胜出」行为不改；三个新 token 不得进 A69 的 helper 扫描集 |
 | C-010 | 同文件 `LossStop`（`:2790`）与 `loss_stop()`（`:2812`）；`Status` / `status_document`（`:2400` / `:2889`） | 第三套计数加在前者；后两者**零改动**（A62 冻结 schema） |
 | C-011 | 同文件 `AgentSpec.role`（`:132`、解析赋值 `:454`） | 判定角色闭集是对 `roles.toml` 现有键的**引用**，按 `role` 列读取，不新增角色 |
-| C-012 | `tools/relay-light/skill/SKILL.md`：W 模板 `:44`-`:56`、C 模板 `:57`-`:73`、R 模板 `:74`-`:88`、X 模板 `:89`-`:104`、硬规则段 `:212` 起 | A149 的改点与「R 三行逐字不变」的断言对象 |
+| C-012 | `tools/relay-light/skill/SKILL.md`：W 模板 `:44`-`:55`、C 模板 `:59`-`:74`、R 模板 `:76`-`:89`、X 模板 `:91`-`:105`、硬规则段 `:212` 起 | A149 的改点与「R 三行逐字不变」的断言对象 |
 | C-013 | `tools/relay-light/skill/references/adapter-claude-code.md`、`adapter-codex.md` | A149 要求两份 adapter 的监工模板各含同一段纪律原文 |
-| C-014 | `tools/relay-light/skill/dh-mapping.toml` `[recipes.*]`（`:14`-`:21`）与 `[limits]` / `[limits.on_exceed]`（`:23`-`:33`） | `rework_max_rounds=2`；`[limits.on_exceed].note` 的「两套计数」改「三套」，**键与取值不动** |
+| C-014 | `tools/relay-light/skill/dh-mapping.toml` `[recipes.*]`（`:14`-`:21`）、`[limits]`（`:24` 起）与 `[limits.on_exceed]`（`:29`-`:35`） | `rework_max_rounds=2`；`[limits.on_exceed].note` 的「两套计数」改「三套」，**键与取值不动** |
 | C-015 | `tools/relay-light/skill/roles.toml` | 判定角色闭集 `{plan-reviewer, checker, reviewer}` 的存在性依据；本文件**零改动** |
 | C-016 | `tools/relay-light/test_relay_log.py` 的 `SkillTemplateTests`、`test_attempt_and_x_loss_stops_trigger_independently`、`test_trigger_values_and_same_node_done_references_are_checked`、`test_runtime_trigger_and_dependency_gates`、`test_node_close_ignores_an_untriggered_agent`、`test_a102_checkpoint_round_trips_do_not_burn_attempts`、`test_agent_launch_requires_node_start_and_terminal_agents_are_sealed` | 现有用例的影响分类（见下「现有用例影响分类」）；最后一条**保持原样**，它正是「未削弱 A60/A78」的回归证据 |
 | C-017 | **只读事实来源（在未合并分支 `wt/RLT_12` 上，禁止修改）**：`D:\MyFiles\ai-workflow\dh-relay\.dh-worktrees\RLT_12\docs\modules\relay-light\workspace\RLT_12\findings.md` 的 **F-008**；同树 `docs/modules/relay-light/relay/rlt12-win-01/relay_log.jsonl` 的 seq **16 / 19 / 20 / 21**（C1：coder#1 done → scribe#1 done → checker#1 done 且结论 FAIL p1=3 → node_close 记「节点内无合法返工路径」）与 seq **25 / 26 / 27 / 29**（C2：live checker#1 三条 `routed_to=coder#1` 的 `checkpoint` 路由返工 → PASS） | 三规则互锁的实证与「PASS 前谁都不记 done」绕法的实证；**不重跑真计划**，只读引用。A148 的旧账本重放正例即取自该账本 |
@@ -108,7 +108,7 @@
 | 1.5 | Modify · `relay_log.py` `_validate_event_semantics`（`:2014` 一线） | 新增 `checkpoint` 的 ready 信号写入校验：按 `_note_tokens` **之外**再做一次原始 note 的 `ready_for_review=` 前缀 token 计数（因为 `_note_tokens` 只留首个，计数必须在原始串上做）；读 `AgentSpec.role` 判定 `<Rv>` 与写入者是否属闭集 `{plan-reviewer, checker, reviewer}`。**`_note_tokens` 本身零改动** | 同 1.4 命令 → GREEN；全量回归绿 |
 | 1.6 | Record · `progress.md` | 每条结论登记 E-ID（命令 + 退出码 + 关键输出）；跑 `git diff --check`、四集合允许路径核对（`git diff --name-only master...HEAD`、working tree、index、untracked），只暂存点名文件，commit scope 用英文 `relay-light` | `git diff --check` 无输出；四集合反选允许路径无越界 |
 
-**批次检查点 B1**：跑 `cd tools/relay-light && PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_relay_log -v`（全量）+ 回到仓根跑 `pwsh -NoProfile -File tools/tests/run-relay-tests.ps1`，派 fresh 小审只看本批 diff，结论写 `check.B1.md`，问题按 P 级进 `findings.md`。未 PASS 不得开 B2。
+**批次检查点 B1**：跑 `cd tools/relay-light && PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_relay_log -v`（全量）+ 回到仓根跑 `PYTHONDONTWRITEBYTECODE=1 pwsh -NoProfile -File tools/tests/run-relay-tests.ps1`，派 fresh 小审只看本批 diff，结论写 `check.B1.md`，问题按 P 级进 `findings.md`。未 PASS 不得开 B2。
 
 ### Batch 2 — 拉起前置 + 封口配对闸（A144 / A146）
 
@@ -129,17 +129,17 @@
 | 3.1 | Test · `test_relay_log.py` | A147：`rework_max_rounds` 取 **2 与 3** 两种配置，**同一实现**分别断言耗尽发生在第 2 条与第 3 条未通过的信号处；断言超限后第 N+1 条 ready 仍被 `add` 接受且**账本增行**；断言耗尽后 strategist 链可正常以 `escalate` 起头；断言三套计数互不叠加、互不重置（与 A107 共用 fixture）。另在 `test_attempt_and_x_loss_stops_trigger_independently` **只补**第三计数断言 | `cd tools/relay-light && PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_relay_log -v` → RED |
 | 3.2 | Modify · `relay_log.py:2790`、`loss_stop():2812` | `LossStop` 加 `review_rounds: dict[tuple[str, str], int]`（或等价可比较键）与 `review_exhausted: tuple[...]`；`loss_stop()` 统计该组合下 ready 信号条数（**首轮计入**），耗尽判据=条数 ≥ `limits.rework_max_rounds` **且**该判定方在本节点仍无 `done`；`triggered` 纳入第三套。**`Status`（`:2400`）与 `status_document`（`:2889`）零改动**，不新增配置键、不改取值 | 同 3.1 → GREEN；另跑 `RelayStatusProjectionTests` 断言 `status --json` 顶层键集合**未变** |
 | 3.3 | Test · `test_relay_log.py` | A148：`rlt12-win-01` 的 `relay_plan.md` 原样过 lint 且退 0；该计划账本 **71 行原样重放**，断言逐条被接受、R 段不触发 A146；一份**混用**两种 trigger 的合成 plan 过 lint 并跑通一条完整账本，`on:done:` 那路按 A70 判、`on:review_ready:` 那路按 A144 判，各构造一个反例断言**编号不串**。另 A65 补例：`on:review_ready:` 未触发的 agent 不算悬空 | 同上 → RED → GREEN |
-| 3.4 | Modify · `skill/SKILL.md` | **X 模板**（`:89`-`:104`）被打回那路 reviewer 的 trigger `on:done:coder` → `on:review_ready:coder`；**W 模板**（`:44`-`:56`）plan-reviewer 的 `on:done:builder` → `on:review_ready:builder`；**C 模板**（`:57`-`:73`）trigger 列**不改**，补「PASS 前不记 `done`」纪律原文；**R 模板（`:74`-`:88`）一字不改**；硬规则段（`:212` 起）加原文「PASS 前双方均不记 `done`；FAIL 走 live 判定方的 `checkpoint` 路由回同一送审方；PASS 后按送审方→判定方顺序记终态」 | `SkillTemplateTests` 由 RED 转 GREEN；**单独断言 R 三行与改前逐字一致**（`git diff` 对 R 段为空） |
+| 3.4 | Modify · `skill/SKILL.md` | **X 模板**（`:91`-`:105`）被打回那路 reviewer 的 trigger `on:done:coder` → `on:review_ready:coder`；**W 模板**（`:44`-`:55`）plan-reviewer 的 `on:done:builder` → `on:review_ready:builder`；**C 模板**（`:59`-`:74`）trigger 列**不改**，补「PASS 前不记 `done`」纪律原文；**R 模板（`:76`-`:89`）一字不改**；硬规则段（`:212` 起）加原文「PASS 前双方均不记 `done`；FAIL 走 live 判定方的 `checkpoint` 路由回同一送审方；PASS 后按送审方→判定方顺序记终态」 | `SkillTemplateTests` 由 RED 转 GREEN；**单独断言 R 三行与改前逐字一致**（`git diff` 对 R 段为空） |
 | 3.5 | Modify · `skill/references/adapter-claude-code.md`、`adapter-codex.md` | 两份 adapter 的监工模板各补同一段纪律原文（与 3.4 逐字同一段） | 结构检查用例断言三处（SKILL.md 硬规则段 + 两份 adapter）各命中该段原文 |
 | 3.6 | Modify · `skill/dh-mapping.toml` `[limits.on_exceed].note` | 说明文字「两套计数」改「三套」并补第三套一句；**键名与取值（`rework_max_rounds=2`、`attempt_max=3`、`action`）一字不动**；`roles.toml` 零改动 | `git diff tools/relay-light/skill/dh-mapping.toml` 只落在 note 文本行；配置加载用例全绿 |
 | 3.7 | Test · `test_relay_log.py` | A149 ②最小账本序列：对 **W、C、X 各跑一条**合成账本，并按场景分别断言——**W**：plan-reviewer `agent_lost` 后按 A49 合法重拉，builder 写新信号，新实例消费新信号；**C**：checker 同一实例 FAIL 后由 `checkpoint` 路由回同一 coder，再复审至 PASS，断言无第二条 `agent_launch`；**X**：两路 reviewer 中一路 FAIL、一路 PASS，另一路不被重拉也不被提前封口。三条均走各自模板的 trigger/纪律并验证 PASS 后送审方→判定方的终态顺序 | 同上 → GREEN |
 | 3.8 | Record · `progress.md` | 同 1.6；另按卡「实施提示」处理 skill 两侧重同步：**先展示 `%USERPROFILE%` 解析后的两个绝对目标并取得用户当次明确授权**，再 `python tools/relay-light/install_skill.py --all`，记录命令、退出码、最终哈希与两份 manifest；**未授权则停在仓内验证**，不得自行执行 | 授权链与命令输出逐条入 `progress.md` 证据账本 |
 
-**批次检查点 B3**：全量 `cd tools/relay-light && PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_relay_log -v` + 回到仓根跑 `pwsh -NoProfile -File tools/tests/run-relay-tests.ps1`，结论写 `check.B3.md`。三批小审全闭合且编排明确重派后，才发 `CONSTRUCTION_DONE`，进 normal Recipe 复核。
+**批次检查点 B3**：全量 `cd tools/relay-light && PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_relay_log -v` + 回到仓根跑 `PYTHONDONTWRITEBYTECODE=1 pwsh -NoProfile -File tools/tests/run-relay-tests.ps1`，结论写 `check.B3.md`。三批小审全闭合且编排明确重派后，才发 `CONSTRUCTION_DONE`，进 normal Recipe 复核。
 
 ## 每批共通约束
 
-- 每批进场先删除未跟踪的 `tools/relay-light/__pycache__`；随后以该清理完成状态作为 working tree、index、`master...HEAD`、untracked 四集合允许路径核对的共同基线。只删除这一明确的未跟踪缓存目录，不扩大目标。
+- 若进场已有 `tools/relay-light/__pycache__`，只登记为 pre-existing；四集合核对时区分本卡新增，worker 不删除。
 - 先写会失败的测试钉住期望行为，再最小实现转绿；导入失败、路径错误、fixture 错误、解释器缺失都**不是**有效 RED。
 - 每个证据先登记 `progress.md` 证据账本再被引用，禁止悬空描述符。
 - 每批跑：本批目标用例（统一从 `tools/relay-light` 目录执行 `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest ...`）→ 全量 `test_relay_log.py` → `run-relay-tests.ps1` → `git diff --check` → 四集合允许路径核对。
