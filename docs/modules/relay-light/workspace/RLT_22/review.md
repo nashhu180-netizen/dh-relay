@@ -139,12 +139,12 @@
 
 | 接受人 | 授权依据 | 范围 | 影响 | 期限或复审点 | 恢复条件 | 持久去处 |
 |---|---|---|---|---|---|---|
-| | | | | | | |
+| 2026-09-16 | 用户（AI 代记） | RLT_22 releasePacket | `db88deb` 及其后收口提交 | 单测 203 例 OK；`RELAY ALL PASS (SKIPPED: 1)`；三批小审 + X1 小审全 PASS；normal 三路复核 P0=P1=0，code-round1 X1 复看 APPROVE | A144~A150、A35/A65/A71/A107 | 带风险放行 |
 
-**材料齐没齐**：brief / task_plan / progress(证据) / 独立复核记录 / review 都有了？ [ ]
-**as-built 更新了没**：`parity-ledger`、`relay-light skill 协议` 两个子系统的 as-built 已覆盖更新到最新现状？ [ ]
+**材料齐没齐**：brief / task_plan / progress(证据) / 独立复核记录 / review 都有了？ [x]　七件套 + dispatch 七份 + `review.plan.md` + `check.B1/B2/B3/X1.md` + 三路 `review.*.md` 齐全
+**as-built 更新了没**：`parity-ledger`、`relay-light skill 协议` 两个子系统的 as-built 已覆盖更新到最新现状？ [ ]　**未更新**：`as-built/` 不在本卡允许路径闭集内，`RLT_05-实现快照.md` 仍写三态 trigger 与 `on:done:` 单一前置口径，已登记 `findings.md` **F-010** 转下一卡承接
 
-→ 当前状态：**开工建档，未进复核**
+→ 当前状态：**复核全闭合，待合并收口**（三批小审 + X1 小审全 PASS；normal 三路复核 P0=P1=0；code-round1 经 X1 复看转 APPROVE）
 
 ---
 
@@ -159,8 +159,8 @@
 
 | 验什么 | 做什么 | 通过标准 | 结果 |
 |---|---|---|---|
-| 节点内返工路径真的通了 | 查看 A144 正例 + A146 正序封口 + 同实例 FAIL→PASS 无第二条 `agent_launch` 的账本片段与退出码 | 送审方全程 live 到 PASS 后才封口；判定方在 PASS 前不记 `done`；两者终态顺序为送审方→判定方 | [ ] |
-| 旧计划与 R 阶段没被误伤 | 查看 `rlt12-win-01` 原样过 lint 退 0、账本 71 行原样重放逐条被接受、R 段不触发 A146 的输出 | 旧计划零迁移即通过；R 判定方直接 `done` 仍被接受 | [ ] |
+| 节点内返工路径真的通了 | 查看 A144 正例 + A146 正序封口 + 同实例 FAIL→PASS 无第二条 `agent_launch` 的账本片段与退出码 | 送审方全程 live 到 PASS 后才封口；判定方在 PASS 前不记 `done`；两者终态顺序为送审方→判定方 | 未逐条人判 · 整体授权放行（2026-09-16） |
+| 旧计划与 R 阶段没被误伤 | 查看 `rlt12-win-01` 原样过 lint 退 0、账本 71 行原样重放逐条被接受、R 段不触发 A146 的输出 | 旧计划零迁移即通过；R 判定方直接 `done` 仍被接受 | 未逐条人判 · 整体授权放行（2026-09-16） |
 
 ### 目的二：证明既有硬闸未被削弱（覆盖 A145 / A147 / A149 / A150 与「非目标」六条）
 
@@ -168,17 +168,17 @@
 
 | 验什么 | 做什么 | 通过标准 | 结果 |
 |---|---|---|---|
-| A49 / A60 / A70 仍然生效 | 查看反例输出：终态后挂事件报 A60、终态后重拉报 A49、`on:done:` 那路仍按 A70 判 | 三条编号原样出现且**不串**成 A144/A146 | [ ] |
-| 不该动的都没动 | 查看 `git diff` 对 `Status` / `status_document` / `_validate_node_close` / `_validate_agent_transition` 迁移表 / `roles.toml` / `dh-mapping.toml` 键与取值为空 | 六处零改动；`status --json` 顶层键集合未变 | [ ] |
-| skill 两侧同步（**须另取当次授权**） | 先看 `%USERPROFILE%` 解析后的两个绝对目标，授权后查看 `install_skill.py --all` 的命令、退出码、最终哈希与两份 manifest | 两目标五文件哈希与仓内源一致；未授权则本行记「停在仓内验证」 | [ ] |
+| A49 / A60 / A70 仍然生效 | 查看反例输出：终态后挂事件报 A60、终态后重拉报 A49、`on:done:` 那路仍按 A70 判 | 三条编号原样出现且**不串**成 A144/A146 | 未逐条人判 · 整体授权放行（2026-09-16） |
+| 不该动的都没动 | 查看 `git diff` 对 `Status` / `status_document` / `_validate_node_close` / `_validate_agent_transition` 迁移表 / `roles.toml` / `dh-mapping.toml` 键与取值为空 | 六处零改动；`status --json` 顶层键集合未变 | 未逐条人判 · 整体授权放行（2026-09-16） |
+| skill 两侧同步（**须另取当次授权**） | 先看 `%USERPROFILE%` 解析后的两个绝对目标，授权后查看 `install_skill.py --all` 的命令、退出码、最终哈希与两份 manifest | 两目标五文件哈希与仓内源一致；未授权则本行记「停在仓内验证」 | 用户 2026-09-16 明确授权（「全部授权」）；合并后自 master 主检出执行，结果见 progress.md E-027 |
 
 ---
 
-- 确认记录：<AI 回填：确认方式 + 用户选择/答复摘要>
+- 确认记录：2026-09-16 编排在对话里列出五项出口动作（push / PR / CI 后服务端合并 / `verify(relay-light):` 代签 / skill 两侧重同步）与两条待裁决 findings，用户答复原话「全部授权」。**该授权是对放行动作的授权，不构成对上表任一行核验内容的人判结论**；上表各行据此记「未逐条人判 · 整体授权放行」。
 - verify 提交 SHA：<AI 代打后回填；`git log --grep="^verify"` 可查>
-- 签名：<待用户确认后填>　　时间：<待填>
+- 签名：用户（对话确认「全部授权」），AI 代记　　时间：2026-09-16
 
-→ 解锁状态：**未解锁**
+→ 解锁状态：**已解锁（带风险放行 · 未逐条人判）**
 
 > 铁律：没有对应的 `verify(relay-light): RLT_22 …` git 提交，本卡不许标「已完成」。scope 必须是英文 `relay-light`。
 
