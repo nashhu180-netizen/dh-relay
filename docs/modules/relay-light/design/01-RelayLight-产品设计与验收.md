@@ -5,8 +5,9 @@
 <!-- dh:topic tier=标准 review=RelayLight运行中改计划 -->
 <!-- dh:planning-event:v1 id=RLT-A-06 stage=A-full artifact=design/01-RelayLight-产品设计与验收.md review=evidence/07-交叉审核记录-RLT05合同缺口候选.md#review-rlt-a06 understanding=evidence/07-交叉审核记录-RLT05合同缺口候选.md#understanding-rlt-a06 -->
 <!-- dh:planning-event:v1 id=RLT-A-07 stage=A-adjust artifact=design/01-RelayLight-产品设计与验收.md review=evidence/08-交叉审核记录-RLT09-oracle澄清.md#review-rlt-a07 understanding=evidence/08-交叉审核记录-RLT09-oracle澄清.md#understanding-rlt-a07 -->
+<!-- dh:planning-event:v1 id=RLT-A-11 stage=A-adjust artifact=design/01-RelayLight-产品设计与验收.md review=evidence/11-交叉审核记录-RLT-A11-产物兜底与验收续发.md#review-rlt-a11 understanding=evidence/11-交叉审核记录-RLT-A11-产物兜底与验收续发.md#understanding-rlt-a11 -->
 
-> **历史规划事件索引（A-full；非活动声明，仅作追溯）**——旧事件的原始可解析 `planning-event` 声明注释已按 `RLT-A-06` 事件转为本索引；出处、含义与证据路径保持原值，未删除、未改写，Git 历史中仍可还原。**活动声明为上面的 `RLT-A-06` 与本次最小澄清 `RLT-A-07`；DevPlan 活动事件仍是 `RLT-B-06`。**
+> **历史规划事件索引（A-full；非活动声明，仅作追溯）**——旧事件的原始可解析 `planning-event` 声明注释已按 `RLT-A-06` 事件转为本索引；出处、含义与证据路径保持原值，未删除、未改写，Git 历史中仍可还原。**活动声明为上面的 `RLT-A-06`、`RLT-A-07` 与本次 `RLT-A-11`；DevPlan 活动事件仍是 `RLT-B-06`。**
 >
 > | 事件 | stage | 证据（交叉审核记录） | 处理 |
 > |---|---|---|---|
@@ -16,6 +17,8 @@
 > | `RLT-A-05` | A-full | `evidence/06-交叉审核记录-RLT03阶段合同补充.md#review-rlt-a05` / `#understanding-rlt-a05` | 转历史索引 |
 >
 > 八条 A/B 旧事件（含 DevPlan 侧 `RLT-B-01`~`RLT-B-04`）的完整字段、替换缘由与确认来源见 [`design/evidence/06-交叉审核记录-RLT03阶段合同补充.md`](evidence/06-交叉审核记录-RLT03阶段合同补充.md)与本轮 `evidence/07`。
+
+> **RLT-A-11 最小 A-adjust 2026-09-16（用户已逐条裁决开放项）**——§12 表尾补兜底类行：计划目录 / 任务工作区内未被前六类点名的持久化产物随所在目录同口径保留；新增「账本复现接力现场、workspace 文档 + git + Issue 复现施工现场」职责分层口径并回链 `HC-RL-H10`，账本 `note` 内 `commit=<sha>` 定位为顺手旁注、squash 后失效不构成契约破坏。续发 HC-RL-A151～A158 八条（RLT_23 承接 A151～A154、RLT_24 承接 A155～A158）；经 O-005 裁决本事件扩界：账本事件层新增第 20 个控制事件 `resource_close` 并冻结其 `note` wire format（§1.3 / §3.2～§3.4 同步，§12 两类终端空间「删失败怎么办」单元格给出取证路径），**修订既有行 A2（19→20 词，为本事件唯一改动的既有验收行）**；其余旧行**不退役、不改号、不复用**，退役清单不增。活动总账 140→148。复核结论、用户裁决与晋级范围见 [`evidence/11-交叉审核记录-RLT-A11-产物兜底与验收续发.md`](evidence/11-交叉审核记录-RLT-A11-产物兜底与验收续发.md)。**本行只记设计晋级，不代表 D-start、不代表验收、不代表 verify。**
 
 > **RLT-A-10 最小澄清 2026-09-15（用户已裁决）**——RLT_21 施工时发现 `HC-RL-A143` 的 oracle 期望值与本条自己冻结的分级规则不可兼得：按冻结四类逐条计级，预演 `review.plan.md` 两轮 P1 的诚实复算结果是 **3 P1 + 2 P2**，而原写的 1 P1 + 4 P2 只有额外引入未冻结的「同根去重 / 残留折级」口径才能达到。用户 2026-09-15 在两个出口中裁决取**修订 oracle 期望值**（而非补一套去重/折级规则），故本次**只改 A143 的「怎么验」列期望数字并写明计级口径**；A143 的命题列一字不改。**验收 ID 未新增、未删除、未改号**，活动总账仍为 140（AI 125 + 人验 15）。证据与逐条计级明细见 [`workspace/RLT_21/findings.md`](../workspace/RLT_21/findings.md) 的 F-009。**本行只记 oracle 澄清，不代表 D-start、不代表验收、不代表 verify。**
 
@@ -93,7 +96,7 @@ relay-light 是本仓**独立模块**，slug `relay-light`；文档 `docs/module
 | 计划粒度 | 一份计划可跨多张任务卡；落点 `docs/modules/<模块>/relay/<plan_id>/` | 一卡一计划放卡的任务工作区（跨卡编排做不了） | 高 |
 | 节点表列 | `node`｜`card`｜`stage`｜`type`｜`close`｜`depends_on`｜`note` | 无 card/stage 列（跨卡与阶段边界无处表达） | 高 |
 | 账本行结构 | 固定七字段 `seq`/`ts`/`node`/`event`/`agent`/`by`/`note`（§3.2） | 自由 note（机器配对不了） | 高 |
-| 事件词表 | 19 个，分控制事件与 agent 事件两类，白名单 fail closed | 自由字符串 | 中 |
+| 事件词表 | 20 个，分控制事件与 agent 事件两类，白名单 fail closed（RLT-A-11 新增 `resource_close` 进控制事件；新增词的实现由 RLT_24 承接） | 自由字符串 | 中 |
 | 三层词表分离 | Herdr 状态层 / 账本事件层 / 节点状态层各自独立 | 混成一张（`done` 同时指两件事） | 高 |
 | 并发协议 | 任一时刻单写者 + `open(mode='a')` 纯追加，不做临时文件替换、不加锁 | 加锁（对时间上不重叠的两个写者是多余复杂度） | 中 |
 | 角色模型配置 | 独立 `roles.toml`，流程不写死模型 | 模型写进模板（换模型要改多处） | 中 |
@@ -215,7 +218,7 @@ relay_log.py lint   --plan <dir> [--json] [--config-dir <dir>]
 | `event` | 账本事件层词表之一 |
 | `agent` | `<名字>#<attempt>`；编排用 `orchestrator#<n>`，监工用 `monitor#<n>` |
 | `by` | 写入者：`orchestrator` 或 `monitor` |
-| `note` | 自由文本 |
+| `note` | 自由文本；**例外**（RLT-A-11）：`event=resource_close` 时 `note` 按 §3.4 的关闭事件 wire format 逐键校验，非自由文本 |
 
 **终态事件与 `agent_launch` 的配对键是 `(node, agent)`**。
 
@@ -231,7 +234,7 @@ relay_log.py lint   --plan <dir> [--json] [--config-dir <dir>]
 | 层 | 取值 | 谁产生 |
 |---|---|---|
 | **Herdr 状态层** | `working` / `idle` / `done` / `blocked` / `unknown` | `herdr agent wait` 返回 |
-| **账本事件层** | 19 个，见下 | 编排与监工 |
+| **账本事件层** | 20 个，见下（RLT-A-11 新增 `resource_close`） | 编排与监工 |
 | **节点状态层** | `pending` / `ready` / `open` / `closed` | `status` 派生，不落盘；superseded 只是计划行废弃标记，不是状态值 |
 
 **两个 `done` 不是一回事**：Herdr 的 `done` 只代表 agent 停下，**只触发监工去读产出**；账本的 `done` 是**监工读完产出后的判断**，`note` 里列产出文件。
@@ -251,6 +254,7 @@ relay_log.py lint   --plan <dir> [--json] [--config-dir <dir>]
 | `stage_close` | 编排 | 每**阶段实例**一次，前置是**该实例最新 `stage_result` 的 `outcome ∈ {done, cancelled}`**，否则退出 `2` |
 | `monitor_restart` | 监工 | 任意位置，不限次 |
 | `plan_amend` | 监工 | 运行中改计划完成后写（§4.5），任意位置、不限次，**不进状态机**；`agent` 必须是 `monitor#<n>`；`note` 写方案文件名 + 新节点号列表，形如 `decision.2.md nodes=C3,C4` |
+| `resource_close` | pane 归监工（`monitor#<n>`）；终端空间（阶段空间与编排空间）与 worktree 归编排（`orchestrator#<n>`） | 关闭动作记账（RLT-A-11），任意位置、不限次，**不进状态机**；`node` 指向相应阶段第一个有效节点（编排终端空间 / worktree 取收口 F 阶段第一个有效节点），须引用存在且非 superseded 的节点，允许在 `node_close` / `stage_close` 之后记录，不要求 `agent_launch`，不改变节点 / 阶段关闭状态；同一对象多次关闭尝试逐次记账；`note` 按本节末 wire format 逐键校验，任一不合法退出 `2` 且账本字节不变 |
 
 **agent 事件**（`agent_launch`、`checkpoint`、`blocked`、`escalate`、`decision`、`user_decision`、`resume`、`done`、`agent_lost`、`cancelled`）走 `(node, agent)` 状态机：
 
@@ -292,7 +296,36 @@ user_decision <coder>          ← 永远出现，不看 decision_mode
 
 **`checkpoint` 是批内往返的唯一载体**：checker 给方案、coder 按方案修、decider 方案送回后继续，全部记 `checkpoint`，`note` 写轮次或决策文件名。`checkpoint` **可重复任意次，不新增 attempt、不新增 `agent_launch`**。attempt 只在**节点级返工**（X 阶段新节点）时从该节点的 1 重新起算。
 
-**「待复核」信号与三个 token**（RLT-A-09）：送审方与判定方同处一个节点时（W / C / X），送审方**不再靠先记 `done`** 来触发判定方，而是写一条**非终态**的 `checkpoint`，`note` 带 `ready_for_review=<判定方 agent 名>`；判定方在 `done` 的 `note` 里带 `reviewed=<送审方实例全名>` 与 `ready_seq=<该信号的 seq>`，回指自己答的是哪一轮。**账本事件层词表不变**——仍是那 19 个词，信号落在 `checkpoint` 现有的合法迁移里，agent 事件状态机的迁移表一行不改，终态封口一字不改。**判定角色闭集 = `{plan-reviewer, checker, reviewer}`**：`roles.toml` 十一个角色里只有这三个产出 PASS / FAIL 结论并可能打回；`scribe` 是收敛者，`decider` / `strategist` 是决策者，都不判定，均不在集内；集合随 `roles.toml` 变化由未来 A 事件同步，不由施工者临场扩充。**一条信号只对一个判定方，N 路就写 N 条 `checkpoint`**。这三个 token **不是**上面决策链的 helper token（`decider=` / `strategist=`），不参与决策归属校验。**R 阶段不适用**——R 节点没有同节点送审方（见 §5.2）。写入与配对的合同见 §3.5，验收见 HC-RL-A144 / A145 / A146。
+**「待复核」信号与三个 token**（RLT-A-09）：送审方与判定方同处一个节点时（W / C / X），送审方**不再靠先记 `done`** 来触发判定方，而是写一条**非终态**的 `checkpoint`，`note` 带 `ready_for_review=<判定方 agent 名>`；判定方在 `done` 的 `note` 里带 `reviewed=<送审方实例全名>` 与 `ready_seq=<该信号的 seq>`，回指自己答的是哪一轮。**账本事件层词表在 RLT-A-09 当时未扩展**——信号落在 `checkpoint` 现有的合法迁移里（RLT-A-11 新增 `resource_close` 后词表为 20 词，送审信号仍使用 `checkpoint`），agent 事件状态机的迁移表一行不改，终态封口一字不改。**判定角色闭集 = `{plan-reviewer, checker, reviewer}`**：`roles.toml` 十一个角色里只有这三个产出 PASS / FAIL 结论并可能打回；`scribe` 是收敛者，`decider` / `strategist` 是决策者，都不判定，均不在集内；集合随 `roles.toml` 变化由未来 A 事件同步，不由施工者临场扩充。**一条信号只对一个判定方，N 路就写 N 条 `checkpoint`**。这三个 token **不是**上面决策链的 helper token（`decider=` / `strategist=`），不参与决策归属校验。**R 阶段不适用**——R 节点没有同节点送审方（见 §5.2）。写入与配对的合同见 §3.5，验收见 HC-RL-A144 / A145 / A146。
+
+**关闭事件 `resource_close` 的 `note` wire format**（RLT-A-11 冻结；这是 RLT_24 的目标合同——当前实现仍为 19 词、未交付该事件能力）：JSONL 顶层七字段与 `note` 的字符串类型不变；仅当 `event=resource_close` 时启用下列完整字符串协议，不解析其他事件的自由 `note`，不新增 `status --json` 字段。
+
+```text
+object_type=pane object_id=pane-7 outcome=ok
+object_type=workspace object_id=stage-C1 outcome=failed reason=permission%20denied
+object_type=worktree object_id=%2Ftmp%2Frlt24 outcome=ok
+```
+
+| 键 | 必填 / 可选 | 解码后合法值 |
+|---|---|---|
+| `object_type` | 必填一次 | `workspace` / `pane` / `worktree`，大小写敏感闭集 |
+| `object_id` | 必填一次 | 非空、非纯空白的 UTF-8 文本；记录可辨识的真实资源标识，worktree 使用绝对路径；校验时不要求资源仍存在（关闭后可能已消失） |
+| `outcome` | 必填一次 | `ok` / `failed`，大小写敏感闭集 |
+| `reason` | 条件字段 | `failed` 必填一次且非空、非纯空白；`ok` 必须完全不存在该键（`reason=` 空值也不允许） |
+
+- token 用**一个 ASCII 空格**分隔；不允许首尾空格、连续空格、裸换行或 Tab；每个 token 恰有一个裸 `=`；键顺序不影响接收，推荐按上表顺序写出；无其它自由尾文。
+- 值先编码成 UTF-8 再作百分号编码：裸字符只允许 `[A-Za-z0-9._~-]`，其它字节写 `%HH`，接收大小写十六进制；空格用 `%20`，`+` 用 `%2B`，`=` 用 `%3D`，`%` 用 `%25`；解码只执行一次，`+` 不作为空格。非法 `%` 序列、无效 UTF-8、解码后控制字符均拒绝；标识内普通空格不被 trim 改写。
+- 所有键禁止重复（即使值相同）；未知键、缺键、空值、枚举非法、非字符串 `note` 均拒绝；不做「最后值覆盖」，不静默忽略 malformed token；不设额外可选扩展键。
+- 写入者：`object_type=pane` 记 `agent=monitor#<n>, by=monitor`；`workspace`（阶段空间与编排空间）与 `worktree` 记 `agent=orchestrator#<n>, by=orchestrator`，沿用既有实例名格式。实际执行人可为人，账本写入者记录其可观察结果，不把记录权限当成关闭资源授权。
+- `HC-RL-A85` 的写入者二分枚举系 19 词时代口径、未含 `resource_close`；`resource_close` 的法定写入者以 §3.4 控制事件表为准。
+- `note` 是事实载体，不得填凭据值；`outcome=failed` 表示关闭尝试失败，不自动等同阶段 `failed`，不自动执行删除或重试。
+
+**`add` 与 `lint` 的拒绝时点**（同一协议、同一校验集，不允许「add 接收、等 lint 才发现」）：
+
+| 入口 | 时点 | 必须行为 |
+|---|---|---|
+| `add` | CLI 输入解析后、任何账本字节追加前 | 通用行校验 → 写入者 / `node` 校验 → 完整 `note` 语法与字段校验 → `reason` 条件校验；任一不合法退出 `2`，账本字节不变；不将 `resource_close` 送进 agent 状态机 |
+| `lint` | 逐行读取、通用 JSON / 七字段 / `seq` 校验后、接受该行或派生状态前 | 对 `resource_close` 执行与 `add` 相同的语义校验；任一非法退出 `2` 并指出 `seq` / 字段及原因；只读、不修复、不补默认值；合法 `failed` 是一条合法事实，不因此判 lint 失败 |
 
 ### 3.5 账本合同（实现细节，冻结）
 
@@ -1162,7 +1195,7 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 
 > 分栏依据**验收二分**：机器能完整证明的进 AI 栏，只有需要用户凭业务判断「结果对不对 / 能不能用」的进人验栏。复合观察点已原子化，共享 E-ID 的两条分列两栏。
 >
-> **共 140 条：AI 自动验收 125 条 + 人类验收 15 条**（2026-09-11 RLT-A-06 退役 A91/A108、续发 A131～A136，AI 净增 4；退役 H2、续发 H18，人验净值 0；2026-09-14 RLT-A-08 续发 A137～A143，AI 净增 7；2026-09-15 RLT-A-09 续发 A144～A150，AI 净增 7，人验净值 0，退役清单不增）。
+> **共 148 条：AI 自动验收 133 条 + 人类验收 15 条**（2026-09-11 RLT-A-06 退役 A91/A108、续发 A131～A136，AI 净增 4；退役 H2、续发 H18，人验净值 0；2026-09-14 RLT-A-08 续发 A137～A143，AI 净增 7；2026-09-15 RLT-A-09 续发 A144～A150，AI 净增 7，人验净值 0，退役清单不增；2026-09-16 RLT-A-11 续发 A151～A158，并修订既有行 A2——账本事件层白名单 19→20 词，保号不改号，为本事件唯一改动的既有验收行；AI 净增 8，人验净值 0，退役清单不增）。
 >
 > **已退役且不再复用的 ID**：HC-RL-A1、HC-RL-A3、HC-RL-A4、HC-RL-A6、HC-RL-A20、HC-RL-A22、HC-RL-A23、HC-RL-A25、HC-RL-A64、HC-RL-A86、HC-RL-A88、HC-RL-A90、HC-RL-A91、HC-RL-A108（原子化拆分）；HC-RL-A8、HC-RL-A76、HC-RL-A79、HC-RL-H2、HC-RL-H8、HC-RL-H9（语义或结构调整）。
 
@@ -1174,7 +1207,7 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 | HC-RL-A38 | 无重复无覆盖：20 次 `add` 后行数恰为 20，历史行逐字节不变 | 单测比对写入前后前 N 行 |
 | HC-RL-A39 | 程序不产生临时文件 | 单测目录快照无新增 `.tmp`；静态检查无 `os.replace` |
 | HC-RL-A40 | 程序不加锁 | 静态检查无 `fcntl` / `msvcrt` / `filelock` 类调用 |
-| HC-RL-A2 | 账本事件层 19 词白名单 fail closed | 单测：19 个合法词全过；未知词退出码 2 且不落盘 |
+| HC-RL-A2 | 账本事件层 20 词白名单 fail closed（原 19 词加 resource_close；新增词的实现由 RLT_24 承接） | 单测：20 个合法词以各自合法上下文和字段通过；未知词退出码 2 且不落盘 |
 | HC-RL-A41 | 枚举比对区分大小写：`NODE_START` 被拒（同源教训库候选-5） | 单测 |
 | HC-RL-A42 | 静态守卫：无 `.lower()` / `.casefold()` 用于枚举归一 | 静态 grep |
 | HC-RL-A43 | `status` 输出六项齐：当前阶段、当前节点、节点状态、在场 agent 与最近事件时间、可关闭判定、不可关原因 | 单测：喂 §10.2 账本 + §10.1 plan，断言与 §10.3 样张一致 |
@@ -1295,6 +1328,14 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 | HC-RL-A148 | 向后兼容（RLT-A-09 新增；trigger 词表是**扩集不是替换**）：`on:done:<X>` 的 lint 与运行时语义与 A70 逐字一致，旧计划与已落盘账本原样通过、不需迁移；**R 模板与一切不存在 ready 信号的节点不受 A146 影响**（A146 的生效条件给出结构性保证）；同一节点内**混用** `on:done:` 与 `on:review_ready:` 两种 trigger 均被接受，两路各按自己的前置被校验；`lint` 不对 `on:done:` 报错，也不报「建议迁移」（lint 只有 0 / 2 / 3 三个退出码，无警告通道） | 单测：`rlt12-win-01` 的 `relay_plan.md` 原样过 lint 且退出 0；该计划的账本 71 行原样重放，断言逐条被接受、R 段不触发 A146；一份混用两种 trigger 的合成 plan 过 lint 并跑通一条完整账本，`on:done:` 那路按 A70 判、`on:review_ready:` 那路按 A144 判，各构造一个反例断言编号不串 |
 | HC-RL-A149 | 模板与 adapter 同步（RLT-A-09 新增；适用范围 = 送审方与判定方同处一个节点的 **W / C / X**，**R 不适用**）：`SKILL.md` 的 **W 阶段模板**中 plan-reviewer 的 trigger 由 `on:done:builder` 改为 `on:review_ready:builder`；**X 阶段模板**中被打回那路 reviewer 的 trigger 由 `on:done:coder` 改为 `on:review_ready:coder`；**C 阶段模板** trigger 列不改（checker 仍留空，A95 一字不改）但补「PASS 前不记 done」纪律原文；**R 阶段模板一字不改**。`SKILL.md` 硬规则段与两份 adapter 的监工模板各含「判定方判定 PASS 前，送审方与判定方均不记 `done`；FAIL 走 live 判定方的 `checkpoint` 路由回同一送审方；PASS 后按送审方→判定方顺序记终态」原文 | ①结构检查：五阶段模板逐一读取，断言 W 的 plan-reviewer 行与 X 的 reviewer 行取新 trigger、C 的 checker 仍留空、**R 三行与现状逐字一致**；`SKILL.md` 与两份 adapter 三处各命中该段原文。②最小账本序列测试：对 W、C、X 各跑一条合成账本，覆盖三种情形——判定方 `agent_lost` 后按 A49 合法重拉并重新消费新信号；一路 FAIL 后由**同一实例**复审至 PASS（断言无第二条 `agent_launch`）；X 两路中一路 FAIL 一路 PASS 时，另一路不被重拉也不被提前封口 |
 | HC-RL-A150 | lint 覆盖新 trigger（RLT-A-09 新增）：`trigger` 四态——空 / `on:blocked` / `on:done:<名字>` / `on:review_ready:<名字>`，非法值与引用不存在的 agent 名均拒（A35 承接）；`on:review_ready:` 与 `on:done:` 同样**只允许同节点引用**，跨节点报错（A71 承接） | 单测：四种合法 trigger 各一正例；`on:review_ready:nobody`、跨节点引用、拼写变体（如 `on:review-ready:`）各一反例，断言编号分别为 A35 / A71 / A35；**R 形态反例**：给一个没有同节点送审方的节点的 reviewer 写 `on:review_ready:coder`，断言被 A71 拒——这是「R 不适用本修订」的机械证据；另断言 §3.5 的 lint 规则映射表中 `on:review_ready:` 的两行（分别咬 A35 与 A71）存在 |
+| HC-RL-A151 | 派活通知投递确认（RLT-A-11 新增，RLT_23 承接 F-005）：skill 派活纪律段与两份 adapter 的编排/监工模板各含「向 agent 发通知后必须读 pane 末行确认实际投递；pane 出现 `queued` 排队提示时补 `send-keys enter` 并复核送达；未确认投递不得当作已通知」原文 | 结构检查三处命中该纪律原文；静态检查模板无「发出即视为送达」类软表述 |
+| HC-RL-A152 | codex 启动档位按主控侧分叉（RLT-A-11 新增，RLT_23 承接 F-006）：adapter 与派活纪律写明——Claude 主控下 codex worker 以默认 sandbox 启动、不加 `--dangerously-bypass-approvals-and-sandbox`（该 flag 被本地 auto 分类器拦；worker 只在 worktree 内写文档时默认 sandbox 已够）；Codex 主控下沿用既有 bypass 结论；不得写成无条件全局口径 | 结构检查两份 adapter 各命中分叉表述；静态检查仓内 skill 无「codex 一律 bypass」类无条件措辞 |
+| HC-RL-A153 | `agent_lost` 判据禁止 pane 状态单一来源（RLT-A-11 新增，RLT_23 承接 F-007）：监工模板写明 pane 的 `working → done` 不等于 agent 收工（长 `sleep` 中也会被报 `done`）；判 `agent_lost` 前必须同时确认 pane 无 `Running tools` 计时器在走、账本无该 agent 新行、Herdr `agent get` 状态非 working；仅凭 pane 报 `done` 不得判死重拉 | 结构检查监工模板命中三要素与「不得单凭 pane 状态」原文；与 A140「三者均无变化才中断」口径一致 |
+| HC-RL-A154 | F 阶段收口 checklist 含显式删树确认（RLT-A-11 新增，RLT_23 承接 F-003）：skill 的 F 阶段收口清单含独立一项「确认对应 worktree 已删（`git worktree list` / `git branch` 核对），先关终端空间再删树」，为可勾选确认项而非软提醒 | 结构检查 F 模板收口清单命中该项原文，且该项为独立 checklist 行 |
+| HC-RL-A155 | 独立关闭控制事件 resource_close 的基础合同（RLT_24）：第 20 事件词；note 按 §3.4 协议解析，必填 object_type/object_id/outcome，闭集、编码、重复键、未知键及写入者/节点合法性均校验；该事件不进入 agent 状态机，不改变节点或阶段派生状态。reason 条件仅由 A156 承接 | 单测分别覆盖 add 与直接植入行后的 lint：三类对象合法 ok 正例；缺基础键、空标识、非法类型/outcome、非法编码、重复键、未知键、错误 writer/node 各自退出 2，add 拒绝前后账本字节一致；合法关闭事件在终态节点后及重复尝试仍可接受，插入前后状态派生一致；本条不重复验证 reason 与 outcome 的条件关系 |
+| HC-RL-A156 | 关闭事件失败原因条件（RLT_24）：在其余字段合法时，outcome=failed 必须有非空且非纯空白的 reason，outcome=ok 必须无 reason；add 落盘前与 lint 接受行前执行同一条件校验，合法 failed 可检索且 lint 通过，不新增 status --json 字段 | 对 add 与直接植入行后的 lint 各测：failed 无 reason、reason 为空、reason 解码后纯空白，以及 ok 带非空或空 reason 均退出 2；failed 带有效原因通过并按 seq/object_id 检索到原行；add 拒绝均不改账本。所有反例保持 A155 基础字段合法 |
+| HC-RL-A157 | §12 两类终端空间「删失败怎么办」取证路径可执行（RLT-A-11 新增，RLT_24 承接 F-004）：RLT_24 **不修改设计正文**，只执行并验证 RLT-A-11 已冻结的 §12 取证路径——两类终端空间各制造至少一例可控关闭失败（实跑或打桩并明确标注），账本含合法 `resource_close outcome=failed` 行，以 `seq` / `object_id` 实际检索到该行，处置记录落 workspace 的 evidence / progress | 证据含命令与观察结果、合法失败行、按 `seq` / `object_id` 实际检索的输出、人工处置记录或明确的待人工处理状态（不冒称已处置）；结构存在与可执行取证均由本条核验 |
+| HC-RL-A158 | 历史账本向后兼容（RLT-A-11 新增，RLT_24）：引入 `resource_close` 后，原 71 行 `rlt12-win-01` 账本字节不变、全部旧行在新实现下被接受、`lint` 退出 0、与旧实现基线的稳定 `status` 字段一致（固定输入、排除动态时间字段）；含合法 `resource_close` 行的 fixture `lint` 退出 0，插入前后 agent / node / stage 派生结果一致 | 单测：71 行原样重放断言逐条接受、`lint` 退出 0、与基线 `status` 输出一致（排除动态时间字段）；含合法关闭行的 fixture 断言派生不变；不把历史兼容写成历史补记 |
 
 ### 11.2 人类验收栏
 
@@ -1323,11 +1364,14 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 | `relay_log.jsonl` 与 `relay_plan.md` | 不删 | 落在 `docs/modules/<模块>/relay/<plan_id>/`，随模块文档永久保留 | N/A |
 | `decision.<n>.md` / `check.<节点>.md` | 不删 | 随任务工作区合入保留 | N/A |
 | `review.<路径>.md` / `progress.md` / `findings.md` | 不删 | 同上 | N/A |
-| 阶段的终端空间与 pane | 监工 / 编排 | agent 干完关 pane；阶段结束编排关整个终端空间 | 报错交人，不强删 |
-| 编排的终端空间 | 人 | 全计划结束后关 | 同上 |
+| 阶段的终端空间与 pane | 监工 / 编排 | agent 干完关 pane；阶段结束编排关整个终端空间 | 由对应账本写入者按 §3.4 写 resource_close，note 含 object_type、object_id、outcome=failed 与非空 reason；以该行 seq 和 object_id 定位失败，再将账本路径/seq、观察证据和人工处置记录写入 workspace 的 evidence/progress；报错交人，不强删。记录失败也须保留原始观察证据并报错，不得宣称已落账。 |
+| 编排的终端空间 | 人 | 全计划结束后关 | 由对应账本写入者按 §3.4 写 resource_close，note 含 object_type、object_id、outcome=failed 与非空 reason；以该行 seq 和 object_id 定位失败，再将账本路径/seq、观察证据和人工处置记录写入 workspace 的 evidence/progress；报错交人，不强删。记录失败也须保留原始观察证据并报错，不得宣称已落账。 |
 | worktree | 人 / 主 session | 收口 squash 合入后删树（沿用 AGENTS 宪章）；**先关终端空间再删树** | 顺序反了会留占用，报错交人 |
+| 计划目录 / 任务工作区内、以上六类未点名的其余持久化产物（如 `relay/<plan_id>/dispatch/` 派单、`done.*.md`、`brief.md` / `task_plan.md` / `execution_strategy.md` / `lesson_candidates.md`、`evidence/` 取证目录） | 不删 | 随所在目录同口径保留——计划目录内随 `docs/modules/<模块>/relay/<plan_id>/` 永久保留，任务工作区内随工作区合入保留 | N/A |
 
 程序**不产生临时文件**（纯追加），无临时文件回收问题。「只写不删」是**显式选择**：账本与决策文件每计划几百行文本，量级不构成容量风险，且是复盘唯一证据。
+
+**两个「现场」分开复现**（RLT-A-11，承接 2026-09-16 用户裁决）：**账本**的职责是复现**接力现场**——谁在何时交棒给谁、阶段 / 节点状态如何流转、哪一步阻塞、谁救的场；**施工现场**——这一步改了什么、为什么这么改——由**任务工作区文档 + git 历史 + Issue** 复现，不由账本承担。`HC-RL-H10` 的人判尺子据此读作「只凭账本能否还原接力现场」，不要求账本独自复原施工改动；账本 `note` 内的 `commit=<sha>` 仅为顺手旁注，其指向的提交在 squash 收口后失效**不构成契约破坏**——施工现场的权威指针本来就是 git 与 Issue，不是账本 `note`。
 
 ## 13. 边界与放弃项
 
@@ -1380,6 +1424,6 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 | 密钥红线 | §13 与 skill 核心引用宪章第 6 条，HC-RL-A27 以规则原文检查为主、grep 为 smoke。 |
 | 跨语言复用风险 | 账本是 Python、现役 Runner 是 PowerShell，只能借手法不能借代码；且只借纯追加、不借原子替换。 |
 | 验收二分与原子化 | 已按机器证/人判分栏，人验栏只留业务判断。AI 栏凡含两个以上可独立失败断言的均已拆分。共享 E-ID：E-链路（HC-RL-A30 / HC-RL-H1）、E-账本（HC-RL-A31 / HC-RL-H10）。 |
-| 验收 ID 稳定性 | 包内唯一，新条目一律续号；RLT-A-06 退役 A91/A108/H2，续发 A131～A136/H18，不复用旧号；RLT-A-08 续发 A137～A143、RLT-A-09 续发 A144～A150，两者**均只续号，不退役、不改号、不复用**。完整退役清单见 §11，A131～A134 保留 `split-from`，H18 保留 `supersedes`。 |
+| 验收 ID 稳定性 | 包内唯一，新条目一律续号；RLT-A-06 退役 A91/A108/H2，续发 A131～A136/H18，不复用旧号；RLT-A-08 续发 A137～A143、RLT-A-09 续发 A144～A150、RLT-A-11 续发 A151～A158，三者**均只续号，不退役、不改号、不复用**；RLT-A-11 另**修订既有行 A2**（账本事件层白名单 19→20 词，保号不改号——经 2026-09-16 用户裁决 O-005 出口 A 授权，为本事件唯一改动的既有验收行）。完整退役清单见 §11，A131～A134 保留 `split-from`，H18 保留 `supersedes`。 |
 | 一致性对照 | 已列为 §14 第 4 条开发方案同步项。 |
 | 数据口径契约 | 本模块不涉及指标口径，N/A。 |
