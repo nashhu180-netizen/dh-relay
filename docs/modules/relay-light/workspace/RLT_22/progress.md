@@ -127,3 +127,5 @@ DONE task=RLT_22 role=builder batch=W status=W_READY evidence=D-001 next=orchest
 DONE task=RLT_22 role=audit batch=W status=FAIL evidence=review.plan.md next=orchestrator
 DONE task=RLT_22 role=builder batch=W status=W_READY evidence=task_plan.md,d1e8630 next=orchestrator
 DONE task=RLT_22 role=audit batch=W status=FAIL evidence=review.plan.md next=orchestrator
+DONE task=RLT_22 role=builder batch=W status=W_READY evidence=task_plan.md,7b317b6 next=orchestrator
+DONE task=RLT_22 role=audit batch=W status=PASS evidence=review.plan.md next=orchestrator

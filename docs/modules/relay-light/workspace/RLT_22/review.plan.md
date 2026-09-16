@@ -115,3 +115,32 @@
 ### 第二轮裁决
 
 **FAIL**。P1-2、P1-3、P1-4 与原 P2-1 已闭合；P1-1 仍因 PowerShell runner 可重建 bytecode、且计划要求删除允许路径外缓存而阻断。闭合 P1-1 后再执行模式 A；P2-2 建议同时修正。
+
+---
+
+## 第三轮
+
+- 审核对象：builder 小修提交 `7b317b6` 的 `task_plan.md`
+- 审核范围：定向核验第二轮 P1-1 残余、P2-2，并检查本次差异是否引入新问题
+- 结论：**PASS**
+
+### P1-1 — CLOSED
+
+- `task_plan.md:111,138` 的 B1/B3 全量 PowerShell runner 均已改为 `PYTHONDONTWRITEBYTECODE=1 pwsh -NoProfile -File tools/tests/run-relay-tests.ps1`；环境变量会由 pwsh 继承到 `relay-light-log.ps1` 启动的 Python 子进程，不再由该入口生成 bytecode。
+- `task_plan.md:142` 已删除“每批进场删除缓存”的范围外动作；现在明确已有 `tools/relay-light/__pycache__` 只登记为 pre-existing、核对时区分本卡新增，worker 不删除。
+- 目标 unittest、全量 unittest 与 PowerShell runner 三类入口现均不写 bytecode；验证命令和允许路径四集合核对不再互相冲突。
+
+### P2-2 — CLOSED
+
+- `task_plan.md:23,132` 已更新为当前完整模板块：W `44-55`、C `59-74`、R `76-89`、X `91-105`，硬规则从 `212` 起；与当前 `SKILL.md` 逐项一致。
+- `task_plan.md:25` 已更新为 `dh-mapping.toml` recipes `14-21`、`[limits]` 从 `24` 起、`[limits.on_exceed]` `29-35`；与当前文件一致。
+
+### 新问题检查
+
+- 提交 `7b317b6` 只修改 `task_plan.md`，差异限于上述两项整改；`git diff --check 7b317b6^ 7b317b6` 无输出。
+- 未改变七条 HC 的批次归属、六条实现硬约束、allowed-paths、RED→GREEN、批次小审或完成信号顺序。
+- 未发现新增 P0/P1/P2。
+
+### 第三轮裁决
+
+**PASS**。首轮 P1-1～P1-4、P2-1 及第二轮 P2-2 均已闭合；当前 `task_plan.md` 可交施工编排。本结论仅为模式 A 计划复核，不替代批次小审、normal 正式复核、verify、验收或后续远端闸门。
