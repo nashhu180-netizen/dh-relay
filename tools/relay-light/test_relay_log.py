@@ -690,6 +690,73 @@ class RelayPlanLintTests(RelayCliTestCase):
                 "| checker | C1 | checker | | check.md | on:done:builder | |",
             ],
         )
+        # HC-RL-A150: trigger is a four-state enum — one legal value of each passes.
+        self.write_plan(
+            agent_rows=[
+                "| builder | W1 | builder | | task_plan.md | | |",
+                "| coder | C1 | coder | | code.md | | |",
+                "| checker | C1 | checker | | check.md | on:review_ready:coder | |",
+                "| scribe | C1 | scribe | | notes.md | on:done:coder | |",
+                "| decider | C1 | decider | | decision.md | on:blocked | |",
+            ],
+        )
+        lint_plan(self.plan_path, repo_config())
+        for bad_trigger in (
+            "on:review_ready:nobody",
+            "on:review-ready:coder",
+            "on:review_ready:",
+        ):
+            with self.subTest(trigger=bad_trigger):
+                self.assert_rule(
+                    "HC-RL-A35",
+                    agent_rows=[
+                        "| builder | W1 | builder | | task_plan.md | | |",
+                        "| coder | C1 | coder | | code.md | | |",
+                        f"| checker | C1 | checker | | check.md | {bad_trigger} | |",
+                    ],
+                )
+        self.assert_rule(
+            "HC-RL-A71",
+            agent_rows=[
+                "| builder | W1 | builder | | task_plan.md | | |",
+                "| coder | C1 | coder | | code.md | | |",
+                "| checker | C1 | checker | | check.md | on:review_ready:builder | |",
+            ],
+        )
+        # R form: the reviewer names a coder that only exists in another node —
+        # A71 rejects mechanically since no same-node sender can exist.
+        self.assert_rule(
+            "HC-RL-A71",
+            node_rows=[
+                "| W1 | DHR_90 | DHR_90:W#1 | build | | | |",
+                "| C1 | DHR_90 | DHR_90:C#1 | construction | | W1 | |",
+                "| R1 | DHR_90 | DHR_90:R#1 | review | | C1 | |",
+            ],
+            agent_rows=[
+                "| builder | W1 | builder | | task_plan.md | | |",
+                "| coder | C1 | coder | | code.md | | |",
+                "| requirement | R1 | reviewer | | review.requirement.md | on:review_ready:coder | |",
+                "| lesson | R1 | reviewer | | review.lesson.md | | |",
+            ],
+        )
+
+    def test_a150_lint_mapping_table_binds_review_ready_rows(self) -> None:
+        """A150: the §3.5 lint-rule mapping table binds both `on:review_ready:` rows."""
+        design_path = (
+            Path(__file__).resolve().parents[2]
+            / "docs/modules/relay-light/design/01-RelayLight-产品设计与验收.md"
+        )
+        section = design_path.read_text(encoding="utf-8").split("### 3.5", 1)[1].split("### 3.6", 1)[0]
+        bound: dict[str, str] = {}
+        for line in section.splitlines():
+            if not line.startswith("|") or "on:review_ready:" not in line:
+                continue
+            cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+            bound[cells[-1]] = cells[0]
+        self.assertIn("HC-RL-A35", bound)
+        self.assertIn("HC-RL-A71", bound)
+        self.assertIn("引用不存在", bound["HC-RL-A35"])
+        self.assertIn("跨节点", bound["HC-RL-A71"])
 
     def test_lint_cli_smoke_uses_success_and_plan_error_contracts(self) -> None:
         self.write_plan()
@@ -1349,6 +1416,7 @@ class RelayPlanLintTests(RelayCliTestCase):
                 "| coder | W1 | coder | | code.md | | |",
                 "| scribe | W1 | scribe | | notes.md | on:done:coder | |",
                 "| decider | W1 | decider | | decision.md | on:blocked | |",
+                "| checker | W1 | checker | | check.md | on:review_ready:coder | |",
             ]
         )
         self.start_ledger()
@@ -1362,6 +1430,11 @@ class RelayPlanLintTests(RelayCliTestCase):
         self.assertRegex(waiting_scribe.stderr, r"^error: HC-RL-A70 ")
         self.assertEqual(0, self.run_add("done", agent="coder#1").returncode)
         self.assertEqual(0, self.run_add("agent_launch", agent="scribe#1").returncode)
+        # HC-RL-A144: even with coder done, an on:review_ready: launch stays
+        # fail-closed — the B1 placeholder, never the A70 on:done: branch.
+        review_launch = self.run_add("agent_launch", agent="checker#1")
+        self.assertEqual(2, review_launch.returncode)
+        self.assertRegex(review_launch.stderr, r"^error: HC-RL-A144 ")
 
         self.reset_ledger()
         self.start_ledger()
@@ -1604,6 +1677,132 @@ class RelayPlanLintTests(RelayCliTestCase):
                 self.assertEqual(0, self.run_add("escalate", agent="coder#1", note=f"{helper_prefix}={helper_instance}").returncode)
                 self.reset_ledger()
 
+
+class RelayReviewReadySignalTests(RelayCliTestCase):
+    """RLT_22 B1 — HC-RL-A144 fail-closed placeholder + HC-RL-A145 write contract."""
+
+    def write_w_plan(self) -> None:
+        self.write_plan(
+            node_rows=["| W1 | DHR_90 | DHR_90:W#1 | build | | | |"],
+            agent_rows=[
+                "| builder | W1 | builder | | task_plan.md | | |",
+                "| plan-reviewer | W1 | plan-reviewer | | review.md | on:review_ready:builder | |",
+                "| checker | W1 | checker | | check.md | | |",
+            ],
+        )
+
+    def open_node_with_builder(self) -> None:
+        self.start_ledger()
+        self.assertEqual(0, self.run_add("node_start", agent="monitor#1").returncode)
+        self.assertEqual(0, self.run_add("agent_launch", agent="builder#1").returncode)
+
+    def ledger_rows(self) -> list[dict[str, object]]:
+        path = self.plan_path.parent / "relay_log.jsonl"
+        if not path.exists():
+            return []
+        return [
+            json.loads(line)
+            for line in path.read_text(encoding="utf-8").splitlines()
+        ]
+
+    def test_a144_review_ready_launch_stays_fail_closed_in_b1(self) -> None:
+        """A144 placeholder: every on:review_ready: launch exits 2 — even when a
+        valid-looking signal exists — and never falls into the A70 branch."""
+        self.write_w_plan()
+        self.open_node_with_builder()
+        launch = self.run_add("agent_launch", agent="plan-reviewer#1")
+        self.assertEqual(2, launch.returncode)
+        self.assertRegex(launch.stderr, r"^error: HC-RL-A144 ")
+        self.assertNotIn("HC-RL-A70", launch.stderr)
+        self.assertEqual(
+            0,
+            self.run_add(
+                "checkpoint",
+                agent="builder#1",
+                note="ready_for_review=plan-reviewer 送审",
+            ).returncode,
+        )
+        baseline = (self.plan_path.parent / "relay_log.jsonl").read_bytes()
+        launch = self.run_add("agent_launch", agent="plan-reviewer#1")
+        self.assertEqual(2, launch.returncode)
+        self.assertRegex(launch.stderr, r"^error: HC-RL-A144 ")
+        self.assertEqual(
+            baseline,
+            (self.plan_path.parent / "relay_log.jsonl").read_bytes(),
+        )
+        self.assertNotIn(
+            "plan-reviewer#1",
+            [row["agent"] for row in self.ledger_rows() if row["event"] == "agent_launch"],
+        )
+
+    def test_a145_ready_signal_write_contract(self) -> None:
+        """A145: one `ready_for_review=` token per note, naming a same-node
+        judgement-role agent, written only by a non-judgement agent."""
+        self.write_w_plan()
+        self.open_node_with_builder()
+
+        self.assertEqual(
+            0,
+            self.run_add(
+                "checkpoint", agent="builder#1", note="ready_for_review=plan-reviewer"
+            ).returncode,
+        )
+        for bad_note in (
+            "ready_for_review=plan-reviewer ready_for_review=checker",
+            "ready_for_review=ghost",
+            "ready_for_review=builder",
+        ):
+            with self.subTest(note=bad_note):
+                rejected = self.run_add(
+                    "checkpoint", agent="builder#1", note=bad_note
+                )
+                self.assertEqual(2, rejected.returncode)
+                self.assertRegex(rejected.stderr, r"^error: HC-RL-A145 ")
+        # A judgement-role agent never writes the signal itself.
+        self.assertEqual(0, self.run_add("agent_launch", agent="checker#1").returncode)
+        rejected = self.run_add(
+            "checkpoint", agent="checker#1", note="ready_for_review=plan-reviewer"
+        )
+        self.assertEqual(2, rejected.returncode)
+        self.assertRegex(rejected.stderr, r"^error: HC-RL-A145 ")
+
+    def test_a145_signals_burn_no_attempt_and_have_no_add_cap(self) -> None:
+        """A145/A102: signals accompany no agent_launch, keep attempt at 1, and
+        `add` accepts more than `rework_max_rounds` (=2) consecutive signals."""
+        self.write_w_plan()
+        self.open_node_with_builder()
+        for round_ in (1, 2, 3):
+            self.assertEqual(
+                0,
+                self.run_add(
+                    "checkpoint",
+                    agent="builder#1",
+                    note=f"ready_for_review=plan-reviewer round={round_}",
+                ).returncode,
+            )
+        launches = [
+            row["agent"]
+            for row in self.ledger_rows()
+            if row["event"] == "agent_launch" and row["agent"].startswith("builder#")
+        ]
+        self.assertEqual(["builder#1"], launches)
+        # Relaunch after a loss lands exactly on #2 — the signals burned nothing.
+        self.assertEqual(0, self.run_add("agent_lost", agent="builder#1", note="失联").returncode)
+        self.assertEqual(0, self.run_add("agent_launch", agent="builder#2").returncode)
+
+    def test_a145_helper_scan_sees_decider_only(self) -> None:
+        """A69's helper-token scan does not claim `ready_for_review=`: a note
+        carrying it plus `decider=` is accepted, the helper token staying inert."""
+        self.write_w_plan()
+        self.open_node_with_builder()
+        self.assertEqual(
+            0,
+            self.run_add(
+                "checkpoint",
+                agent="builder#1",
+                note="ready_for_review=plan-reviewer decider=decider#1",
+            ).returncode,
+        )
 
 
 class RelayConfigTests(RelayCliTestCase):

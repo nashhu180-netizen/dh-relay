@@ -62,6 +62,9 @@ RELAUNCH_EXEMPT_AGENT_NAMES = frozenset(
 )
 DECISION_EVENTS = frozenset({"escalate", "decision", "user_decision", "resume", "cancelled"})
 DECISION_HELPER_NAMES = frozenset({"decider", "strategist"})
+# HC-RL-A145/A146 (RLT-A-09): the judgement-side closed set — the only roles that
+# issue PASS/FAIL and may bounce work back. Membership is read off AgentSpec.role.
+REVIEW_ROLES = frozenset({"plan-reviewer", "checker", "reviewer"})
 DEFAULT_CONFIG_DIRS = (".claude/skills/relay-light", ".codex/skills/relay-light")
 CONFIG_PATH_SAFE = "/:~-._"
 RECIPE_TIERS = frozenset({"heavy", "normal", "light"})
@@ -600,14 +603,27 @@ def lint_plan(path: str | Path, config: RelayConfig) -> Plan:
         for agent in agents_by_node[node.node]:
             if not agent.trigger or agent.trigger == "on:blocked":
                 continue
-            prefix = "on:done:"
-            if not agent.trigger.startswith(prefix) or not agent.trigger[len(prefix) :]:
+            # HC-RL-A150: four trigger states — empty and on:blocked return above;
+            # the two named prefixes share the A35/A71 checks below.
+            prefix = next(
+                (
+                    candidate
+                    for candidate in ("on:done:", "on:review_ready:")
+                    if agent.trigger.startswith(candidate)
+                    and agent.trigger[len(candidate) :]
+                ),
+                None,
+            )
+            if prefix is None:
                 raise _error("HC-RL-A35", f"line {agent.line}: invalid trigger {agent.trigger}")
             target_name = agent.trigger[len(prefix) :]
             if target_name not in agent_names_anywhere:
                 raise _error("HC-RL-A35", f"line {agent.line}: unknown trigger agent {target_name}")
             if target_name not in {candidate.agent for candidate in agents_by_node[node.node]}:
-                raise _error("HC-RL-A71", f"line {agent.line}: on:done must reference the same node")
+                raise _error(
+                    "HC-RL-A71",
+                    f"line {agent.line}: {prefix[:-1]} must reference the same node",
+                )
 
     stages_by_card: dict[str, list[str]] = {}
     for node in active_nodes:
@@ -1666,6 +1682,17 @@ def _require_trigger(plan: Plan, entries: list[dict[str, object]], node: NodeSpe
         ):
             return
         raise _error("HC-RL-A77", f"agent {name} requires a currently blocked escalation")
+    if spec.trigger.startswith("on:review_ready:"):
+        # HC-RL-A144 — RLT_22 B1 fail-closed placeholder: the full four-part
+        # precondition (current instance + latest agent event + exact
+        # ready_for_review= match) lands in B2; until then every
+        # on:review_ready: launch exits 2 as A144 instead of falling through
+        # into the on:done: branch below.
+        raise _error(
+            "HC-RL-A144",
+            f"agent {name} requires a ready_for_review signal "
+            f"from {spec.trigger.removeprefix('on:review_ready:')}",
+        )
     target = spec.trigger.removeprefix("on:done:")
     latest = _latest_by_name(entries, node.node, target)
     if latest is None or latest["event"] != "done":
@@ -1901,6 +1928,44 @@ def _validate_fix_authorization(
         )
 
 
+def _validate_ready_signal(
+    plan: Plan, node: NodeSpec, event: str, agent: str, note: str
+) -> None:
+    """HC-RL-A145: write-side contract of a `ready_for_review=` checkpoint signal.
+
+    The token count runs on the raw note — `_note_tokens` keeps only the first
+    key, so a duplicated key would silently disappear there.
+    """
+    if event != "checkpoint":
+        return
+    signals = [
+        token for token in note.split() if token.startswith("ready_for_review=")
+    ]
+    if not signals:
+        return
+    if len(signals) != 1:
+        raise _error(
+            "HC-RL-A145",
+            "checkpoint note must carry exactly one ready_for_review=<agent> token",
+        )
+    reviewer = signals[0].removeprefix("ready_for_review=")
+    specs = {spec.agent: spec for spec in _node_agents(plan, node.node)}
+    target = specs.get(reviewer)
+    if target is None or target.role not in REVIEW_ROLES:
+        raise _error(
+            "HC-RL-A145",
+            f"ready_for_review={reviewer} must name a review-role agent "
+            f"of node {node.node}",
+        )
+    writer = specs.get(_agent_parts(agent)[0])
+    if writer is not None and writer.role in REVIEW_ROLES:
+        raise _error(
+            "HC-RL-A145",
+            f"review-role agent {writer.agent} must not write "
+            "ready_for_review signals",
+        )
+
+
 def _validate_agent_transition(
     plan: Plan,
     entries: list[dict[str, object]],
@@ -2044,6 +2109,7 @@ def _validate_event_semantics(
     if event in AGENT_EVENTS:
         if event == "done" and _agent_parts(agent)[0] == "planner-amend":
             _validate_planner_amend_done_note(note)
+        _validate_ready_signal(plan, node, event, agent, note)
         _validate_decision_ownership(entries, node, event, agent, note)
         _validate_decision_mode(plan, entries, node, event, agent)
         _validate_strategist_conclusion(entries, node, event, agent)
