@@ -10,6 +10,7 @@
 | ID | 触发现场（证据 E-ID / 文件:行） | 可复用规则候选 | 状态 |
 |---|---|---|---|
 | LC-01 | check.B1.md P1-1 + E-007：`checkpoint` 不在 `DECISION_EVENTS`，端到端正例从未触达 `_decision_helper`/`_validate_decision_helper`，「A69 不误命中新 token」的断言空转 | 隔离/不串扰类断言若挂在内部解析函数上，端到端正例只能证明「没炸」、不能证明「扫了且没认」；须直接调用该解析函数断言返回值，并用一次变异（把被隔离 token 混入扫描集）证明断言会红 | ready-for-review |
+| LC-02 | B3 X 双路最小账本（E-017 fixture 修正 → E-018 GREEN）：测试把两路 `ready_for_review=` 信号连写再连拉，第二路 launch 撞 A144——闸绑的是送审方**当前实例最新事件**，后写的信号覆盖前者 | 同一送审方对 N 个判定方的拉起序列必须「写信号 → 拉起该路」逐路交错，不能「连写 N 个信号再连拉 N 个」；写 monitor/adapter 侧多路拉起逻辑时先认这条 latest-事件语义，再排时序 | ready-for-review |
 
 > 状态流：`ready-for-review`（AI 觉得可能重要）→ 人裁决 → `needs-promotion` / `promoted` / `rejected`。
 > `needs-promotion` 不阻塞收尾，但要留在升格队列可见；升格进正式教训库是**单独的维护动作**，要人批准。relay-light 模块级 `knowledge/` 的归属见 RLT_08 F-4（归 RLT_11），本卡不建。
@@ -18,4 +19,4 @@
 
 - B1（trigger 四态扩集 + 送审信号写入合同）：本批无；小审整改（P1-1）新增 LC-01（解析层隔离断言须直接钉函数 + 变异证明非空转）。
 - B2（拉起前置 + 封口配对闸）：本批无。
-- B3（止损第三套投影 + 向后兼容 + 模板/adapter 同步）：
+- B3（止损第三套投影 + 向后兼容 + 模板/adapter 同步）：新增 LC-02（多路送审拉起须「信号→拉起」逐路交错——A144 绑送审方当前实例最新事件）。

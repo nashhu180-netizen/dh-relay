@@ -2946,29 +2946,36 @@ def derive_status(
 
 @dataclass(frozen=True)
 class LossStop:
-    """§7.3/A107: the two independent counters and which of them is spent.
+    """§7.3/A107: the three independent counters and which of them is spent.
 
     ``attempts`` counts ``agent_launch`` rows per ``(node, agent name)``; a pair is
     exhausted once it sits at ``limits.attempt_max`` while its latest row still calls
     for a relaunch — the same causes HC-RL-A49 grants: ``agent_lost``/``cancelled`` or a
     later ``stage_result outcome=failed`` on the node's stage. ``x_rounds`` holds, per
     card, the highest opened ``X#k`` round; a card is exhausted once that round reaches
-    ``limits.rework_max_rounds`` and still fails. The counters never add up and never
-    reset each other: either one alone opens the strategist exit.
+    ``limits.rework_max_rounds`` and still fails. ``review_rounds`` (HC-RL-A147)
+    counts ``ready_for_review=<name>`` signals per ``(node, judgement name)``; a
+    combo is exhausted once the count reaches ``limits.rework_max_rounds`` while the
+    judgement still has no ``done`` in that node. The counters never add up and
+    never reset each other: any one alone opens the strategist exit.
     """
 
     attempts: dict[tuple[str, str], int]
     x_rounds: dict[str, int]
+    review_rounds: dict[tuple[str, str], int]
     attempt_exhausted: tuple[tuple[str, str], ...]
     x_exhausted: tuple[str, ...]
+    review_exhausted: tuple[tuple[str, str], ...]
 
     @property
     def triggered(self) -> bool:
-        return bool(self.attempt_exhausted or self.x_exhausted)
+        return bool(
+            self.attempt_exhausted or self.x_exhausted or self.review_exhausted
+        )
 
 
 def loss_stop(plan: Plan, entries: list[dict[str, object]], config: RelayConfig) -> LossStop:
-    """HC-RL-A107: read-only evaluation of both loss-stop counters against the config."""
+    """HC-RL-A107: read-only evaluation of all three loss-stop counters against the config."""
     nodes_by_name = _active_node_map(plan)
     attempts: dict[tuple[str, str], int] = {}
     for entry in entries:
@@ -3012,11 +3019,38 @@ def loss_stop(plan: Plan, entries: list[dict[str, object]], config: RelayConfig)
         )
         if k >= config.limits.rework_max_rounds and outcome == "failed":
             x_exhausted.append(card)
+    # HC-RL-A147: the third counter — ready_for_review signals per
+    # (node, judgement name), first round included. Projection only: `add`
+    # never rejects on it. A combo is spent once its count reaches
+    # limits.rework_max_rounds while that judgement still has no `done`
+    # in the node — a sealed judgement means the review concluded.
+    review_rounds: dict[tuple[str, str], int] = {}
+    for entry in entries:
+        if entry["event"] != "checkpoint":
+            continue
+        target = _note_tokens(str(entry["note"])).get("ready_for_review")
+        if target is None:
+            continue
+        combo = (str(entry["node"]), target)
+        review_rounds[combo] = review_rounds.get(combo, 0) + 1
+    review_exhausted = [
+        combo
+        for combo in sorted(review_rounds)
+        if review_rounds[combo] >= config.limits.rework_max_rounds
+        and not any(
+            entry["node"] == combo[0]
+            and entry["event"] == "done"
+            and _agent_parts(str(entry["agent"]))[0] == combo[1]
+            for entry in entries
+        )
+    ]
     return LossStop(
         attempts=attempts,
         x_rounds={card: k for card, (k, _) in opened.items()},
+        review_rounds=review_rounds,
         attempt_exhausted=tuple(attempt_exhausted),
         x_exhausted=tuple(x_exhausted),
+        review_exhausted=tuple(review_exhausted),
     )
 
 
