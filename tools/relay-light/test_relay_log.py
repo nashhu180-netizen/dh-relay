@@ -1431,7 +1431,8 @@ class RelayPlanLintTests(RelayCliTestCase):
         self.assertEqual(0, self.run_add("done", agent="coder#1").returncode)
         self.assertEqual(0, self.run_add("agent_launch", agent="scribe#1").returncode)
         # HC-RL-A144: even with coder done, an on:review_ready: launch stays
-        # fail-closed — the B1 placeholder, never the A70 on:done: branch.
+        # fail-closed without a ready_for_review signal — never the A70
+        # on:done: branch.
         review_launch = self.run_add("agent_launch", agent="checker#1")
         self.assertEqual(2, review_launch.returncode)
         self.assertRegex(review_launch.stderr, r"^error: HC-RL-A144 ")
@@ -2074,6 +2075,28 @@ class RelayReviewReadySignalTests(RelayCliTestCase):
                 agent="plan-reviewer#1",
                 note=f"reviewed=builder#1 ready_seq={seq} PASS",
             )
+        )
+
+    def test_a146_malformed_ready_seq_exits_two_not_crash(self) -> None:
+        """P2-1: `ready_seq` values that `str.isdigit()` accepts but `int()`
+        rejects (Unicode numerals like ²/四/½/①, and mixes like 1²) must exit 2
+        as HC-RL-A146 — never crash out at exit 1 — and append no row."""
+        self._review_fixture()
+        seq = self._signal("builder#1", "plan-reviewer")
+        self.assertEqual(0, self.run_add("agent_launch", agent="plan-reviewer#1").returncode)
+        self.assertEqual(0, self.run_add("done", agent="builder#1").returncode)
+        baseline = (self.plan_path.parent / "relay_log.jsonl").read_bytes()
+        for bad in ("²", "四", "½", "①", f"{seq}²", "1,000"):
+            with self.subTest(ready_seq=bad):
+                done = self.run_add(
+                    "done",
+                    agent="plan-reviewer#1",
+                    note=f"reviewed=builder#1 ready_seq={bad} PASS",
+                )
+                self.assertEqual(2, done.returncode, done.stderr)
+                self.assertRegex(done.stderr, r"^error: HC-RL-A146 ")
+        self.assertEqual(
+            baseline, (self.plan_path.parent / "relay_log.jsonl").read_bytes()
         )
 
     def test_a146_gate_is_inert_without_a_signal_for_this_agent(self) -> None:

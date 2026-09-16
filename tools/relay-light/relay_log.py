@@ -2019,7 +2019,7 @@ def _validate_review_pairing(
             "HC-RL-A146",
             f"review pairing done requires reviewed=<agent>#<n>, got {reviewed or 'none'}",
         )
-    if not ready_seq.isdigit():
+    if not (ready_seq.isascii() and ready_seq.isdigit()):
         raise _error(
             "HC-RL-A146",
             f"review pairing done requires ready_seq=<n>, got {ready_seq or 'none'}",
