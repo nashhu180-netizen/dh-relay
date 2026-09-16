@@ -1679,7 +1679,9 @@ class RelayPlanLintTests(RelayCliTestCase):
 
 
 class RelayReviewReadySignalTests(RelayCliTestCase):
-    """RLT_22 B1 — HC-RL-A144 fail-closed placeholder + HC-RL-A145 write contract."""
+    """RLT_22 — review-ready signal lifecycle: A144 launch gate, A145 write
+    contract, A146 pairing gate (the B1 fail-closed placeholder was replaced by
+    the full A144 precondition in B2)."""
 
     def write_w_plan(self) -> None:
         self.write_plan(
@@ -1705,15 +1707,22 @@ class RelayReviewReadySignalTests(RelayCliTestCase):
             for line in path.read_text(encoding="utf-8").splitlines()
         ]
 
-    def test_a144_review_ready_launch_stays_fail_closed_in_b1(self) -> None:
-        """A144 placeholder: every on:review_ready: launch exits 2 — even when a
-        valid-looking signal exists — and never falls into the A70 branch."""
+    def test_a144_launch_gate_replaces_b1_placeholder(self) -> None:
+        """A144 (B2): a current-instance signal arms the launch; without one the
+        launch still exits 2 as A144 — never A70 — and leaves the ledger
+        byte-identical. Repeat launches stay A58/A49's job, not A144's."""
         self.write_w_plan()
         self.open_node_with_builder()
+        baseline = (self.plan_path.parent / "relay_log.jsonl").read_bytes()
         launch = self.run_add("agent_launch", agent="plan-reviewer#1")
         self.assertEqual(2, launch.returncode)
         self.assertRegex(launch.stderr, r"^error: HC-RL-A144 ")
         self.assertNotIn("HC-RL-A70", launch.stderr)
+        self.assertEqual(
+            baseline,
+            (self.plan_path.parent / "relay_log.jsonl").read_bytes(),
+        )
+        # The valid signal arms the launch now — the B1 unconditional reject is gone.
         self.assertEqual(
             0,
             self.run_add(
@@ -1722,18 +1731,103 @@ class RelayReviewReadySignalTests(RelayCliTestCase):
                 note="ready_for_review=plan-reviewer 送审",
             ).returncode,
         )
-        baseline = (self.plan_path.parent / "relay_log.jsonl").read_bytes()
-        launch = self.run_add("agent_launch", agent="plan-reviewer#1")
-        self.assertEqual(2, launch.returncode)
-        self.assertRegex(launch.stderr, r"^error: HC-RL-A144 ")
         self.assertEqual(
-            baseline,
-            (self.plan_path.parent / "relay_log.jsonl").read_bytes(),
+            0, self.run_add("agent_launch", agent="plan-reviewer#1").returncode
         )
-        self.assertNotIn(
-            "plan-reviewer#1",
-            [row["agent"] for row in self.ledger_rows() if row["event"] == "agent_launch"],
+        # Repeat launches are gated by A58/A49 — the code must not be A144.
+        rejected = self.run_add("agent_launch", agent="plan-reviewer#3")
+        self.assertEqual(2, rejected.returncode)
+        self.assertRegex(rejected.stderr, r"^error: HC-RL-A58 ")
+        rejected = self.run_add("agent_launch", agent="plan-reviewer#2")
+        self.assertEqual(2, rejected.returncode)
+        self.assertRegex(rejected.stderr, r"^error: HC-RL-A49 ")
+        self.assertNotIn("HC-RL-A144", rejected.stderr)
+
+    def test_a144_rejects_without_a_current_instance_signal(self) -> None:
+        """A144's nine rejections each exit 2 as A144 — never A70."""
+        cases: list[tuple[str, bool, list[tuple[str, str]]]] = [
+            ("plain checkpoint only", True, [("checkpoint", "no token")]),
+            ("no agent events at all", False, []),
+            (
+                "signal then done",
+                True,
+                [("checkpoint", "ready_for_review=plan-reviewer"), ("done", "sealed")],
+            ),
+            (
+                "signal then agent_lost",
+                True,
+                [("checkpoint", "ready_for_review=plan-reviewer"), ("agent_lost", "gone")],
+            ),
+            (
+                "signal then cancelled",
+                True,
+                [("checkpoint", "ready_for_review=plan-reviewer"), ("cancelled", "halted")],
+            ),
+            (
+                "signal names another reviewer",
+                True,
+                [("checkpoint", "ready_for_review=checker")],
+            ),
+            (
+                "signal covered by a later plain checkpoint",
+                True,
+                [
+                    ("checkpoint", "ready_for_review=plan-reviewer"),
+                    ("checkpoint", "progress only"),
+                ],
+            ),
+            (
+                "blocked after the signal",
+                True,
+                [("checkpoint", "ready_for_review=plan-reviewer"), ("blocked", "stuck")],
+            ),
+        ]
+        for label, launched, steps in cases:
+            with self.subTest(case=label):
+                self.write_w_plan()
+                self.reset_ledger()
+                self.start_ledger()
+                self.assertEqual(
+                    0, self.run_add("node_start", agent="monitor#1").returncode
+                )
+                if launched:
+                    self.assertEqual(
+                        0, self.run_add("agent_launch", agent="builder#1").returncode
+                    )
+                for event, note in steps:
+                    self.assertEqual(
+                        0,
+                        self.run_add(event, agent="builder#1", note=note).returncode,
+                        note,
+                    )
+                rejected = self.run_add("agent_launch", agent="plan-reviewer#1")
+                self.assertEqual(2, rejected.returncode)
+                self.assertRegex(rejected.stderr, r"^error: HC-RL-A144 ")
+                self.assertNotIn("HC-RL-A70", rejected.stderr)
+
+        # Ninth rejection — stale-attempt replay: builder#1's signal must not arm
+        # builder#2; the current instance's latest event is its own launch.
+        self.write_w_plan()
+        self.reset_ledger()
+        self.start_ledger()
+        self.assertEqual(0, self.run_add("node_start", agent="monitor#1").returncode)
+        self.assertEqual(0, self.run_add("agent_launch", agent="builder#1").returncode)
+        self.assertEqual(
+            0,
+            self.run_add(
+                "checkpoint",
+                agent="builder#1",
+                note="ready_for_review=plan-reviewer",
+            ).returncode,
         )
+        self.assertEqual(
+            0, self.run_add("agent_lost", agent="builder#1", note="gone").returncode
+        )
+        self.assertEqual(0, self.run_add("agent_launch", agent="builder#2").returncode)
+        rejected = self.run_add("agent_launch", agent="plan-reviewer#1")
+        self.assertEqual(2, rejected.returncode)
+        self.assertRegex(rejected.stderr, r"^error: HC-RL-A144 ")
+        self.assertNotIn("HC-RL-A70", rejected.stderr)
 
     def test_a145_ready_signal_write_contract(self) -> None:
         """A145: one `ready_for_review=` token per note, naming a same-node
@@ -1789,6 +1883,262 @@ class RelayReviewReadySignalTests(RelayCliTestCase):
         # Relaunch after a loss lands exactly on #2 — the signals burned nothing.
         self.assertEqual(0, self.run_add("agent_lost", agent="builder#1", note="失联").returncode)
         self.assertEqual(0, self.run_add("agent_launch", agent="builder#2").returncode)
+
+    def _signal(self, sender: str, reviewer: str, node: str = "W1", note: str = "") -> int:
+        """Write a `ready_for_review` checkpoint and return its ledger seq."""
+        suffix = f" {note}" if note else ""
+        self.assertEqual(
+            0,
+            self.run_add(
+                "checkpoint",
+                node=node,
+                agent=sender,
+                note=f"ready_for_review={reviewer}{suffix}",
+            ).returncode,
+        )
+        return self._signal_seq(sender, reviewer, node)
+
+    def _signal_seq(self, agent: str, reviewer: str, node: str = "W1") -> int:
+        """Seq of the latest `ready_for_review=<reviewer>` checkpoint by <agent>."""
+        rows = [
+            row
+            for row in self.ledger_rows()
+            if row["node"] == node
+            and row["event"] == "checkpoint"
+            and row["agent"] == agent
+            and relay_log._note_tokens(str(row["note"])).get("ready_for_review")
+            == reviewer
+        ]
+        assert rows, f"no signal from {agent} to {reviewer} in {node}"
+        return int(str(rows[-1]["seq"]))
+
+    def _review_fixture(self) -> None:
+        """Fresh W-shaped ledger: node open, builder#1 live, nothing written yet."""
+        self.write_w_plan()
+        self.reset_ledger()
+        self.start_ledger()
+        self.assertEqual(0, self.run_add("node_start", agent="monitor#1").returncode)
+        self.assertEqual(0, self.run_add("agent_launch", agent="builder#1").returncode)
+
+    def _start_ledger_for(self, stage_id: str, node: str = "W1") -> None:
+        result = self.run_add(
+            "plan_loaded", node=node, agent="orchestrator#1", note="skill=0.1.0"
+        )
+        self.assertEqual(0, result.returncode, result.stderr)
+        for event in ("stage_start", "monitor_launch"):
+            result = self.run_add(
+                event, node=node, agent="orchestrator#1", note=f"stage_id={stage_id}"
+            )
+            self.assertEqual(0, result.returncode, result.stderr)
+
+    def test_a146_pairing_done_accepted_in_order(self) -> None:
+        """A146 positive: after PASS the sender seals first, then the reviewer's
+        `done` pairs `reviewed=<S>#<a>` + `ready_seq=<n>` at the latest signal."""
+        self._review_fixture()
+        self._signal("builder#1", "plan-reviewer")
+        self.assertEqual(0, self.run_add("agent_launch", agent="plan-reviewer#1").returncode)
+        # FAIL keeps the reviewer live; the reworked answer is a fresh signal.
+        self.assertEqual(
+            0,
+            self.run_add(
+                "checkpoint", agent="plan-reviewer#1", note="FAIL 整改"
+            ).returncode,
+        )
+        self._signal("builder#1", "plan-reviewer", note="round2")
+        self.assertEqual(0, self.run_add("done", agent="builder#1", note="返工完成").returncode)
+        done = self.run_add(
+            "done",
+            agent="plan-reviewer#1",
+            note="reviewed=builder#1 "
+            f"ready_seq={self._signal_seq('builder#1', 'plan-reviewer')} PASS",
+        )
+        self.assertEqual(0, done.returncode, done.stderr)
+
+    def test_a146_pairing_gate_rejections(self) -> None:
+        """A146's seven rejections each exit 2 as A146 — at done-write time."""
+
+        def assert_a146(done: subprocess.CompletedProcess[str]) -> None:
+            self.assertEqual(2, done.returncode)
+            self.assertRegex(done.stderr, r"^error: HC-RL-A146 ")
+
+        # Missing reviewed= / missing ready_seq= / malformed reviewed= / bare note.
+        self._review_fixture()
+        seq = self._signal("builder#1", "plan-reviewer")
+        self.assertEqual(0, self.run_add("agent_launch", agent="plan-reviewer#1").returncode)
+        self.assertEqual(0, self.run_add("done", agent="builder#1").returncode)
+        for note in (
+            f"ready_seq={seq} PASS",
+            "reviewed=builder#1 PASS",
+            f"reviewed=builder ready_seq={seq} PASS",
+            "PASS",
+        ):
+            with self.subTest(note=note):
+                assert_a146(self.run_add("done", agent="plan-reviewer#1", note=note))
+
+        # ready_seq pointing at an old round's signal, not the latest.
+        self._review_fixture()
+        first = self._signal("builder#1", "plan-reviewer")
+        self.assertEqual(0, self.run_add("agent_launch", agent="plan-reviewer#1").returncode)
+        self.assertEqual(
+            0, self.run_add("checkpoint", agent="plan-reviewer#1", note="FAIL").returncode
+        )
+        self._signal("builder#1", "plan-reviewer", note="round2")
+        self.assertEqual(0, self.run_add("done", agent="builder#1").returncode)
+        assert_a146(
+            self.run_add(
+                "done",
+                agent="plan-reviewer#1",
+                note=f"reviewed=builder#1 ready_seq={first} PASS",
+            )
+        )
+
+        # ready_seq pointing at a signal addressed to another reviewer.
+        self._review_fixture()
+        other = self._signal("builder#1", "checker")
+        self._signal("builder#1", "plan-reviewer")
+        self.assertEqual(0, self.run_add("agent_launch", agent="plan-reviewer#1").returncode)
+        self.assertEqual(0, self.run_add("done", agent="builder#1").returncode)
+        assert_a146(
+            self.run_add(
+                "done",
+                agent="plan-reviewer#1",
+                note=f"reviewed=builder#1 ready_seq={other} PASS",
+            )
+        )
+
+        # ready_seq pointing at a non-checkpoint row.
+        self._review_fixture()
+        self._signal("builder#1", "plan-reviewer")
+        self.assertEqual(0, self.run_add("agent_launch", agent="plan-reviewer#1").returncode)
+        self.assertEqual(0, self.run_add("done", agent="builder#1").returncode)
+        assert_a146(
+            self.run_add(
+                "done",
+                agent="plan-reviewer#1",
+                note="reviewed=builder#1 ready_seq=1 PASS",
+            )
+        )
+
+        # Cross-instance splice: ready_seq cites builder#1's signal while
+        # reviewed= names builder#2.
+        self._review_fixture()
+        old = self._signal("builder#1", "plan-reviewer")
+        self.assertEqual(0, self.run_add("agent_lost", agent="builder#1", note="gone").returncode)
+        self.assertEqual(0, self.run_add("agent_launch", agent="builder#2").returncode)
+        self._signal("builder#2", "plan-reviewer")
+        self.assertEqual(0, self.run_add("agent_launch", agent="plan-reviewer#1").returncode)
+        self.assertEqual(0, self.run_add("done", agent="builder#2").returncode)
+        assert_a146(
+            self.run_add(
+                "done",
+                agent="plan-reviewer#1",
+                note=f"reviewed=builder#2 ready_seq={old} PASS",
+            )
+        )
+
+        # The reviewed instance is still live — the reviewer cannot seal first.
+        self._review_fixture()
+        seq = self._signal("builder#1", "plan-reviewer")
+        self.assertEqual(0, self.run_add("agent_launch", agent="plan-reviewer#1").returncode)
+        assert_a146(
+            self.run_add(
+                "done",
+                agent="plan-reviewer#1",
+                note=f"reviewed=builder#1 ready_seq={seq} PASS",
+            )
+        )
+
+        # The reviewed instance is agent_lost, not done.
+        self._review_fixture()
+        seq = self._signal("builder#1", "plan-reviewer")
+        self.assertEqual(0, self.run_add("agent_launch", agent="plan-reviewer#1").returncode)
+        self.assertEqual(0, self.run_add("agent_lost", agent="builder#1", note="gone").returncode)
+        assert_a146(
+            self.run_add(
+                "done",
+                agent="plan-reviewer#1",
+                note=f"reviewed=builder#1 ready_seq={seq} PASS",
+            )
+        )
+
+    def test_a146_gate_is_inert_without_a_signal_for_this_agent(self) -> None:
+        """No signal naming this agent → no gate: R-shaped reviewers and every
+        other review-role agent keep writing ordinary `done`s."""
+        self._review_fixture()
+        self.assertEqual(0, self.run_add("agent_launch", agent="checker#1").returncode)
+        self.assertEqual(0, self.run_add("done", agent="checker#1", note="PASS").returncode)
+
+        # A signal naming plan-reviewer still does not gate checker's done.
+        self._review_fixture()
+        self._signal("builder#1", "plan-reviewer")
+        self.assertEqual(0, self.run_add("agent_launch", agent="checker#1").returncode)
+        self.assertEqual(0, self.run_add("done", agent="checker#1", note="PASS").returncode)
+
+    def test_a146_two_lanes_bind_their_own_ready_seq(self) -> None:
+        """X node, two reviewer lanes — each `done` pairs with its own latest
+        signal; one lane runs two rounds, the other one."""
+        self.write_plan(
+            node_rows=["| X1 | DHR_90 | DHR_90:X#1 | rework | | | |"],
+            agent_rows=[
+                "| coder | X1 | coder | | rework.md | | |",
+                "| requirement | X1 | reviewer | | review.md | on:review_ready:coder | |",
+                "| lesson | X1 | reviewer | | review.md | on:review_ready:coder | |",
+            ],
+        )
+        self._start_ledger_for("DHR_90:X#1", node="X1")
+        self.assertEqual(0, self.run_add("node_start", node="X1", agent="monitor#1").returncode)
+        self.assertEqual(0, self.run_add("agent_launch", node="X1", agent="coder#1").returncode)
+        # Lane requirement, round 1 → FAIL, the reviewer stays live.
+        self._signal("coder#1", "requirement", node="X1")
+        self.assertEqual(
+            0, self.run_add("agent_launch", node="X1", agent="requirement#1").returncode
+        )
+        self.assertEqual(
+            0,
+            self.run_add(
+                "checkpoint", node="X1", agent="requirement#1", note="FAIL"
+            ).returncode,
+        )
+        # Lane requirement round 2, then lane lesson's only round.
+        self._signal("coder#1", "requirement", node="X1", note="round2")
+        self._signal("coder#1", "lesson", node="X1")
+        self.assertEqual(
+            0, self.run_add("agent_launch", node="X1", agent="lesson#1").returncode
+        )
+        self.assertEqual(0, self.run_add("done", node="X1", agent="coder#1").returncode)
+        for reviewer in ("requirement", "lesson"):
+            done = self.run_add(
+                "done",
+                node="X1",
+                agent=f"{reviewer}#1",
+                note="reviewed=coder#1 "
+                f"ready_seq={self._signal_seq('coder#1', reviewer, node='X1')} PASS",
+            )
+            self.assertEqual(0, done.returncode, done.stderr)
+
+    def test_a146_rejects_at_done_write_time(self) -> None:
+        """The pairing gate fires on the `done` write itself — the row never
+        lands (ledger byte-identical), and a corrected `done` then succeeds."""
+        self._review_fixture()
+        seq = self._signal("builder#1", "plan-reviewer")
+        self.assertEqual(0, self.run_add("agent_launch", agent="plan-reviewer#1").returncode)
+        self.assertEqual(0, self.run_add("done", agent="builder#1").returncode)
+        baseline = (self.plan_path.parent / "relay_log.jsonl").read_bytes()
+        rejected = self.run_add("done", agent="plan-reviewer#1", note="PASS")
+        self.assertEqual(2, rejected.returncode)
+        self.assertRegex(rejected.stderr, r"^error: HC-RL-A146 ")
+        self.assertEqual(
+            baseline,
+            (self.plan_path.parent / "relay_log.jsonl").read_bytes(),
+        )
+        self.assertEqual(
+            0,
+            self.run_add(
+                "done",
+                agent="plan-reviewer#1",
+                note=f"reviewed=builder#1 ready_seq={seq} PASS",
+            ).returncode,
+        )
 
     def test_a145_helper_scan_sees_decider_only(self) -> None:
         """A69's helper-token scan does not claim `ready_for_review=`: a note

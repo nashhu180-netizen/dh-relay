@@ -1683,15 +1683,33 @@ def _require_trigger(plan: Plan, entries: list[dict[str, object]], node: NodeSpe
             return
         raise _error("HC-RL-A77", f"agent {name} requires a currently blocked escalation")
     if spec.trigger.startswith("on:review_ready:"):
-        # HC-RL-A144 — RLT_22 B1 fail-closed placeholder: the full four-part
-        # precondition (current instance + latest agent event + exact
-        # ready_for_review= match) lands in B2; until then every
-        # on:review_ready: launch exits 2 as A144 instead of falling through
-        # into the on:done: branch below.
+        # HC-RL-A144: the launch needs a `ready_for_review=<this agent>` signal
+        # written by <S>'s *current* instance (its max attempt in this node) and
+        # sitting as that instance's latest agent event — per-instance, never
+        # cross-attempt (_latest_for_instance, not _latest_by_name). Since that
+        # latest event is a checkpoint, the instance is necessarily non-terminal.
+        sender = spec.trigger.removeprefix("on:review_ready:")
+        attempts = [
+            _agent_parts(str(entry["agent"]))[1]
+            for entry in entries
+            if entry["node"] == node.node
+            and entry["event"] == "agent_launch"
+            and _agent_parts(str(entry["agent"]))[0] == sender
+        ]
+        latest = (
+            _latest_for_instance(entries, node.node, f"{sender}#{max(attempts)}")
+            if attempts
+            else None
+        )
+        if (
+            latest is not None
+            and latest["event"] == "checkpoint"
+            and _note_tokens(str(latest["note"])).get("ready_for_review") == name
+        ):
+            return
         raise _error(
             "HC-RL-A144",
-            f"agent {name} requires a ready_for_review signal "
-            f"from {spec.trigger.removeprefix('on:review_ready:')}",
+            f"agent {name} requires a ready_for_review signal from {sender}",
         )
     target = spec.trigger.removeprefix("on:done:")
     latest = _latest_by_name(entries, node.node, target)
@@ -1966,6 +1984,79 @@ def _validate_ready_signal(
         )
 
 
+def _validate_review_pairing(
+    entries: list[dict[str, object]], node: NodeSpec, event: str, agent: str, note: str
+) -> None:
+    """HC-RL-A146: the pairing gate on a judgement agent's `done` (RLT-A-09).
+
+    The gate is live only while this node holds at least one
+    `ready_for_review=<this agent name>` signal — with none, it is fully inert
+    and `done` follows the unchanged rules (R nodes and legacy plans untouched).
+    When live, the note must carry `reviewed=<S>#<a>` and `ready_seq=<n>`: <n>
+    must point at a `checkpoint` whose `agent` field literally equals `<S>#<a>`
+    and whose `ready_for_review=` value equals this agent's name — the latest
+    such signal in the (node, <S>#<a>, <Rv>) combination — and `<S>#<a>` must
+    already be `done` in this node (its row precedes this one). The check runs
+    at `done`-write time inside `_validate_event_semantics`, never deferred to
+    `_validate_node_close`; after `_validate_agent_transition` so a terminal
+    agent still reports A60.
+    """
+    if event != "done":
+        return
+    name, _ = _agent_parts(agent)
+    if not any(
+        entry["node"] == node.node
+        and entry["event"] == "checkpoint"
+        and _note_tokens(str(entry["note"])).get("ready_for_review") == name
+        for entry in entries
+    ):
+        return
+    tokens = _note_tokens(note)
+    reviewed = tokens.get("reviewed", "")
+    ready_seq = tokens.get("ready_seq", "")
+    if not AGENT_INSTANCE_RE.fullmatch(reviewed):
+        raise _error(
+            "HC-RL-A146",
+            f"review pairing done requires reviewed=<agent>#<n>, got {reviewed or 'none'}",
+        )
+    if not ready_seq.isdigit():
+        raise _error(
+            "HC-RL-A146",
+            f"review pairing done requires ready_seq=<n>, got {ready_seq or 'none'}",
+        )
+    pointed = next(
+        (entry for entry in entries if entry["seq"] == int(ready_seq)), None
+    )
+    combo = [
+        entry
+        for entry in entries
+        if entry["node"] == node.node
+        and entry["event"] == "checkpoint"
+        and entry["agent"] == reviewed
+        and _note_tokens(str(entry["note"])).get("ready_for_review") == name
+    ]
+    if (
+        pointed is None
+        or pointed["node"] != node.node
+        or pointed["event"] != "checkpoint"
+        or pointed["agent"] != reviewed
+        or _note_tokens(str(pointed["note"])).get("ready_for_review") != name
+        or not combo
+        or pointed is not combo[-1]
+    ):
+        raise _error(
+            "HC-RL-A146",
+            f"ready_seq={ready_seq} must point at the latest ready_for_review "
+            f"signal from {reviewed} to {name}",
+        )
+    reviewed_latest = _latest_for_instance(entries, node.node, reviewed)
+    if reviewed_latest is None or reviewed_latest["event"] != "done":
+        raise _error(
+            "HC-RL-A146",
+            f"reviewed instance {reviewed} must already be done in node {node.node}",
+        )
+
+
 def _validate_agent_transition(
     plan: Plan,
     entries: list[dict[str, object]],
@@ -2114,6 +2205,7 @@ def _validate_event_semantics(
         _validate_decision_mode(plan, entries, node, event, agent)
         _validate_strategist_conclusion(entries, node, event, agent)
         _validate_agent_transition(plan, entries, node, event, agent, note, attempt_max)
+        _validate_review_pairing(entries, node, event, agent, note)
 
 
 def _validate_writer(event: str, agent: str) -> None:
