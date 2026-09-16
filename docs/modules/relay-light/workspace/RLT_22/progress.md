@@ -150,3 +150,4 @@ DONE task=RLT_22 role=audit batch=1 status=FAIL evidence=check.B1.md next=orches
 DONE task=RLT_22 role=exec batch=1 status=READY_FOR_REVIEW evidence=E-003,E-004,E-005,E-007,e26ba55 next=orchestrator
 DONE task=RLT_22 role=audit batch=1 status=PASS evidence=check.B1.md next=orchestrator
 DONE task=RLT_22 role=exec batch=2 status=READY_FOR_REVIEW evidence=E-008,E-009,E-010,E-011,E-012,E-013,E-014,e9c1599 next=orchestrator
+DONE task=RLT_22 role=audit batch=2 status=PASS evidence=check.B2.md next=orchestrator
