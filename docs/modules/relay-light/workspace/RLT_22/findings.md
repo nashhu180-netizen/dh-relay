@@ -22,3 +22,4 @@
 ## 施工期登记
 
 - B1（2026-09-16 · exec）：本批无新增 finding。F-001、F-005～F-009 维持开工登记状态不变；`tools/relay-light/__pycache__` 在本树不存在（`PYTHONDONTWRITEBYTECODE=1` 全程生效），无 pre-existing 项需区分。
+- B1 整改（2026-09-16 · exec）：check.B1.md P1-1（`test_a145_helper_scan_sees_decider_only` 假绿——`checkpoint` 不在 `DECISION_EVENTS`，端到端正例从未触达 `_decision_helper`/`_validate_decision_helper`）已闭合：同用例追加解析层断言并以变异 RED（E-007）证明非空转；`relay_log.py` 净零改动。无新增 finding。

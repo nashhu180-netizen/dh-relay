@@ -1803,6 +1803,20 @@ class RelayReviewReadySignalTests(RelayCliTestCase):
                 note="ready_for_review=plan-reviewer decider=decider#1",
             ).returncode,
         )
+        # Parser-level pins: a checkpoint never reaches the A69 helpers, so the
+        # isolation contract is asserted on the functions themselves.
+        mixed = "ready_for_review=plan-reviewer decider=decider#1"
+        self.assertEqual("decider#1", relay_log._decision_helper(mixed))
+        self.assertEqual("decider#1", relay_log._validate_decision_helper(mixed))
+        for signal_note in (
+            "ready_for_review=plan-reviewer",
+            "ready_for_review=plan-reviewer reviewed=builder#1 ready_seq=3",
+        ):
+            with self.subTest(note=signal_note):
+                self.assertIsNone(relay_log._decision_helper(signal_note))
+                with self.assertRaises(RelayError) as raised:
+                    relay_log._validate_decision_helper(signal_note)
+                self.assertEqual("HC-RL-A69", raised.exception.code)
 
 
 class RelayConfigTests(RelayCliTestCase):
