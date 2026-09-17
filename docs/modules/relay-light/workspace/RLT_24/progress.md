@@ -23,3 +23,7 @@ DONE task=RLT_24 role=builder node=W1 status=OK ts=2026-09-17T13:20:22+08:00
 DONE task=RLT_24 role=plan-reviewer node=W2 status=REVISE ts=2026-09-17T13:22:16+08:00
   summary: 计划复核 P1=4、P2=0；A2 合法词上下文、worktree 相对路径、状态异常扫描、非字符串 note lint 退出码须整改
   artifacts: review.plan.md
+
+DONE task=RLT_24 role=builder node=W1 status=OK ts=2026-09-17T13:25:43+08:00
+  summary: 修订 r1；已处理 review.plan.md 四条 P1
+  artifacts: task_plan.md
