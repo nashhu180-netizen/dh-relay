@@ -42,3 +42,7 @@ DONE task=RLT_24 role=plan-reviewer node=W2 status=PASS ts=2026-09-17T13:26:47+0
 DONE task=RLT_24 role=coder node=C1 status=OK ts=2026-09-17T14:19:43+08:00
   summary: 新增 9 用例 + 改名 1（19→20 词）；RED exit 1/62 断言失败 → GREEN 10/10；全量 unittest 212/212 OK、pwsh 回归 RELAY ALL PASS
   artifacts: tools/relay-light/relay_log.py, tools/relay-light/test_relay_log.py, progress.md, findings.md, lesson_candidates.md, commit 2dd5d77
+
+DONE task=RLT_24 role=checker node=C1 status=FAIL ts=2026-09-17T14:38:48+08:00
+  summary: C1 审核 P1=1、P2=0；编排空间非 F 首节点被 add 接受且缺双入口负例；定向 11/11、Python 212/212、pwsh 全绿
+  artifacts: check.C1.md
