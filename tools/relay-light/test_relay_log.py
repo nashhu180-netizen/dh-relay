@@ -7654,6 +7654,199 @@ class RelayResourceCloseTests(RelayCliTestCase):
         self.assertEqual(EVENTS, successful)
 
 
+class RelayResourceCloseBackwardCompatTests(RelayCliTestCase):
+    """RLT_24 C3 — HC-RL-A158: the historical rlt12-win-01 ledger is read-only,
+    replays 71/71 through the new `add`, lints clean, projects the same stable
+    `status --json` fields as the pre-`resource_close` (master) implementation,
+    and accepts legal close rows without disturbing the projection."""
+
+    RLT12_SOURCE = (
+        Path(__file__).resolve().parents[2]
+        / "docs/modules/relay-light/relay/rlt12-win-01"
+    )
+    # `now`-derived fields — the only non-stable parts of `status --json`.
+    # `idle_seconds` = wall-clock minus the ledger's own ts; `last_ts` is
+    # ledger-sourced and stable, so it stays inside the comparison.
+    DYNAMIC_KEYS = frozenset({"idle_seconds"})
+
+    def copy_historical(self, *, with_ledger: bool = False) -> Path:
+        """Byte-copy the canonical plan (and optionally its ledger) into this
+        test's temp plan dir; the source directory is never written."""
+        shutil.copyfile(self.RLT12_SOURCE / "relay_plan.md", self.plan_path)
+        if with_ledger:
+            shutil.copyfile(
+                self.RLT12_SOURCE / "relay_log.jsonl",
+                self.plan_path.parent / "relay_log.jsonl",
+            )
+        return self.plan_path.parent
+
+    def source_ledger_rows(self) -> list[dict[str, object]]:
+        return [
+            json.loads(line)
+            for line in (self.RLT12_SOURCE / "relay_log.jsonl")
+            .read_text(encoding="utf-8")
+            .splitlines()
+        ]
+
+    def stable_document(self, payload: dict[str, object]) -> dict[str, object]:
+        """The payload minus the dynamic-time keys listed in DYNAMIC_KEYS."""
+        document = dict(payload)
+        document["agents"] = [
+            {
+                key: value
+                for key, value in agent.items()
+                if key not in self.DYNAMIC_KEYS
+            }
+            for agent in payload["agents"]
+        ]
+        return document
+
+    def baseline_impl(self) -> Path:
+        """The pre-`resource_close` implementation at master, materialized to a
+        /tmp/rlt24-* dir per the task plan; never inside the repo."""
+        base_dir = Path(tempfile.mkdtemp(prefix="rlt24-"))
+        self.addCleanup(shutil.rmtree, base_dir, True)
+        baseline = subprocess.run(
+            ["git", "show", "master:tools/relay-light/relay_log.py"],
+            cwd=Path(__file__).resolve().parents[2],
+            text=True,
+            capture_output=True,
+            check=True,
+        )
+        base_py = base_dir / "relay_log_base.py"
+        base_py.write_text(baseline.stdout, encoding="utf-8")
+        return base_py
+
+    def run_status_json(
+        self, script: Path | None, plan_dir: Path
+    ) -> subprocess.CompletedProcess[str]:
+        target = (
+            str(script)
+            if script is not None
+            else str(Path(__file__).with_name("relay_log.py"))
+        )
+        return subprocess.run(
+            [
+                sys.executable,
+                target,
+                "status",
+                "--plan",
+                str(plan_dir),
+                "--json",
+                "--config-dir",
+                str(SKILL_DIR),
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+    def test_a158_historical_source_bytes_and_71_row_replay(self) -> None:
+        """SHA-256 the canonical source before and after; all 71 rows are
+        accepted through the new `add` in order (success count exactly 71);
+        the replayed copy lints clean; the source is never written."""
+        ledger_source = self.RLT12_SOURCE / "relay_log.jsonl"
+        sha_before = hashlib.sha256(ledger_source.read_bytes()).hexdigest()
+        rows = self.source_ledger_rows()
+        self.assertEqual(71, len(rows))
+
+        self.copy_historical()
+        accepted = 0
+        for row in rows:
+            result = self.run_add(
+                str(row["event"]),
+                node=str(row["node"]),
+                agent=str(row["agent"]),
+                note=str(row["note"]),
+            )
+            self.assertEqual(
+                0,
+                result.returncode,
+                f"seq={row['seq']} rejected: {result.stderr}",
+            )
+            accepted += 1
+        self.assertEqual(71, accepted)
+
+        replayed = self.plan_path.parent / "relay_log.jsonl"
+        self.assertEqual(71, len(replayed.read_text().splitlines()))
+        lint = self.run_lint_cli(self.plan_path.parent)
+        self.assertEqual(0, lint.returncode, lint.stderr)
+        self.assertEqual("lint: ok\n", lint.stdout)
+        self.assertEqual(
+            sha_before, hashlib.sha256(ledger_source.read_bytes()).hexdigest()
+        )
+
+    def test_a158_old_and_new_status_stable_fields_equal(self) -> None:
+        """The master (19-word) implementation and the new one project the same
+        stable fields on the same copied plan+ledger — every top-level and
+        nested object compared verbatim except the dynamic-time keys in
+        DYNAMIC_KEYS (`agents[].idle_seconds`)."""
+        plan_dir = self.copy_historical(with_ledger=True)
+        base_py = self.baseline_impl()
+        old_result = self.run_status_json(base_py, plan_dir)
+        self.assertEqual(0, old_result.returncode, old_result.stderr)
+        new_result = self.run_status_json(None, plan_dir)
+        self.assertEqual(0, new_result.returncode, new_result.stderr)
+        old_doc = self.stable_document(json.loads(old_result.stdout))
+        new_doc = self.stable_document(json.loads(new_result.stdout))
+        self.assertEqual(old_doc, new_doc)
+        # both implementations emit the identical agent key set, so the
+        # idle_seconds exclusion is symmetric — not a one-sided hiding
+        self.assertEqual(
+            {tuple(sorted(a)) for a in json.loads(old_result.stdout)["agents"]},
+            {tuple(sorted(a)) for a in json.loads(new_result.stdout)["agents"]},
+        )
+
+    def test_a158_close_row_fixture_lints_and_preserves_projection(self) -> None:
+        """Legal close rows appended to the terminal 71-row copy lint clean and
+        leave the agent/node/stage projection untouched — row facts like the
+        last writer are not projected state."""
+        plan_dir = self.copy_historical(with_ledger=True)
+        before = json.loads(self.run_status_json(None, plan_dir).stdout)
+
+        ledger = plan_dir / "relay_log.jsonl"
+        appended = (
+            {
+                "node": "C1",
+                "event": "resource_close",
+                "agent": "monitor#1",
+                "by": "monitor",
+                "note": "object_type=pane object_id=pane-7 outcome=ok",
+            },
+            {
+                "node": "F1",
+                "event": "resource_close",
+                "agent": "orchestrator#1",
+                "by": "orchestrator",
+                "note": (
+                    "object_type=worktree object_id=%2Ftmp%2Frlt24 "
+                    "outcome=failed reason=permission%20denied"
+                ),
+            },
+        )
+        with ledger.open("a", encoding="utf-8", newline="") as handle:
+            for offset, row in enumerate(appended, start=72):
+                handle.write(
+                    json.dumps(
+                        {"seq": offset, "ts": "2026-09-17T10:00:00+08:00", **row},
+                        ensure_ascii=False,
+                        separators=(",", ":"),
+                    )
+                    + "\n"
+                )
+        lint = self.run_lint_cli(plan_dir)
+        self.assertEqual(0, lint.returncode, lint.stderr)
+        self.assertEqual("lint: ok\n", lint.stdout)
+
+        after = json.loads(self.run_status_json(None, plan_dir).stdout)
+        self.assertEqual(before["errors"], after["errors"])
+        self.assertEqual(before["stages"], after["stages"])
+        self.assertEqual(before["nodes"], after["nodes"])
+        self.assertEqual(
+            self.stable_document(before), self.stable_document(after)
+        )
+
+
 class RelayCliEncodingTests(RelayCliTestCase):
     """RLT_09 B5 / F-003：入口 UTF-8 防护——ascii/cp1252 stdio 下 status/lint 的
     中文输出仍按合同 exit 且 bytes 可 UTF-8 解码；不继承薄壳 PYTHONUTF8。"""
