@@ -69,3 +69,7 @@ DONE task=RLT_23 role=reviewer-lesson node=R1 status=APPROVE ts=2026-09-17T11:52
 DONE task=RLT_23 role=reviewer-consistency node=R2 status=APPROVE ts=2026-09-17T12:05:00+08:00
   summary: 一致性路复核 APPROVE，P1=0/P2=0；A151/A153 原文三处逐字命中、A152 主控侧分叉落实且无条件 bypass 反查零行、A154 F checklist 独立行在、两条回归复跑 exit 0、允许路径与非目标全符；范围外观察 1 条（A152 括号理由「被本地 auto 分类器拦」未入文本）
   artifacts: review.consistency.md, review.md
+
+DONE task=RLT_23 role=coder node=F1 status=OK ts=2026-09-17T12:09:53+08:00
+  summary: F 收口备料：review.md AI 提交区三行已按既有证据填写（人类签名区留空），两路复核范围外发现原样转入 findings.md 转派候选；提交仅含本卡 workspace 五件
+  artifacts: review.md, review.lesson.md, review.consistency.md, progress.md, findings.md, commit daa29ab
