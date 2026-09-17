@@ -1,0 +1,9 @@
+== lookup by seq ==
+seq=4 node=C1 event=resource_close agent=orchestrator#1 by=orchestrator
+  object_id(decoded)='rlt24-c4-stage-probe' note='object_type=workspace object_id=rlt24-c4-stage-probe outcome=failed reason=herdr%20workspace_not_found'
+seq=5 node=F1 event=resource_close agent=orchestrator#1 by=orchestrator
+  object_id(decoded)='rlt24-c4-orch-probe' note='object_type=workspace object_id=rlt24-c4-orch-probe outcome=failed reason=herdr%20workspace_not_found'
+== lookup by decoded object_id ==
+object_id=rlt24-c4-stage-probe -> seq=4 node=C1 outcome=failed row found
+object_id=rlt24-c4-orch-probe -> seq=5 node=F1 outcome=failed row found
+both probes resolved to exactly one ledger row each

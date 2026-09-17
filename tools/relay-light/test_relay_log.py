@@ -37,6 +37,21 @@ def repo_config() -> relay_log.RelayConfig:
     return relay_log.load_config(SKILL_DIR)
 
 
+def json_key_paths(value: object, prefix: str = "") -> set[str]:
+    """Every dict-key path of a JSON document, recursing objects and lists —
+    a `key`, `outer.inner`, or `list[].inner` shape per layer."""
+    paths: set[str] = set()
+    if isinstance(value, dict):
+        for key, item in value.items():
+            path = f"{prefix}{key}"
+            paths.add(path)
+            paths |= json_key_paths(item, f"{path}.")
+    elif isinstance(value, list):
+        for item in value:
+            paths |= json_key_paths(item, f"{prefix}[].")
+    return paths
+
+
 def home_env(home: Path) -> dict[str, str]:
     """A subprocess environment whose user home is the given directory."""
     return {**os.environ, "HOME": str(home), "USERPROFILE": str(home)}
@@ -987,8 +1002,11 @@ class RelayPlanLintTests(RelayCliTestCase):
                 self.assertEqual(4, len(rows))
                 self.assertEqual(f"before{separator}after", rows[-1]["note"])
 
-    def test_all_nineteen_event_words_pass_lexical_validation(self) -> None:
-        self.assertEqual(19, len(EVENTS))
+    def test_all_twenty_event_words_pass_lexical_validation(self) -> None:
+        """HC-RL-A2 (RLT_24): the frozen vocabulary is twenty words including
+        `resource_close`; every word passes lexical validation, none is unknown."""
+        self.assertEqual(20, len(EVENTS))
+        self.assertIn("resource_close", EVENTS)
         for event in EVENTS:
             with self.subTest(event=event):
                 _validate_event(event, "monitor#1")
@@ -6858,6 +6876,1021 @@ class RelayLedgerSilenceTests(RelayCliTestCase):
                 self.assertIn("silent_timeout", text)
                 self.assertIn("三者均无变化", text)
                 self.assertIn("不得中断", text)
+
+
+class RelayResourceCloseTests(RelayCliTestCase):
+    """RLT_24 C1/C2 — HC-RL-A2/A155/A156: `resource_close`, the twentieth ledger
+    event (§3.4), and the `reason` condition on `outcome`.
+
+    The strict note wire format, the decoded-`object_type` writer rule, and the
+    first-active-node rule run identically on the `add` pre-append path and the
+    `lint` per-row ledger scan. Rejected adds and lint runs never touch ledger
+    bytes; lint-side rejections name the row's seq and the offending field/reason.
+    """
+
+    NODE_ROWS = [
+        "| W1 | DHR_90 | DHR_90:W#1 | build | agent:builder | | |",
+        "| C1 | DHR_90 | DHR_90:C#1 | construction | agent:coder | W1 | |",
+        "| C2 | DHR_90 | DHR_90:C#1 | construction | agent:coder | C1 | |",
+        "| F1 | DHR_90 | DHR_90:F#1 | handoff | agent:scribe | C2 | |",
+    ]
+    AGENT_ROWS = [
+        "| builder | W1 | builder | | task_plan.md | | |",
+        "| coder | C1 | coder | | code.md | | |",
+        "| checker | C1 | checker | | check.C1.md | | |",
+        "| coder | C2 | coder | | code.md | | |",
+        "| scribe | F1 | scribe | | progress.md | | |",
+    ]
+    TS = "2026-09-17T10:00:00+08:00"
+
+    def write_close_plan(self, *, superseded_w0: bool = False) -> None:
+        node_rows = list(self.NODE_ROWS)
+        if superseded_w0:
+            node_rows.insert(
+                0, "| W0 | DHR_90 | DHR_90:W#1 | build | | | superseded-by:W1 |"
+            )
+        self.write_plan(node_rows=node_rows, agent_rows=list(self.AGENT_ROWS))
+
+    def ledger_path(self) -> Path:
+        return self.plan_path.parent / "relay_log.jsonl"
+
+    def ledger_bytes(self) -> bytes | None:
+        path = self.ledger_path()
+        return path.read_bytes() if path.exists() else None
+
+    def ledger_rows(self) -> list[dict[str, object]]:
+        return [
+            json.loads(line)
+            for line in self.ledger_path().read_text(encoding="utf-8").splitlines()
+        ]
+
+    def add_ok(
+        self, event: str, *, node: str = "W1", agent: str = "monitor#1", note: str = ""
+    ) -> None:
+        result = self.run_add(event, node=node, agent=agent, note=note)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual("", result.stdout)
+
+    def status_payload(self) -> dict[str, object]:
+        result = self.run_cli("status", "--plan", str(self.plan_path.parent), "--json")
+        self.assertEqual(0, result.returncode, result.stderr)
+        return json.loads(result.stdout)
+
+    def seed_plan_loaded(self) -> None:
+        """A legal first row so the `add` path reaches event semantics (HC-RL-A84)."""
+        self.add_ok("plan_loaded", agent="orchestrator#1", note="skill=0.1.0")
+
+    def lint_seed(self) -> None:
+        """One generic-valid first row ahead of directly injected rows."""
+        self.write_ledger_rows(
+            ((self.TS, "W1", "plan_loaded", "orchestrator#1", "skill=0.1.0"),)
+        )
+
+    def close_row(
+        self, *, node: str, agent: str, by: str, note: object
+    ) -> dict[str, object]:
+        return {
+            "node": node,
+            "event": "resource_close",
+            "agent": agent,
+            "by": by,
+            "note": note,
+        }
+
+    def close_note_value(self, note: str, key: str) -> str | None:
+        """Test-side single-key lookup in a close note: split on the ASCII
+        space, take the matching token's decoded value; not a validation path."""
+        for token in note.split(" "):
+            name, separator, raw = token.partition("=")
+            if separator and name == key:
+                return unquote(raw)
+        return None
+
+    def append_raw_row(self, row: dict[str, object]) -> int:
+        """Direct JSONL injection (never via `add`); returns the written seq."""
+        path = self.ledger_path()
+        seq = 1
+        if path.exists():
+            seq = (
+                sum(1 for line in path.read_text(encoding="utf-8").splitlines() if line)
+                + 1
+            )
+        payload = {"seq": seq, "ts": self.TS, **row}
+        with path.open("a", encoding="utf-8", newline="") as handle:
+            handle.write(
+                json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + "\n"
+            )
+        return seq
+
+    def assert_lint_rejected(
+        self, row: dict[str, object], *, code: str, needle: str | None = None
+    ) -> None:
+        """Inject one raw row and require `lint` rc 2 naming its seq + reason."""
+        self.reset_ledger()
+        self.lint_seed()
+        seq = self.append_raw_row(row)
+        before = self.ledger_bytes()
+        result = self.run_lint_cli(self.plan_path.parent)
+        self.assertEqual(2, result.returncode, result.stderr)
+        self.assertEqual("", result.stdout)
+        self.assertRegex(result.stderr, rf"^lint: {code} seq {seq}: ")
+        if needle is not None:
+            self.assertIn(needle, result.stderr)
+        self.assertEqual(before, self.ledger_bytes())
+
+    def assert_close_rejected_both(
+        self,
+        *,
+        note: str,
+        node: str,
+        agent: str,
+        code: str = "HC-RL-A155",
+        needle: str | None = None,
+    ) -> None:
+        """The same bad close row must fail `add` (rc 2, ledger bytes unchanged)
+        and — injected as a raw JSONL row — `lint` (rc 2 naming seq + reason)."""
+        self.reset_ledger()
+        self.seed_plan_loaded()
+        before = self.ledger_bytes()
+        result = self.run_add("resource_close", node=node, agent=agent, note=note)
+        self.assertEqual(2, result.returncode, result.stderr)
+        self.assertEqual("", result.stdout)
+        self.assertRegex(result.stderr, rf"^error: {code} ")
+        if needle is not None:
+            self.assertIn(needle, result.stderr)
+        self.assertEqual(before, self.ledger_bytes())
+        by = "orchestrator" if agent.startswith("orchestrator#") else "monitor"
+        self.assert_lint_rejected(
+            self.close_row(node=node, agent=agent, by=by, note=note),
+            code=code,
+            needle=needle,
+        )
+
+    def test_a155_three_ok_object_types_add_and_injected_lint(self) -> None:
+        """§3.4: legal pane/workspace/worktree `ok` close rows — add 0, lint 0,
+        including the same rows injected directly into the JSONL ledger."""
+        self.write_close_plan()
+        self.seed_plan_loaded()
+        cases = (
+            # object_type, wire object_id, node, agent, expected `by`
+            ("pane", "pane-7", "C1", "monitor#1", "monitor"),
+            ("workspace", "stage-C1", "C1", "orchestrator#1", "orchestrator"),
+            ("workspace", "orchestrator-ws", "F1", "orchestrator#1", "orchestrator"),
+            ("worktree", "%2Ftmp%2Frlt24", "F1", "orchestrator#1", "orchestrator"),
+        )
+        for object_type, object_id, node, agent, by in cases:
+            with self.subTest(object_type=object_type, node=node):
+                note = f"object_type={object_type} object_id={object_id} outcome=ok"
+                result = self.run_add(
+                    "resource_close", node=node, agent=agent, note=note
+                )
+                self.assertEqual(0, result.returncode, result.stderr)
+                row = self.ledger_rows()[-1]
+                self.assertEqual("resource_close", row["event"])
+                self.assertEqual(by, row["by"])
+                self.assertEqual((node, note), (row["node"], row["note"]))
+                lint = self.run_lint_cli(self.plan_path.parent)
+                self.assertEqual(0, lint.returncode, lint.stderr)
+        # identical rows injected without `add` still lint cleanly
+        self.reset_ledger()
+        self.lint_seed()
+        for object_type, object_id, node, agent, by in cases:
+            self.append_raw_row(
+                self.close_row(
+                    node=node,
+                    agent=agent,
+                    by=by,
+                    note=f"object_type={object_type} object_id={object_id} outcome=ok",
+                )
+            )
+        lint = self.run_lint_cli(self.plan_path.parent)
+        self.assertEqual(0, lint.returncode, lint.stderr)
+        self.assertEqual("lint: ok\n", lint.stdout)
+
+    def test_a155_missing_base_keys_add_and_injected_lint(self) -> None:
+        """§3.4: each missing required key fails add and lint, naming the key."""
+        self.write_close_plan()
+        cases = (
+            ("object_id=pane-7 outcome=ok", "missing object_type"),
+            ("object_type=pane outcome=ok", "missing object_id"),
+            ("object_type=pane object_id=pane-7", "missing outcome"),
+            ("", "malformed"),
+        )
+        for note, needle in cases:
+            with self.subTest(note=note):
+                self.assert_close_rejected_both(
+                    note=note, node="C1", agent="monitor#1", needle=needle
+                )
+
+    def test_a155_blank_id_invalid_type_and_outcome_add_and_lint(self) -> None:
+        """§3.4: blank/whitespace ids, enum case-sensitivity, and a relative
+        worktree path all fail both entries; interior %20 is never trimmed."""
+        self.write_close_plan()
+        cases = (
+            ("object_type=pane object_id= outcome=ok", "C1", "monitor#1"),
+            ("object_type=pane object_id=%20 outcome=ok", "C1", "monitor#1"),
+            ("object_type=slot object_id=x outcome=ok", "C1", "monitor#1"),
+            ("object_type=Pane object_id=x outcome=ok", "C1", "monitor#1"),
+            ("object_type=pane object_id=x outcome=maybe", "C1", "monitor#1"),
+            ("object_type=pane object_id=x outcome=OK", "C1", "monitor#1"),
+            (
+                "object_type=worktree object_id=relative%2Ftree outcome=ok",
+                "F1",
+                "orchestrator#1",
+            ),
+        )
+        for note, node, agent in cases:
+            with self.subTest(note=note):
+                self.assert_close_rejected_both(note=note, node=node, agent=agent)
+        # a legal identifier keeps decoded interior spaces verbatim
+        self.reset_ledger()
+        self.seed_plan_loaded()
+        note = "object_type=pane object_id=pane%207 outcome=ok"
+        self.assertEqual(
+            0,
+            self.run_add(
+                "resource_close", node="C1", agent="monitor#1", note=note
+            ).returncode,
+        )
+        self.assertEqual(note, self.ledger_rows()[-1]["note"])
+
+    def test_a155_wire_encoding_and_token_grammar_add_and_lint(self) -> None:
+        """§3.4 wire format: single-pass %-decoding, one ASCII space per token,
+        exactly one bare `=` per token, bare chars limited to [A-Za-z0-9._~-]."""
+        self.write_close_plan()
+        positives = (
+            ("object_type=pane object_id=a%20b outcome=ok", "C1", "monitor#1"),
+            ("object_type=pane object_id=a%2Bb outcome=ok", "C1", "monitor#1"),
+            ("object_type=pane object_id=a%3Db outcome=ok", "C1", "monitor#1"),
+            ("object_type=pane object_id=a%25b outcome=ok", "C1", "monitor#1"),
+            ("object_type=pane object_id=a%2fb outcome=ok", "C1", "monitor#1"),
+            ("object_type=pane object_id=%E4%B8%AD outcome=ok", "C1", "monitor#1"),
+            ("outcome=ok object_id=pane-7 object_type=pane", "C1", "monitor#1"),
+            (
+                "object_type=workspace object_id=stage-C1 "
+                "outcome=failed reason=permission%20denied",
+                "C1",
+                "orchestrator#1",
+            ),
+        )
+        self.reset_ledger()
+        self.seed_plan_loaded()
+        for note, node, agent in positives:
+            with self.subTest(note=note):
+                result = self.run_add(
+                    "resource_close", node=node, agent=agent, note=note
+                )
+                self.assertEqual(0, result.returncode, result.stderr)
+                self.assertEqual(note, self.ledger_rows()[-1]["note"])
+        lint = self.run_lint_cli(self.plan_path.parent)
+        self.assertEqual(0, lint.returncode, lint.stderr)
+        rejections = (
+            "object_type=pane object_id=a%2 outcome=ok",       # truncated escape
+            "object_type=pane object_id=a%GG outcome=ok",      # bad hex digits
+            "object_type=pane object_id=a%FFb outcome=ok",     # invalid UTF-8 byte
+            "object_type=pane object_id=a%C3%28b outcome=ok",  # broken UTF-8 run
+            "object_type=pane object_id=a%09b outcome=ok",     # decodes to a tab
+            "object_type=pane object_id=a%00b outcome=ok",     # decodes to NUL
+            "object_type=pane object_id=a+b outcome=ok",       # bare + is literal
+            "object_type=pane object_id=a\tb outcome=ok",      # bare Tab
+            "object_type=pane object_id=a\nb outcome=ok",      # bare newline
+            " object_type=pane object_id=x outcome=ok",        # leading space
+            "object_type=pane object_id=x outcome=ok ",        # trailing space
+            "object_type=pane  object_id=x outcome=ok",        # consecutive spaces
+            "object_type=pane object_id outcome=ok",           # token without =
+            "object_type=pane object_id=a=b outcome=ok",       # two bare =
+            "object_type=pane object_id=a|b outcome=ok",       # bare unsafe char
+            "object_type=pane object_id=中文 outcome=ok",      # raw non-ASCII
+        )
+        for note in rejections:
+            with self.subTest(note=note):
+                self.assert_close_rejected_both(note=note, node="C1", agent="monitor#1")
+
+    def test_a155_duplicate_unknown_and_non_string_note_add_and_lint(self) -> None:
+        """§3.4: duplicate keys (even same-value), unknown keys, and trailing free
+        text fail both entries; a non-string `note` is A155 on the lint side only —
+        `--note` cannot carry one — while an old event's non-string note stays
+        the generic `ledger`/4 failure."""
+        self.write_close_plan()
+        for note in (
+            "object_type=pane object_type=pane object_id=x outcome=ok",
+            "object_type=pane object_type=workspace object_id=x outcome=ok",
+            "object_type=pane object_id=x outcome=ok foo=bar",
+            "object_type=pane object_id=x outcome=ok tail text",
+        ):
+            with self.subTest(note=note):
+                self.assert_close_rejected_both(note=note, node="C1", agent="monitor#1")
+        for bad_note in (123, None, ["x"]):
+            with self.subTest(bad_note=bad_note):
+                self.assert_lint_rejected(
+                    self.close_row(
+                        node="C1", agent="monitor#1", by="monitor", note=bad_note
+                    ),
+                    code="HC-RL-A155",
+                    needle="note",
+                )
+        # a non-string note on an OLD event stays the generic ledger/4 failure
+        self.reset_ledger()
+        self.lint_seed()
+        self.append_raw_row(
+            {
+                "node": "W1",
+                "event": "monitor_restart",
+                "agent": "monitor#1",
+                "by": "monitor",
+                "note": 5,
+            }
+        )
+        before = self.ledger_bytes()
+        result = self.run_lint_cli(self.plan_path.parent)
+        self.assertEqual(4, result.returncode, result.stderr)
+        self.assertEqual("", result.stdout)
+        self.assertRegex(result.stderr, r"^lint: ledger ")
+        self.assertEqual(before, self.ledger_bytes())
+
+    def test_a155_wrong_writer_and_node_add_and_lint(self) -> None:
+        """§3.4: the writer follows the decoded object_type, and the node must be
+        the first active node of its stage (closing F stage for worktree)."""
+        self.write_close_plan()
+        cases = (
+            # note, node, agent, expected rule
+            (
+                "object_type=pane object_id=pane-7 outcome=ok",
+                "C1",
+                "orchestrator#1",
+                "HC-RL-A85",
+            ),
+            (
+                "object_type=workspace object_id=stage-C1 outcome=ok",
+                "C1",
+                "monitor#1",
+                "HC-RL-A85",
+            ),
+            (
+                "object_type=worktree object_id=%2Ftmp%2Ft outcome=ok",
+                "F1",
+                "monitor#1",
+                "HC-RL-A85",
+            ),
+            (
+                "object_type=workspace object_id=stage-C1 outcome=ok",
+                "C9",
+                "orchestrator#1",
+                "HC-RL-A59",
+            ),
+            (
+                "object_type=workspace object_id=stage-C1 outcome=ok",
+                "C2",
+                "orchestrator#1",
+                "HC-RL-A155",
+            ),
+            (
+                "object_type=pane object_id=pane-7 outcome=ok",
+                "C2",
+                "monitor#1",
+                "HC-RL-A155",
+            ),
+            (
+                "object_type=worktree object_id=%2Ftmp%2Ft outcome=ok",
+                "C1",
+                "orchestrator#1",
+                "HC-RL-A155",
+            ),
+            (
+                "object_type=worktree object_id=%2Ftmp%2Ft outcome=ok",
+                "W1",
+                "orchestrator#1",
+                "HC-RL-A155",
+            ),
+            (
+                "object_type=pane object_id=pane-7 outcome=ok",
+                "C1",
+                "coder#1",
+                "HC-RL-A69",
+            ),
+        )
+        for note, node, agent, code in cases:
+            with self.subTest(note=note, node=node, agent=agent):
+                self.assert_close_rejected_both(
+                    note=note, node=node, agent=agent, code=code
+                )
+        # a superseded node fails identically on both entries
+        self.write_close_plan(superseded_w0=True)
+        self.assert_close_rejected_both(
+            note="object_type=workspace object_id=stage-W1 outcome=ok",
+            node="W0",
+            agent="orchestrator#1",
+            code="HC-RL-A59",
+        )
+        # `by` can only disagree with the agent prefix in an injected row
+        self.write_close_plan()
+        for row in (
+            self.close_row(
+                node="C1",
+                agent="monitor#1",
+                by="orchestrator",
+                note="object_type=pane object_id=pane-7 outcome=ok",
+            ),
+            self.close_row(
+                node="C1",
+                agent="orchestrator#1",
+                by="monitor",
+                note="object_type=workspace object_id=stage-C1 outcome=ok",
+            ),
+        ):
+            self.assert_lint_rejected(row, code="HC-RL-A85")
+
+    def test_a155_after_terminal_and_repeated_close_preserve_projection(self) -> None:
+        """Close rows stay legal after node_close/stage_close and on never-started
+        stages, repeat freely with their own seq, need no agent_launch, and leave
+        the node/stage/agent projection and `errors` untouched."""
+        self.write_close_plan()
+        self.add_ok("plan_loaded", agent="orchestrator#1", note="skill=0.1.0")
+        self.add_ok("stage_start", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
+        self.add_ok("monitor_launch", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
+        self.add_ok("node_start", node="W1")
+        self.add_ok("agent_launch", node="W1", agent="builder#1")
+        self.add_ok("done", node="W1", agent="builder#1")
+        self.add_ok("node_close", node="W1")
+        self.add_ok(
+            "stage_result", node="W1", note="stage_id=DHR_90:W#1 outcome=done"
+        )
+        self.add_ok("stage_close", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
+        before = self.status_payload()
+        self.assertEqual([], before["errors"])
+
+        self.add_ok(
+            "resource_close",
+            node="W1",
+            agent="monitor#1",
+            note="object_type=pane object_id=pane-7 outcome=ok",
+        )
+        pane_close_seq = self.ledger_rows()[-1]["seq"]
+        self.add_ok(
+            "resource_close",
+            node="W1",
+            agent="orchestrator#1",
+            note="object_type=workspace object_id=stage-W1 outcome=ok",
+        )
+        self.add_ok(
+            "resource_close",
+            node="W1",
+            agent="monitor#1",
+            note="object_type=pane object_id=pane-7 outcome=ok",
+        )
+        self.add_ok(
+            "resource_close",
+            node="F1",
+            agent="orchestrator#1",
+            note="object_type=worktree object_id=%2Ftmp%2Frlt24 outcome=ok",
+        )
+        rows = self.ledger_rows()
+        # the repeated close of the same object is its own row
+        self.assertEqual(pane_close_seq + 2, rows[-2]["seq"])
+        self.assertEqual("resource_close", rows[-2]["event"])
+        self.assertEqual("object_type=pane", rows[-2]["note"].split(" ")[0])
+
+        after = self.status_payload()
+        volatile = {"agents", "errors"}
+        self.assertEqual(
+            {key: value for key, value in before.items() if key not in volatile},
+            {key: value for key, value in after.items() if key not in volatile},
+        )
+        self.assertEqual([], after["errors"])
+        self.assertEqual(
+            [
+                {key: value for key, value in agent.items() if key != "idle_seconds"}
+                for agent in before["agents"]
+            ],
+            [
+                {key: value for key, value in agent.items() if key != "idle_seconds"}
+                for agent in after["agents"]
+            ],
+        )
+        # no agent_launch happened for the close writers — they stay out of agents
+        self.assertEqual(["builder#1"], [agent["agent"] for agent in after["agents"]])
+
+    def test_a155_status_warnings_preserve_old_a85_a93(self) -> None:
+        """The close-row exemption in `_ledger_warnings` must not relax old checks:
+        a planted wrong-`by` old row still warns A85, a planted post-stage_close
+        old event still warns A93, and two legal close rows add no warnings."""
+        self.write_close_plan()
+        rows = [
+            dict(
+                node="W1", event="plan_loaded", agent="orchestrator#1",
+                by="orchestrator", note="skill=0.1.0",
+            ),
+            dict(
+                node="W1", event="stage_start", agent="orchestrator#1",
+                by="orchestrator", note="stage_id=DHR_90:W#1",
+            ),
+            dict(
+                node="W1", event="monitor_launch", agent="orchestrator#1",
+                by="orchestrator", note="stage_id=DHR_90:W#1",
+            ),
+            dict(
+                node="W1", event="node_start", agent="monitor#1",
+                by="orchestrator", note="",
+            ),
+            dict(
+                node="W1", event="node_close", agent="monitor#1",
+                by="monitor", note="",
+            ),
+            dict(
+                node="W1", event="stage_close", agent="orchestrator#1",
+                by="orchestrator", note="stage_id=DHR_90:W#1",
+            ),
+            dict(
+                node="W1", event="monitor_restart", agent="monitor#1",
+                by="monitor", note="",
+            ),
+            self.close_row(
+                node="W1", agent="monitor#1", by="monitor",
+                note="object_type=pane object_id=pane-7 outcome=ok",
+            ),
+            self.close_row(
+                node="W1", agent="orchestrator#1", by="orchestrator",
+                note="object_type=workspace object_id=stage-W1 outcome=ok",
+            ),
+        ]
+        self.ledger_path().write_text(
+            "\n".join(
+                json.dumps(
+                    {"seq": seq, "ts": self.TS, **row},
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                )
+                for seq, row in enumerate(rows, start=1)
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        payload = self.status_payload()
+        self.assertEqual(
+            [
+                "seq 4: HC-RL-A85 node_start must be written by monitor, not orchestrator",
+                "seq 7: HC-RL-A93 monitor_restart for DHR_90:W#1 follows its "
+                "stage_close at seq 6",
+            ],
+            payload["errors"],
+        )
+
+    def test_a156_five_reason_rejections_add_and_injected_lint(self) -> None:
+        """HC-RL-A156: with the three base fields legal, `failed` requires a
+        non-empty non-blank `reason` and `ok` forbids the key entirely — all
+        five violations fail `add` (ledger bytes unchanged) and, injected as
+        raw rows, `lint` (naming seq + the reason field)."""
+        self.write_close_plan()
+        cases = (
+            ("failed-no-reason",
+             "object_type=pane object_id=pane-7 outcome=failed",
+             "requires a reason"),
+            ("failed-empty-reason",
+             "object_type=pane object_id=pane-7 outcome=failed reason=",
+             "non-empty"),
+            ("failed-blank-reason",
+             "object_type=pane object_id=pane-7 outcome=failed reason=%20",
+             "non-empty"),
+            ("ok-with-reason",
+             "object_type=pane object_id=pane-7 outcome=ok reason=because",
+             "must not carry a reason"),
+            ("ok-with-empty-reason",
+             "object_type=pane object_id=pane-7 outcome=ok reason=",
+             "must not carry a reason"),
+        )
+        executed = 0
+        for label, note, needle in cases:
+            with self.subTest(case=label):
+                self.assert_close_rejected_both(
+                    note=note,
+                    node="C1",
+                    agent="monitor#1",
+                    code="HC-RL-A156",
+                    needle=needle,
+                )
+                executed += 1
+        # each of the five counterexamples really ran both entry points
+        self.assertEqual(5, executed)
+
+    def test_a156_failed_reason_search_and_status_schema(self) -> None:
+        """HC-RL-A156: a legal `failed` row is a queryable fact — add/lint 0,
+        the JSONL row is retrievable by seq + decoded object_id with its reason
+        intact, `status --json` grows no field at any object layer, and the
+        failed close does not turn the stage failed."""
+        self.write_close_plan()
+        self.add_ok("plan_loaded", agent="orchestrator#1", note="skill=0.1.0")
+        self.add_ok(
+            "stage_start", agent="orchestrator#1", note="stage_id=DHR_90:W#1"
+        )
+        self.add_ok(
+            "monitor_launch", agent="orchestrator#1", note="stage_id=DHR_90:W#1"
+        )
+        self.add_ok("node_start", node="W1")
+        self.add_ok("agent_launch", node="W1", agent="builder#1")
+        self.add_ok("done", node="W1", agent="builder#1")
+        self.add_ok("node_close", node="W1")
+        self.add_ok(
+            "stage_result", node="W1", note="stage_id=DHR_90:W#1 outcome=done"
+        )
+        self.add_ok(
+            "stage_close", agent="orchestrator#1", note="stage_id=DHR_90:W#1"
+        )
+        self.add_ok(
+            "stage_start", node="C1", agent="orchestrator#1",
+            note="stage_id=DHR_90:C#1",
+        )
+        self.add_ok(
+            "monitor_launch", node="C1", agent="orchestrator#1",
+            note="stage_id=DHR_90:C#1",
+        )
+        before = self.status_payload()
+        self.assertEqual([], before["errors"])
+
+        note = (
+            "object_type=workspace object_id=stage-C1 "
+            "outcome=failed reason=permission%20denied"
+        )
+        self.add_ok(
+            "resource_close", node="C1", agent="orchestrator#1", note=note
+        )
+        close_seq = self.ledger_rows()[-1]["seq"]
+        lint = self.run_lint_cli(self.plan_path.parent)
+        self.assertEqual(0, lint.returncode, lint.stderr)
+        self.assertEqual("lint: ok\n", lint.stdout)
+
+        # retrieve the original row by seq AND decoded object_id; reason intact
+        matches = [
+            row
+            for row in self.ledger_rows()
+            if row["seq"] == close_seq
+            and self.close_note_value(str(row["note"]), "object_id")
+            == "stage-C1"
+        ]
+        self.assertEqual(1, len(matches))
+        row = matches[0]
+        self.assertEqual("resource_close", row["event"])
+        self.assertEqual(
+            "permission denied",
+            self.close_note_value(str(row["note"]), "reason"),
+        )
+
+        after = self.status_payload()
+        self.assertEqual([], after["errors"])
+        # identical key sets at the top level and every nested object layer
+        self.assertEqual(json_key_paths(before), json_key_paths(after))
+        volatile = {"agents", "errors"}
+        self.assertEqual(
+            {key: value for key, value in before.items() if key not in volatile},
+            {key: value for key, value in after.items() if key not in volatile},
+        )
+        self.assertEqual(
+            [
+                {key: value for key, value in agent.items() if key != "idle_seconds"}
+                for agent in before["agents"]
+            ],
+            [
+                {key: value for key, value in agent.items() if key != "idle_seconds"}
+                for agent in after["agents"]
+            ],
+        )
+        # a failed close is a fact row, not a stage result — C#1 stays open
+        c_stage = next(
+            stage
+            for stage in after["stages"]
+            if stage["stage_id"] == "DHR_90:C#1"
+        )
+        self.assertEqual("open", c_stage["state"])
+        self.assertIsNone(c_stage["result"])
+
+    def test_a2_all_twenty_events_in_legal_runtime_contexts(self) -> None:
+        """HC-RL-A2: each of the twenty event words succeeds through `add` in a
+        legal context; the collected set equals EVENTS exactly."""
+        successful: set[str] = set()
+
+        def expect_ok(
+            event: str, *, node: str = "W1", agent: str = "monitor#1", note: str = ""
+        ) -> None:
+            result = self.run_add(event, node=node, agent=agent, note=note)
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertEqual("", result.stdout)
+            rows = self.ledger_rows()
+            self.assertEqual(len(rows), rows[-1]["seq"])
+            self.assertEqual(event, rows[-1]["event"])
+            successful.add(event)
+
+        # fixture A — W stage to full close, then an open C stage (auto mode)
+        self.write_close_plan()
+        expect_ok("plan_loaded", agent="orchestrator#1", note="skill=0.1.0")
+        expect_ok("stage_start", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
+        expect_ok("monitor_launch", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
+        expect_ok("node_start")
+        expect_ok("agent_launch", agent="builder#1")
+        expect_ok("checkpoint", agent="builder#1", note="轮次 1")
+        expect_ok("done", agent="builder#1")
+        expect_ok("node_close")
+        expect_ok("stage_result", note="stage_id=DHR_90:W#1 outcome=done")
+        expect_ok("stage_close", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
+        expect_ok(
+            "stage_start", node="C1", agent="orchestrator#1",
+            note="stage_id=DHR_90:C#1",
+        )
+        expect_ok(
+            "monitor_launch", node="C1", agent="orchestrator#1",
+            note="stage_id=DHR_90:C#1",
+        )
+        expect_ok("monitor_restart", node="C1")
+        expect_ok("plan_amend", node="C1", note="decision.2.md nodes=C3,C4")
+        expect_ok("node_start", node="C1")
+        expect_ok("agent_launch", node="C1", agent="coder#1")
+        expect_ok("blocked", node="C1", agent="coder#1")
+        expect_ok("escalate", node="C1", agent="coder#1", note="decider=decider#1")
+        expect_ok("decision", node="C1", agent="coder#1", note="decider=decider#1")
+        expect_ok(
+            "resource_close", node="C1", agent="monitor#1",
+            note="object_type=pane object_id=pane-7 outcome=ok",
+        )
+
+        # fixture B — consult mode: user_decision then resume on the decider chain
+        self.reset_ledger()
+        self.write_single_node_plan(
+            ["| coder | W1 | coder | | code.md | | |"], decision_mode="consult"
+        )
+        self.start_ledger()
+        expect_ok("node_start")
+        expect_ok("agent_launch", agent="coder#1")
+        expect_ok("blocked", agent="coder#1")
+        expect_ok("escalate", agent="coder#1", note="decider=decider#1")
+        expect_ok("decision", agent="coder#1", note="decider=decider#1")
+        expect_ok("user_decision", agent="coder#1", note="approve: 同意")
+        expect_ok("resume", agent="coder#1")
+
+        # fixture C — strategist chain ends in cancelled (auto mode)
+        self.reset_ledger()
+        self.write_single_node_plan(["| coder | W1 | coder | | code.md | | |"])
+        self.start_ledger()
+        expect_ok("node_start")
+        expect_ok("agent_launch", agent="coder#1")
+        expect_ok(
+            "escalate", agent="coder#1",
+            note="strategist=strategist#1 原因=rework 超限",
+        )
+        expect_ok("agent_launch", agent="strategist#1")
+        expect_ok(
+            "decision", agent="coder#1", note="strategist=strategist#1 strategy.1.md"
+        )
+        expect_ok("done", agent="strategist#1")
+        expect_ok("user_decision", agent="coder#1", note="reject: 停卡")
+        expect_ok("cancelled", agent="coder#1", note="引用 user_decision 停卡")
+
+        # fixture D — a live agent may be recorded lost
+        self.reset_ledger()
+        self.write_single_node_plan(["| coder | W1 | coder | | code.md | | |"])
+        self.start_ledger()
+        expect_ok("node_start")
+        expect_ok("agent_launch", agent="coder#1")
+        expect_ok("agent_lost", agent="coder#1", note="pane 失联")
+
+        self.assertEqual(20, len(EVENTS))
+        self.assertEqual(EVENTS, successful)
+
+
+class RelayResourceCloseBackwardCompatTests(RelayCliTestCase):
+    """RLT_24 C3 — HC-RL-A158: the historical rlt12-win-01 ledger is read-only,
+    replays 71/71 through the new `add`, lints clean, projects the same stable
+    `status --json` fields as the pre-`resource_close` (pinned baseline)
+    implementation, and accepts legal close rows without disturbing the
+    projection."""
+
+    RLT12_SOURCE = (
+        Path(__file__).resolve().parents[2]
+        / "docs/modules/relay-light/relay/rlt12-win-01"
+    )
+    # `now`-derived fields — the only non-stable parts of `status --json`.
+    # `idle_seconds` = wall-clock minus the ledger's own ts; `last_ts` is
+    # ledger-sourced and stable, so it stays inside the comparison.
+    DYNAMIC_KEYS = frozenset({"idle_seconds"})
+    # RLT_24 X1 — the pre-`resource_close` baseline is pinned to this card's
+    # base commit (master at D-start). A moving ref breaks twice: shallow CI
+    # checkouts (actions/checkout fetch-depth=1, detached HEAD) resolve no
+    # `master`, and after this card merges `master` itself would contain
+    # resource_close and degrade the comparison to a self-comparison.
+    BASELINE_SHA = "b41cd2d9e48814c93352f969a085971a60546565"
+    BASELINE_PATH = "tools/relay-light/relay_log.py"
+
+    def copy_historical(self, *, with_ledger: bool = False) -> Path:
+        """Byte-copy the canonical plan (and optionally its ledger) into this
+        test's temp plan dir; the source directory is never written."""
+        shutil.copyfile(self.RLT12_SOURCE / "relay_plan.md", self.plan_path)
+        if with_ledger:
+            shutil.copyfile(
+                self.RLT12_SOURCE / "relay_log.jsonl",
+                self.plan_path.parent / "relay_log.jsonl",
+            )
+        return self.plan_path.parent
+
+    def source_ledger_rows(self) -> list[dict[str, object]]:
+        return [
+            json.loads(line)
+            for line in (self.RLT12_SOURCE / "relay_log.jsonl")
+            .read_text(encoding="utf-8")
+            .splitlines()
+        ]
+
+    def stable_document(self, payload: dict[str, object]) -> dict[str, object]:
+        """The payload minus the dynamic-time keys listed in DYNAMIC_KEYS."""
+        document = dict(payload)
+        document["agents"] = [
+            {
+                key: value
+                for key, value in agent.items()
+                if key not in self.DYNAMIC_KEYS
+            }
+            for agent in payload["agents"]
+        ]
+        return document
+
+    def baseline_impl(self) -> Path:
+        """The pre-`resource_close` implementation at BASELINE_SHA,
+        materialized to a /tmp/rlt24-* dir per the task plan; never inside
+        the repo. Shallow CI checkouts lack the pinned object, so it is
+        fetched from origin on demand; a fetch that cannot supply it is a
+        loud failure with the reason, never a silent skip — A158 must keep
+        its evidential force on the CI gate jobs."""
+        repo = Path(__file__).resolve().parents[2]
+        base_dir = Path(tempfile.mkdtemp(prefix="rlt24-"))
+        self.addCleanup(shutil.rmtree, base_dir, True)
+        spec = f"{self.BASELINE_SHA}:{self.BASELINE_PATH}"
+        present = subprocess.run(
+            ["git", "cat-file", "-e", spec],
+            cwd=repo,
+            capture_output=True,
+            check=False,
+        )
+        if present.returncode != 0:
+            fetched = subprocess.run(
+                ["git", "fetch", "--depth=1", "origin", self.BASELINE_SHA],
+                cwd=repo,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            present = subprocess.run(
+                ["git", "cat-file", "-e", spec],
+                cwd=repo,
+                capture_output=True,
+                check=False,
+            )
+            if fetched.returncode != 0 or present.returncode != 0:
+                detail = (fetched.stderr or fetched.stdout).strip()
+                if fetched.returncode == 0:
+                    detail = "fetch reported success but the object is absent"
+                self.fail(
+                    f"A158 baseline unavailable: `git cat-file -e {spec}` "
+                    f"failed and `git fetch --depth=1 origin "
+                    f"{self.BASELINE_SHA}` did not supply it "
+                    f"(rc={fetched.returncode}: {detail}). The pinned "
+                    "baseline must be fetchable from origin; refusing to "
+                    "silently skip the old-vs-new comparison."
+                )
+        baseline = subprocess.run(
+            ["git", "show", spec],
+            cwd=repo,
+            text=True,
+            capture_output=True,
+            check=True,
+        )
+        base_py = base_dir / "relay_log_base.py"
+        base_py.write_text(baseline.stdout, encoding="utf-8")
+        return base_py
+
+    def run_status_json(
+        self, script: Path | None, plan_dir: Path
+    ) -> subprocess.CompletedProcess[str]:
+        target = (
+            str(script)
+            if script is not None
+            else str(Path(__file__).with_name("relay_log.py"))
+        )
+        return subprocess.run(
+            [
+                sys.executable,
+                target,
+                "status",
+                "--plan",
+                str(plan_dir),
+                "--json",
+                "--config-dir",
+                str(SKILL_DIR),
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+    def test_a158_historical_source_bytes_and_71_row_replay(self) -> None:
+        """SHA-256 the canonical source before and after; all 71 rows are
+        accepted through the new `add` in order (success count exactly 71);
+        the replayed copy lints clean; the source is never written."""
+        ledger_source = self.RLT12_SOURCE / "relay_log.jsonl"
+        sha_before = hashlib.sha256(ledger_source.read_bytes()).hexdigest()
+        rows = self.source_ledger_rows()
+        self.assertEqual(71, len(rows))
+
+        self.copy_historical()
+        accepted = 0
+        for row in rows:
+            result = self.run_add(
+                str(row["event"]),
+                node=str(row["node"]),
+                agent=str(row["agent"]),
+                note=str(row["note"]),
+            )
+            self.assertEqual(
+                0,
+                result.returncode,
+                f"seq={row['seq']} rejected: {result.stderr}",
+            )
+            accepted += 1
+        self.assertEqual(71, accepted)
+
+        replayed = self.plan_path.parent / "relay_log.jsonl"
+        self.assertEqual(71, len(replayed.read_text().splitlines()))
+        lint = self.run_lint_cli(self.plan_path.parent)
+        self.assertEqual(0, lint.returncode, lint.stderr)
+        self.assertEqual("lint: ok\n", lint.stdout)
+        self.assertEqual(
+            sha_before, hashlib.sha256(ledger_source.read_bytes()).hexdigest()
+        )
+
+    def test_a158_old_and_new_status_stable_fields_equal(self) -> None:
+        """The pinned-baseline (19-word) implementation and the new one
+        project the same stable fields on the same copied plan+ledger —
+        every top-level and nested object compared verbatim except the
+        dynamic-time keys in DYNAMIC_KEYS (`agents[].idle_seconds`)."""
+        plan_dir = self.copy_historical(with_ledger=True)
+        base_py = self.baseline_impl()
+        old_result = self.run_status_json(base_py, plan_dir)
+        self.assertEqual(0, old_result.returncode, old_result.stderr)
+        new_result = self.run_status_json(None, plan_dir)
+        self.assertEqual(0, new_result.returncode, new_result.stderr)
+        old_doc = self.stable_document(json.loads(old_result.stdout))
+        new_doc = self.stable_document(json.loads(new_result.stdout))
+        self.assertEqual(old_doc, new_doc)
+        # both implementations emit the identical agent key set, so the
+        # idle_seconds exclusion is symmetric — not a one-sided hiding
+        self.assertEqual(
+            {tuple(sorted(a)) for a in json.loads(old_result.stdout)["agents"]},
+            {tuple(sorted(a)) for a in json.loads(new_result.stdout)["agents"]},
+        )
+
+    def test_a158_close_row_fixture_lints_and_preserves_projection(self) -> None:
+        """Legal close rows appended to the terminal 71-row copy lint clean and
+        leave the agent/node/stage projection untouched — row facts like the
+        last writer are not projected state."""
+        plan_dir = self.copy_historical(with_ledger=True)
+        before = json.loads(self.run_status_json(None, plan_dir).stdout)
+
+        ledger = plan_dir / "relay_log.jsonl"
+        appended = (
+            {
+                "node": "C1",
+                "event": "resource_close",
+                "agent": "monitor#1",
+                "by": "monitor",
+                "note": "object_type=pane object_id=pane-7 outcome=ok",
+            },
+            {
+                "node": "F1",
+                "event": "resource_close",
+                "agent": "orchestrator#1",
+                "by": "orchestrator",
+                "note": (
+                    "object_type=worktree object_id=%2Ftmp%2Frlt24 "
+                    "outcome=failed reason=permission%20denied"
+                ),
+            },
+        )
+        with ledger.open("a", encoding="utf-8", newline="") as handle:
+            for offset, row in enumerate(appended, start=72):
+                handle.write(
+                    json.dumps(
+                        {"seq": offset, "ts": "2026-09-17T10:00:00+08:00", **row},
+                        ensure_ascii=False,
+                        separators=(",", ":"),
+                    )
+                    + "\n"
+                )
+        lint = self.run_lint_cli(plan_dir)
+        self.assertEqual(0, lint.returncode, lint.stderr)
+        self.assertEqual("lint: ok\n", lint.stdout)
+
+        after = json.loads(self.run_status_json(None, plan_dir).stdout)
+        self.assertEqual(before["errors"], after["errors"])
+        self.assertEqual(before["stages"], after["stages"])
+        self.assertEqual(before["nodes"], after["nodes"])
+        self.assertEqual(
+            self.stable_document(before), self.stable_document(after)
+        )
 
 
 class RelayCliEncodingTests(RelayCliTestCase):

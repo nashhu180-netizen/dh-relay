@@ -1,0 +1,5 @@
+{"seq":1,"ts":"2026-09-17T16:00:38.658827+08:00","node":"C1","event":"plan_loaded","agent":"orchestrator#1","by":"orchestrator","note":"skill=0.1.0 config_dir=/home/nash/work/dh-relay/.dh-worktrees/RLT_24/tools/relay-light/skill plan=/home/nash/work/dh-relay/.dh-worktrees/RLT_24/docs/modules/relay-light/workspace/RLT_24/evidence/fixture"}
+{"seq":2,"ts":"2026-09-17T16:00:38.998932+08:00","node":"C1","event":"stage_start","agent":"orchestrator#1","by":"orchestrator","note":"stage_id=RLT_24:C#1"}
+{"seq":3,"ts":"2026-09-17T16:00:39.429788+08:00","node":"C1","event":"monitor_launch","agent":"orchestrator#1","by":"orchestrator","note":"stage_id=RLT_24:C#1"}
+{"seq":4,"ts":"2026-09-17T16:00:47.033481+08:00","node":"C1","event":"resource_close","agent":"orchestrator#1","by":"orchestrator","note":"object_type=workspace object_id=rlt24-c4-stage-probe outcome=failed reason=herdr%20workspace_not_found"}
+{"seq":5,"ts":"2026-09-17T16:00:47.403926+08:00","node":"F1","event":"resource_close","agent":"orchestrator#1","by":"orchestrator","note":"object_type=workspace object_id=rlt24-c4-orch-probe outcome=failed reason=herdr%20workspace_not_found"}
