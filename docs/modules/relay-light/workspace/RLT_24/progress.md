@@ -111,3 +111,7 @@ DONE task=RLT_24 role=reviewer-lesson node=R3 status=APPROVE ts=2026-09-17T16:40
 DONE task=RLT_24 role=reviewer-requirement node=R2 status=APPROVE ts=2026-09-17T16:41:00+08:00
   summary: 需求方向复核 P1=0、P2=0；§12 失败关闭「可写、可按 seq/object_id 定位、可取证」全链独立复跑通过；A157 两例实跑取证可信零误触、A158 71 行字节与新旧 status 稳定字段一致、允许路径零越界、A2/A155～A158 证据指针齐备
   artifacts: review.requirement.md, review.md
+
+DONE task=RLT_24 role=reviewer-code1 node=R1 status=REVISE ts=2026-09-17T17:05:00+08:00
+  summary: 代码轮1 REVISE，P1=1（A158 baseline_impl 用 git show master:，actions/checkout@v4 浅克隆 detached 下无 master ref→用例 ERROR→relay-light-python 与 relay-tests-pwsh 硬门禁在 PR 上必红）、P2=1（基线移动目标退化）；实现本体 §3.4 全要素 PASS：自跑 35+ add/lint/status 边界例全对、字节不变、双入口共用校验、旧事件不误伤、rlt12 lint 0、断言零删除、亲跑 unittest 217/217 OK 与 pwsh RELAY ALL PASS
+  artifacts: review.code-round1.md, review.md
