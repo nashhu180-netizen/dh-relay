@@ -38,3 +38,7 @@ DONE task=RLT_24 role=builder node=W1 status=OK ts=2026-09-17T13:25:43+08:00
 DONE task=RLT_24 role=plan-reviewer node=W2 status=PASS ts=2026-09-17T13:26:47+08:00
   summary: 复审 r1；上轮 P1 4/4 闭合，本轮新增 P1=0、P2=0
   artifacts: review.plan.md
+
+DONE task=RLT_24 role=coder node=C1 status=OK ts=2026-09-17T14:19:43+08:00
+  summary: 新增 9 用例 + 改名 1（19→20 词）；RED exit 1/62 断言失败 → GREEN 10/10；全量 unittest 212/212 OK、pwsh 回归 RELAY ALL PASS
+  artifacts: tools/relay-light/relay_log.py, tools/relay-light/test_relay_log.py, progress.md, findings.md, lesson_candidates.md, commit 2dd5d77
