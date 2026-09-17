@@ -82,3 +82,7 @@ DONE task=RLT_24 role=coder node=C2 status=OK ts=2026-09-17T15:22:08+08:00
 DONE task=RLT_24 role=checker node=C2 status=PASS ts=2026-09-17T15:41:51+08:00
   summary: C2 审核 P1=0、P2=0；A156 定向 2/2、Python 全量 214/214、PowerShell 总入口均通过
   artifacts: check.C2.md
+
+DONE task=RLT_24 role=coder node=C4 status=OK ts=2026-09-17T16:05:00+08:00
+  summary: A157 取证完成：阶段空间/编排空间各一例实跑关闭失败（herdr workspace close 探针 id，rc=1 workspace_not_found，前后空间清单不变零误触）；orchestrator#1 记两条 resource_close failed 行（seq4@C1、seq5@F1，落实「阶段空间→所在阶段首节点 / 编排空间→F 首节点」写入者纪律）；lint 0、status errors=[]、seq/object_id 双向检索命中；两例均待人工处理；历史账本 sha 不变；未改代码、未跑全量单测（C4-parallel 口径）
+  artifacts: evidence/A157-stage-workspace.md, evidence/A157-orchestrator-workspace.md, evidence/C4-log.md, evidence/fixture/, evidence/raw/, progress.md, findings.md, lesson_candidates.md, commit 8cd513b
