@@ -52,3 +52,11 @@ DONE task=RLT_23 role=coder node=C1 status=OK ts=2026-09-17T10:48:08+08:00
 DONE task=RLT_23 role=checker node=C1 status=PASS ts=2026-09-17T11:00:46+08:00
   summary: C1 A151/A153 独立核验通过，P1=0，P2=0；grep 3/3/3/3、反查零行，两条回归退出 0
   artifacts: check.C1.md
+
+DONE task=RLT_23 role=coder node=C2 status=OK ts=2026-09-17T11:28:23+08:00
+  summary: A152 主控侧分叉落 SKILL.md 与两 adapter 环境预检（无条件 bypass 段已收窄），A154 F 收口 checklist 独立行进 F 模板；机械核验 2/2/1/1/1、反查零行；python 210 tests OK、pwsh RELAY ALL PASS
+  artifacts: tools/relay-light/skill/SKILL.md, tools/relay-light/skill/references/adapter-claude-code.md, tools/relay-light/skill/references/adapter-codex.md, progress.md, check.C1.md, findings.md, lesson_candidates.md, commit 4bd6f30
+
+DONE task=RLT_23 role=checker node=C2 status=PASS ts=2026-09-17T11:41:14+08:00
+  summary: C2 A152/A154 与 C1 保持检查通过，P1=0，P2=0；grep 2/2/1/1/1、反查零行，两条回归退出 0
+  artifacts: check.C2.md
