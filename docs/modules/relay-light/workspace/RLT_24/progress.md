@@ -6,6 +6,7 @@
 |---|---|---|
 | 2026-09-17 | W1 | builder 按 dispatch/README.md 与 W1-builder.md 入场，`git rebase --autostash master` 退出 0（up to date）；核对 DevPlan、design oracle、旧实现/测试、71 行历史账本及 RLT_10/RLT_22 先例，建立七件套和 C1→C4 分批计划。W1 不改代码。 |
 | 2026-09-17 | C1 | coder#1 按 dispatch/C-coder.md 施工 A155+A2：`git rebase --autostash master` 退出 0；新增 `RelayResourceCloseTests` 8 用例 + `test_a2_all_twenty_events_in_legal_runtime_contexts`，改名 `test_all_nineteen_event_words_pass_lexical_validation`→`test_all_twenty_event_words_pass_lexical_validation`（20 词断言，含 `resource_close ∈ EVENTS`）。relay_log.py：`resource_close` 入 `CONTROL_EVENTS`（第 20 词）；严格 note wire format（`_close_note_fields`/`_decode_close_value`）；`_validate_close_row` 供 add 追加前与 lint 逐行共用；`_lint_command` 在 `lint_plan` 后加 `_lint_ledger` 逐行扫描（非字符串 note 的关闭行走 A155/2，旧事件仍 ledger/4）；`_ledger_warnings` 按解码 object_type 定写入者并对关闭行豁免 A93。先 RED（exit 1，62 断言失败）后 GREEN（10/10 OK）；unittest 212 OK、pwsh 回归 ALL PASS。 |
+| 2026-09-17 | C1 | checker FAIL（check.C1.md，P1=1）：「编排空间非 F 首有效 node 退 2」缺实现与双入口反例。整改 r1 先做可行性判断：冻结 wire format 下 `object_type=workspace` 共用枚举、键闭集四键无扩展、`object_id` 无命名约定、计划 schema 无空间标识——无法可靠区分两类空间，checker 反例靠 `orchestrator-ws` 命名辨认属被禁路径。不猜不删判据，findings.md F-C1-04 记合同缺口并移交 decider/编排；代码与测试不改，写 BLOCKED 信号。 |
 
 ## 证据账本
 
@@ -20,6 +21,7 @@
 | E-C1-04 | C1 | `cd tools/relay-light && PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_relay_log` | 退出 0，Ran 212 tests OK（旧 203 + 新增 9；改名用例不计新增）。 |
 | E-C1-05 | C1 | 仓根 `PYTHONDONTWRITEBYTECODE=1 pwsh -NoProfile -File tools/tests/run-relay-tests.ps1` | 退出 0；全部 suite SUITE PASS，Python 212 + install 7 OK，`RELAY ALL PASS (SKIPPED: 1)`（1 项为既有跳过项）。 |
 | E-C1-06 | C1 | `git diff --check`; `git status --porcelain`; `sha256sum docs/modules/relay-light/relay/rlt12-win-01/relay_log.jsonl`; `git diff master --stat -- docs/modules/relay-light/relay/` | diff --check 干净；porcelain 仅 `M tools/relay-light/relay_log.py`、`M tools/relay-light/test_relay_log.py`，无新增 `__pycache__`；历史账本 sha256=`3cd08fdc88e9d51be16997ad9dc1bd92fc89f3c00796345e0a0b3a229a5ed40b`，`relay/` 对 master diff 为空，字节未动。 |
+| E-C1-07 | C1 | 整改 r1 判据可行性核对：design/01 L257/L301–320、decision.1.md §2、skill/adapter 命名段、rlt12-win-01 relay_plan schema | 冻结 wire format 下 `object_type=workspace` 无字段/枚举/命名约定可区分阶段空间与编排空间；checker 反例靠 `object_id=orchestrator-ws` 命名辨认，派单禁止此路径。判据「编排空间非 F 首有效 node 退 2」无可实现校验，按派单走 BLOCKED，不改代码不删判据。详见 findings.md F-C1-04。 |
 
 ## 信号
 
@@ -46,3 +48,7 @@ DONE task=RLT_24 role=coder node=C1 status=OK ts=2026-09-17T14:19:43+08:00
 DONE task=RLT_24 role=checker node=C1 status=FAIL ts=2026-09-17T14:38:48+08:00
   summary: C1 审核 P1=1、P2=0；编排空间非 F 首节点被 add 接受且缺双入口负例；定向 11/11、Python 212/212、pwsh 全绿
   artifacts: check.C1.md
+
+DONE task=RLT_24 role=coder node=C1 status=BLOCKED ts=2026-09-17T14:45:34+08:00
+  summary: 整改 r1：判定冻结 wire format 下 object_type=workspace 无法区分阶段/编排空间（四键闭集、object_id 无命名约定、node 位置不可辨），P1 判据无可实现校验；不猜不删判据，findings F-C1-04 移交 decider/编排；代码未改，commit 2dd5d77 保持
+  artifacts: findings.md, progress.md
