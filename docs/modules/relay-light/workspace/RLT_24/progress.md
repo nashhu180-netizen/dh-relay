@@ -19,3 +19,7 @@
 DONE task=RLT_24 role=builder node=W1 status=OK ts=2026-09-17T13:20:22+08:00
   summary: 七件套与分批 task_plan 已落盘，共 4 批
   artifacts: brief.md, task_plan.md, progress.md, findings.md, lesson_candidates.md, review.md, execution_strategy.md
+
+DONE task=RLT_24 role=plan-reviewer node=W2 status=REVISE ts=2026-09-17T13:22:16+08:00
+  summary: 计划复核 P1=4、P2=0；A2 合法词上下文、worktree 相对路径、状态异常扫描、非字符串 note lint 退出码须整改
+  artifacts: review.plan.md
