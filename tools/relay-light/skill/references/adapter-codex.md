@@ -45,7 +45,12 @@ bash -lc "python3 <RELAY_LOG> status --plan <plan_dir> --json --config-dir ~/.co
 
 ## 环境预检（拉起前）
 
-拉起每个 agent 前先核启动形态在本环境可用：沙箱型只读启动（codex 复核形态的 `-- --sandbox read-only`）若起不来（账本连续 `NOT_RUN` 即信号），改用 bypass 沙箱启动（`--dangerously-bypass-approvals-and-sandbox`），只读约束改由派活 prompt 明文承担（「不改任何文件、只读被审对象」），并在该 `agent_launch` 的 `note` 记 `launch_fix=<token>` 运行事实——不改计划 `launch` 列、不走 `plan_amend`。
+拉起每个 agent 前先核启动形态在本环境可用，codex 启动档位按主控侧分叉：
+
+- Claude 主控下 codex worker 以默认 sandbox 启动，不加 `--dangerously-bypass-approvals-and-sandbox`；worker 只在 worktree 内写文档时默认 sandbox 已够。
+- Codex 主控下沿用既有 bypass 结论；仅在该主控侧的沙箱型只读启动不可用且账本连续 `NOT_RUN` 时，按环境预检改用 bypass 沙箱启动，提示词明确只读约束，并在 `agent_launch.note` 记录 `launch_fix=<token>`；不得把 bypass 写成无条件全局口径。
+
+Codex 主控侧机制细节：沙箱型只读启动（codex 复核形态的 `-- --sandbox read-only`）起不来（账本连续 `NOT_RUN` 即信号）时才改用 bypass 沙箱启动（`--dangerously-bypass-approvals-and-sandbox`），只读约束改由派活 prompt 明文承担（「不改任何文件、只读被审对象」），`launch_fix=<token>` 记在该 `agent_launch` 的 `note` 作运行事实——不改计划 `launch` 列、不走 `plan_amend`。
 
 ## 派活 prompt 模板（监工 → agent）
 
