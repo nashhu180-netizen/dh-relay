@@ -15,3 +15,7 @@
 | E-W1-03 | W1 | `relay_log.py` 的 `_lint_command`、`append_event`、`_validate_event_semantics`、`_validate_writer_handoff`；`test_relay_log.py` 现有 19 词与 A85 用例 | 当前 lint 只校验计划；事件集 19 词；关闭后写入需显式豁免旧 handoff 闸。属计划定位，尚无施工结论。 |
 
 ## 信号
+
+DONE task=RLT_24 role=builder node=W1 status=OK ts=2026-09-17T13:20:22+08:00
+  summary: 七件套与分批 task_plan 已落盘，共 4 批
+  artifacts: brief.md, task_plan.md, progress.md, findings.md, lesson_candidates.md, review.md, execution_strategy.md
