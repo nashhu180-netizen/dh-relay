@@ -27,3 +27,7 @@ DONE task=RLT_24 role=plan-reviewer node=W2 status=REVISE ts=2026-09-17T13:22:16
 DONE task=RLT_24 role=builder node=W1 status=OK ts=2026-09-17T13:25:43+08:00
   summary: 修订 r1；已处理 review.plan.md 四条 P1
   artifacts: task_plan.md
+
+DONE task=RLT_24 role=plan-reviewer node=W2 status=PASS ts=2026-09-17T13:26:47+08:00
+  summary: 复审 r1；上轮 P1 4/4 闭合，本轮新增 P1=0、P2=0
+  artifacts: review.plan.md
