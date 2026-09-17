@@ -2254,6 +2254,12 @@ def _close_note_fields(note: object) -> dict[str, str]:
         if key in fields:
             raise _error("HC-RL-A155", f"duplicate resource_close note key: {key}")
         if not raw:
+            # A156 owns `reason` emptiness: the key is conditionally required,
+            # so it parses through to the outcome check below; every other
+            # key's empty value stays a wire-format (A155) rejection.
+            if key == "reason":
+                fields[key] = raw
+                continue
             raise _error("HC-RL-A155", f"resource_close note {key} must not be empty")
         fields[key] = _decode_close_value(raw)
     for required in ("object_type", "object_id", "outcome"):
@@ -2283,6 +2289,24 @@ def _close_note_fields(note: object) -> dict[str, str]:
             "HC-RL-A155",
             f"resource_close worktree object_id must be an absolute path: "
             f"{fields['object_id']!r}",
+        )
+    # HC-RL-A156: `reason` is conditional on `outcome` — required non-empty and
+    # non-blank for `failed`, the key must be entirely absent for `ok`.
+    if fields["outcome"] == "failed":
+        if "reason" not in fields:
+            raise _error(
+                "HC-RL-A156",
+                "resource_close outcome=failed requires a reason",
+            )
+        if not fields["reason"].strip():
+            raise _error(
+                "HC-RL-A156",
+                "resource_close outcome=failed requires a non-empty reason",
+            )
+    elif "reason" in fields:
+        raise _error(
+            "HC-RL-A156",
+            "resource_close outcome=ok must not carry a reason",
         )
     return fields
 

@@ -37,6 +37,21 @@ def repo_config() -> relay_log.RelayConfig:
     return relay_log.load_config(SKILL_DIR)
 
 
+def json_key_paths(value: object, prefix: str = "") -> set[str]:
+    """Every dict-key path of a JSON document, recursing objects and lists —
+    a `key`, `outer.inner`, or `list[].inner` shape per layer."""
+    paths: set[str] = set()
+    if isinstance(value, dict):
+        for key, item in value.items():
+            path = f"{prefix}{key}"
+            paths.add(path)
+            paths |= json_key_paths(item, f"{path}.")
+    elif isinstance(value, list):
+        for item in value:
+            paths |= json_key_paths(item, f"{prefix}[].")
+    return paths
+
+
 def home_env(home: Path) -> dict[str, str]:
     """A subprocess environment whose user home is the given directory."""
     return {**os.environ, "HOME": str(home), "USERPROFILE": str(home)}
@@ -6864,7 +6879,8 @@ class RelayLedgerSilenceTests(RelayCliTestCase):
 
 
 class RelayResourceCloseTests(RelayCliTestCase):
-    """RLT_24 C1 — HC-RL-A2/A155: `resource_close`, the twentieth ledger event (§3.4).
+    """RLT_24 C1/C2 — HC-RL-A2/A155/A156: `resource_close`, the twentieth ledger
+    event (§3.4), and the `reason` condition on `outcome`.
 
     The strict note wire format, the decoded-`object_type` writer rule, and the
     first-active-node rule run identically on the `add` pre-append path and the
@@ -6940,6 +6956,15 @@ class RelayResourceCloseTests(RelayCliTestCase):
             "by": by,
             "note": note,
         }
+
+    def close_note_value(self, note: str, key: str) -> str | None:
+        """Test-side single-key lookup in a close note: split on the ASCII
+        space, take the matching token's decoded value; not a validation path."""
+        for token in note.split(" "):
+            name, separator, raw = token.partition("=")
+            if separator and name == key:
+                return unquote(raw)
+        return None
 
     def append_raw_row(self, row: dict[str, object]) -> int:
         """Direct JSONL injection (never via `add`); returns the written seq."""
@@ -7409,6 +7434,133 @@ class RelayResourceCloseTests(RelayCliTestCase):
             ],
             payload["errors"],
         )
+
+    def test_a156_five_reason_rejections_add_and_injected_lint(self) -> None:
+        """HC-RL-A156: with the three base fields legal, `failed` requires a
+        non-empty non-blank `reason` and `ok` forbids the key entirely — all
+        five violations fail `add` (ledger bytes unchanged) and, injected as
+        raw rows, `lint` (naming seq + the reason field)."""
+        self.write_close_plan()
+        cases = (
+            ("failed-no-reason",
+             "object_type=pane object_id=pane-7 outcome=failed",
+             "requires a reason"),
+            ("failed-empty-reason",
+             "object_type=pane object_id=pane-7 outcome=failed reason=",
+             "non-empty"),
+            ("failed-blank-reason",
+             "object_type=pane object_id=pane-7 outcome=failed reason=%20",
+             "non-empty"),
+            ("ok-with-reason",
+             "object_type=pane object_id=pane-7 outcome=ok reason=because",
+             "must not carry a reason"),
+            ("ok-with-empty-reason",
+             "object_type=pane object_id=pane-7 outcome=ok reason=",
+             "must not carry a reason"),
+        )
+        executed = 0
+        for label, note, needle in cases:
+            with self.subTest(case=label):
+                self.assert_close_rejected_both(
+                    note=note,
+                    node="C1",
+                    agent="monitor#1",
+                    code="HC-RL-A156",
+                    needle=needle,
+                )
+                executed += 1
+        # each of the five counterexamples really ran both entry points
+        self.assertEqual(5, executed)
+
+    def test_a156_failed_reason_search_and_status_schema(self) -> None:
+        """HC-RL-A156: a legal `failed` row is a queryable fact — add/lint 0,
+        the JSONL row is retrievable by seq + decoded object_id with its reason
+        intact, `status --json` grows no field at any object layer, and the
+        failed close does not turn the stage failed."""
+        self.write_close_plan()
+        self.add_ok("plan_loaded", agent="orchestrator#1", note="skill=0.1.0")
+        self.add_ok(
+            "stage_start", agent="orchestrator#1", note="stage_id=DHR_90:W#1"
+        )
+        self.add_ok(
+            "monitor_launch", agent="orchestrator#1", note="stage_id=DHR_90:W#1"
+        )
+        self.add_ok("node_start", node="W1")
+        self.add_ok("agent_launch", node="W1", agent="builder#1")
+        self.add_ok("done", node="W1", agent="builder#1")
+        self.add_ok("node_close", node="W1")
+        self.add_ok(
+            "stage_result", node="W1", note="stage_id=DHR_90:W#1 outcome=done"
+        )
+        self.add_ok(
+            "stage_close", agent="orchestrator#1", note="stage_id=DHR_90:W#1"
+        )
+        self.add_ok(
+            "stage_start", node="C1", agent="orchestrator#1",
+            note="stage_id=DHR_90:C#1",
+        )
+        self.add_ok(
+            "monitor_launch", node="C1", agent="orchestrator#1",
+            note="stage_id=DHR_90:C#1",
+        )
+        before = self.status_payload()
+        self.assertEqual([], before["errors"])
+
+        note = (
+            "object_type=workspace object_id=stage-C1 "
+            "outcome=failed reason=permission%20denied"
+        )
+        self.add_ok(
+            "resource_close", node="C1", agent="orchestrator#1", note=note
+        )
+        close_seq = self.ledger_rows()[-1]["seq"]
+        lint = self.run_lint_cli(self.plan_path.parent)
+        self.assertEqual(0, lint.returncode, lint.stderr)
+        self.assertEqual("lint: ok\n", lint.stdout)
+
+        # retrieve the original row by seq AND decoded object_id; reason intact
+        matches = [
+            row
+            for row in self.ledger_rows()
+            if row["seq"] == close_seq
+            and self.close_note_value(str(row["note"]), "object_id")
+            == "stage-C1"
+        ]
+        self.assertEqual(1, len(matches))
+        row = matches[0]
+        self.assertEqual("resource_close", row["event"])
+        self.assertEqual(
+            "permission denied",
+            self.close_note_value(str(row["note"]), "reason"),
+        )
+
+        after = self.status_payload()
+        self.assertEqual([], after["errors"])
+        # identical key sets at the top level and every nested object layer
+        self.assertEqual(json_key_paths(before), json_key_paths(after))
+        volatile = {"agents", "errors"}
+        self.assertEqual(
+            {key: value for key, value in before.items() if key not in volatile},
+            {key: value for key, value in after.items() if key not in volatile},
+        )
+        self.assertEqual(
+            [
+                {key: value for key, value in agent.items() if key != "idle_seconds"}
+                for agent in before["agents"]
+            ],
+            [
+                {key: value for key, value in agent.items() if key != "idle_seconds"}
+                for agent in after["agents"]
+            ],
+        )
+        # a failed close is a fact row, not a stage result — C#1 stays open
+        c_stage = next(
+            stage
+            for stage in after["stages"]
+            if stage["stage_id"] == "DHR_90:C#1"
+        )
+        self.assertEqual("open", c_stage["state"])
+        self.assertIsNone(c_stage["result"])
 
     def test_a2_all_twenty_events_in_legal_runtime_contexts(self) -> None:
         """HC-RL-A2: each of the twenty event words succeeds through `add` in a
