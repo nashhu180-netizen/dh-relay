@@ -18,3 +18,15 @@ APPROVE（P1 0，P2 1）。唯一 P2：checker C1 抓出的「冻结 wire format
 - **E-003 残余口径**：RLT_12 E-003 空槽还含「编排 pane 操作序列（逐条命令+时间戳）」整段人判材料——`resource_close` 只覆盖关闭动作记账，不覆盖完整命令序列；且 RLT_12 那次运行的历史材料按定义无法回填。本卡闭合的是 F-004 裁决范围内的「关闭失败无事件位/无证据位」，E-003 全量材料的缺口如仍被需要应另立案，不属于本卡 FAIL 项。
 - **HC-RL-A85 §11.1 行文本滞后**：design L1258 的 A85 行仍逐字列 19 词写入者二分枚举（未含 `resource_close`），但 §3.4 L320 已自带「A85 系 19 词时代口径、新事件以 §3.4 表为准」的豁免句，口径不自相矛盾；若未来修订设计正文可顺手同步该行，当前不构成需转派缺口。
 - **教训路无法预登记代码轮 1 的 P1**：`review.md` L11 已写明若代码轮 1 REVISE 引发返工须对差异定向回核；届时新暴露的 P1 模式应一并补登 lesson_candidates.md。
+
+## X1 定向回核
+
+复核人：rlt24-review3（devin swe-2-max，fresh，非施工者）· node=X1 · 范围 `git diff 407b4c0..5551624`，按 review.md「三路并行说明」对返工差异定向回核。
+
+结论：**APPROVE**（P1=0，P2=0）——R3 唯一 P2 闭合，代码轮 1 的 P1 模式亦已登记为可复用候选教训。
+
+| # | 回核判据 | 结论 | 依据（文件:行） |
+|---|---|---|---|
+| X1-L1 | R3 P2 闭合：checker C1「判据超出冻结 wire format 可计算边界」模式按「现象/为什么/下次怎么做」补登 lesson_candidates | PASS | `lesson_candidates.md` §X1 `L-X1-01`：现象=W1 把「编排空间→F 首节点退 2」写成机器校验判据、W2 复审未识别、施工 C1 撞墙走 BLOCKED→CONSULT 才发现 `object_type=workspace` 两空间共用枚举、四键闭集无扩展位、`object_id` 无命名约定，最终靠用户裁决降为写入者纪律；为什么=验收判据要求的区分在 wire format 键闭集/枚举值/命名约定里没有载体；下次怎么做=W1 拆计划与 W2 计划评审对每条「须机器校验退 2」判据先核冻结 wire format 能否承载该区分，承载不了的在计划期标写入者纪律或上报裁决，不留给施工撞墙。三段齐备且与 findings F-C1-04、decisions.md 第 1 行事实链一致，正是 R3 判据 3 整改动作所要求的补登。 |
+| X1-L2 | 返工新暴露模式（代码轮 1 P1）一并登记且可复用 | PASS | `lesson_candidates.md` §X1 `L-X1-02`：现象=测试依赖本地分支名 `git show master:` 在 `actions/checkout@v4` fetch-depth=1 detached checkout 下必崩（无 `master`/`origin/master` ref），本地与 dev 机全绿、PR 两硬门禁必红；为什么=「能取到基线」寄托在只存在于全量克隆的本地 ref 名上，且以 `master` 为基线是移动目标、合入后退化自我比较；下次怎么做=凡测试需仓内 git 对象把来源钉固定 SHA——`cat-file -e` 探测、缺失 `git fetch --depth=1 origin <sha>`、仍失败带原因显式报错不静默 skip，并用 `git init`+`fetch --depth=1`+`checkout --detach FETCH_HEAD` 的 /tmp 浅克隆实测取证。该教训与实现（`test_relay_log.py` `BASELINE_SHA`+探测/fetch/`self.fail`）和 `evidence/X1-ci-shallow-clone.md` 逐字记录互相印证，模式可直接复用于任何「测试需基线 git 对象」场景。 |
+| X1-L3 | X1 不越界、无既有教训重犯 | PASS | `git diff 407b4c0..5551624 --name-only` 仅 `test_relay_log.py` + `workspace/RLT_24/**` 四件工件；`relay_log.py`、design/、skill/、`relay/**` 零改动；rlt12-win-01 账本 sha256 复跑=`3cd08fdc…40b` 不变；无 `__pycache__`/`.pyc` 入树（命令全部 `PYTHONDONTWRITEBYTECODE=1`）；测试内 `git fetch` 只触及 `.git` 对象库不产生仓内文件，`git status --porcelain` 干净。教训写入者边界守住：lesson_candidates/findings 由 coder 写，本路只复核追加本节。 |

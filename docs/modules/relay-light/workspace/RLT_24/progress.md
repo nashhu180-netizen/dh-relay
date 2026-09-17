@@ -125,3 +125,15 @@ DONE task=RLT_24 role=reviewer-code1 node=R1 status=REVISE ts=2026-09-17T17:05:0
 DONE task=RLT_24 role=coder node=X1 status=OK ts=2026-09-17T17:58:00+08:00
   summary: X1 整改闭合 R1 P1+P2 与 R3 P2：baseline_impl 钉死基线 sha b41cd2d（cat-file 探测→缺失 fetch --depth=1 origin→git show，fetch 失败 self.fail 带原因不静默 skip）；/tmp 浅克隆 detached 复刻 CI 自证 fetch 回退实跑、兼容类 3/3 OK，本地直通 3/3 OK；lesson_candidates 补 L-X1-01/02；全量 unittest 217/217 OK、pwsh RELAY ALL PASS
   artifacts: tools/relay-light/test_relay_log.py, progress.md, findings.md, lesson_candidates.md, evidence/X1-ci-shallow-clone.md, commit 5551624
+
+DONE task=RLT_24 role=reviewer-requirement node=X1 status=APPROVE ts=2026-09-17T17:40:00+08:00
+  summary: X1 需求方向定向回核（407b4c0..5551624）P1=0、P2=0：BASELINE_SHA=b41cd2d 实测=master/origin/master/merge-base 三者一致且基线 resource_close 计数 0，钉死 SHA 消除 master 漂移与合入后自我比较，证明力增强；cat-file 探测→fetch --depth=1→self.fail 带原因不静默 skip；/tmp 浅克隆 detached 逐字证据（.git/shallow 含基线 sha 证 fetch 回退实跑非假绿）；X1 diff 与全分支均不出允许路径、rlt12 账本 sha256 不变、无 __pycache__；定向复跑 RelayResourceCloseBackwardCompatTests 3/3 OK（16.2s）
+  artifacts: review.requirement.md, review.md
+
+DONE task=RLT_24 role=reviewer-lesson node=X1 status=APPROVE ts=2026-09-17T17:40:00+08:00
+  summary: X1 教训路定向回核（407b4c0..5551624）P1=0、P2=0：R3 唯一 P2 闭合——L-X1-01 按现象/为什么/下次怎么做补登「判据超出冻结 wire format 可计算边界」模式（与 F-C1-04/decisions.md 事实链一致）；L-X1-02 将代码轮 1 P1 模式登记为可复用教训（测试依赖本地分支名 CI 浅克隆必崩→钉 SHA+cat-file/fetch/self.fail+/tmp 浅克隆自证）；X1 零越界、无既有教训重犯
+  artifacts: review.lesson.md, review.md
+
+DONE task=RLT_24 role=reviewer-code1 node=X1 status=APPROVE ts=2026-09-17T18:35:00+08:00
+  summary: X1 回核 APPROVE，P1=0/P2=0：自复刻 CI 浅克隆 detached（0 refs、depth=1、基线缺席）跑 RelayResourceCloseBackwardCompatTests 3/3 OK，.git/shallow 落痕证 fetch 回退实跑非假绿；BASELINE_SHA 钉死 b41cd2d=master=origin/master=merge-base 且基线文件零 resource_close；fetch 失败路径猴补丁实测 self.fail 带 rc/stderr 不静默 skip；亲跑 unittest 217/217 OK、pwsh RELAY ALL PASS；X1 diff 守允许路径零新问题
+  artifacts: review.rework.1.md, review.md

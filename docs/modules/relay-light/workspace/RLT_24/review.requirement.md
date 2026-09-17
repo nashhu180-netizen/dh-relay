@@ -38,3 +38,24 @@ APPROVE（P1=0，P2=0）
 
 - F-C1-01 已在 findings.md 登记且仍 open：skill（SKILL.md/adapter）与 as-built 未收录 `resource_close`，属本卡允许路径之外的转派项，收口时须由编排评估派单同步——本路只复核不施工，此记为范围外遗留。
 - 「编排空间→F 首有效节点」的机器校验缺口经 `decisions.md` 第 1 行用户裁决降为写入者纪律；design/01 §3.4 L257 措辞与实现可计算边界之间的字面差已在 decisions.md 记为已知风险，若后续复核/验收要求设计层对齐，需另起 A 事件，非本卡范围。
+
+## X1 定向回核
+
+复核人：rlt24-review2（devin swe-2-max，fresh，非施工者）· node=X1 · 范围 `git diff 407b4c0..5551624`（代码轮 1 REVISE 引发的返工），按 review.md「三路并行说明」对差异定向回核，不沿用返工前结论。
+
+结论：**APPROVE**（P1=0，P2=0）
+
+| # | 回核判据 | 结论 | 依据（文件:行 / 命令输出） |
+|---|---|---|---|
+| X1-1 | A158 需求证明力保持或增强：基线不再随 master 漂移，CI 门禁环境仍可取证，失败不静默 skip | PASS（增强） | `test_relay_log.py` 新 `baseline_impl()`：`BASELINE_SHA=b41cd2d9e48814c93352f969a085971a60546565`——我实测该 SHA 同时等于本地 `master`、`origin/master` 与 `git merge-base HEAD master`，即 dispatch/README L12 钉的本卡基线；`git show <sha>:tools/relay-light/relay_log.py | grep -c resource_close`=0，基线确为旧实现，非自我比较。取基线链路 `cat-file -e` 探测 → `git fetch --depth=1 origin <sha>` → `git show <sha>:<path>`；fetch 仍不可得时 `self.fail` 带 fetch rc 与 stderr 摘要，无 skip 路径（`test_relay_log.py:7720-7750`）。钉死 SHA 同时闭合 R1 的 P2：本卡合入后 master 含 `resource_close`，若仍以 `master` 为名取基线必退化为自我比较——固定 SHA 使比较对象永久留在 19 词时代，证明力不随 master 前移而衰减。CI 侧证明力由 `evidence/X1-ci-shallow-clone.md` 逐字记录支撑（见复跑记录 X1-R2 复核）。 |
+| X1-2 | 非目标与允许路径仍守住 | PASS | `git diff 407b4c0..5551624 --name-only` 仅 `test_relay_log.py` + `workspace/RLT_24/{evidence/X1-ci-shallow-clone.md,findings.md,lesson_candidates.md,progress.md}`，全在允许闭集；X1 零改动 `relay_log.py`（无新增 `status --json` 字段之虞）。全分支 `git diff master --name-only` 仍仅 `relay_log.py`/`test_relay_log.py`/`workspace/RLT_24/**`；rlt12-win-01 账本 sha256 复跑=`3cd08fdc…40b` 不变；`find tools/relay-light -name __pycache__ -o -name '*.pyc'` 空、`git status --porcelain` 干净（X1-R1）。 |
+| X1-3 | X1 证据可信（实跑/非假绿） | PASS | `evidence/X1-ci-shallow-clone.md` 逐字记录 `/tmp/rlt24-ci-sim` 复刻 `actions/checkout@v4` 形态：`fetch --depth=1`+detached FETCH_HEAD、`rev-list --count HEAD`=1、`master`/`origin/master`/基线对象均 rc=128（P1 故障原样复现）；覆盖 X1 版测试文件后 3/3 OK，且跑后 `.git/shallow` 增含 `b41cd2d`、`cat-file -t` =commit——证明走的是测试内 fetch 回退路径而非对象碰巧在库的假绿。findings.md X1 节诚实登记残余边界：本地路径型 origin 在基线 SHA 不再是 ref 尖后默认拒发按 SHA fetch，此时测试 `self.fail` 响报而非假绿——CI（GitHub，allowReachableSHA1InWant + 基线恒为 master 可达祖先）无障碍，残余边界仅影响假想的「本地路径 origin + 基线非尖」场景，不构成缺陷。 |
+
+### 复跑记录（X1）
+
+| # | 命令 | 结果 |
+|---|---|---|
+| X1-R1 | `git rev-parse master` / `origin/master` / `git merge-base HEAD master`；`git show b41cd2d:…/relay_log.py \| grep -c resource_close`；`git cat-file -e <sha>:<path>`；`sha256sum rlt12-win-01/relay_log.jsonl`；`git diff --name-only 407b4c0..5551624` 与 `git diff master --name-only`；`find … __pycache__`；`git status --porcelain` | 三者同=`b41cd2d…`；基线 `resource_close` 计数 0；对象在库 rc=0；账本 sha256=`3cd08fdc…40b` 不变；X1 diff 与全分支 diff 均不出允许路径；无 `__pycache__`；porcelain 干净 |
+| X1-R2 | `cd tools/relay-light && PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_relay_log.RelayResourceCloseBackwardCompatTests`（定向，不重跑全量） | 退出 0，`Ran 3 tests in 16.209s` **OK**——本地对象在库走 `cat-file -e` 直通路径 |
+
+所有命令均带 `PYTHONDONTWRITEBYTECODE=1`；未写任何临时文件入仓。
