@@ -6,7 +6,7 @@
 1. 本批是否偏离 task_plan（改动的符号/函数、用例清单是否逐项落地且不丢 oracle 要素，有无 RED 证据）；
 2. 是否越允许路径（含 `__pycache__` 新增、`docs/modules/relay-light/relay/**` 有无变化、rlt12-win-01 账本 sha256 是否与 master 一致）；
 3. 本批完成判据自己复跑是否真达成（按用例名过滤跑本批新增用例）；
-4. 回归自己复跑：`cd tools/relay-light && PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_relay_log` 与 `PYTHONDONTWRITEBYTECODE=1 pwsh -NoProfile -File tools/tests/run-relay-tests.ps1`，记退出码与用例数；
+4. **回归减量（用户 2026-09-17 15:50 裁决）**：不重跑全量 unittest 与 pwsh 总入口；只复跑本批新增/修改的定向用例（`cd tools/relay-light && PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_relay_log.<类>.<用例> ...`），并核对 coder 在 progress.md 证据账本登记的全量回归命令、用例数与退出码是否绑定本批 commit SHA、是否自洽（无记录或 SHA 不符即 FAIL）。全量回归由开发后复核与 CI 把关；
 5. 本批实现是否与 design/01 §3.4 wire format（301–328 行）或既有合同冲突（重点：非 `resource_close` 事件的自由 note 不得被解析；既有断言有无被削弱或删除）。
 
 产出 `workspace/RLT_24/check.C<n>.md`（结论 PASS/FAIL + 逐项表 + FAIL 的可整改具体项）；信号：
