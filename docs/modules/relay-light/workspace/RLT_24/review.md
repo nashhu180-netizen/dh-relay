@@ -4,7 +4,7 @@
 
 | 路径 | Recipe | 复核人/实例 | 结论文件 | 结论 |
 |---|---|---|---|---|
-| code-round1 | normal 必做 | 待编排登记；不得为施工者 | 待登记 | 未开始 |
+| code-round1 | normal 必做 | rlt24-review（devin swe-2-max，fresh，非施工者） | review.code-round1.md | 进行中 |
 | requirement | normal 必做；代码轮 1 及整改闭合后 | 待编排登记；不得为施工者 | 待登记 | 未开始 |
 | lesson | normal 必做；代码轮 1 及整改闭合后 | 待编排登记；不得为施工者 | 待登记 | 未开始 |
 

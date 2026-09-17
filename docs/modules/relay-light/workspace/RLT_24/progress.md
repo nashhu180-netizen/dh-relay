@@ -98,4 +98,8 @@ DONE task=RLT_24 role=checker node=C4 status=PASS ts=2026-09-17T16:06:06+08:00
 
 DONE task=RLT_24 role=coder node=C3 status=OK ts=2026-09-17T16:20:55+08:00
   summary: A158 历史账本兼容断言落地：新增 RelayResourceCloseBackwardCompatTests 3 用例（71 行源账本 sha256 前后不变+逐行 add 回放 71/71+回放副本 lint 0；git show master 旧实现与新实现 status --json 稳定字段逐字段相等，唯一排除 agents[].idle_seconds；终态副本追加两条合法关闭行 lint 0 且投影不变）；首跑 GREEN 3/3——兼容判据已由 C1/C2 实现自然满足，实现零改动不造假 RED；全量 unittest 217/217 OK、pwsh 回归 RELAY ALL PASS；历史账本 sha256 不变
-  artifacts: tools/relay-light/test_relay_log.py, progress.md, findings.md, lesson_candidates.md
+  artifacts: tools/relay-light/test_relay_log.py, progress.md, findings.md, lesson_candidates.md, commit aba9e8d
+
+DONE task=RLT_24 role=checker node=C3 status=PASS ts=2026-09-17T16:24:34+08:00
+  summary: C3 审核 P1=0、P2=0；A158 定向 3/3 OK，三种 /tmp 故障注入均被对应测试检出；核对 coder 登记的 Python 217/217 与 pwsh 总入口通过
+  artifacts: check.C3.md
