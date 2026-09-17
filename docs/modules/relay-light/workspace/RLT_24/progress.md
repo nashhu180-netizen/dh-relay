@@ -137,3 +137,10 @@ DONE task=RLT_24 role=reviewer-lesson node=X1 status=APPROVE ts=2026-09-17T17:40
 DONE task=RLT_24 role=reviewer-code1 node=X1 status=APPROVE ts=2026-09-17T18:35:00+08:00
   summary: X1 回核 APPROVE，P1=0/P2=0：自复刻 CI 浅克隆 detached（0 refs、depth=1、基线缺席）跑 RelayResourceCloseBackwardCompatTests 3/3 OK，.git/shallow 落痕证 fetch 回退实跑非假绿；BASELINE_SHA 钉死 b41cd2d=master=origin/master=merge-base 且基线文件零 resource_close；fetch 失败路径猴补丁实测 self.fail 带 rc/stderr 不静默 skip；亲跑 unittest 217/217 OK、pwsh RELAY ALL PASS；X1 diff 守允许路径零新问题
   artifacts: review.rework.1.md, review.md
+
+## 人类验收落记（AI 代记）
+
+- **2026-09-17**：PR #45 合入（`1359fc6`）后，用户在对话中明确答复「**你帮我代签验收**」，授权 AI 代记 RLT_24 整卡验收。据此 `review.md` 人类签名区落记「验收通过（整卡整体授权代签，未逐条人判）」，DevPlan 任务表 RLT_24 行转「已验收」。
+- 代记依据：AGENTS.md 宪章#4——确认来自用户对话明文；该授权不构成对任一复核报告条目的逐条人判。
+- 边界：本卡不属高危五类，无 `verify(relay-light):` 提交要求；`decisions.md` 第 1 行登记的口径风险（编排空间→F 首节点为写入者纪律而非机器校验）与 findings.md 转派候选（F-C1-01 / F-C1-03 / A85 行滞后）仍为待裁决，不因本次验收关闭。
+- 收口动作：PR #45 本体合入 `1359fc6`（远端分支已删）；本卡未改 skill，无需两侧重同步；worktree `.dh-worktrees/RLT_24` 与分支 `wt/RLT_24` 已删，终端 pane 已全部关闭；DevPlan 回填与本落记同走 PR #46。
