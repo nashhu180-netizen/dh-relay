@@ -29,6 +29,14 @@ relay-light 是一套接力编排协议：人拉起规划与编排，编排在�
 
 **批内不换人**：checker 与 decider 的方案都送回同一个 coder，账本记 `checkpoint`，不新增 attempt。只有节点级返工（X 阶段新节点）才开新实例。
 
+## 派活纪律与监工判活
+
+**派活通知投递确认**：向 agent 发通知后必须读 pane 末行确认实际投递；pane 出现 `queued` 排队提示时补 `send-keys enter` 并复核送达；未确认投递不得当作已通知。
+
+**`agent_lost` 判活**：pane 的 `working → done` 不等于 agent 收工（长 `sleep` 中也会被报 `done`）；判 `agent_lost` 前必须同时确认 pane 无 `Running tools` 计时器在走、账本无该 agent 新行、Herdr `agent get` 状态非 working；不得单凭 pane 状态判死重拉。`ledger_silent` 仍按 A140 核 Herdr 状态 + pane 末行 + 允许路径产出：三者均无变化才中断；任一仍在变化不得中断。
+
+**codex 启动档位按主控侧分叉**：Claude 主控下 codex worker 以默认 sandbox 启动，不加 `--dangerously-bypass-approvals-and-sandbox`；worker 只在 worktree 内写文档时默认 sandbox 已够。Codex 主控下沿用既有 bypass 结论；仅在该主控侧的沙箱型只读启动不可用且账本连续 `NOT_RUN` 时，按环境预检改用 bypass 沙箱启动，提示词明确只读约束，并在 `agent_launch.note` 记录 `launch_fix=<token>`；不得把 bypass 写成无条件全局口径。
+
 ## 五阶段模板
 
 五阶段：W 建工作区 → C 施工 → R 复核 → X 返工 → F 收口备料。阶段实例 = 一个终端空间 + 一个监工；同一阶段可多次进入，用 `#k` 区分。
@@ -115,6 +123,10 @@ reviewer 行数与名字由 marker `recipe=` 经 `dh-mapping.toml` 的 `[recipes
 |---|---|---|---|---|---|---|
 | scribe | F<n> | scribe | | as-built、提交区、汇报与证据区 | | |
 ```
+
+**F 阶段收口 checklist**
+
+- [ ] 确认对应 worktree 已删（`git worktree list` / `git branch` 核对），先关终端空间再删树。
 
 ## 账本用法
 
