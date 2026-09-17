@@ -13,9 +13,10 @@ import stat
 import subprocess
 import sys
 import tomllib
+import unicodedata
 from dataclasses import dataclass
 from datetime import datetime
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from urllib.parse import quote
 
 
@@ -38,6 +39,7 @@ CONTROL_EVENTS = frozenset(
         "stage_close",
         "monitor_restart",
         "plan_amend",
+        "resource_close",
     }
 )
 EVENTS = CONTROL_EVENTS | frozenset(
@@ -94,6 +96,18 @@ WRITER_BY_EVENT = {
 STAGE_NOTE_EVENTS = frozenset(
     {"stage_start", "monitor_launch", "stage_result", "stage_close"}
 )
+# design §3.4 (RLT-A-11): the twentieth event's note is a strict key=value wire
+# format — one ASCII space per token, exactly one bare `=` per token, a closed
+# key set, and single-pass percent-decoding of UTF-8 bytes. 'pane' stays
+# single-quoted so the frozen A51 pane-ID source guard keeps its exact meaning.
+CLOSE_EVENT = "resource_close"
+CLOSE_NOTE_KEYS = frozenset({"object_type", "object_id", "outcome", "reason"})
+CLOSE_OBJECT_TYPES = frozenset({"workspace", 'pane', "worktree"})
+CLOSE_OUTCOMES = frozenset({"ok", "failed"})
+CLOSE_VALUE_SAFE = frozenset(
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._~-"
+)
+CLOSE_VALUE_HEX = frozenset("0123456789abcdefABCDEF")
 
 
 class RelayError(Exception):
@@ -1507,7 +1521,8 @@ def _lint_command(
 ) -> int:
     try:
         if amend_check is None:
-            lint_plan(Path(plan_dir) / "relay_plan.md", config)
+            plan = lint_plan(Path(plan_dir) / "relay_plan.md", config)
+            _lint_ledger(plan, Path(plan_dir) / "relay_log.jsonl")
         elif amend_check == "before":
             return _validate_amend_before(plan_dir, repo or "", snapshot_dir or "", proposed_path, config)
         else:
@@ -1542,9 +1557,8 @@ def _ledger_error(message: str) -> RelayError:
     return _error("ledger", message, exit_code=4)
 
 
-def read_ledger(path: str | Path) -> list[dict[str, object]]:
-    """Read one exact-schema JSONL ledger, treating absence as an empty ledger."""
-    ledger_path = Path(path)
+def _ledger_lines(ledger_path: Path) -> list[str]:
+    """Read and LF-split a JSONL ledger; absence or emptiness means no rows."""
     if not ledger_path.exists():
         return []
     try:
@@ -1555,30 +1569,74 @@ def read_ledger(path: str | Path) -> list[dict[str, object]]:
         return []
     if not text.endswith("\n"):
         raise _ledger_error("last ledger line is not newline-terminated")
-
-    entries: list[dict[str, object]] = []
     # JSONL records are delimited by LF. str.splitlines() also splits valid
     # JSON string content such as U+0085/U+2028/U+2029, making a successful
     # append unreadable on the next command.
-    for expected_seq, line in enumerate(text[:-1].split("\n"), start=1):
+    return text[:-1].split("\n")
+
+
+def _validate_ledger_row(entry: object, expected_seq: int) -> dict[str, object]:
+    """The generic per-row gate shared by `add`/`status` reads and the lint scan.
+
+    `note` is deliberately not type-checked here: for `resource_close` a
+    non-string note is an HC-RL-A155 semantic violation that the close-row
+    validator must see; every other event keeps the generic `ledger` failure.
+    """
+    if not isinstance(entry, dict) or set(entry) != LEDGER_FIELDS:
+        raise _ledger_error(f"line {expected_seq}: ledger fields must be exactly seven fixed keys")
+    if entry["seq"] != expected_seq or isinstance(entry["seq"], bool):
+        raise _ledger_error(f"line {expected_seq}: invalid seq")
+    if not all(isinstance(entry[field], str) for field in LEDGER_FIELDS - {"seq", "note"}):
+        raise _ledger_error(f"line {expected_seq}: non-string ledger value")
+    if entry["event"] not in EVENTS:
+        raise _ledger_error(f"line {expected_seq}: invalid event")
+    if not AGENT_INSTANCE_RE.fullmatch(entry["agent"]):
+        raise _ledger_error(f"line {expected_seq}: invalid agent")
+    if entry["by"] not in {"orchestrator", "monitor"}:
+        raise _ledger_error(f"line {expected_seq}: invalid by")
+    return entry
+
+
+def read_ledger(path: str | Path) -> list[dict[str, object]]:
+    """Read one exact-schema JSONL ledger, treating absence as an empty ledger."""
+    entries: list[dict[str, object]] = []
+    for expected_seq, line in enumerate(_ledger_lines(Path(path)), start=1):
         try:
             entry = json.loads(line)
         except json.JSONDecodeError as exc:
             raise _ledger_error(f"line {expected_seq}: invalid JSON") from exc
-        if not isinstance(entry, dict) or set(entry) != LEDGER_FIELDS:
-            raise _ledger_error(f"line {expected_seq}: ledger fields must be exactly seven fixed keys")
-        if entry["seq"] != expected_seq or isinstance(entry["seq"], bool):
-            raise _ledger_error(f"line {expected_seq}: invalid seq")
-        if not all(isinstance(entry[field], str) for field in LEDGER_FIELDS - {"seq"}):
+        row = _validate_ledger_row(entry, expected_seq)
+        if not isinstance(row["note"], str):
             raise _ledger_error(f"line {expected_seq}: non-string ledger value")
-        if entry["event"] not in EVENTS:
-            raise _ledger_error(f"line {expected_seq}: invalid event")
-        if not AGENT_INSTANCE_RE.fullmatch(entry["agent"]):
-            raise _ledger_error(f"line {expected_seq}: invalid agent")
-        if entry["by"] not in {"orchestrator", "monitor"}:
-            raise _ledger_error(f"line {expected_seq}: invalid by")
-        entries.append(entry)
+        entries.append(row)
     return entries
+
+
+def _lint_ledger(plan: Plan, ledger_path: Path) -> None:
+    """design §3.4: after the plan lints, each ledger row passes the generic gate,
+    then every `resource_close` row re-runs the same semantics `add` applies."""
+    for expected_seq, line in enumerate(_ledger_lines(ledger_path), start=1):
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise _ledger_error(f"line {expected_seq}: invalid JSON") from exc
+        row = _validate_ledger_row(entry, expected_seq)
+        if row["event"] != CLOSE_EVENT:
+            if not isinstance(row["note"], str):
+                raise _ledger_error(f"line {expected_seq}: non-string ledger value")
+            continue
+        try:
+            _validate_close_row(
+                plan,
+                str(row["node"]),
+                str(row["agent"]),
+                str(row["by"]),
+                row["note"],
+            )
+        except RelayError as exc:
+            raise _error(
+                exc.code, f"seq {expected_seq}: {exc.message}", exit_code=exc.exit_code
+            ) from exc
 
 
 def _validate_event(event: str, agent: str) -> None:
@@ -2151,6 +2209,144 @@ def _validate_node_close(plan: Plan, entries: list[dict[str, object]], node: Nod
             raise _error("HC-RL-A74", f"close agent {close_name} must be done")
 
 
+def _decode_close_value(raw: str) -> str:
+    """One §3.4 wire-format value: bare chars [A-Za-z0-9._~-], all other UTF-8
+    bytes written `%HH` (either hex case); decoded exactly once."""
+    output = bytearray()
+    index = 0
+    while index < len(raw):
+        char = raw[index]
+        if char == "%":
+            digits = raw[index + 1 : index + 3]
+            if len(digits) != 2 or any(digit not in CLOSE_VALUE_HEX for digit in digits):
+                raise _error("HC-RL-A155", f"invalid % escape in value {raw!r}")
+            output.append(int(digits, 16))
+            index += 3
+            continue
+        if char not in CLOSE_VALUE_SAFE:
+            raise _error(
+                "HC-RL-A155",
+                f"bare character {char!r} must be percent-encoded in value {raw!r}",
+            )
+        output.extend(char.encode("ascii"))
+        index += 1
+    try:
+        decoded = output.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise _error("HC-RL-A155", f"value {raw!r} is not valid UTF-8") from exc
+    if any(unicodedata.category(char) == "Cc" for char in decoded):
+        raise _error("HC-RL-A155", f"value {raw!r} decodes to a control character")
+    return decoded
+
+
+def _close_note_fields(note: object) -> dict[str, str]:
+    """§3.4: parse the strict `resource_close` note — every token one bare `=`,
+    ASCII-space separated, closed key set, no duplicates, no empty values."""
+    if not isinstance(note, str):
+        raise _error("HC-RL-A155", "resource_close note must be a string")
+    fields: dict[str, str] = {}
+    for token in note.split(" "):
+        if token.count("=") != 1:
+            raise _error("HC-RL-A155", f"malformed resource_close note token: {token!r}")
+        key, raw = token.split("=", 1)
+        if key not in CLOSE_NOTE_KEYS:
+            raise _error("HC-RL-A155", f"unknown resource_close note key: {key!r}")
+        if key in fields:
+            raise _error("HC-RL-A155", f"duplicate resource_close note key: {key}")
+        if not raw:
+            raise _error("HC-RL-A155", f"resource_close note {key} must not be empty")
+        fields[key] = _decode_close_value(raw)
+    for required in ("object_type", "object_id", "outcome"):
+        if required not in fields:
+            raise _error("HC-RL-A155", f"resource_close note missing {required}")
+    if fields["object_type"] not in CLOSE_OBJECT_TYPES:
+        raise _error(
+            "HC-RL-A155",
+            f"resource_close object_type must be one of "
+            f"{sorted(CLOSE_OBJECT_TYPES)}: {fields['object_type']!r}",
+        )
+    if fields["outcome"] not in CLOSE_OUTCOMES:
+        raise _error(
+            "HC-RL-A155",
+            f"resource_close outcome must be one of "
+            f"{sorted(CLOSE_OUTCOMES)}: {fields['outcome']!r}",
+        )
+    if not fields["object_id"].strip():
+        raise _error(
+            "HC-RL-A155", "resource_close object_id must not be empty or all whitespace"
+        )
+    if fields["object_type"] == "worktree" and not (
+        PurePosixPath(fields["object_id"]).is_absolute()
+        or PureWindowsPath(fields["object_id"]).is_absolute()
+    ):
+        raise _error(
+            "HC-RL-A155",
+            f"resource_close worktree object_id must be an absolute path: "
+            f"{fields['object_id']!r}",
+        )
+    return fields
+
+
+def _validate_close_node(plan: Plan, node: NodeSpec, fields: dict[str, str]) -> None:
+    """§3.4: the row points at the first active node of the closed object's stage —
+    the closing F stage's first active node for a worktree close."""
+    object_type = fields["object_type"]
+    if object_type == "worktree":
+        f_nodes = [
+            candidate
+            for candidate in plan.nodes
+            if not candidate.superseded
+            and candidate.card == node.card
+            and candidate.stage == "F"
+        ]
+        closing_first = (
+            next(
+                candidate.node
+                for candidate in f_nodes
+                if candidate.stage_id == f_nodes[-1].stage_id
+            )
+            if f_nodes
+            else None
+        )
+        if closing_first is None or node.node != closing_first:
+            raise _error(
+                "HC-RL-A155",
+                f"resource_close worktree must record on the first active node of "
+                f"the closing F stage, not {node.node}",
+            )
+        return
+    members = [
+        candidate
+        for candidate in plan.nodes
+        if not candidate.superseded and candidate.stage_id == node.stage_id
+    ]
+    if node.node != members[0].node:
+        raise _error(
+            "HC-RL-A155",
+            f"resource_close {object_type} must record on the first active node of "
+            f"{node.stage_id}, not {node.node}",
+        )
+
+
+def _validate_close_row(
+    plan: Plan, node_name: str, agent: str, by: str, note: object
+) -> None:
+    """design §3.4: the shared `resource_close` contract — called by `add` before
+    any byte is appended and by `lint` for each ledger row. The writer owner is
+    read off the decoded object_type, so the note parses before the writer check."""
+    node = _active_node(plan, node_name)
+    _authorize_agent(plan, node, CLOSE_EVENT, agent)
+    fields = _close_note_fields(note)
+    owner = "monitor" if fields["object_type"] == 'pane' else "orchestrator"
+    if by != owner or _writer_from_agent(agent) != owner:
+        raise _error(
+            "HC-RL-A85",
+            f"resource_close object_type={fields['object_type']} must be written by "
+            f"{owner}, not {by}",
+        )
+    _validate_close_node(plan, node, fields)
+
+
 def _validate_runtime_event(
     plan: Plan,
     entries: list[dict[str, object]],
@@ -2160,6 +2356,12 @@ def _validate_runtime_event(
     note: str,
     attempt_max: int,
 ) -> None:
+    if event == CLOSE_EVENT:
+        # §3.4: a close record is not an agent state transition and carries no
+        # stage window — it may be logged anywhere, repeatedly, even after
+        # node_close/stage_close. Its note decides the legal writer.
+        _validate_close_row(plan, node_name, agent, _writer_from_agent(agent), note)
+        return
     node = _active_node(plan, node_name)
     _authorize_agent(plan, node, event, agent)
     _validate_writer(event, agent)
@@ -2672,6 +2874,30 @@ def _ledger_warnings(
     warnings: list[str] = []
     for entry in entries:
         event = str(entry["event"])
+        if event == CLOSE_EVENT:
+            # §3.4: the close writer is read off the decoded object_type, never a
+            # per-event constant. A row that fails the wire format is reported as
+            # its own A155 anomaly; an out-of-class writer reports A69/A85.
+            name = str(entry["agent"]).partition("#")[0]
+            if name not in CONTROL_AGENT_NAMES:
+                warnings.append(
+                    f"seq {entry['seq']}: HC-RL-A69 {event} requires orchestrator or "
+                    f"monitor agent: {entry['agent']}"
+                )
+                continue
+            try:
+                fields = _close_note_fields(entry["note"])
+            except RelayError as exc:
+                warnings.append(f"seq {entry['seq']}: {exc.code} {exc.message}")
+                continue
+            owner = "monitor" if fields["object_type"] == 'pane' else "orchestrator"
+            actual = str(entry["by"])
+            if actual != owner or _writer_from_agent(str(entry["agent"])) != owner:
+                warnings.append(
+                    f"seq {entry['seq']}: HC-RL-A85 {event} object_type="
+                    f"{fields['object_type']} must be written by {owner}, not {actual}"
+                )
+            continue
         owner = WRITER_BY_EVENT[event]
         actual = str(entry["by"])
         if actual != owner:
@@ -2683,6 +2909,10 @@ def _ledger_warnings(
     launches: dict[str, int] = {}
     for entry in entries:
         event = str(entry["event"])
+        if event == CLOSE_EVENT:
+            # §3.4: a close record may be logged anywhere — before stage_start,
+            # after stage_close — so it is exempt from the A93 window checks.
+            continue
         stage_id = _stage_of(entry, nodes_by_name)
         if stage_id is None:
             continue
