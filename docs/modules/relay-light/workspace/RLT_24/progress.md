@@ -52,3 +52,7 @@ DONE task=RLT_24 role=checker node=C1 status=FAIL ts=2026-09-17T14:38:48+08:00
 DONE task=RLT_24 role=coder node=C1 status=BLOCKED ts=2026-09-17T14:45:34+08:00
   summary: 整改 r1：判定冻结 wire format 下 object_type=workspace 无法区分阶段/编排空间（四键闭集、object_id 无命名约定、node 位置不可辨），P1 判据无可实现校验；不猜不删判据，findings F-C1-04 移交 decider/编排；代码未改，commit 2dd5d77 保持
   artifacts: findings.md, progress.md
+
+DONE task=RLT_24 role=builder node=W1 status=OK ts=2026-09-17T14:51:16+08:00
+  summary: 修订 r2；按用户裁决选项 A 调整 C1 机器边界与 C4 两类空间取证，保留原 P1/FAIL 留痕；计划提交 4bcaef4
+  artifacts: task_plan.md, progress.md
