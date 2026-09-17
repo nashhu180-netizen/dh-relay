@@ -20,3 +20,7 @@
 ## C4
 
 - 本批无新发现。A157 两类空间取证用已提交的 C1/C2 能力一次走通，未暴露程序缺陷或合同缺口；「编排空间→F 首节点」按裁决以写入者纪律执行并落证据（seq 5 @F1），未试图把用途塞进 wire format。
+
+## X1
+
+- 本批无新发现，整改按两条 review 逐条闭合。留痕一条残余边界（非缺陷）：`baseline_impl()` 的按需 fetch 依赖服务端放行按 SHA 取对象——GitHub 开启 allowReachableSHA1InWant、且 `b41cd2d` 合入后仍是 master 可达祖先，CI 无障碍；本地路径型 origin 在该 SHA 不再是 ref 尖后默认拒发，此时测试以 `self.fail` 明确报出 fetch rc 与 stderr 而非静默 skip，属有意设计（钉死基线防自我比较，宁可响报错不可假绿）。

@@ -7657,8 +7657,9 @@ class RelayResourceCloseTests(RelayCliTestCase):
 class RelayResourceCloseBackwardCompatTests(RelayCliTestCase):
     """RLT_24 C3 — HC-RL-A158: the historical rlt12-win-01 ledger is read-only,
     replays 71/71 through the new `add`, lints clean, projects the same stable
-    `status --json` fields as the pre-`resource_close` (master) implementation,
-    and accepts legal close rows without disturbing the projection."""
+    `status --json` fields as the pre-`resource_close` (pinned baseline)
+    implementation, and accepts legal close rows without disturbing the
+    projection."""
 
     RLT12_SOURCE = (
         Path(__file__).resolve().parents[2]
@@ -7668,6 +7669,13 @@ class RelayResourceCloseBackwardCompatTests(RelayCliTestCase):
     # `idle_seconds` = wall-clock minus the ledger's own ts; `last_ts` is
     # ledger-sourced and stable, so it stays inside the comparison.
     DYNAMIC_KEYS = frozenset({"idle_seconds"})
+    # RLT_24 X1 — the pre-`resource_close` baseline is pinned to this card's
+    # base commit (master at D-start). A moving ref breaks twice: shallow CI
+    # checkouts (actions/checkout fetch-depth=1, detached HEAD) resolve no
+    # `master`, and after this card merges `master` itself would contain
+    # resource_close and degrade the comparison to a self-comparison.
+    BASELINE_SHA = "b41cd2d9e48814c93352f969a085971a60546565"
+    BASELINE_PATH = "tools/relay-light/relay_log.py"
 
     def copy_historical(self, *, with_ledger: bool = False) -> Path:
         """Byte-copy the canonical plan (and optionally its ledger) into this
@@ -7702,13 +7710,51 @@ class RelayResourceCloseBackwardCompatTests(RelayCliTestCase):
         return document
 
     def baseline_impl(self) -> Path:
-        """The pre-`resource_close` implementation at master, materialized to a
-        /tmp/rlt24-* dir per the task plan; never inside the repo."""
+        """The pre-`resource_close` implementation at BASELINE_SHA,
+        materialized to a /tmp/rlt24-* dir per the task plan; never inside
+        the repo. Shallow CI checkouts lack the pinned object, so it is
+        fetched from origin on demand; a fetch that cannot supply it is a
+        loud failure with the reason, never a silent skip — A158 must keep
+        its evidential force on the CI gate jobs."""
+        repo = Path(__file__).resolve().parents[2]
         base_dir = Path(tempfile.mkdtemp(prefix="rlt24-"))
         self.addCleanup(shutil.rmtree, base_dir, True)
+        spec = f"{self.BASELINE_SHA}:{self.BASELINE_PATH}"
+        present = subprocess.run(
+            ["git", "cat-file", "-e", spec],
+            cwd=repo,
+            capture_output=True,
+            check=False,
+        )
+        if present.returncode != 0:
+            fetched = subprocess.run(
+                ["git", "fetch", "--depth=1", "origin", self.BASELINE_SHA],
+                cwd=repo,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            present = subprocess.run(
+                ["git", "cat-file", "-e", spec],
+                cwd=repo,
+                capture_output=True,
+                check=False,
+            )
+            if fetched.returncode != 0 or present.returncode != 0:
+                detail = (fetched.stderr or fetched.stdout).strip()
+                if fetched.returncode == 0:
+                    detail = "fetch reported success but the object is absent"
+                self.fail(
+                    f"A158 baseline unavailable: `git cat-file -e {spec}` "
+                    f"failed and `git fetch --depth=1 origin "
+                    f"{self.BASELINE_SHA}` did not supply it "
+                    f"(rc={fetched.returncode}: {detail}). The pinned "
+                    "baseline must be fetchable from origin; refusing to "
+                    "silently skip the old-vs-new comparison."
+                )
         baseline = subprocess.run(
-            ["git", "show", "master:tools/relay-light/relay_log.py"],
-            cwd=Path(__file__).resolve().parents[2],
+            ["git", "show", spec],
+            cwd=repo,
             text=True,
             capture_output=True,
             check=True,
@@ -7777,10 +7823,10 @@ class RelayResourceCloseBackwardCompatTests(RelayCliTestCase):
         )
 
     def test_a158_old_and_new_status_stable_fields_equal(self) -> None:
-        """The master (19-word) implementation and the new one project the same
-        stable fields on the same copied plan+ledger — every top-level and
-        nested object compared verbatim except the dynamic-time keys in
-        DYNAMIC_KEYS (`agents[].idle_seconds`)."""
+        """The pinned-baseline (19-word) implementation and the new one
+        project the same stable fields on the same copied plan+ledger —
+        every top-level and nested object compared verbatim except the
+        dynamic-time keys in DYNAMIC_KEYS (`agents[].idle_seconds`)."""
         plan_dir = self.copy_historical(with_ledger=True)
         base_py = self.baseline_impl()
         old_result = self.run_status_json(base_py, plan_dir)
