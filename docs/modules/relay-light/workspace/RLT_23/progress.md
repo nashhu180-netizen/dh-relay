@@ -73,3 +73,10 @@ DONE task=RLT_23 role=reviewer-consistency node=R2 status=APPROVE ts=2026-09-17T
 DONE task=RLT_23 role=coder node=F1 status=OK ts=2026-09-17T12:09:53+08:00
   summary: F 收口备料：review.md AI 提交区三行已按既有证据填写（人类签名区留空），两路复核范围外发现原样转入 findings.md 转派候选；提交仅含本卡 workspace 五件
   artifacts: review.md, review.lesson.md, review.consistency.md, progress.md, findings.md, commit daa29ab
+
+## 人类验收落记（AI 代记）
+
+- **2026-09-17**：PR #43 合入（`f62c472`）后，用户在对话中明确答复「**你帮我代签**」，授权 AI 代记 RLT_23 整卡验收。据此 `review.md` 人类签名区落记「验收通过（整卡整体授权代签，未逐条人判）」，DevPlan 任务表 RLT_23 行由「已完成」转「已验收」。
+- 代记依据：AGENTS.md 宪章#4——确认来自用户对话明文；本卡 `light` 档无 H 类人判验收项（A151～A154 均为 AI 结构检查），该授权不构成对任一复核报告条目的逐条人判。
+- 边界：本卡不属高危五类，无 `verify(relay-light):` 提交要求；findings.md「转派候选」三条仍为待裁决，不因本次验收关闭。
+- 收口动作：PR #43 本体合入 `f62c472`（远端分支已删）；skill 两侧重同步自 master 主检出执行、五文件三处 sha256 一致；worktree `.dh-worktrees/RLT_23` 与分支 `wt/RLT_23` 已删；DevPlan 回填与本落记同走 PR #44。
