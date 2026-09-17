@@ -61,10 +61,6 @@ DONE task=RLT_24 role=coder node=C1 status=BLOCKED ts=2026-09-17T14:45:34+08:00
   summary: 整改 r1：判定冻结 wire format 下 object_type=workspace 无法区分阶段/编排空间（四键闭集、object_id 无命名约定、node 位置不可辨），P1 判据无可实现校验；不猜不删判据，findings F-C1-04 移交 decider/编排；代码未改，commit 2dd5d77 保持
   artifacts: findings.md, progress.md
 
-DONE task=RLT_24 role=coder node=C2 status=OK ts=2026-09-17T15:22:08+08:00
-  summary: 新增 2 用例（A156 五反例双入口 + 合法 failed 检索/schema 稳定）；RED exit 1/6 断言失败 → GREEN 2/2；全量 unittest 214/214 OK、pwsh 回归 RELAY ALL PASS
-  artifacts: tools/relay-light/relay_log.py, tools/relay-light/test_relay_log.py, progress.md, findings.md, lesson_candidates.md, commit 5f7a45d
-
 DONE task=RLT_24 role=builder node=W1 status=OK ts=2026-09-17T14:51:16+08:00
   summary: 修订 r2；按用户裁决选项 A 调整 C1 机器边界与 C4 两类空间取证，保留原 P1/FAIL 留痕；计划提交 4bcaef4
   artifacts: task_plan.md, progress.md
@@ -72,3 +68,11 @@ DONE task=RLT_24 role=builder node=W1 status=OK ts=2026-09-17T14:51:16+08:00
 DONE task=RLT_24 role=checker node=C1 status=PASS ts=2026-09-17T14:52:30+08:00
   summary: 复审 r1；原 P1 #1 按用户裁决和 task_plan r2 闭合，新增 P1=0、P2=0；定向 2/2 OK，代码仍为 2dd5d77
   artifacts: check.C1.md
+
+DONE task=RLT_24 role=coder node=C2 status=OK ts=2026-09-17T15:22:08+08:00
+  summary: 新增 2 用例（A156 五反例双入口 + 合法 failed 检索/schema 稳定）；RED exit 1/6 断言失败 → GREEN 2/2；全量 unittest 214/214 OK、pwsh 回归 RELAY ALL PASS
+  artifacts: tools/relay-light/relay_log.py, tools/relay-light/test_relay_log.py, progress.md, findings.md, lesson_candidates.md, commit 5f7a45d
+
+DONE task=RLT_24 role=checker node=C2 status=PASS ts=2026-09-17T15:41:51+08:00
+  summary: C2 审核 P1=0、P2=0；A156 定向 2/2、Python 全量 214/214、PowerShell 总入口均通过
+  artifacts: check.C2.md
