@@ -121,3 +121,7 @@ DONE task=RLT_24 role=reviewer-requirement node=R2 status=APPROVE ts=2026-09-17T
 DONE task=RLT_24 role=reviewer-code1 node=R1 status=REVISE ts=2026-09-17T17:05:00+08:00
   summary: 代码轮1 REVISE，P1=1（A158 baseline_impl 用 git show master:，actions/checkout@v4 浅克隆 detached 下无 master ref→用例 ERROR→relay-light-python 与 relay-tests-pwsh 硬门禁在 PR 上必红）、P2=1（基线移动目标退化）；实现本体 §3.4 全要素 PASS：自跑 35+ add/lint/status 边界例全对、字节不变、双入口共用校验、旧事件不误伤、rlt12 lint 0、断言零删除、亲跑 unittest 217/217 OK 与 pwsh RELAY ALL PASS
   artifacts: review.code-round1.md, review.md
+
+DONE task=RLT_24 role=coder node=X1 status=OK ts=2026-09-17T17:58:00+08:00
+  summary: X1 整改闭合 R1 P1+P2 与 R3 P2：baseline_impl 钉死基线 sha b41cd2d（cat-file 探测→缺失 fetch --depth=1 origin→git show，fetch 失败 self.fail 带原因不静默 skip）；/tmp 浅克隆 detached 复刻 CI 自证 fetch 回退实跑、兼容类 3/3 OK，本地直通 3/3 OK；lesson_candidates 补 L-X1-01/02；全量 unittest 217/217 OK、pwsh RELAY ALL PASS
+  artifacts: tools/relay-light/test_relay_log.py, progress.md, findings.md, lesson_candidates.md, evidence/X1-ci-shallow-clone.md, commit 5551624
