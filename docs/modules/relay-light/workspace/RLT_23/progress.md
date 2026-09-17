@@ -7,6 +7,7 @@
 | 2026-09-17 | W1 | `wt/RLT_23` 在 `7cee7ed` 上 `git rebase master`，结果 up to date；核对 DevPlan、设计 A140/A151～A154、RLT_11 来源与现役 skill/adapter；建七件套和两批计划。此记录只代表 W1 规划。 |
 | 2026-09-17 | C1 | `git rebase --autostash master` up to date、分支 `wt/RLT_23` 确认。`SKILL.md` 在「批内不换人」后、「五阶段模板」前新增 `## 派活纪律与监工判活`，放 A151 投递确认与 A153 三要素判活两句原文；两 adapter `## 派活提交纪律` 首段后各补 A151，`## stalled 处置` 与 `## ledger_silent 处置` 之间各新增 `## agent_lost 判活（监工模板）` 放 A153。A140 `ledger_silent` 三段原文未动；A153 三要素以同句逐字满足（非散词命中）。机械核验 3/3/3/3、软表述反查零行 rg exit 1、各文件恰一次；python 210 tests OK；pwsh `RELAY ALL PASS (SKIPPED: 1)`；`git diff --check` 零错误、四集合仅含允许路径、无新增 `__pycache__`。 |
 | 2026-09-17 | C2 | `git rebase --autostash master` up to date、分支 `wt/RLT_23` 确认；先读 check.C1.md（PASS）。`SKILL.md`「派活纪律与监工判活」段续加 A152 主控侧分叉原文；`### F 阶段模板` scribe 表闭合后、`## 账本用法` 前加 `**F 阶段收口 checklist**` 与逐字 `- [ ]` 删树确认行（未勾选）。两 adapter `## 环境预检（拉起前）` 原无条件 bypass 段改写为主控侧分叉：两句 oracle 原文逐字落，Codex 主控侧既有机制（只读启动失败/`NOT_RUN`/`launch_fix=`/prompt 只读约束/不改 `launch` 列不走 `plan_amend`）以同主控条件保留。R 模板、F 表 node/agent 行、A140 段、`## agent 拉起` 命令形态均未动。机械核验 2/2/1/1/1、无条件 bypass 反查零行 rg exit 1；python 210 tests OK；pwsh `RELAY ALL PASS (SKIPPED: 1)`；`git diff --check` 零错误、四集合仅含允许路径。 |
+| 2026-09-17 | F1 | F 收口备料：两路复核均 APPROVE（review.lesson.md / review.consistency.md，判据内 P1=0 P2=0）。按两路复核、check.C1.md / check.C2.md 与证据账本填 review.md「AI 提交区」三行（四条验收 / 两路复核 / 范围与回归），结论只引已有文件事实，人类签名区保持空白；两路复核范围外发现原样汇总进 findings.md 作转派候选（不施工）。提交只含本卡 workspace 五件。 |
 
 ## 证据账本
 
@@ -60,3 +61,11 @@ DONE task=RLT_23 role=coder node=C2 status=OK ts=2026-09-17T11:28:23+08:00
 DONE task=RLT_23 role=checker node=C2 status=PASS ts=2026-09-17T11:41:14+08:00
   summary: C2 A152/A154 与 C1 保持检查通过，P1=0，P2=0；grep 2/2/1/1/1、反查零行，两条回归退出 0
   artifacts: check.C2.md
+
+DONE task=RLT_23 role=reviewer-lesson node=R1 status=APPROVE ts=2026-09-17T11:52:10+08:00
+  summary: 教训路复核 APPROVE，判据内 P1=0/P2=0；四条来源教训均按 oracle 逐字回流且限定条件不丢、与既有教训及 A140 无冲突、lesson_candidates 无漏登、路径闭集未越界；范围外 P2 建议 1 条（Claude 主控侧只读复核形态失败时无书面兜底）+观察 2 条
+  artifacts: review.lesson.md, review.md
+
+DONE task=RLT_23 role=reviewer-consistency node=R2 status=APPROVE ts=2026-09-17T12:05:00+08:00
+  summary: 一致性路复核 APPROVE，P1=0/P2=0；A151/A153 原文三处逐字命中、A152 主控侧分叉落实且无条件 bypass 反查零行、A154 F checklist 独立行在、两条回归复跑 exit 0、允许路径与非目标全符；范围外观察 1 条（A152 括号理由「被本地 auto 分类器拦」未入文本）
+  artifacts: review.consistency.md, review.md
