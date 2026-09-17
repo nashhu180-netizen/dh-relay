@@ -2,6 +2,7 @@
 # task_plan — RLT_24 resource_close
 
 修订日志：2026-09-17 r1，依据 `review.plan.md` P1 #4a/#4b/#5/#6：补 A2 二十词合法运行映射、worktree 相对路径反例、`_ledger_warnings` 读侧归属与关后豁免、非字符串 note 的失败层级与退出码。
+修订日志：2026-09-17 r2，依据 `check.C1.md` P1 #1、`decision.1.md` 选项 A 与 `decisions.md` 第 1 行用户裁决：保留原 P1/FAIL 留痕；将编排空间→F 首有效节点列为写入者纪律，C4 两类空间分别取证；C1 机器校验仅覆盖裁决列明的可计算边界。本修订不追认旧候选通过，须由 checker 对修订后计划复审 C1。
 
 ## Context Packet 与执行契约
 
@@ -31,7 +32,7 @@
 **改动落点**：
 
 1. `test_relay_log.py` 的 `RelayCliTestCase` 下新增 `RelayResourceCloseTests`（或等价独立类），复用 `write_plan`、`run_add`、`run_lint_cli`，为 lint 反例直接向**临时 fixture** 的 JSONL 植入一条顶层七字段/seq 合法而 note/归属非法的行；不能先通过 add 写入再误称 lint 拒绝。通用反例 helper 同时断言 add `returncode=2`、失败前后 `read_bytes()` 相同、lint `returncode=2` 且错误指明 `seq` 和字段/原因，lint 前后字节相同。无账本时用不存在/空文件前后等价判断。
-2. `relay_log.py` 的 `CONTROL_EVENTS`/`EVENTS` 扩第 20 词，`AGENT_EVENTS` 自动排除新控制事件；`_validate_event` 保留未知词 A2 fail closed。`CONTROL_WRITERS`/`WRITER_BY_EVENT` 对该词按**解码后的**对象类别确定 owner，避免用单一 writer 常量硬套。`_authorize_agent`、`_validate_runtime_event`、`_validate_event_semantics`、`_validate_writer` 和 `_validate_writer_handoff` 需要允许 §3.4 的控制语义：有效非 superseded node，阶段空间用该阶段首个有效 node，编排空间/worktree 用 F 阶段首个有效 node；可在 `node_close`、`stage_close` 后记录，可重复，不要求 `agent_launch`，不进入 `_validate_agent_transition`。禁止把所有控制事件的 handoff 规则一并放松。`object_type=worktree` 的 `object_id` 解码后须为绝对路径；相对路径即使编码合法也退 2。
+2. `relay_log.py` 的 `CONTROL_EVENTS`/`EVENTS` 扩第 20 词，`AGENT_EVENTS` 自动排除新控制事件；`_validate_event` 保留未知词 A2 fail closed。`CONTROL_WRITERS`/`WRITER_BY_EVENT` 对该词按**解码后的**对象类别确定 owner，避免用单一 writer 常量硬套。`_authorize_agent`、`_validate_runtime_event`、`_validate_event_semantics`、`_validate_writer` 和 `_validate_writer_handoff` 需要允许 §3.4 的控制语义。按 `decisions.md` 第 1 行，C1 的机器校验边界为：node 存在且非 superseded；`workspace`/`pane` 指向**所声明阶段**首个有效 node；`worktree` 指向收口 F 阶段首个有效 node。编排空间实际用途及其须指向 F 首有效节点由写入者按现场保证，C4 分别取证阶段空间→所在阶段首节点、编排空间→F 首节点；`object_id`/fixture 名称不作为空间用途解析规则，不要求 add/lint 从同一 `object_type=workspace` 推断用途。关闭行可在 `node_close`、`stage_close` 后记录，可重复，不要求 `agent_launch`，不进入 `_validate_agent_transition`。禁止把所有控制事件的 handoff 规则一并放松。`object_type=worktree` 的 `object_id` 解码后须为绝对路径；相对路径即使编码合法也退 2。
 3. 新建只针对 `resource_close` 的严格 note 解析/校验函数，供 `append_event` 的追加前路径和 `_lint_command` 的读账路径共用；不要复用会 `split()` 并首键胜出的 `_note_tokens`。token 恰一个裸 `=`，单 ASCII 空格分隔且无首尾/连续空格、Tab、裸换行；键仅 `object_type/object_id/outcome/reason` 且无重复；值裸字符 `[A-Za-z0-9._~-]`，其它按 UTF-8 字节 `%HH`（大小写十六进制均收）；只解码一次，拒绝裸 `+`、非法 `%`、无效 UTF-8、解码控制字符；解码后空/纯空白标识拒绝，普通内部空格保留；枚举大小写敏感。其它事件的自由 note 不解析。
 4. `_lint_command` 当前只调 `lint_plan`。在计划通过后增加**逐行**账本语义检查，只对新事件启用严格关闭校验；直接植入非法关闭行须按设计退出 2，说明 `seq`/字段/原因；合法历史行保持兼容。`read_ledger` 的通用 JSON、七字段、连续 `seq` 检查先行。**非字符串 note 的特殊分流**：当前 `read_ledger` 在所有字符串字段类型检查处先退 `ledger`/4；为 `resource_close` 保留已解析的 event 与原始 note 值，在通用 JSON/七字段/seq 通过后将其非字符串 note 交给同一关闭语义校验入口，退 `HC-RL-A155`/2 并指出 `seq`/`note`；其它事件的非字符串字段仍走既有 `ledger`/4，通用错误口径不变。CLI `--note` 只能传字符串，故非字符串只在直接植入行后的 lint 侧测试；不能把此用例写成 add 的可构造反例，也不能依赖尚未执行的解析函数宣称覆盖。
 5. `_ledger_warnings` 当前两处直接取 `WRITER_BY_EVENT[event]`，并把任何 `stage_close` 后的行标 A93。新增事件的只读状态诊断须按**已解码 `object_type`** 判 owner（pane=monitor，其余两类=orchestrator），合法 `resource_close` 不因 `stage_close` 后或无 `stage_start` 被报 A93；不往 `status --json` 添加字段。非法植入行仍由 lint 退 2；旧事件 A85/A93 的 warning 逻辑及既有测试保持原样。测试须在 `status --json` 的 `errors` 实际断言无新增异常，不只比 node/stage 投影。
@@ -73,12 +74,12 @@
 | `test_a155_blank_id_invalid_type_and_outcome_add_and_lint` | 空标识、`%20` 纯空白标识、非法/大小写变化的 `object_type` 与 `outcome`，以及 `object_type=worktree object_id=relative%2Ftree outcome=ok` 相对路径，各例 add/lint 退 2 且 add 前后账本字节一致；合法标识中的 `%20` 不被 trim 改写，绝对路径正例由三类对象用例证明。 |
 | `test_a155_wire_encoding_and_token_grammar_add_and_lint` | 正例 `%20/%2B/%3D/%25`、大小写 hex、UTF-8、多值顺序；反例非法 `%`、无效 UTF-8、控制字符、裸 `+`、裸 Tab/换行、首尾/双空格、无等号/双等号、裸非 safe 字符，各例 add/lint 退 2。 |
 | `test_a155_duplicate_unknown_and_non_string_note_add_and_lint` | 重复键（同值也拒）、未知键、尾随自由文本各经 add/lint 退 2；非字符串 note 仅直接植入顶层 JSONL 行测 lint `HC-RL-A155`/2 且错误含 seq/note；另植入一个**旧事件**非字符串 note，核仍按既有通用 `ledger`/4 失败。CLI `--note` 只能传字符串，不造无法执行的 add 反例。 |
-| `test_a155_wrong_writer_and_node_add_and_lint` | pane 用 orchestrator、workspace/worktree 用 monitor、未知/superseded node、阶段 workspace 非首有效 node、编排空间/worktree 非 F 首有效 node，各经 add/lint 退 2；错误 `by` 只可直接植入行后测 lint（add 的 `by` 由 agent 派生）；writer 的 agent 前缀与 by 一致性同时核。 |
+| `test_a155_wrong_writer_and_node_add_and_lint` | pane 用 orchestrator、workspace/worktree 用 monitor、未知/superseded node、workspace/pane 非所声明阶段首有效 node、worktree 非 F 首有效 node，各经 add/lint 退 2；错误 `by` 只可直接植入行后测 lint（add 的 `by` 由 agent 派生）；writer 的 agent 前缀与 by 一致性同时核。编排空间实际归属不是 wire 输入，故不设“名称看似编排空间但指向 C1”机器拒绝反例；其 F 节点纪律由 C4 现场证据核验。原要求及 FAIL 见 `check.C1.md` P1 #1，调整依据见 `decision.1.md` 选项 A、`decisions.md` 第 1 行。 |
 | `test_a155_after_terminal_and_repeated_close_preserve_projection` | `node_close` 与 `stage_close` 后仍可 add 合法关闭行；同一对象连续关闭尝试有不同 seq；无 `agent_launch`；前后 node/stage/agent 状态派生相同；pane/workspace/worktree 三类合法行的 `status --json` 均 `errors=[]`，证明 `_ledger_warnings` 不误报 A85/A93。`last_writer` 等行事实字段另行观察，不当作状态机状态。 |
 | `test_a155_status_warnings_preserve_old_a85_a93` | 直接植入旧事件错误 writer 与关后旧事件，`status --json` 仍分别报 A85/A93；新事件豁免不放宽旧检查。 |
 | `test_all_twenty_event_words_pass_lexical_validation`、`test_a2_all_twenty_events_in_legal_runtime_contexts`、`test_add_rejects_unknown_and_case_changed_events_without_writing` | A2 词表长度 20 + 上表 20 词逐个合法上下文 add 0/行字段正确 + 未知词退 2、前后字节一致；A85 旧反例原样通过。 |
 
-**RED→GREEN 与机械完成**：先加以上单测，运行 `cd tools/relay-light && PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_relay_log.RelayResourceCloseTests test_relay_log.RelayPlanLintTests.test_all_twenty_event_words_pass_lexical_validation`，预期 RED 为未实现事件/语义导致的断言失败；实现后同命令退出 0。若用例改名，同步命令与 progress。除 `rg -n 'assertEqual\(20, len\(EVENTS\)\)|resource_close' tools/relay-light/test_relay_log.py` 外，必须运行 `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_relay_log.RelayResourceCloseTests.test_a2_all_twenty_events_in_legal_runtime_contexts`（cwd 为 `tools/relay-light`）并在 E-C1-* 记 20 个成功目标词、各目标行/rc 与 `set(successful_events)==EVENTS` 的证据；未知词的账本字节比较、相对路径双入口反例、非字符串 note 失败层级、三类关闭行的 `status --json errors=[]` 和旧 A85/A93 warning 保留都须逐项记录。再跑共同回归。证据落 `progress.md` E-C1-*，必要的临时 fixture 生成代码在测试文件中；不得把历史账本改成 fixture。
+**RED→GREEN 与机械完成**：先加以上单测，运行 `cd tools/relay-light && PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_relay_log.RelayResourceCloseTests test_relay_log.RelayPlanLintTests.test_all_twenty_event_words_pass_lexical_validation`，预期 RED 为未实现事件/语义导致的断言失败；实现后同命令退出 0。若用例改名，同步命令与 progress。除 `rg -n 'assertEqual\(20, len\(EVENTS\)\)|resource_close' tools/relay-light/test_relay_log.py` 外，必须运行 `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_relay_log.RelayResourceCloseTests.test_a2_all_twenty_events_in_legal_runtime_contexts`（cwd 为 `tools/relay-light`）并在 E-C1-* 记 20 个成功目标词、各目标行/rc 与 `set(successful_events)==EVENTS` 的证据；未知词的账本字节比较、相对路径双入口反例、非字符串 note 失败层级、三类关闭行的 `status --json errors=[]` 和旧 A85/A93 warning 保留都须逐项记录。node 拒绝断言按 r2 可计算边界核验，不能将编排空间→F 的 C4 写入者纪律报为 add/lint 保证；`check.C1.md` P1 #1 保持历史 FAIL，checker 须对修订后计划与当前候选重新核验。再跑共同回归。证据落 `progress.md` E-C1-*，必要的临时 fixture 生成代码在测试文件中；不得把历史账本改成 fixture。
 
 ## C2 — A156：reason 条件与可检索失败事实
 
@@ -115,13 +116,13 @@
 
 | 证据/核验名 | 对应 oracle 要素与断言 |
 |---|---|
-| `evidence/A157-stage-workspace.md` | 阶段空间：标明实跑或打桩；关闭不存在的测试 id 或 stub 的命令与实际报错/返回码；在本卡 fixture 计划的账本用 `agent=orchestrator#n`、阶段首有效 node 写合法 `object_type=workspace outcome=failed reason=...` 行；展示原 JSONL 行、seq/object_id 检索输出、账本路径；写人工处置或“待人工处理”，不冒称已处理。 |
-| `evidence/A157-orchestrator-workspace.md` | 编排空间：同样四要素；用 F 阶段首有效 node，写入者 orchestrator；独立失败观察、独立 seq 与 object_id 查回。 |
+| `evidence/A157-stage-workspace.md` | 阶段空间：记录现场用途来源及所属阶段，展示计划中该阶段首有效 node 的判定；标明实跑或打桩、关闭测试 id/stub 的命令与实际报错/返回码；在本卡 fixture 账本由 `agent=orchestrator#n` 将观察对应的 `object_id` 记在该阶段首有效 node，写合法 `object_type=workspace outcome=failed reason=...` 行；展示原 JSONL 行、seq/object_id 检索输出、账本路径及与关闭观察的对应关系；写人工处置或“待人工处理”，不冒称已处理。 |
+| `evidence/A157-orchestrator-workspace.md` | 编排空间：独立记录现场用途来源及收口 F 阶段首有效 node 的判定；标明实跑或打桩、关闭命令与实际报错/返回码；由 orchestrator 将该观察对应的 `object_id` 记在 F 首有效 node；展示独立 failed 原行、seq/object_id 检索输出、账本路径、观察对应关系与处置状态。不得以 fixture 名称充当用途解析规则。 |
 | `test_a157_evidence_replay`（需要时） | 若以脚本/测试实现可控 stub，断言两个独立对象均有失败行、`lint` 0、按 seq/object_id 命中；脚本/测试仍在允许路径且带 `PYTHONDONTWRITEBYTECODE=1`。 |
 
-取证步骤：先在 `evidence/fixture/` 建自有合法最小 `relay_plan.md`（可从测试 helper 生成；不复制到历史 `relay/**`），确认 `lint` 0；执行两次安全失败观察，记原始命令和输出（先按白名单过滤凭据）；按实际观察调用新 `add` 写 `reason`，记退出 0、原行与 lint 0；从 JSONL **实际**用 seq 与 object_id 两键查回并保存输出。实跑可选 `herdr workspace close <不存在的测试 id>`；若本机命令签名不符或会误触在用资源，使用可审计 stub，并明确“打桩”。失败记录落账失败时保留原观察并报错，不能称 A157 通过。两例均需明确待人工处理状态，不做强删。
+取证步骤：先在 `evidence/fixture/` 建自有合法最小 `relay_plan.md`（可从测试 helper 生成；不复制到历史 `relay/**`），确认 `lint` 0，并保存阶段/F 首有效节点的计划依据；执行两次安全失败观察，分别记录现场空间用途来源、原始命令和输出（先按白名单过滤凭据）；按各自实际观察调用新 `add` 写 `reason`，阶段空间指向所在阶段首有效 node，编排空间指向 F 首有效 node，记退出 0、原行与 lint 0；从 JSONL **实际**用 seq 与 object_id 两键查回并保存输出，证明观察对象、写入 node 与账本行对应。实跑可选 `herdr workspace close <不存在的测试 id>`；若本机命令签名不符或会误触在用资源，使用可审计 stub，并明确“打桩”。fixture 名称只作证据定位，不作为 add/lint 可解析的空间用途字段。失败记录落账失败时保留原观察并报错，不能称 A157 通过。两例均需明确待人工处理状态，不做强删。
 
-本批无必然程序 RED；若程序已有 C1/C2 的合法写入能力，记录取证首次执行结果，不为形式强造失败。机械完成判据：两个证据文件分别含命令/观察、合法 failed JSONL 行、seq/object_id 检索输出、处置状态；两行 `lint` 0；源历史目录 SHA/字节不变；再跑共同回归，证据落 `progress.md` E-C4-*。checker 核验后，本卡施工完成信号由 dispatch 合同决定，不自行启动 R/F。
+本批无必然程序 RED；若程序已有 C1/C2 的合法写入能力，记录取证首次执行结果，不为形式强造失败。机械完成判据：两个证据文件分别含用途来源、命令/观察、合法 failed JSONL 行、seq/object_id 检索输出、处置状态，且能据计划与行内容逐项核对阶段空间→所在阶段首有效 node、编排空间→F 首有效 node；两行 `lint` 0；源历史目录 SHA/字节不变；再跑共同回归，证据落 `progress.md` E-C4-*。这两项现场对应关系是写入者纪律的取证，不声称 add/lint 能辨别 `workspace` 用途。checker 核验后，本卡施工完成信号由 dispatch 合同决定，不自行启动 R/F。
 
 ## 交接边界
 
