@@ -17,3 +17,17 @@ FAIL（P1 1，P2 0）。C1 定向测试与两项全量回归均通过，但计�
 ## 范围外发现
 
 无。
+
+## 复审 r1
+
+结论：**PASS**（原 P1 #1 按用户裁决及 task_plan r2 闭合；新增 P1 0、P2 0）。保留上方历史 FAIL 和当时复现事实；本结论绑定当前计划提交 `4bcaef4` 与未变的代码提交 `2dd5d77`，不追认旧计划下的候选通过。
+
+| 核项 | 结论 | 本轮依据 |
+|---|---|---|
+| 原 P1 #1 的合同边界 | 闭合 | `decisions.md:5` 记录用户选择“降为纪律，只改计划”；`task_plan.md:35,77,82` 将 C1 机器规则明确为 node 存在且非 superseded、workspace/pane 指向所声明阶段首有效 node、worktree 指向收口 F 首有效 node；编排空间实际用途及 F 节点由 C4 取证。故旧例 `object_id=orchestrator-ws, node=C1` 被 add 接受仍是历史事实，但名称不是可解析的用途字段，不再属于 r2 的机器拒绝反例。 |
+| C1 实现与 r2 规则 | 一致 | `relay_log.py:2290-2347` 对 workspace/pane 检查 node 所在阶段的首有效节点，对 worktree 检查 F 首有效节点，并在 `_validate_close_row` 共用 add/lint 校验；`test_relay_log.py:7186-7276` 覆盖未知/superseded、阶段非首节点、worktree 非 F、写入者/by 错误。`git diff 2dd5d77..HEAD -- tools/relay-light/relay_log.py tools/relay-light/test_relay_log.py` 为空。独立复跑 `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_relay_log.RelayResourceCloseTests.test_a155_wrong_writer_and_node_add_and_lint test_relay_log.RelayResourceCloseTests.test_a155_three_ok_object_types_add_and_injected_lint`：exit 0，2/2 OK。前轮全量结果仍绑定同一代码 SHA：Python 212/212、PowerShell `RELAY ALL PASS (SKIPPED: 1)`。 |
+| C4 写入者纪律与新问题 | 无新增 P1/P2 | `task_plan.md:119-125` 要求两类空间各留用途来源、关闭观察、对象 ID、实际 node/seq 检索及阶段/F 首节点对照，并明确这不是 add/lint 的用途识别能力；本轮修订只涉及本卡 task_plan，未改代码或设计。`decisions.md:5` 已登记设计正文未改带来的后续复核风险，C1 PASS 不代替 C4 取证或正式验收。 |
+
+## 复审 r1 范围外发现
+
+无新增；设计正文与 r2 执行口径的后续复核风险已在 `decisions.md:5` 登记。
