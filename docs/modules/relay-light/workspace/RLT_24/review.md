@@ -14,8 +14,10 @@
 
 ## 人类签名区
 
-- 需求境证据核对：待人验，未签名。
-- verify 授权与签名：待用户对话明确确认，未签名。
-- 最终验收：待用户对话明确确认，未签名。
+| 项目 | 签名人 | 日期 | 结论 | 证据 |
+|---|---|---|---|---|
+| 需求境证据核对 | 用户（AI 代记） | 2026-09-17 | 已核（整卡整体授权代签，未逐条人判） | 场景：§12 两类终端空间关闭失败 → 账本写 `resource_close outcome=failed` → 按 seq/object_id 定位 → 待人工处理；操作路径与证据 ID 见 `evidence/A157-stage-workspace.md`、`evidence/A157-orchestrator-workspace.md`、progress.md E-C4-01～05；需求方向复核 review.requirement.md APPROVE（含 X1 定向回核） |
+| verify 授权与签名 | — | 2026-09-17 | 不适用：本卡非高危五类，无 `verify(relay-light):` 提交要求 | DevPlan「#### RLT_24」档位「标准」、未标高危 |
+| 最终验收 | 用户（AI 代记） | 2026-09-17 | 验收通过（整卡整体授权代签，未逐条人判） | 用户对话原话「你帮我代签验收」；三路复核 code-round1（X1 回核）/ requirement / lesson 均 APPROVE；CI 三硬门绿；PR #45 `1359fc6` |
 
 编排注（2026-09-17）：X1 需求/教训两路定向回核均由 `rlt24-review2`（fresh 实例，非施工者、非代码轮 1 复核人）一次执行；`review.lesson.md`「X1 定向回核」节复核人写作 `rlt24-review3` 系笔误。三路最终结论：code-round1 APPROVE（X1 回核）、requirement APPROVE、lesson APPROVE，Review Batch 闭合。
