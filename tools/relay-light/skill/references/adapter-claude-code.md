@@ -59,6 +59,14 @@ bash -lc "python3 <RELAY_LOG> status --plan <plan_dir> --json --config-dir ~/.cl
 完成：按节点要求写产出 → 打小结 → 按任务工作区约定写完成信号即停；relay-light 无 node_closed，worker 完成即停、不等下一节点。
 ```
 
+## 送审封口纪律（监工记账，W/C/X 适用、R 不适用）
+
+```text
+判定方判定 PASS 前，送审方与判定方均不记 `done`；FAIL 走 live 判定方的 `checkpoint` 路由回同一送审方；PASS 后按送审方→判定方顺序记终态。
+```
+
+送审信号 = `checkpoint` note 带 `ready_for_review=<判定方>`（非终态，A145）；判定方 `done` 须带 `reviewed=<送审方实例>#<n>` 与 `ready_seq=<信号行号>`（A146）；轮次超限走 strategist → 用户裁决（A147）。
+
 ## 拉起监工 / 编排 的 prompt 片段
 
 编排拉起监工、人拉起编排时，派单文案必须原样含等待硬规则：

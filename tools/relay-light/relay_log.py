@@ -62,6 +62,9 @@ RELAUNCH_EXEMPT_AGENT_NAMES = frozenset(
 )
 DECISION_EVENTS = frozenset({"escalate", "decision", "user_decision", "resume", "cancelled"})
 DECISION_HELPER_NAMES = frozenset({"decider", "strategist"})
+# RLT-A-09 判定角色闭集：roles.toml 里唯一产出 PASS/FAIL 结论并可能打回的三个角色。
+# 集合随 roles.toml 变化由未来 A 事件同步，不由施工者临场扩充（design/01 §3.5）。
+JUDGE_ROLES = frozenset({"plan-reviewer", "checker", "reviewer"})
 DEFAULT_CONFIG_DIRS = (".claude/skills/relay-light", ".codex/skills/relay-light")
 CONFIG_PATH_SAFE = "/:~-._"
 RECIPE_TIERS = frozenset({"heavy", "normal", "light"})
@@ -600,14 +603,26 @@ def lint_plan(path: str | Path, config: RelayConfig) -> Plan:
         for agent in agents_by_node[node.node]:
             if not agent.trigger or agent.trigger == "on:blocked":
                 continue
-            prefix = "on:done:"
-            if not agent.trigger.startswith(prefix) or not agent.trigger[len(prefix) :]:
+            # HC-RL-A150: trigger 四态——空 / on:blocked / on:done:<名> / on:review_ready:<名>；
+            # 名字段校验两前缀同规则，非法值与未知 agent 由 A35 承接、跨节点由 A71 承接。
+            prefix = next(
+                (
+                    candidate
+                    for candidate in ("on:done:", "on:review_ready:")
+                    if agent.trigger.startswith(candidate)
+                ),
+                None,
+            )
+            if prefix is None or not agent.trigger[len(prefix) :]:
                 raise _error("HC-RL-A35", f"line {agent.line}: invalid trigger {agent.trigger}")
             target_name = agent.trigger[len(prefix) :]
             if target_name not in agent_names_anywhere:
                 raise _error("HC-RL-A35", f"line {agent.line}: unknown trigger agent {target_name}")
             if target_name not in {candidate.agent for candidate in agents_by_node[node.node]}:
-                raise _error("HC-RL-A71", f"line {agent.line}: on:done must reference the same node")
+                raise _error(
+                    "HC-RL-A71",
+                    f"line {agent.line}: {prefix[:-1]} must reference the same node",
+                )
 
     stages_by_card: dict[str, list[str]] = {}
     for node in active_nodes:
@@ -1653,6 +1668,48 @@ def _authorize_agent(plan: Plan, node: NodeSpec, event: str, agent: str) -> None
         raise _error("HC-RL-A59", f"agent {name} is not active for node {node.node}")
 
 
+def _current_instance(entries: list[dict[str, object]], node: str, name: str) -> str | None:
+    """The agent's newest attempt in this node as a full `<名>#<attempt>` string.
+
+    Attempts are +1-serial (A49/A58), so the max attempt is the current instance;
+    its freshness is then judged strictly per instance via `_latest_for_instance`.
+    """
+    current: tuple[int, str] | None = None
+    for entry in entries:
+        if entry["node"] != node or entry["event"] not in AGENT_EVENTS:
+            continue
+        entry_name, attempt = _agent_parts(str(entry["agent"]))
+        if entry_name != name:
+            continue
+        if current is None or attempt > current[0]:
+            current = (attempt, str(entry["agent"]))
+    return None if current is None else current[1]
+
+
+def _require_review_ready(
+    entries: list[dict[str, object]], node: NodeSpec, name: str, target: str
+) -> None:
+    """HC-RL-A144: launching on `on:review_ready:<S>` requires a live ready signal
+    from S's current instance whose note names this judge, and that signal must be
+    the instance's newest agent event (per instance — never across attempts)."""
+    sender = _current_instance(entries, node.node, target)
+    if sender is None:
+        raise _error(
+            "HC-RL-A144",
+            f"agent {name} requires a ready signal from {target}, but {target} has no agent event in node {node.node}",
+        )
+    latest = _latest_for_instance(entries, node.node, sender)
+    assert latest is not None
+    if (
+        latest["event"] != "checkpoint"
+        or _note_tokens(str(latest["note"])).get("ready_for_review") != name
+    ):
+        raise _error(
+            "HC-RL-A144",
+            f"agent {name} requires the newest agent event of {sender} to be a checkpoint with ready_for_review={name}",
+        )
+
+
 def _require_trigger(plan: Plan, entries: list[dict[str, object]], node: NodeSpec, name: str) -> None:
     spec = next((agent for agent in _node_agents(plan, node.node) if agent.agent == name), None)
     if spec is None or not spec.trigger:
@@ -1666,6 +1723,12 @@ def _require_trigger(plan: Plan, entries: list[dict[str, object]], node: NodeSpe
         ):
             return
         raise _error("HC-RL-A77", f"agent {name} requires a currently blocked escalation")
+    if spec.trigger.startswith("on:review_ready:"):
+        # HC-RL-A144：launch 前置按送审方当前实例的最新 ready 信号判定。
+        # 本分支必须先于 on:done: 分流，否则 removeprefix 不命中会让整个 trigger
+        # 串进 A70 分支误报 requires done:on:review_ready:<名>。
+        _require_review_ready(entries, node, name, spec.trigger[len("on:review_ready:") :])
+        return
     target = spec.trigger.removeprefix("on:done:")
     latest = _latest_by_name(entries, node.node, target)
     if latest is None or latest["event"] != "done":
@@ -1690,6 +1753,44 @@ def _validate_decision_helper(note: str) -> str:
     if not value or not AGENT_INSTANCE_RE.fullmatch(value) or value.partition("#")[0] != kind:
         raise _error("HC-RL-A69", f"decision helper token must be {kind}={kind}#<n>: {token}")
     return value
+
+
+def _validate_review_ready_signal(plan: Plan, node: NodeSpec, agent: str, note: str) -> None:
+    """HC-RL-A145: write-side contract for the non-terminal ready-for-review signal.
+
+    Only notes that actually carry the token are gated — ordinary checkpoints are
+    untouched. Counted on the raw note: `_note_tokens` keeps only the first
+    occurrence of a key, so a doubled `ready_for_review=` token would be silently
+    collapsed.
+    """
+    tokens = [token for token in note.split() if token.startswith("ready_for_review=")]
+    if not tokens:
+        return
+    if len(tokens) != 1:
+        raise _error(
+            "HC-RL-A145",
+            f"checkpoint note must carry exactly one ready_for_review= token, got {len(tokens)}",
+        )
+    target = tokens[0][len("ready_for_review=") :]
+    specs = {spec.agent: spec for spec in _node_agents(plan, node.node)}
+    judge = specs.get(target)
+    if judge is None:
+        raise _error(
+            "HC-RL-A145",
+            f"ready_for_review target {target} is not an active agent of node {node.node}",
+        )
+    if judge.role not in JUDGE_ROLES:
+        raise _error(
+            "HC-RL-A145",
+            f"ready_for_review target {target} has non-judging role {judge.role}",
+        )
+    writer_name, _ = _agent_parts(agent)
+    writer = specs.get(writer_name)
+    if writer is not None and writer.role in JUDGE_ROLES:
+        raise _error(
+            "HC-RL-A145",
+            f"judging agent {writer_name} must not send a ready_for_review signal",
+        )
 
 
 def _active_decision_owners(entries: list[dict[str, object]], node: str) -> dict[str, str]:
@@ -1914,7 +2015,8 @@ def _validate_agent_transition(
     if event == "agent_launch":
         if not _node_started(entries, node.node):
             raise _error("HC-RL-A78", f"node {node.node} must start before agent launch")
-        _require_trigger(plan, entries, node, name)
+        # attempt 形状与重拉资格先于 trigger 前置：同一判定方的重复/违规重拉
+        # 必须由 A58/A49 拦下，编号不得被 A144 抢走（HC-RL-A144 单测口径）。
         launches = [
             entry
             for entry in entries
@@ -1922,25 +2024,26 @@ def _validate_agent_transition(
             and entry["event"] == "agent_launch"
             and _agent_parts(str(entry["agent"]))[0] == name
         ]
-        if not launches:
-            if attempt != 1:
-                raise _error("HC-RL-A58", f"first attempt for {name} must be #1")
-            return
-        prior_attempt = max(_agent_parts(str(entry["agent"]))[1] for entry in launches)
-        if attempt != prior_attempt + 1:
-            raise _error("HC-RL-A58", f"attempt for {name} must increment by one")
-        prior_agent = f"{name}#{prior_attempt}"
-        prior = _latest_for_instance(entries, node.node, prior_agent)
-        assert prior is not None
-        eligible = prior["event"] in {"agent_lost", "cancelled"} or (
-            # HC-RL-A138: the authorizing user_decision sits on the lost instance;
-            # it keeps the pair eligible and the budget gate below checks the token.
-            prior["event"] == "user_decision"
-            and bool(_note_tokens(str(prior["note"])).get("launch_fix"))
-        )
-        if not eligible and not _stage_failed_after(entries, node.stage_id, prior):
-            raise _error("HC-RL-A49", f"agent {name} is not eligible for relaunch")
-        _validate_launch_budget(entries, node.node, name, note, attempt_max)
+        if launches:
+            prior_attempt = max(_agent_parts(str(entry["agent"]))[1] for entry in launches)
+            if attempt != prior_attempt + 1:
+                raise _error("HC-RL-A58", f"attempt for {name} must increment by one")
+            prior_agent = f"{name}#{prior_attempt}"
+            prior = _latest_for_instance(entries, node.node, prior_agent)
+            assert prior is not None
+            eligible = prior["event"] in {"agent_lost", "cancelled"} or (
+                # HC-RL-A138: the authorizing user_decision sits on the lost instance;
+                # it keeps the pair eligible and the budget gate below checks the token.
+                prior["event"] == "user_decision"
+                and bool(_note_tokens(str(prior["note"])).get("launch_fix"))
+            )
+            if not eligible and not _stage_failed_after(entries, node.stage_id, prior):
+                raise _error("HC-RL-A49", f"agent {name} is not eligible for relaunch")
+        elif attempt != 1:
+            raise _error("HC-RL-A58", f"first attempt for {name} must be #1")
+        _require_trigger(plan, entries, node, name)
+        if launches:
+            _validate_launch_budget(entries, node.node, name, note, attempt_max)
         return
 
     latest = _latest_for_instance(entries, node.node, agent)
@@ -2048,6 +2151,75 @@ def _validate_event_semantics(
         _validate_decision_mode(plan, entries, node, event, agent)
         _validate_strategist_conclusion(entries, node, event, agent)
         _validate_agent_transition(plan, entries, node, event, agent, note, attempt_max)
+        if event == "checkpoint":
+            _validate_review_ready_signal(plan, node, agent, note)
+        if event == "done":
+            _validate_review_done_pairing(plan, entries, node, agent, note)
+
+
+def _validate_review_done_pairing(
+    plan: Plan, entries: list[dict[str, object]], node: NodeSpec, agent: str, note: str
+) -> None:
+    """HC-RL-A146: done-time pairing gate for a judging agent answering ready signals.
+
+    Fires only when the node already has a ready signal pointing at this judge —
+    nodes without signals (R form, legacy `on:done:` plans) are untouched. Runs at
+    the `done` write, so a rejected done never lands in the ledger.
+    """
+    name, _ = _agent_parts(agent)
+    specs = {spec.agent: spec for spec in _node_agents(plan, node.node)}
+    judge = specs.get(name)
+    if judge is None or judge.role not in JUDGE_ROLES:
+        return
+    if not any(
+        entry["node"] == node.node
+        and entry["event"] == "checkpoint"
+        and _note_tokens(str(entry["note"])).get("ready_for_review") == name
+        for entry in entries
+    ):
+        return
+    tokens = _note_tokens(note)
+    reviewed = tokens.get("reviewed", "")
+    ready_seq = tokens.get("ready_seq", "")
+    if not reviewed or not ready_seq:
+        raise _error(
+            "HC-RL-A146",
+            f"done of judge {name} must carry reviewed=<S>#<a> and ready_seq=<n> in note",
+        )
+    if not AGENT_INSTANCE_RE.fullmatch(reviewed):
+        raise _error("HC-RL-A146", f"reviewed must be a full <S>#<a> instance, got {reviewed}")
+    if not ready_seq.isdigit() or not 1 <= int(ready_seq) <= len(entries):
+        raise _error("HC-RL-A146", f"ready_seq must point at a ledger row, got {ready_seq}")
+    signal = entries[int(ready_seq) - 1]
+    if (
+        signal["node"] != node.node
+        or signal["event"] != "checkpoint"
+        or signal["agent"] != reviewed
+        or _note_tokens(str(signal["note"])).get("ready_for_review") != name
+    ):
+        raise _error(
+            "HC-RL-A146",
+            f"ready_seq={ready_seq} does not point at a ready signal of {reviewed} for judge {name} in node {node.node}",
+        )
+    later = [
+        entry
+        for entry in entries[int(ready_seq) :]
+        if entry["node"] == node.node
+        and entry["event"] == "checkpoint"
+        and entry["agent"] == reviewed
+        and _note_tokens(str(entry["note"])).get("ready_for_review") == name
+    ]
+    if later:
+        raise _error(
+            "HC-RL-A146",
+            f"ready_seq={ready_seq} is not the newest ready signal of {reviewed} for judge {name}",
+        )
+    sender_latest = _latest_for_instance(entries, node.node, reviewed)
+    if sender_latest is None or sender_latest["event"] != "done":
+        raise _error(
+            "HC-RL-A146",
+            f"reviewed sender {reviewed} must be done before judge {name} closes",
+        )
 
 
 def _validate_writer(event: str, agent: str) -> None:
@@ -2788,29 +2960,35 @@ def derive_status(
 
 @dataclass(frozen=True)
 class LossStop:
-    """§7.3/A107: the two independent counters and which of them is spent.
+    """§7.3/A107: the three independent counters and which of them is spent.
 
     ``attempts`` counts ``agent_launch`` rows per ``(node, agent name)``; a pair is
     exhausted once it sits at ``limits.attempt_max`` while its latest row still calls
     for a relaunch — the same causes HC-RL-A49 grants: ``agent_lost``/``cancelled`` or a
     later ``stage_result outcome=failed`` on the node's stage. ``x_rounds`` holds, per
     card, the highest opened ``X#k`` round; a card is exhausted once that round reaches
-    ``limits.rework_max_rounds`` and still fails. The counters never add up and never
-    reset each other: either one alone opens the strategist exit.
+    ``limits.rework_max_rounds`` and still fails. ``review_rounds`` counts, per
+    ``(node, judge)``, the ready-for-review signals (first round included); the pair is
+    exhausted once that count reaches ``limits.rework_max_rounds`` while the judge still
+    has no ``done`` in the node. The counters never add up and never reset each other:
+    any one alone opens the strategist exit. Projection only — ``add`` never rejects on
+    a spent counter (HC-RL-A147).
     """
 
     attempts: dict[tuple[str, str], int]
     x_rounds: dict[str, int]
+    review_rounds: dict[tuple[str, str], int]
     attempt_exhausted: tuple[tuple[str, str], ...]
     x_exhausted: tuple[str, ...]
+    review_exhausted: tuple[tuple[str, str], ...]
 
     @property
     def triggered(self) -> bool:
-        return bool(self.attempt_exhausted or self.x_exhausted)
+        return bool(self.attempt_exhausted or self.x_exhausted or self.review_exhausted)
 
 
 def loss_stop(plan: Plan, entries: list[dict[str, object]], config: RelayConfig) -> LossStop:
-    """HC-RL-A107: read-only evaluation of both loss-stop counters against the config."""
+    """HC-RL-A107: read-only evaluation of all three loss-stop counters against the config."""
     nodes_by_name = _active_node_map(plan)
     attempts: dict[tuple[str, str], int] = {}
     for entry in entries:
@@ -2831,6 +3009,30 @@ def loss_stop(plan: Plan, entries: list[dict[str, object]], config: RelayConfig)
             entries, nodes_by_name[node_name].stage_id, latest
         ):
             attempt_exhausted.append((node_name, name))
+    review_rounds: dict[tuple[str, str], int] = {}
+    for entry in entries:
+        if entry["event"] != "checkpoint":
+            continue
+        node = nodes_by_name.get(str(entry["node"]))
+        if node is None:
+            continue
+        target = _note_tokens(str(entry["note"])).get("ready_for_review")
+        if not target:
+            continue
+        key = (node.node, target)
+        review_rounds[key] = review_rounds.get(key, 0) + 1
+    review_exhausted: list[tuple[str, str]] = []
+    for (node_name, judge), count in sorted(review_rounds.items()):
+        if count < config.limits.rework_max_rounds:
+            continue
+        judge_done = any(
+            entry["node"] == node_name
+            and entry["event"] == "done"
+            and _agent_parts(str(entry["agent"]))[0] == judge
+            for entry in entries
+        )
+        if not judge_done:
+            review_exhausted.append((node_name, judge))
     instances = _stage_instances(plan)
     opened: dict[str, tuple[int, str]] = {}
     for entry in entries:
@@ -2857,8 +3059,10 @@ def loss_stop(plan: Plan, entries: list[dict[str, object]], config: RelayConfig)
     return LossStop(
         attempts=attempts,
         x_rounds={card: k for card, (k, _) in opened.items()},
+        review_rounds=review_rounds,
         attempt_exhausted=tuple(attempt_exhausted),
         x_exhausted=tuple(x_exhausted),
+        review_exhausted=tuple(review_exhausted),
     )
 
 

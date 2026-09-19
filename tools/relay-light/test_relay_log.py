@@ -16,6 +16,7 @@ import tempfile
 import tomllib
 import unittest
 from contextlib import redirect_stderr
+from dataclasses import replace as dc_replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
@@ -688,6 +689,61 @@ class RelayPlanLintTests(RelayCliTestCase):
                 "| builder | W1 | builder | | task_plan.md | | |",
                 "| coder | C1 | coder | | code.md | | |",
                 "| checker | C1 | checker | | check.md | on:done:builder | |",
+            ],
+        )
+
+    def test_a150_review_ready_trigger_four_states(self) -> None:
+        """HC-RL-A150：trigger 扩为四态——`on:review_ready:<名>` 与 `on:done:<名>` 同规则，
+        拼写变体退 A35、引用不存在 agent 退 A35、跨节点（含 R 形态无同节点送审方）退 A71。"""
+        # 四态各一正例：空 / on:blocked / on:done:<名> / on:review_ready:<名>
+        self.write_plan(
+            agent_rows=[
+                "| builder | W1 | builder | | task_plan.md | | |",
+                "| plan-reviewer | W1 | plan-reviewer | | review.plan.md | on:review_ready:builder | |",
+                "| coder | C1 | coder | | code.md | | |",
+                "| scribe | C1 | scribe | | progress.md | on:done:coder | |",
+                "| decider | C1 | decider | | decision.1.md | on:blocked | |",
+            ],
+        )
+        lint_plan(self.plan_path, repo_config())
+        # 引用不存在的 agent 名 → A35（A150 由 A35 承接）
+        self.assert_rule(
+            "HC-RL-A35",
+            agent_rows=[
+                "| builder | W1 | builder | | task_plan.md | | |",
+                "| plan-reviewer | W1 | plan-reviewer | | review.plan.md | on:review_ready:nobody | |",
+                "| coder | C1 | coder | | code.md | | |",
+            ],
+        )
+        # 拼写变体（连字符）不在四态内 → A35
+        self.assert_rule(
+            "HC-RL-A35",
+            agent_rows=[
+                "| builder | W1 | builder | | task_plan.md | | |",
+                "| plan-reviewer | W1 | plan-reviewer | | review.plan.md | on:review-ready:builder | |",
+                "| coder | C1 | coder | | code.md | | |",
+            ],
+        )
+        # 跨节点引用（builder 在 W1、plan-reviewer 在 C1）→ A71（A150 由 A71 承接）
+        self.assert_rule(
+            "HC-RL-A71",
+            agent_rows=[
+                "| builder | W1 | builder | | task_plan.md | | |",
+                "| coder | C1 | coder | | code.md | | |",
+                "| plan-reviewer | C1 | plan-reviewer | | review.plan.md | on:review_ready:builder | |",
+            ],
+        )
+        # R 形态反例：R 节点没有同节点送审方（coder 在 C1 不在 R1）——这是「R 不适用本修订」的机械证据
+        self.assert_rule(
+            "HC-RL-A71",
+            node_rows=[
+                "| C1 | DHR_90 | DHR_90:C#1 | construction | agent:coder | | |",
+                "| R1 | DHR_90 | DHR_90:R#1 | review | agent:scribe | C1 | |",
+            ],
+            agent_rows=[
+                "| coder | C1 | coder | | code.md | | |",
+                "| requirement | R1 | reviewer | | review.requirement.md | on:review_ready:coder | |",
+                "| scribe | R1 | scribe | | review.md | | |",
             ],
         )
 
@@ -1457,6 +1513,19 @@ class RelayPlanLintTests(RelayCliTestCase):
                 "| scribe | W1 | scribe | | notes.md | on:done:coder | |",
             ]
         )
+        self.start_ledger()
+        self.assertEqual(0, self.run_add("node_start", agent="monitor#1").returncode)
+        self.assertEqual(0, self.run_add("agent_launch", agent="coder#1").returncode)
+        self.assertEqual(0, self.run_add("done", agent="coder#1").returncode)
+        self.assertEqual(0, self.run_add("node_close", agent="monitor#1").returncode)
+        # A65 补例（RLT-A-09）：on:review_ready: 未触发的同款——reviewer 从未拉起不算悬空
+        self.write_single_node_plan(
+            [
+                "| coder | W1 | coder | | code.md | | |",
+                "| plan-reviewer | W1 | plan-reviewer | | review.plan.md | on:review_ready:coder | |",
+            ]
+        )
+        self.reset_ledger()
         self.start_ledger()
         self.assertEqual(0, self.run_add("node_start", agent="monitor#1").returncode)
         self.assertEqual(0, self.run_add("agent_launch", agent="coder#1").returncode)
@@ -3528,6 +3597,580 @@ class RelayLifecycleTests(RelayCliTestCase):
         self.assertEqual([], forbidden)
 
 
+class RelayReviewReadyTests(RelayCliTestCase):
+    """RLT_22 — HC-RL-A145（B1）与 A144/A146（B2）：非终态「待复核」信号合同。
+
+    送审方与判定方同处一个节点时，送审方写 `checkpoint`、note 恰带一条
+    `ready_for_review=<判定方>`；判定角色闭集 = {plan-reviewer, checker, reviewer}。
+    """
+
+    W_AGENTS = [
+        "| builder | W1 | builder | | task_plan.md | | |",
+        "| plan-reviewer | W1 | plan-reviewer | | review.plan.md | | |",
+    ]
+
+    def _open_node(self, agents: list[str] | None = None) -> None:
+        self.write_single_node_plan(list(agents or self.W_AGENTS))
+        self.start_ledger()
+        self.assertEqual(0, self.run_add("node_start", agent="monitor#1").returncode)
+
+    def ledger_rows(self) -> list[dict[str, object]]:
+        return [
+            json.loads(line)
+            for line in (self.plan_path.parent / "relay_log.jsonl")
+            .read_text(encoding="utf-8")
+            .splitlines()
+        ]
+
+    def assert_rejected(
+        self, event: str, *, agent: str, note: str = "", code: str
+    ) -> None:
+        ledger_path = self.plan_path.parent / "relay_log.jsonl"
+        before = ledger_path.read_bytes()
+        result = self.run_add(event, agent=agent, note=note)
+        self.assertEqual(2, result.returncode, result.stderr)
+        self.assertRegex(result.stderr, rf"^error: {re.escape(code)} ")
+        self.assertEqual(before, ledger_path.read_bytes(), "a rejected add must not touch ledger bytes")
+
+    def test_a145_ready_signal_write_contract(self) -> None:
+        """HC-RL-A145：写入侧合同——token 恰一个、目标在本节点且属判定闭集、
+        写入者非判定角色、不伴随 agent_launch（attempt 恒为 1）、add 层无轮次硬上限。"""
+        self._open_node(
+            [
+                "| builder | W1 | builder | | task_plan.md | | |",
+                "| plan-reviewer | W1 | plan-reviewer | | review.plan.md | | |",
+                "| scribe | W1 | scribe | | progress.md | | |",
+            ]
+        )
+        self.assertEqual(0, self.run_add("agent_launch", agent="builder#1").returncode)
+        # 合法一例：恰好一条 ready_for_review=，目标是本节点的判定角色
+        ok = self.run_add(
+            "checkpoint", agent="builder#1", note="计划就绪 ready_for_review=plan-reviewer"
+        )
+        self.assertEqual(0, ok.returncode, ok.stderr)
+        # 同 note 内 ready_for_review= 与 decider= 并存：ready 合同只读前者，A69 不扫 checkpoint
+        ok = self.run_add(
+            "checkpoint",
+            agent="builder#1",
+            note="ready_for_review=plan-reviewer decider=decider#1 备查",
+        )
+        self.assertEqual(0, ok.returncode, ok.stderr)
+        # 同一 note 两个 ready_for_review= token → A145（防 _note_tokens 静默保留首个）
+        self.assert_rejected(
+            "checkpoint",
+            agent="builder#1",
+            note="ready_for_review=plan-reviewer ready_for_review=scribe",
+            code="HC-RL-A145",
+        )
+        # 目标不在本节点 agent 表 → A145
+        self.assert_rejected(
+            "checkpoint",
+            agent="builder#1",
+            note="ready_for_review=strategist",
+            code="HC-RL-A145",
+        )
+        # 目标 role 不在判定角色闭集（scribe 是收敛者）→ A145
+        self.assert_rejected(
+            "checkpoint",
+            agent="builder#1",
+            note="ready_for_review=scribe",
+            code="HC-RL-A145",
+        )
+        # 空 token（ready_for_review= 无值）→ A145
+        self.assert_rejected(
+            "checkpoint", agent="builder#1", note="ready_for_review=", code="HC-RL-A145"
+        )
+        # 判定角色不给自己送审（写入者是判定角色）→ A145
+        self.assertEqual(0, self.run_add("agent_launch", agent="plan-reviewer#1").returncode)
+        self.assert_rejected(
+            "checkpoint",
+            agent="plan-reviewer#1",
+            note="ready_for_review=plan-reviewer",
+            code="HC-RL-A145",
+        )
+
+    def test_a145_no_round_cap_and_attempt_never_moves(self) -> None:
+        """HC-RL-A145/A102（F-006 显式正例）：连续 N 条信号（N > rework_max_rounds）
+        均被 add 接受；checkpoint 往返不伴随 agent_launch、attempt 恒为 1。"""
+        self._open_node()
+        self.assertEqual(0, self.run_add("agent_launch", agent="builder#1").returncode)
+        for round_ in range(1, 4):  # rework_max_rounds = 2，这里发 3 条
+            ok = self.run_add(
+                "checkpoint",
+                agent="builder#1",
+                note=f"round={round_} ready_for_review=plan-reviewer",
+            )
+            self.assertEqual(0, ok.returncode, ok.stderr)
+        launches = [
+            str(row["agent"]) for row in self.ledger_rows() if row["event"] == "agent_launch"
+        ]
+        self.assertEqual(["builder#1"], launches)
+        # agent_lost 后重拉仍是 #2——checkpoint 往返不烧 attempt（A102 在新模型下成立）
+        self.assertEqual(0, self.run_add("agent_lost", agent="builder#1", note="失联").returncode)
+        self.assertEqual(0, self.run_add("agent_launch", agent="builder#2").returncode)
+        launches = [
+            str(row["agent"]) for row in self.ledger_rows() if row["event"] == "agent_launch"
+        ]
+        self.assertEqual(["builder#1", "builder#2"], launches)
+
+    def test_a145_ready_token_is_not_a_decision_helper(self) -> None:
+        """HC-RL-A145：`ready_for_review=` 不进 A69 的 helper 扫描集——
+        escalate note 同时带 decider= 与 ready_for_review= 时 A69 只认前者。"""
+        self._open_node(["| builder | W1 | builder | | task_plan.md | | |"])
+        self.assertEqual(0, self.run_add("agent_launch", agent="builder#1").returncode)
+        self.assertEqual(0, self.run_add("blocked", agent="builder#1", note="卡在依赖").returncode)
+        ok = self.run_add(
+            "escalate",
+            agent="builder#1",
+            note="decider=decider#1 ready_for_review=plan-reviewer",
+        )
+        self.assertEqual(0, ok.returncode, ok.stderr)
+
+    def test_review_ready_trigger_does_not_leak_into_done_branch(self) -> None:
+        """B1 分流占位 / B2 后即 A144 正例：带 `on:review_ready:` 的计划能加载，
+        判定方 `agent_launch` 不得串进 `on:done:` 分支误报 HC-RL-A70。"""
+        self.write_single_node_plan(
+            [
+                "| builder | W1 | builder | | task_plan.md | | |",
+                "| plan-reviewer | W1 | plan-reviewer | | review.plan.md | on:review_ready:builder | |",
+            ]
+        )
+        self.start_ledger()
+        self.assertEqual(0, self.run_add("node_start", agent="monitor#1").returncode)
+        self.assertEqual(0, self.run_add("agent_launch", agent="builder#1").returncode)
+        ok = self.run_add(
+            "checkpoint", agent="builder#1", note="计划就绪 ready_for_review=plan-reviewer"
+        )
+        self.assertEqual(0, ok.returncode, ok.stderr)
+        result = self.run_add("agent_launch", agent="plan-reviewer#1")
+        self.assertNotRegex(result.stderr, r"HC-RL-A70 ")
+
+    # --- B2：HC-RL-A144 拉起前置 ---
+
+    A144_AGENTS = [
+        "| builder | W1 | builder | | task_plan.md | | |",
+        "| plan-reviewer | W1 | plan-reviewer | | review.plan.md | on:review_ready:builder | |",
+    ]
+
+    def _signal_seq(self) -> int:
+        """最新一行账本的 seq——刚写完 ready 信号后调用即取该信号的 seq。"""
+        return len(self.ledger_rows())
+
+    def test_a144_launch_requires_live_ready_signal(self) -> None:
+        """HC-RL-A144：`on:review_ready:<S>` 拉起前置——信号须来自 <S> 当前实例
+        且是其最新 agent 事件；九条拒绝例全报 A144；A58/A49 编号不串。"""
+        # 合法：builder 发信号后 plan-reviewer 立即可拉
+        self._open_node(self.A144_AGENTS)
+        self.assertEqual(0, self.run_add("agent_launch", agent="builder#1").returncode)
+        self.assertEqual(
+            0,
+            self.run_add("checkpoint", agent="builder#1", note="ready_for_review=plan-reviewer").returncode,
+        )
+        self.assertEqual(0, self.run_add("agent_launch", agent="plan-reviewer#1").returncode)
+
+        def fresh() -> None:
+            self.reset_ledger()
+            self._open_node(self.A144_AGENTS)
+            self.assertEqual(0, self.run_add("agent_launch", agent="builder#1").returncode)
+
+        # ① <S> 只有不带 token 的普通 checkpoint
+        fresh()
+        self.assertEqual(0, self.run_add("checkpoint", agent="builder#1", note="普通小结").returncode)
+        self.assert_rejected("agent_launch", agent="plan-reviewer#1", code="HC-RL-A144")
+        # ② <S> 在本节点无任何事件
+        self.reset_ledger()
+        self._open_node(self.A144_AGENTS)
+        self.assert_rejected("agent_launch", agent="plan-reviewer#1", code="HC-RL-A144")
+        # ③ <S> 已 done
+        fresh()
+        self.assertEqual(
+            0, self.run_add("checkpoint", agent="builder#1", note="ready_for_review=plan-reviewer").returncode
+        )
+        self.assertEqual(0, self.run_add("done", agent="builder#1").returncode)
+        self.assert_rejected("agent_launch", agent="plan-reviewer#1", code="HC-RL-A144")
+        # ④ <S> 已 agent_lost
+        fresh()
+        self.assertEqual(
+            0, self.run_add("checkpoint", agent="builder#1", note="ready_for_review=plan-reviewer").returncode
+        )
+        self.assertEqual(0, self.run_add("agent_lost", agent="builder#1", note="失联").returncode)
+        self.assert_rejected("agent_launch", agent="plan-reviewer#1", code="HC-RL-A144")
+        # ⑤ <S> 已 cancelled
+        fresh()
+        self.assertEqual(
+            0, self.run_add("checkpoint", agent="builder#1", note="ready_for_review=plan-reviewer").returncode
+        )
+        self.assertEqual(0, self.run_add("cancelled", agent="builder#1", note="用户裁决").returncode)
+        self.assert_rejected("agent_launch", agent="plan-reviewer#1", code="HC-RL-A144")
+        # ⑥ token 指向另一判定方（ready_for_review=requirement 却拉 lesson）
+        self.reset_ledger()
+        self._open_node(
+            [
+                "| builder | W1 | builder | | task_plan.md | | |",
+                "| requirement | W1 | plan-reviewer | | review.plan.md | on:review_ready:builder | |",
+                "| lesson | W1 | plan-reviewer | | review.lesson.md | on:review_ready:builder | |",
+            ]
+        )
+        self.assertEqual(0, self.run_add("agent_launch", agent="builder#1").returncode)
+        self.assertEqual(
+            0, self.run_add("checkpoint", agent="builder#1", note="ready_for_review=requirement").returncode
+        )
+        self.assert_rejected("agent_launch", agent="lesson#1", code="HC-RL-A144")
+        # ⑦ 旧 attempt 重放：coder 式——builder#1 发信号后 lost，#2 重拉 live，旧信号不可再拉
+        fresh()
+        self.assertEqual(
+            0, self.run_add("checkpoint", agent="builder#1", note="ready_for_review=plan-reviewer").returncode
+        )
+        self.assertEqual(0, self.run_add("agent_lost", agent="builder#1", note="失联").returncode)
+        self.assertEqual(0, self.run_add("agent_launch", agent="builder#2", note="重拉 attempt=2").returncode)
+        self.assert_rejected("agent_launch", agent="plan-reviewer#1", code="HC-RL-A144")
+        # ⑧ 信号被后续普通 checkpoint 覆盖
+        fresh()
+        self.assertEqual(
+            0, self.run_add("checkpoint", agent="builder#1", note="ready_for_review=plan-reviewer").returncode
+        )
+        self.assertEqual(0, self.run_add("checkpoint", agent="builder#1", note="后续进度").returncode)
+        self.assert_rejected("agent_launch", agent="plan-reviewer#1", code="HC-RL-A144")
+        # ⑨ 信号之后写了 blocked
+        fresh()
+        self.assertEqual(
+            0, self.run_add("checkpoint", agent="builder#1", note="ready_for_review=plan-reviewer").returncode
+        )
+        self.assertEqual(0, self.run_add("blocked", agent="builder#1", note="卡住").returncode)
+        self.assert_rejected("agent_launch", agent="plan-reviewer#1", code="HC-RL-A144")
+        # 编号不串：重复 agent_launch 由 A58 拦（不是 A144）
+        fresh()
+        self.assertEqual(
+            0, self.run_add("checkpoint", agent="builder#1", note="ready_for_review=plan-reviewer").returncode
+        )
+        seq = self._signal_seq()
+        self.assertEqual(0, self.run_add("agent_launch", agent="plan-reviewer#1").returncode)
+        self.assert_rejected("agent_launch", agent="plan-reviewer#1", code="HC-RL-A58")
+        # 编号不串：判定方 done 后重拉由 A49 拦（不是 A144）——本段同时是 A146 正序正例
+        self.assertEqual(0, self.run_add("done", agent="builder#1").returncode)
+        self.assertEqual(
+            0,
+            self.run_add(
+                "done", agent="plan-reviewer#1", note=f"reviewed=builder#1 ready_seq={seq}"
+            ).returncode,
+        )
+        self.assert_rejected("agent_launch", agent="plan-reviewer#2", code="HC-RL-A49")
+
+    # --- B2：HC-RL-A146 封口配对闸 ---
+
+    def _a146_open(self, agents: list[str]) -> int:
+        """builder 发一条 ready 信号并拉起 checker，返回该信号 seq。"""
+        self._open_node(agents)
+        self.assertEqual(0, self.run_add("agent_launch", agent="builder#1").returncode)
+        self.assertEqual(
+            0, self.run_add("checkpoint", agent="builder#1", note="ready_for_review=checker").returncode
+        )
+        self.assertEqual(0, self.run_add("agent_launch", agent="checker#1").returncode)
+        return self._signal_seq()
+
+    A146_AGENTS = [
+        "| builder | W1 | builder | | task_plan.md | | |",
+        "| checker | W1 | checker | | check.md | | |",
+    ]
+
+    def test_a146_done_pairing_gate_rejections(self) -> None:
+        """HC-RL-A146：判定方 done 的配对闸——七条拒绝例全报 A146，
+        且错误在写 done 时返回、不落账（位点证明）。"""
+        # 缺 reviewed= / 缺 ready_seq=
+        seq = self._a146_open(self.A146_AGENTS)
+        self.assert_rejected("done", agent="checker#1", code="HC-RL-A146")
+        self.reset_ledger()
+        self._a146_open(self.A146_AGENTS)
+        self.assert_rejected(
+            "done", agent="checker#1", note="reviewed=builder#1", code="HC-RL-A146"
+        )
+        self.reset_ledger()
+        # ready_seq 指向旧轮次信号：builder 发两条信号，绑定第一条
+        self._a146_open(self.A146_AGENTS)
+        self.assertEqual(
+            0, self.run_add("checkpoint", agent="builder#1", note="第二轮 ready_for_review=checker").returncode
+        )
+        self.assertEqual(0, self.run_add("done", agent="builder#1").returncode)
+        self.assert_rejected(
+            "done", agent="checker#1", note=f"reviewed=builder#1 ready_seq={seq}", code="HC-RL-A146"
+        )
+        self.reset_ledger()
+        # ready_seq 指向他人信号：builder 与 coder 各发一条，绑 coder 的
+        self._a146_open(
+            [
+                "| builder | W1 | builder | | task_plan.md | | |",
+                "| coder | W1 | coder | | code.md | | |",
+                "| checker | W1 | checker | | check.md | | |",
+            ]
+        )
+        self.assertEqual(0, self.run_add("agent_launch", agent="coder#1").returncode)
+        self.assertEqual(
+            0, self.run_add("checkpoint", agent="coder#1", note="ready_for_review=checker").returncode
+        )
+        coder_seq = self._signal_seq()
+        self.assertEqual(0, self.run_add("done", agent="builder#1").returncode)
+        self.assert_rejected(
+            "done",
+            agent="checker#1",
+            note=f"reviewed=builder#1 ready_seq={coder_seq}",
+            code="HC-RL-A146",
+        )
+        self.reset_ledger()
+        # 跨实例拼接：builder#1 的旧信号配 builder#2 的 reviewed
+        self._a146_open(self.A146_AGENTS)
+        first_seq = self._signal_seq()
+        self.assertEqual(0, self.run_add("agent_lost", agent="builder#1", note="失联").returncode)
+        self.assertEqual(0, self.run_add("agent_launch", agent="builder#2", note="重拉 attempt=2").returncode)
+        self.assertEqual(
+            0, self.run_add("checkpoint", agent="builder#2", note="ready_for_review=checker").returncode
+        )
+        self.assertEqual(0, self.run_add("done", agent="builder#2").returncode)
+        self.assert_rejected(
+            "done",
+            agent="checker#1",
+            note=f"reviewed=builder#2 ready_seq={first_seq}",
+            code="HC-RL-A146",
+        )
+        self.reset_ledger()
+        # 送审方尚未终态
+        self._a146_open(self.A146_AGENTS)
+        self.assert_rejected(
+            "done",
+            agent="checker#1",
+            note=f"reviewed=builder#1 ready_seq={seq}",
+            code="HC-RL-A146",
+        )
+        self.reset_ledger()
+        # 送审方为 agent_lost（非 done）
+        self._a146_open(self.A146_AGENTS)
+        self.assertEqual(0, self.run_add("agent_lost", agent="builder#1", note="失联").returncode)
+        self.assert_rejected(
+            "done",
+            agent="checker#1",
+            note=f"reviewed=builder#1 ready_seq={seq}",
+            code="HC-RL-A146",
+        )
+
+    def test_a146_gate_inactive_without_signals_and_multi_path(self) -> None:
+        """HC-RL-A146：无信号即不设闸（R 形态与旧计划不受影响）；
+        多路各绑各的 ready_seq，一路两轮一路一轮互不干扰。"""
+        # 不生效正例：节点内无指向该判定方的信号，reviewer 裸 done 被接受
+        self._open_node(
+            [
+                "| requirement | W1 | reviewer | | review.requirement.md | | |",
+                "| scribe | W1 | scribe | | review.md | | |",
+            ]
+        )
+        self.assertEqual(0, self.run_add("agent_launch", agent="requirement#1").returncode)
+        self.assertEqual(0, self.run_add("done", agent="requirement#1").returncode)
+        # 多路：requirement 两轮（绑最新 n3）、lesson 一轮（绑 n2），互不串
+        self.reset_ledger()
+        self._open_node(
+            [
+                "| coder | W1 | coder | | code.md | | |",
+                "| requirement | W1 | reviewer | | review.requirement.md | | |",
+                "| lesson | W1 | reviewer | | review.lesson.md | | |",
+            ]
+        )
+        self.assertEqual(0, self.run_add("agent_launch", agent="coder#1").returncode)
+        self.assertEqual(
+            0, self.run_add("checkpoint", agent="coder#1", note="ready_for_review=requirement").returncode
+        )
+        self.assertEqual(0, self.run_add("agent_launch", agent="requirement#1").returncode)
+        self.assertEqual(
+            0, self.run_add("checkpoint", agent="coder#1", note="ready_for_review=lesson").returncode
+        )
+        lesson_seq = self._signal_seq()
+        self.assertEqual(0, self.run_add("agent_launch", agent="lesson#1").returncode)
+        self.assertEqual(
+            0, self.run_add("checkpoint", agent="coder#1", note="第二轮 ready_for_review=requirement").returncode
+        )
+        requirement_seq = self._signal_seq()
+        self.assertEqual(0, self.run_add("done", agent="coder#1").returncode)
+        self.assertEqual(
+            0,
+            self.run_add(
+                "done",
+                agent="requirement#1",
+                note=f"reviewed=coder#1 ready_seq={requirement_seq}",
+            ).returncode,
+        )
+        self.assertEqual(
+            0,
+            self.run_add(
+                "done", agent="lesson#1", note=f"reviewed=coder#1 ready_seq={lesson_seq}"
+            ).returncode,
+        )
+
+    # --- B3：HC-RL-A147 第三套止损计数（只投影、不拒写） ---
+
+    def _static_review_rows(self, rounds: int, *, checker_done: bool = False) -> list[dict[str, object]]:
+        """A147 静态夹具：coder 发 N 轮 ready 信号、checker#1 只拉起一次（可选终态）。"""
+        rows: list[dict[str, object]] = [
+            {"seq": 1, "ts": "2026-09-11T08:00:00+08:00", "node": "W1", "event": "plan_loaded", "agent": "orchestrator#1", "by": "orchestrator", "note": "skill=0.1.0"},
+            {"seq": 2, "ts": "2026-09-11T08:01:00+08:00", "node": "W1", "event": "stage_start", "agent": "orchestrator#1", "by": "orchestrator", "note": "stage_id=DHR_90:W#1"},
+            {"seq": 3, "ts": "2026-09-11T08:02:00+08:00", "node": "W1", "event": "monitor_launch", "agent": "orchestrator#1", "by": "orchestrator", "note": "stage_id=DHR_90:W#1"},
+            {"seq": 4, "ts": "2026-09-11T08:03:00+08:00", "node": "W1", "event": "node_start", "agent": "monitor#1", "by": "monitor", "note": ""},
+            {"seq": 5, "ts": "2026-09-11T08:04:00+08:00", "node": "W1", "event": "agent_launch", "agent": "coder#1", "by": "monitor", "note": ""},
+        ]
+        seq = 6
+        for round_ in range(1, rounds + 1):
+            rows.append({"seq": seq, "ts": f"2026-09-11T08:0{3 + round_}:00+08:00", "node": "W1", "event": "checkpoint", "agent": "coder#1", "by": "monitor", "note": f"第{round_}轮 ready_for_review=checker"})
+            seq += 1
+            if round_ == 1:
+                rows.append({"seq": seq, "ts": "2026-09-11T08:07:00+08:00", "node": "W1", "event": "agent_launch", "agent": "checker#1", "by": "monitor", "note": ""})
+                seq += 1
+        if checker_done:
+            rows.append({"seq": seq, "ts": "2026-09-11T09:00:00+08:00", "node": "W1", "event": "done", "agent": "coder#1", "by": "monitor", "note": ""})
+            seq += 1
+            rows.append({"seq": seq, "ts": "2026-09-11T09:01:00+08:00", "node": "W1", "event": "done", "agent": "checker#1", "by": "monitor", "note": "reviewed=coder#1 ready_seq=6"})
+        return rows
+
+    def test_a147_review_loss_stop_projection_only(self) -> None:
+        """HC-RL-A147/A107：review_rounds 只投影不拒写；`rework_max_rounds` 取 2 与 3
+        由同一实现得出正确停止点；判定方有 done 即不耗尽；三套计数互不叠加。"""
+        config = repo_config()
+        config3 = dc_replace(config, limits=dc_replace(config.limits, rework_max_rounds=3))
+        # 只送审轮次超限（2/2）：第三套独自触发，另两套为空
+        self.write_plan()
+        entries = self._static_review_rows(2)
+        stop = relay_log.loss_stop(lint_plan(self.plan_path, config), entries, config)
+        self.assertEqual({("W1", "checker"): 2}, stop.review_rounds)
+        self.assertEqual((("W1", "checker"),), stop.review_exhausted)
+        self.assertEqual({}, stop.x_rounds)
+        self.assertEqual((), stop.x_exhausted)
+        self.assertEqual({("W1", "coder"): 1, ("W1", "checker"): 1}, stop.attempts)
+        self.assertEqual((), stop.attempt_exhausted)
+        self.assertTrue(stop.triggered)
+        # 同一实现、上限取 3：2 条未耗尽（正确停止点）
+        stop3 = relay_log.loss_stop(lint_plan(self.plan_path, config3), entries, config3)
+        self.assertEqual({("W1", "checker"): 2}, stop3.review_rounds)
+        self.assertEqual((), stop3.review_exhausted)
+        self.assertFalse(stop3.triggered)
+        # 3 条在上限 3 的同一实现下耗尽
+        entries3 = self._static_review_rows(3)
+        stop3 = relay_log.loss_stop(lint_plan(self.plan_path, config3), entries3, config3)
+        self.assertEqual((("W1", "checker"),), stop3.review_exhausted)
+        self.assertTrue(stop3.triggered)
+        # 判定方已 done：条数再够也不耗尽
+        entries_done = self._static_review_rows(3, checker_done=True)
+        stop = relay_log.loss_stop(lint_plan(self.plan_path, config), entries_done, config)
+        self.assertEqual({("W1", "checker"): 3}, stop.review_rounds)
+        self.assertEqual((), stop.review_exhausted)
+        self.assertFalse(stop.triggered)
+        # 互不叠加：attempt 与送审轮次同时超限，各自入列、互不重置
+        entries_mixed = self._static_review_rows(2) + [
+            {"seq": 9, "ts": "2026-09-11T08:08:00+08:00", "node": "W1", "event": "agent_lost", "agent": "coder#1", "by": "monitor", "note": ""},
+            {"seq": 10, "ts": "2026-09-11T08:09:00+08:00", "node": "W1", "event": "agent_launch", "agent": "coder#2", "by": "monitor", "note": ""},
+            {"seq": 11, "ts": "2026-09-11T08:10:00+08:00", "node": "W1", "event": "agent_lost", "agent": "coder#2", "by": "monitor", "note": ""},
+            {"seq": 12, "ts": "2026-09-11T08:11:00+08:00", "node": "W1", "event": "agent_launch", "agent": "coder#3", "by": "monitor", "note": ""},
+            {"seq": 13, "ts": "2026-09-11T08:12:00+08:00", "node": "W1", "event": "agent_lost", "agent": "coder#3", "by": "monitor", "note": ""},
+        ]
+        stop = relay_log.loss_stop(lint_plan(self.plan_path, config), entries_mixed, config)
+        self.assertEqual((("W1", "coder"),), stop.attempt_exhausted)
+        self.assertEqual((("W1", "checker"),), stop.review_exhausted)
+        self.assertEqual({}, stop.x_rounds)
+        self.assertTrue(stop.triggered)
+
+    def test_a147_no_write_rejection_and_strategist_exit(self) -> None:
+        """HC-RL-A147：超限后第 N+1 条 ready 仍被 add 接受且账本增行；
+        耗尽后 strategist 链可正常以 escalate 起头走到 resume（A97/A114 不变）。"""
+        self._open_node(
+            [
+                "| coder | W1 | coder | | code.md | | |",
+                "| checker | W1 | checker | | check.md | | |",
+            ]
+        )
+        self.assertEqual(0, self.run_add("agent_launch", agent="coder#1").returncode)
+        for round_ in (1, 2, 3):  # 上限 2，第 3 条仍被接受——add 层无硬上限
+            ok = self.run_add(
+                "checkpoint", agent="coder#1", note=f"第{round_}轮 ready_for_review=checker"
+            )
+            self.assertEqual(0, ok.returncode, ok.stderr)
+        self.assertEqual(
+            3,
+            sum(
+                1
+                for row in self.ledger_rows()
+                if "ready_for_review=checker" in str(row["note"])
+            ),
+        )
+        # strategist 链（无 blocked 起头）：escalate 作链首 → 一路走到 resume
+        self.assertEqual(
+            0, self.run_add("escalate", agent="coder#1", note="strategist=strategist#1 原因=送审轮次超限").returncode
+        )
+        self.assertEqual(0, self.run_add("agent_launch", agent="strategist#1").returncode)
+        self.assertEqual(
+            0, self.run_add("decision", agent="coder#1", note="strategist=strategist#1 strategy.1.md").returncode
+        )
+        self.assertEqual(0, self.run_add("done", agent="strategist#1").returncode)
+        self.assertEqual(0, self.run_add("user_decision", agent="coder#1", note="approve: 继续").returncode)
+        self.assertEqual(0, self.run_add("resume", agent="coder#1", note="按 strategy.1.md 继续").returncode)
+
+    # --- B3：HC-RL-A148 向后兼容 ---
+
+    REAL_PLAN_DIR = (
+        Path(__file__).resolve().parents[2]
+        / "docs" / "modules" / "relay-light" / "relay" / "rlt12-win-01"
+    )
+
+    def test_a148_legacy_plan_lints_and_ledger_replays(self) -> None:
+        """HC-RL-A148：rlt12-win-01 计划原样过 lint；71 行账本原样重放逐条被接受
+        （R 段无 ready 信号，判定方裸 done 不触发 A146）。"""
+        plan = lint_plan(self.REAL_PLAN_DIR / "relay_plan.md", repo_config())
+        entries = relay_log.read_ledger(self.REAL_PLAN_DIR / "relay_log.jsonl")
+        self.assertEqual(71, len(entries))
+        config = repo_config()
+        for index, entry in enumerate(entries):
+            relay_log._validate_runtime_event(
+                plan,
+                entries[:index],
+                str(entry["node"]),
+                str(entry["event"]),
+                str(entry["agent"]),
+                str(entry["note"]),
+                config.limits.attempt_max,
+            )
+
+    def test_a148_mixed_triggers_in_one_node(self) -> None:
+        """HC-RL-A148：同节点混用两种 trigger 均被接受——`on:done:` 路报 A70、
+        `on:review_ready:` 路报 A144，编号不串；两路各按自己的前置走通主线。"""
+        self.write_single_node_plan(
+            [
+                "| coder | W1 | coder | | code.md | | |",
+                "| plan-reviewer | W1 | plan-reviewer | | review.plan.md | on:review_ready:coder | |",
+                "| scribe | W1 | scribe | | progress.md | on:done:coder | |",
+            ],
+            close="agent:plan-reviewer",
+        )
+        self.start_ledger()
+        self.assertEqual(0, self.run_add("node_start", agent="monitor#1").returncode)
+        self.assertEqual(0, self.run_add("agent_launch", agent="coder#1").returncode)
+        # on:done: 路的反例：coder 未 done，scribe 拉起报 A70（不是 A144）
+        no_done = self.run_add("agent_launch", agent="scribe#1")
+        self.assertEqual(2, no_done.returncode)
+        self.assertRegex(no_done.stderr, r"^error: HC-RL-A70 ")
+        # on:review_ready: 路的反例：无信号，plan-reviewer 拉起报 A144（不是 A70）
+        no_signal = self.run_add("agent_launch", agent="plan-reviewer#1")
+        self.assertEqual(2, no_signal.returncode)
+        self.assertRegex(no_signal.stderr, r"^error: HC-RL-A144 ")
+        # 两路各按自己的前置走通
+        self.assertEqual(
+            0, self.run_add("checkpoint", agent="coder#1", note="ready_for_review=plan-reviewer").returncode
+        )
+        seq = len(self.ledger_rows())
+        self.assertEqual(0, self.run_add("agent_launch", agent="plan-reviewer#1").returncode)
+        self.assertEqual(0, self.run_add("done", agent="coder#1").returncode)
+        self.assertEqual(
+            0,
+            self.run_add(
+                "done", agent="plan-reviewer#1", note=f"reviewed=coder#1 ready_seq={seq}"
+            ).returncode,
+        )
+        self.assertEqual(0, self.run_add("agent_launch", agent="scribe#1").returncode)
+        self.assertEqual(0, self.run_add("done", agent="scribe#1").returncode)
+
+
 class RelayLimitsTests(RelayCliTestCase):
     """Batch 4 (HC-RL-A97/A99/A107): config-driven X planning and the two loss stops."""
 
@@ -3706,6 +4349,8 @@ class RelayLimitsTests(RelayCliTestCase):
         self.assertEqual({}, stop.x_rounds)
         self.assertEqual((("C1", "coder"),), stop.attempt_exhausted)
         self.assertEqual((), stop.x_exhausted)
+        self.assertEqual({}, stop.review_rounds)
+        self.assertEqual((), stop.review_exhausted)
         self.assertTrue(stop.triggered)
 
         # Only the X counter reaches its limit: both planned X rounds open and fail.
@@ -3735,6 +4380,8 @@ class RelayLimitsTests(RelayCliTestCase):
         self.assertEqual({"DHR_90": 2}, stop.x_rounds)
         self.assertEqual((), stop.attempt_exhausted)
         self.assertEqual(("DHR_90",), stop.x_exhausted)
+        self.assertEqual({}, stop.review_rounds)
+        self.assertEqual((), stop.review_exhausted)
         self.assertTrue(stop.triggered)
 
         # Neither counter at its limit: relaunch debt and a failed X#1 both stay open.
@@ -3764,6 +4411,8 @@ class RelayLimitsTests(RelayCliTestCase):
         self.assertEqual({"DHR_90": 1}, stop.x_rounds)
         self.assertEqual((), stop.attempt_exhausted)
         self.assertEqual((), stop.x_exhausted)
+        self.assertEqual({}, stop.review_rounds)
+        self.assertEqual((), stop.review_exhausted)
         self.assertFalse(stop.triggered)
 
     def test_attempt_loss_stop_counts_stage_failed_relaunch_debt(self) -> None:
@@ -4741,16 +5390,35 @@ class SkillTemplateTests(RelayCliTestCase):
             for line in (self.plan_path.parent / "relay_log.jsonl").read_text(encoding="utf-8").splitlines()
         ]
 
+    DISCIPLINE = (
+        "判定方判定 PASS 前，送审方与判定方均不记 `done`；"
+        "FAIL 走 live 判定方的 `checkpoint` 路由回同一送审方；"
+        "PASS 后按送审方→判定方顺序记终态"
+    )
+
     def _close_w_stage(self) -> None:
-        """plan_loaded → W#1 fully closed (builder + plan-reviewer), per W template."""
+        """plan_loaded → W#1 fully closed (builder + plan-reviewer), per W template.
+
+        A149 后的 W 流：builder 发 ready 信号 → plan-reviewer 拉起 → PASS 后按
+        送审方→判定方顺序记终态，plan-reviewer 的 done 带配对 token（A146）。
+        """
         self.add_ok("plan_loaded", node="W1", agent="orchestrator#1", note="skill=0.1.0")
         self.add_ok("stage_start", node="W1", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
         self.add_ok("monitor_launch", node="W1", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
         self.add_ok("node_start", node="W1", agent="monitor#1")
         self.add_ok("agent_launch", node="W1", agent="builder#1")
-        self.add_ok("done", node="W1", agent="builder#1")
+        self.add_ok(
+            "checkpoint", node="W1", agent="builder#1", note="计划就绪 ready_for_review=plan-reviewer"
+        )
+        seq = len(self.ledger_rows())
         self.add_ok("agent_launch", node="W1", agent="plan-reviewer#1")
-        self.add_ok("done", node="W1", agent="plan-reviewer#1")
+        self.add_ok("done", node="W1", agent="builder#1")
+        self.add_ok(
+            "done",
+            node="W1",
+            agent="plan-reviewer#1",
+            note=f"review.plan.md PASS reviewed=builder#1 ready_seq={seq}",
+        )
         self.add_ok("node_close", node="W1", agent="monitor#1")
         self.add_ok("stage_result", node="W1", agent="monitor#1", note="stage_id=DHR_90:W#1 outcome=done")
         self.add_ok("stage_close", node="W1", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
@@ -4826,6 +5494,171 @@ class SkillTemplateTests(RelayCliTestCase):
         self.assertEqual("", agents["checker"][5])
         self.assertEqual("on:done:coder", agents["scribe"][5])
         self.assertEqual("on:blocked", agents["decider"][5])
+
+    def test_a149_template_sync_wcx(self) -> None:
+        """HC-RL-A149：W/X 模板换新 trigger、C 补封口纪律、R 三行逐字不变；
+        硬规则段与两份 adapter 各含纪律原文；§3.5 映射表两行存在（B1 小审 P2 整改）。"""
+        blocks = self._template_rows()
+        w_agents = {self._cells(row)[0]: self._cells(row) for row in blocks["W"]["agent"]}
+        self.assertEqual("on:review_ready:builder", w_agents["plan-reviewer"][5])
+        x_reviewer = [row for row in blocks["X"]["agent"] if self._cells(row)[2] == "reviewer"]
+        self.assertEqual(1, len(x_reviewer))
+        self.assertEqual("on:review_ready:coder", self._cells(x_reviewer[0])[5])
+        # R 模板三行与改前逐字一致（R 不适用本修订）
+        self.assertEqual(
+            ["| R<n> | <card> | <card>:R#<k> | review | agent:scribe | <prev> | |"],
+            blocks["R"]["node"],
+        )
+        self.assertEqual(
+            [
+                "| <reviewer> | R<n> | reviewer | | review.<路>.md | | 按 recipe 展开为并行多行 |",
+                "| scribe | R<n> | scribe | | review.md（含体检/四道闸脚本与 miner 汇总） | | 空 trigger 是约定例外——trigger 词表表达不了「等全员 done」：监工在全部 reviewer done 后按本 note 拉起 |",
+            ],
+            blocks["R"]["agent"],
+        )
+        text = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+        c_prose = text.split("### C 阶段模板", 1)[1].split("```markdown", 1)[0]
+        self.assertIn(self.DISCIPLINE, c_prose)
+        hard_rules = text.split("## 硬规则", 1)[1].split("## 放弃项", 1)[0]
+        self.assertIn(self.DISCIPLINE, hard_rules)
+        for name in ("adapter-claude-code.md", "adapter-codex.md"):
+            adapter = (SKILL_DIR / "references" / name).read_text(encoding="utf-8")
+            with self.subTest(adapter=name):
+                self.assertIn(self.DISCIPLINE, adapter)
+        # §3.5 lint 规则映射表中 on:review_ready: 两行存在（A150；B1 小审 P2 整改）
+        design = (
+            Path(__file__).resolve().parents[2]
+            / "docs" / "modules" / "relay-light" / "design" / "01-RelayLight-产品设计与验收.md"
+        ).read_text(encoding="utf-8")
+        self.assertRegex(design, r"`on:review_ready:` 引用不存在 agent.*HC-RL-A35")
+        self.assertRegex(design, r"`on:review_ready:` 跨节点引用.*HC-RL-A71")
+
+    def test_a149_w_sequence_judge_relaunch_consumes_new_signal(self) -> None:
+        """A149②-W：判定方 agent_lost 后按 A49 合法重拉并消费新信号；builder 保持 #1。"""
+        self._write_template_plan()
+        self.add_ok("plan_loaded", node="W1", agent="orchestrator#1", note="skill=0.1.0")
+        self.add_ok("stage_start", node="W1", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
+        self.add_ok("monitor_launch", node="W1", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
+        self.add_ok("node_start", node="W1", agent="monitor#1")
+        self.add_ok("agent_launch", node="W1", agent="builder#1")
+        self.add_ok(
+            "checkpoint", node="W1", agent="builder#1", note="计划就绪 ready_for_review=plan-reviewer"
+        )
+        self.add_ok("agent_launch", node="W1", agent="plan-reviewer#1")
+        self.add_ok("agent_lost", node="W1", agent="plan-reviewer#1", note="pane 失联")
+        # builder 保持 live 写第二轮信号，plan-reviewer#2 重拉并消费它
+        self.add_ok(
+            "checkpoint", node="W1", agent="builder#1", note="第二轮 ready_for_review=plan-reviewer"
+        )
+        seq = len(self.ledger_rows())
+        self.add_ok("agent_launch", node="W1", agent="plan-reviewer#2")
+        self.add_ok("done", node="W1", agent="builder#1")
+        self.add_ok(
+            "done",
+            node="W1",
+            agent="plan-reviewer#2",
+            note=f"review.plan.md PASS reviewed=builder#1 ready_seq={seq}",
+        )
+        self.add_ok("node_close", node="W1", agent="monitor#1")
+        self.add_ok("stage_result", node="W1", agent="monitor#1", note="stage_id=DHR_90:W#1 outcome=done")
+        self.add_ok("stage_close", node="W1", agent="orchestrator#1", note="stage_id=DHR_90:W#1")
+        builder_launches = [
+            row["agent"]
+            for row in self.ledger_rows()
+            if row["event"] == "agent_launch" and str(row["agent"]).startswith("builder#")
+        ]
+        self.assertEqual(["builder#1"], builder_launches)
+
+    def test_a149_c_sequence_same_instance_fail_then_pass(self) -> None:
+        """A149②-C：checker FAIL 走 live checkpoint 路由回同一 coder，
+        coder 整改后同实例复审至 PASS，全程无第二条 coder agent_launch。"""
+        self._write_template_plan()
+        self._close_w_stage()
+        self._open_c1()
+        self.add_ok("agent_launch", node="C1", agent="coder#1")
+        self.add_ok(
+            "checkpoint", node="C1", agent="coder#1", note="批次就绪 ready_for_review=checker"
+        )
+        self.add_ok("agent_launch", node="C1", agent="checker#1")
+        # FAIL：live checker 用 checkpoint 路由回同一送审方，双方均不记 done
+        self.add_ok(
+            "checkpoint", node="C1", agent="checker#1", note="routed_to=coder#1 FAIL p1=1 返工边界"
+        )
+        # coder 整改后发第二轮信号，checker 同实例复审至 PASS
+        self.add_ok(
+            "checkpoint", node="C1", agent="coder#1", note="第二轮 ready_for_review=checker"
+        )
+        seq = len(self.ledger_rows())
+        self.add_ok("done", node="C1", agent="coder#1")
+        self.add_ok(
+            "done",
+            node="C1",
+            agent="checker#1",
+            note=f"check.C1.md PASS p1=0 reviewed=coder#1 ready_seq={seq}",
+        )
+        self.add_ok("agent_launch", node="C1", agent="scribe#1")
+        self.add_ok("done", node="C1", agent="scribe#1", note="progress.md 已登记")
+        self.add_ok("node_close", node="C1", agent="monitor#1")
+        coder_launches = [
+            row["agent"]
+            for row in self.ledger_rows()
+            if row["event"] == "agent_launch" and str(row["agent"]).startswith("coder#")
+        ]
+        self.assertEqual(["coder#1"], coder_launches)
+
+    def test_a149_x_sequence_two_paths_one_fail_one_pass(self) -> None:
+        """A149②-X：两路一 FAIL 一 PASS——FAIL 路同实例重审至 PASS，
+        PASS 路不被重拉也不被提前封口，各绑各的 ready_seq。"""
+        # 模板的 X1 只展开 <打回路> 一行；两路场景在 agent 表追加 lesson 行
+        node_rows, agent_rows = self._assembled_plan(include_x=True)
+        agent_rows.append("| lesson | X1 | reviewer | | review.rework.1.md | on:review_ready:coder | |")
+        self.write_plan(
+            node_rows=node_rows,
+            agent_rows=agent_rows,
+            marker=(
+                "<!-- relay-light:plan v1 skill=0.1.0 generated=2026-09-12 session=app "
+                "decision_mode=auto recipe=normal cards=DHR_90 -->"
+            ),
+        )
+        self._drive_to_x1()
+        self.add_ok("agent_launch", node="X1", agent="coder#1")
+        self.add_ok(
+            "checkpoint", node="X1", agent="coder#1", note="ready_for_review=requirement"
+        )
+        self.add_ok("agent_launch", node="X1", agent="requirement#1")
+        self.add_ok(
+            "checkpoint", node="X1", agent="coder#1", note="ready_for_review=lesson"
+        )
+        lesson_seq = len(self.ledger_rows())
+        self.add_ok("agent_launch", node="X1", agent="lesson#1")
+        # requirement 路 FAIL → coder 整改 → 第二轮信号 → 同实例复审 PASS
+        self.add_ok(
+            "checkpoint", node="X1", agent="requirement#1", note="routed_to=coder#1 FAIL p1=1"
+        )
+        self.add_ok(
+            "checkpoint", node="X1", agent="coder#1", note="第二轮 ready_for_review=requirement"
+        )
+        requirement_seq = len(self.ledger_rows())
+        self.add_ok("done", node="X1", agent="coder#1")
+        self.add_ok(
+            "done",
+            node="X1",
+            agent="requirement#1",
+            note=f"reviewed=coder#1 ready_seq={requirement_seq}",
+        )
+        self.add_ok(
+            "done",
+            node="X1",
+            agent="lesson#1",
+            note=f"reviewed=coder#1 ready_seq={lesson_seq}",
+        )
+        self.add_ok("node_close", node="X1", agent="monitor#1")
+        launches = [
+            row["agent"]
+            for row in self.ledger_rows()
+            if row["event"] == "agent_launch" and row["node"] == "X1"
+        ]
+        self.assertEqual(["coder#1", "requirement#1", "lesson#1"], launches)
 
     # --- 运行时合同（模板驱动的行为断言） ---
 
