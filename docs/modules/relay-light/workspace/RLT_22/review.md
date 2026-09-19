@@ -38,9 +38,9 @@
 
 | Batch | 承接验收编号 | audit reviewer（须≠本批 exec） | 结论 | 证据 / check 文件 | 状态 |
 |---|---|---|---|---|---|
-| B1 | `A150`（承接 `A35`/`A71`）+ `A145` | | | `check.B1.md` | |
-| B2 | `A144` + `A146` | | | `check.B2.md` | |
-| B3 | `A147`（承接 `A107`）+ `A148` + `A149`（附 `A65` 补例） | | | `check.B3.md` | |
+| B1 | `A150`（承接 `A35`/`A71`）+ `A145` | fresh 子代理（非本批 exec） | PASS（P1=0，P2=1 已由 B3 闭环） | `check.B1.md` / `done.checker.B1.md` | closed |
+| B2 | `A144` + `A146` | fresh 子代理（非本批 exec） | PASS（P1=0，P2=1 已改 E-006 措辞） | `check.B2.md` / `done.checker.B2.md` | closed |
+| B3 | `A147`（承接 `A107`）+ `A148` + `A149`（附 `A65` 补例） | fresh 子代理（非本批 exec） | PASS（P1=0，P2=1 F-010 占位已补） | `check.B3.md` / `done.checker.B3.md` | closed |
 
 ## 返工收敛（有 open P0/P1 → 修 → 重跑证据 → 复核者再过；最多 3 轮；同一 finding 连续 2 轮「修完引入新问题」即止损换人）
 
@@ -52,7 +52,12 @@
 
 | 变异点锚点(生产代码 path:line) | 原值→变异值 | 语义类别 | 对应测试 ID | 运行命令 | 施加 hash | 还原 hash | 登记人 | 施加后结果 |
 |---|---|---|---|---|---|---|---|---|
-| <待收口填> | <待收口填> | <改条件/改返回值/改边界> | <待收口填> | <待收口填> | <待收口填> | <待收口填> | <待收口填> | <断言失败/未变红/构建错误> |
+| `tools/relay-light/relay_log.py:1767` | `if len(tokens) != 1:` → `if len(tokens) < 1:`（A145 ≥2 token 拒绝失效） | 改条件 | `RelayReviewReadyTests.test_a145_ready_signal_write_contract` | `python -m unittest tools.relay-light.test_relay_log.RelayReviewReadyTests.test_a145_ready_signal_write_contract` | `e2af333a4b5b20124b0b03213346e61c82cc6b6779fe30002e2ffbd643457693` | `7f67882f40557aae5b512e8c41c225a609150e2fcec494a0a35ba868e596d433` | 施工 exec#1 | 断言失败 |
+| `tools/relay-light/relay_log.py:1705` | `...get("ready_for_review") != name` → `!= target`（A144 token 比对错对象） | 改条件 | `RelayReviewReadyTests.test_a144_launch_requires_live_ready_signal` | `python -m unittest tools.relay-light.test_relay_log.RelayReviewReadyTests.test_a144_launch_requires_live_ready_signal` | `127639e3a8f516417711d9927b5684e0c2639ff34aadf993876fe44908796de5` | `7f67882f40557aae5b512e8c41c225a609150e2fcec494a0a35ba868e596d433` | 施工 exec#1 | 断言失败 |
+| `tools/relay-light/relay_log.py:2197` | `or signal["agent"] != reviewed` → `!= signal["agent"]`（恒假，A146 agent 逐字校验失效） | 改条件 | `RelayReviewReadyTests.test_a146_done_pairing_gate_rejections` | `python -m unittest tools.relay-light.test_relay_log.RelayReviewReadyTests.test_a146_done_pairing_gate_rejections` | `f45f4b56c4c3db1d1e67258380fa33c188408aec81d1200bc2dc151467bf51aa` | `7f67882f40557aae5b512e8c41c225a609150e2fcec494a0a35ba868e596d433` | 施工 exec#1 | 断言失败（该腿取值缺陷修复后重验转红，见 progress B3 后日志行） |
+| `tools/relay-light/relay_log.py:3034` | `if not judge_done:` → `if True:`（A147 耗尽判据失效） | 改条件 | `RelayReviewReadyTests.test_a147_review_loss_stop_projection_only` | `python -m unittest tools.relay-light.test_relay_log.RelayReviewReadyTests.test_a147_review_loss_stop_projection_only` | `d0450db5aae291ffd1900d3bce315fe4d0e23dbcae74c7d668af048acd3ba47c` | `7f67882f40557aae5b512e8c41c225a609150e2fcec494a0a35ba868e596d433` | 施工 exec#1 | 断言失败 |
+
+> 施加/还原 hash 为文件磁盘字节 sha256（CRLF 口径），每次还原后哈希=基线；整批命令与输出见 progress.md E-015。
 
 > `语义类别` 三选一：`改条件` / `改返回值` / `改边界`——构建错误、语法错误不算语义变异。
 > `施加后结果` 三选一：`断言失败` / `未变红` / `构建错误`——**只有 `断言失败` 算通过**。
