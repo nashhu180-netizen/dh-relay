@@ -16,6 +16,8 @@
 
 | 2026-09-19 | 施工 worker `exec#1`（同会话） | **复核前准备**（用户授权 commit/push/PR、skill 两侧重同步与「继续」后）：①补写教训候选 C-1~C-5（含 B1/B2/B3 分批登记位）；②按 normal 档有效单测要求做**变异点测试**——4 处生产代码语义变异（改条件）全部「改坏必红」（E-015）；③变异 M3 揭示 `test_a146_done_pairing_gate_rejections` 的「他人信号拼接」腿自身有取值缺陷：`ready_seq` 在 `done builder#1` 之后取值、指向 done 行而非 coder 信号行，该腿一直在错误原因上通过（与教训 C-3 同型）——已修（`coder_seq` 紧跟信号行取值），修复后未变异测试绿、变异重验转红；④`relay_log.py` 工作副本 EOL 曾被哈希脚本改为 LF，已重建 CRLF（内容逐字节等价，`git diff --stat` 260=232+28 与改前一致） | E-015 | CONSTRUCTION_DONE → 派 normal 三路复核 |
 
+| 2026-09-19 | 施工 worker `exec#1`（同会话） | **重同步 + CONSTRUCTION_DONE + 派 normal 三路复核**（用户当次授权：①commit/push/PR ②skill 两侧重同步 ③继续）。提交 `7227da3`（feat：程序与 skill 交付）+ `f954ae2`（docs：工作区证据）后执行 `python tools/relay-light/install_skill.py --all`：exit 0，两副本 source_head=`f954ae2362d8`、source_dirty=False，五文件 sha256 三处一致，`roles.toml` 哈希与 E-001 相同（零改动佐证）。随后发 CONSTRUCTION_DONE 并按 normal Recipe 派三路 fresh 复核（code-round1 / requirement / lesson，互不相同、均非施工者与小审者；F-005 路数争议按仓根 AGENTS.md 宪章#5 三路执行，不降路不合路，F-005 源头对齐仍留编排） | E-016 / E-017 / E-018 / E-019 | 三路复核回报 → 整改/收口 |
+
 ## D-001 开工事实登记
 
 **动作 D 开工 · 落户**（本登记不等于 verify、不等于验收，也不授权 push / PR / 合并）
@@ -71,6 +73,10 @@
 | E-011 | 机器证（B3 目标用例转绿） | 同上集合单跑复跑（实现后；2026-09-19） | pass（a147 投影 OK、a147 strategist 链 OK、a148 两条 OK、A149 结构与 W/C/X 三条序列 OK；中途三次夹具返工见 B3 日志行） | B3 全部目标用例绿 |
 | E-012 | 机器证（B3 全量单测） | `PYTHONDONTWRITEBYTECODE=1 python -m unittest tools.relay-light.test_relay_log -v`（2026-09-19，/tmp/rlt22-b3-full.log） | pass（`Ran 197 tests ... OK`，exit 0——189 + B3 净增 8） | B3 后全量绿（含模板切换后的全部 SkillTemplateTests 既有回归） |
 | E-013 | 机器证（B3 仓测试入口） | `pwsh -NoProfile -File tools/tests/run-relay-tests.ps1`（/tmp/rlt22-b3-relaytests.log） | pass（`RELAY ALL PASS (SKIPPED: 1)`，exit 0；skip 为 psmux 实连套件） | 17 套件含 relay-light-log 全过 |
+| E-016 | 机器证（skill 两侧重同步） | `python tools/relay-light/install_skill.py --all`（cwd=本 worktree；源=`tools/relay-light/skill` @ `f954ae2362d8` clean；2026-09-19）。授权链：上一轮对话已展示 `%USERPROFILE%` 两绝对目标（`C:/Users/nash/.claude/skills/relay-light`、`C:/Users/nash/.codex/skills/relay-light`）→ 用户本轮回复「授权」→ 执行，顺序合规 | pass（`installed:` 两行 + EXIT=0；两 manifest source_head=`f954ae2362d8`、source_dirty=False；五文件 SKILL.md=`8794845a30cf2944…`、adapter-claude-code=`f2829c667594fb42…`、adapter-codex=`eb919bc945ab734b…`、roles.toml=`61e55dc27660cb2d…`（与 E-001 相同）、dh-mapping.toml=`76ed5b6482831d16…` 三处逐字节一致） | 本卡 skill 改动后的两侧重同步（A32 闸口径），消费副本对齐到本卡交付 |
+| E-017 | review-dispatch（code-round1） | fresh 子代理 `review#code-round1`，靶子=review.md 复核路径登记 code-round1 行六项 + 整卡 diff（`master...HEAD`） | dispatched（回报写 `review.code-round1.md` + `done.review.code-round1.md`） | normal Recipe 三路之一 |
+| E-018 | review-dispatch（requirement） | fresh 子代理 `review#requirement`，靶子=design/01 §11 A144~A150 七条「怎么验」逐字对齐 + A35/A65/A71/A107 承接 + 非目标六条反向证据 + F-006 A102 显式证明 | dispatched（回报写 `review.requirement.md` + `done.review.requirement.md`） | normal Recipe 三路之二 |
+| E-019 | review-dispatch（lesson） | fresh 子代理 `review#lesson`，靶子=lesson_candidates.md C-1~C-5 现场证据/去重/可复用性 + 分批登记位完整性 | dispatched（回报写 `review.lesson.md` + `done.review.lesson.md`） | normal Recipe 三路之三 |
 | E-015 | 机器证（变异点·改坏必红） | 4 处语义变异逐一施加于 `tools/relay-light/relay_log.py`（sha256 基线/还原=`7f67882f40557aae5b512e8c41c225a609150e2fcec494a0a35ba868e596d433`）：M1 `relay_log.py:1767` A145 计数 `!=1`→`<1` 跑 `test_a145_ready_signal_write_contract`；M2 `relay_log.py:1705` A144 token 比对 name→target 跑 `test_a144_launch_requires_live_ready_signal`；M3 `relay_log.py:2197` A146 agent 逐字校验恒假跑 `test_a146_done_pairing_gate_rejections`（腿缺陷修复后重验）；M4 `relay_log.py:3034` A147 judge_done 恒真跑 `test_a147_review_loss_stop_projection_only` | pass（4/4 断言失败；applied sha256 依次=`e2af333a4b5b20124b0b03213346e61c82cc6b6779fe30002e2ffbd643457693`/`127639e3a8f516417711d9927b5684e0c2639ff34aadf993876fe44908796de5`/`f45f4b56c4c3db1d1e67258380fa33c188408aec81d1200bc2dc151467bf51aa`/`d0450db5aae291ffd1900d3bce315fe4d0e23dbcae74c7d668af048acd3ba47c`；每次还原后哈希=基线） | normal 档有效单测要求：改坏必红，登记表见 review.md 变异点登记 |
 | E-014 | 机器证（B3 允许路径 + diff --check） | `git status --short`、`git diff --check`（cwd=worktree，2026-09-19） | pass（改动集 = relay_log.py / test_relay_log.py / `skill/SKILL.md` / `skill/references/adapter-*.md` ×2 / `skill/dh-mapping.toml` / 本工作区，恰在允许路径 `tools/relay-light/**` 与 `workspace/RLT_22/**` 闭集内；`git diff --check` 无输出） | B3 无越界改动；R 模板三行经 `test_a149_template_sync_wcx` 逐字断言未动 |
 
@@ -146,3 +152,4 @@ DONE task=RLT_22 role=builder batch=W status=W_READY evidence=D-001 next=orchest
 DONE task=RLT_22 role=exec batch=1 status=PASS evidence=E-002,E-003,E-004,E-005,check.B1.md next=orchestrator
 DONE task=RLT_22 role=exec batch=2 status=PASS evidence=E-006,E-007,E-008,E-009,check.B2.md next=orchestrator
 DONE task=RLT_22 role=exec batch=3 status=PASS evidence=E-010,E-011,E-012,E-013,E-014,check.B3.md next=orchestrator
+DONE task=RLT_22 role=exec batch=3 status=CONSTRUCTION_DONE evidence=check.B1.md,check.B2.md,check.B3.md,E-015,E-016 next=orchestrator

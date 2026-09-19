@@ -24,9 +24,9 @@
 
 | 路径 | 时序 / 独立性 | 必审靶子 | reviewer | 派出证据 (e:E-xxx / log:路径) | 结论 | 证据 (E-xxx) |
 |---|---|---|---|---|---|---|
-| code-round1 | 三批小审闭合、`CONSTRUCTION_DONE` 之后；fresh，非施工者、非小审者 | 整卡 diff。重点六项：①A146 的**执行位点**确在 agent `done` 的语义校验一线而非 `_validate_node_close`；②新校验一律用 `_latest_for_instance`，无一处沿用 `_latest_by_name`；③`_note_tokens`「首个同名 key 胜出」行为未改，重复 token 拒在写入侧；④`_validate_agent_transition` 迁移表、`Status` / `status_document`、`roles.toml`、`dh-mapping.toml` 的键与取值零改动；⑤`on:done:` 分支与 A70 逐字一致；⑥反例编号不串（重复 `agent_launch` 报 A58/A49，终态后挂事件报 A60） | | | | |
-| requirement（需求方向） | normal Review Batch 独立路径 | 逐字对齐 design/01 §11 的 `HC-RL-A144`~`A150` 七条「怎么验」列；核 A35/A65/A71/A107 四条修订的承接证据是否到位；核卡「非目标」六条（A2/A62/A95/A102 不改，A49/A60/A70 不豁免不削弱，R 模板不动，不强制迁移）逐条有反向证据；核 A102 是否由 A145 正例**显式**证明而非假定继承（findings F-006） | | | | |
-| lesson（教训） | normal Review Batch 独立路径 | 核 `lesson_candidates.md` 候选的现场证据、去重与可复用性；核三批登记位是否「无候选也写了本批无」；若全程 absent，须形成可核查 N/A（`库版本=<在册条目数>` + 无候选/无重犯），不得空过 | | | | |
+| code-round1 | 三批小审闭合、`CONSTRUCTION_DONE` 之后；fresh，非施工者、非小审者 | 整卡 diff。重点六项：①A146 的**执行位点**确在 agent `done` 的语义校验一线而非 `_validate_node_close`；②新校验一律用 `_latest_for_instance`，无一处沿用 `_latest_by_name`；③`_note_tokens`「首个同名 key 胜出」行为未改，重复 token 拒在写入侧；④`_validate_agent_transition` 迁移表、`Status` / `status_document`、`roles.toml`、`dh-mapping.toml` 的键与取值零改动；⑤`on:done:` 分支与 A70 逐字一致；⑥反例编号不串（重复 `agent_launch` 报 A58/A49，终态后挂事件报 A60） | fresh 子代理 review#code-round1（e:E-017） | e:E-017 | 待回报 | review.code-round1.md |
+| requirement（需求方向） | normal Review Batch 独立路径 | 逐字对齐 design/01 §11 的 `HC-RL-A144`~`A150` 七条「怎么验」列；核 A35/A65/A71/A107 四条修订的承接证据是否到位；核卡「非目标」六条（A2/A62/A95/A102 不改，A49/A60/A70 不豁免不削弱，R 模板不动，不强制迁移）逐条有反向证据；核 A102 是否由 A145 正例**显式**证明而非假定继承（findings F-006） | fresh 子代理 review#requirement（e:E-018） | e:E-018 | 待回报 | review.requirement.md |
+| lesson（教训） | normal Review Batch 独立路径 | 核 `lesson_candidates.md` 候选的现场证据、去重与可复用性；核三批登记位是否「无候选也写了本批无」；若全程 absent，须形成可核查 N/A（`库版本=<在册条目数>` + 无候选/无重犯），不得空过 | fresh 子代理 review#lesson（e:E-019） | e:E-019 | 待回报 | review.lesson.md |
 
 **需求复核结论**：<approved / 有漂移>｜证据(E-xxx)｜由 <复核者>｜派出=<e:E-xxx / log:路径>｜prior_finding_refs=<none|E-xxx>｜direction_verdict=<approved-无漂移/有漂移>
 
