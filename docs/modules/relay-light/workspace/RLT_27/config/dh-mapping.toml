@@ -1,0 +1,35 @@
+# 阶段 → dev-harness 节点
+[stages]
+W = { dh_nodes = ["S0", "S1", "S2"] }
+C = { dh_nodes = ["S3"] }
+R = { dh_nodes = ["E0", "E1", "E2", "E4", "E5", "E14", "E6", "E3"] }
+X = { dh_nodes = ["E2", "E3"] }          # 返工子环
+F = { dh_nodes = ["E7", "E8", "E9", "E10"] }
+# E11 用户确认 / E12 代签 / E13 销户 不进接力
+
+# Recipe 三档 → R 阶段挂哪些 reviewer
+# 严格对齐 dev-harness 节点表 E2 与 E14 的 task_type 派生规则：
+#   E2 代码轮 2：heavy 必做，normal 默认不做，light 整段不适用
+#   E14 一致性：heavy 与 light 必过，normal 不必查
+[recipes.heavy]
+reviewers = ["code-round2", "requirement", "lesson", "consistency"]
+
+[recipes.normal]
+reviewers = ["requirement", "lesson"]
+
+[recipes.light]
+reviewers = ["lesson", "consistency"]
+
+# 止损
+[limits]
+rework_max_rounds = 2      # X 阶段轮数上限
+attempt_max = 3            # 节点实例内同一 agent 名的重拉上限
+silence_timeout_min = 30   # 监工静默提示阈值（分钟）：仅提示非挂死判定
+
+[limits.on_exceed]
+action = "strategist-then-user"
+note = """
+三套计数独立、不叠加、不互相重置：attempt 抓「实例挂了重拉」，
+rework 抓「复核打回」，送审轮数抓「判定方迟迟不收口」。任一先到上限即停，出口相同：
+监工拉 strategist → strategist 输出全局方案或建议停卡 → 永远交用户裁决。
+"""

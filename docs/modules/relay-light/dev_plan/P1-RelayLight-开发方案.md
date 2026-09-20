@@ -1,5 +1,7 @@
 # P1-RelayLight 开发方案（**正式开发方案 · 更新至 2026-09-20**）
 
+> **2026-09-20 执行覆盖说明 / Issue #52**：用户明确授权创建 Issue 并按 Linux Codex 最小闭环范围开工。RLT_13/#48、RLT_25/#49（含 A12 候选）、RLT_26/#50 已登记 on-hold；保留全部成果与原验收，不续派。其余旧未启动车暂缓，不改原合同。当前唯一新增执行目标 RLT_27；旧表“下一步”不构成续做授权。RLT_27 仅验证 Linux Codex light 路径，不替代 RLT_17 双主控完整验收。冻结记录在各原任务树 progress、A12 候选头部及三个 Issue；本工作树接力结果是新任务唯一运行权威，Windows 镜像不得与 ThinkPad 并发写同一工件。
+
 <!-- dh:plan-type: 开发 -->
 <!-- dh:planning-event:v1 id=RLT-B-08 stage=B-adjust artifact=dev_plan/P1-RelayLight-开发方案.md review=../design/evidence/12-RLT-B08-RLT25-RLT26-交叉审核.md#review-rlt-b08 understanding=../design/evidence/12-RLT-B08-RLT25-RLT26-交叉审核.md#understanding-rlt-b08 -->
 
@@ -129,11 +131,30 @@
 | RLT_18 | 实现并实测 watch 通知与兜底 | 标准 | 未开始 | 5 | RLT_05、RLT_07、RLT_13、RLT_17 | — | — | 最终 adapter 后两机重同步 |
 | RLT_25 | 统一 normal Recipe 权威与闸门登记 | 标准 | 未开始 | 7 | 目标三路已裁决；前置 A-adjust 整版确认并落盘 | — | — | Issue #49；不作旧第 3 批硬前置；与 RLT_26 共用 skill 路径，后续施工须错开或合入后重新核基线 |
 | RLT_26 | resource_close 现役文档同步与旧口径清理 | 标准 | 进行中 | 7 | RLT_24（已满足） | [workspace/RLT_26](../workspace/RLT_26/) | — | Issue #50；并入 RLT_22 F-010；2026-09-20 已另行授权 Devin SWE-2 Max 独立 worktree D-start |
+| RLT_27 | ThinkPad Linux Codex 主控最小闭环 | 标准 | 待验收 | 独立试跑 | retry02 W/C/R/F 全闭合；2026-09-20 用户确认且授权版本收口；待集成 verify | [workspace/RLT_27](../workspace/RLT_27/) | — | Issue #52 已关闭；仅本卡 light 子范围；首次阻塞保留、协调修正一次；不替代 RLT_17 全矩阵 |
 
 > 工作区在 D 开工时按模板回填；本草案未开工，故统一填“—”。状态列仅使用“未开始”。
 
 
 ### 3.2 任务卡
+
+#### RLT_27
+
+ThinkPad Linux Codex 最小闭环（Issue #52）。
+
+- 状态：待验收（用户已确认最小试跑结果，版本收口执行中；尚待集成 verify）；工作区：[workspace/RLT_27](../workspace/RLT_27/)。
+- 档位：标准运行验证；任务类型：轻量 `light`（仅文档载荷，不改生产代码）。<!-- dh:task-type:v1 task=RLT_27 type=light -->
+- 目标：在 ThinkPad 真正运行 Codex 编排→阶段监工→独立执行者，完成 W/C/R/F；产出 Linux Codex 使用说明和证据包。
+- 来源：design/01 §1.1、§1.4、HC-RL-A15/H4 的 Linux Codex 子范围；不宣称双主控完整命题等价覆盖。用户 2026-09-20 转向及精确开工授权、Issue #52。
+- 机器证：环境版本/源与配置哈希；真实独立实例/产出/复核；账本 status errors=[]、各节点/阶段闭合、lint 0；Linux Python 测试自然退出 0；允许路径审计；任何 transport proxy/权限失败/人工介入均披露。
+- 人判：看证据判断该环境下 Codex 主控是否足以开始受控业务试用，不预填通过。
+- 非目标：不改核心、不修 normal/heavy、不覆盖全局 Skill、不做 watch/自动改计划/Claude 主控矩阵、不对旧卡验收。
+- 允许路径：<!-- dh:allowed-paths:v1 task=RLT_27 -->
+  - `docs/modules/relay-light/workspace/RLT_27/**`
+  - `docs/modules/relay-light/relay/rlt27-linux-codex-01/**`
+  - `docs/modules/relay-light/dev_plan/P1-RelayLight-开发方案.md`
+- 授权：原开工仅创建 Issue、隔离任务树、专用配置与实跑；2026-09-20 用户随后对精确包回复“授权收口”，授权仅本卡 commit/push/PR/CI 后 GitHub 合并/两端同步/verify/证据安全保存后清理任务树与分支。原 F 阶段保留现场的历史记录不改写；不授权旧卡续做。
+- 基线：d954428；ThinkPad 与 Windows 同提交，生产 tools 与原 Linux 9ca3eda 一致。现场以 ThinkPad `/home/nash/work/dh-relay/.dh-worktrees/RLT_27` 为准。
 
 #### RLT_01 — 仓内 skill 单源与安装器
 
