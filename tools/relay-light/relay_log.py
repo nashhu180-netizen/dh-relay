@@ -166,6 +166,16 @@ class Plan:
     decision_mode: str
     nodes: tuple[NodeSpec, ...]
     agents: tuple[AgentSpec, ...]
+    card_recipes: tuple[tuple[str, str], ...] = ()
+    card_decision_modes: tuple[tuple[str, str], ...] = ()
+
+    def recipe_for(self, card: str) -> str:
+        """HC-RL-A116b: a card's recipe is its ``cards=`` override, else the marker default."""
+        return dict(self.card_recipes).get(card, self.recipe)
+
+    def decision_mode_for(self, card: str) -> str:
+        """HC-RL-A130b: a card's decision mode is its ``cards=`` override, else the marker default."""
+        return dict(self.card_decision_modes).get(card, self.decision_mode)
 
 
 @dataclass(frozen=True)
@@ -478,9 +488,7 @@ def parse_plan(path: str | Path) -> Plan:
         )
         for line, cells in agent_rows
     )
-    cards = tuple(card for card in fields["cards"].split(",") if card)
-    if not cards:
-        raise _error("HC-RL-A18", "marker cards= must contain at least one card", exit_code=3)
+    cards, card_recipes, card_modes = _parse_cards(fields["cards"])
     return Plan(
         marker=marker,
         skill=fields["skill"],
@@ -491,7 +499,46 @@ def parse_plan(path: str | Path) -> Plan:
         decision_mode=fields.get("decision_mode", "auto"),
         nodes=tuple(nodes),
         agents=agents,
+        card_recipes=card_recipes,
+        card_decision_modes=card_modes,
     )
+
+
+def _parse_cards(
+    raw: str,
+) -> tuple[tuple[str, ...], tuple[tuple[str, str], ...], tuple[tuple[str, str], ...]]:
+    """``cards=<card>[:<recipe>[:<decision_mode>]],...`` — per-card overrides of the marker
+    defaults (2026-09-21 user ruling: recipe and decision_mode are card-level, never batch-level)."""
+    cards: list[str] = []
+    recipes: list[tuple[str, str]] = []
+    modes: list[tuple[str, str]] = []
+    for entry in raw.split(","):
+        if not entry:
+            continue
+        parts = entry.split(":")
+        if len(parts) > 3 or not parts[0]:
+            raise _error("HC-RL-A18", f"malformed cards= entry: {entry}", exit_code=3)
+        card = parts[0]
+        if card in cards:
+            raise _error("HC-RL-A18", f"duplicate card in cards=: {card}", exit_code=3)
+        cards.append(card)
+        if len(parts) >= 2 and parts[1]:
+            if parts[1] not in RECIPE_TIERS:
+                raise _error(
+                    "HC-RL-A116",
+                    f"cards= recipe {parts[1]} for {card} must be one of {sorted(RECIPE_TIERS)}",
+                    exit_code=3,
+                )
+            recipes.append((card, parts[1]))
+        if len(parts) == 3 and parts[2]:
+            if parts[2] not in {"auto", "consult"}:
+                raise _error(
+                    "HC-RL-A130", f"cards= decision_mode {parts[2]} for {card} is invalid", exit_code=3
+                )
+            modes.append((card, parts[2]))
+    if not cards:
+        raise _error("HC-RL-A18", "marker cards= must contain at least one card", exit_code=3)
+    return tuple(cards), tuple(recipes), tuple(modes)
 
 
 def _ancestors(node: str, dependencies: dict[str, tuple[str, ...]]) -> set[str]:
@@ -689,10 +736,13 @@ def _lint_recipe_reviewers(
             "HC-RL-A116",
             f"recipe {plan.recipe} must be one of {sorted(RECIPE_TIERS)}",
         )
-    expected = config.recipe_reviewers(plan.recipe)
-    if expected is None:
-        raise _error("HC-RL-A116", f"recipe {plan.recipe} is not configured in dh-mapping.toml")
-    for stage_id in dict.fromkeys(node.stage_id for node in active_nodes if node.stage == "R"):
+    for tier in dict.fromkeys((plan.recipe, *(recipe for _, recipe in plan.card_recipes))):
+        if config.recipe_reviewers(tier) is None:
+            raise _error("HC-RL-A116", f"recipe {tier} is not configured in dh-mapping.toml")
+    stage_cards = {node.stage_id: node.card for node in active_nodes if node.stage == "R"}
+    for stage_id, card in stage_cards.items():
+        recipe = plan.recipe_for(card)
+        expected = config.recipe_reviewers(recipe) or ()
         names = {
             agent.agent
             for node in active_nodes
@@ -706,8 +756,17 @@ def _lint_recipe_reviewers(
             raise _error(
                 "HC-RL-A116",
                 f"{stage_id} reviewer set {sorted(names)} does not match recipe "
-                f"{plan.recipe} {sorted(expected)}",
+                f"{recipe} {sorted(expected)}",
             )
+
+
+def _card_label(plan: Plan, card: str) -> str:
+    """``<card>`` plus its ``cards=`` overrides (``:<recipe>``/``::<mode>``) for the text status."""
+    recipe = dict(plan.card_recipes).get(card)
+    mode = dict(plan.card_decision_modes).get(card)
+    if recipe is None and mode is None:
+        return card
+    return f"{card}:{recipe or ''}" + (f":{mode}" if mode else "")
 
 
 LINT_VIOLATION_LINE_RE = re.compile(r"^line (?P<line>[1-9][0-9]*): ")
@@ -1883,14 +1942,15 @@ def _validate_decision_mode(
     helper = _active_decision_owners(entries, node.node).get(agent)
     if helper is None or helper.partition("#")[0] != "decider":
         return
-    if event == "resume" and plan.decision_mode == "consult":
+    mode = plan.decision_mode_for(node.card)
+    if event == "resume" and mode == "consult":
         latest = _latest_for_instance(entries, node.node, agent)
         if latest is None or latest["event"] != "user_decision":
             raise _error(
                 "HC-RL-A114",
                 "consult mode: resume on a decider chain requires a user_decision",
             )
-    if event == "user_decision" and plan.decision_mode == "auto":
+    if event == "user_decision" and mode == "auto":
         raise _error(
             "HC-RL-A114", "auto mode: user_decision is not allowed on a decider chain"
         )
@@ -3405,7 +3465,8 @@ def render_status_text(status: Status, plan_dir: str) -> str:
     """The §10.3 text shape. Node detail is printed for open stage instances only."""
     lines = [
         f"计划：{plan_dir}   skill={status.plan.skill}   session={status.plan.session}",
-        f"卡：{', '.join(status.plan.cards)}      decision_mode={status.plan.decision_mode}",
+        f"卡：{', '.join(_card_label(status.plan, card) for card in status.plan.cards)}"
+        f"      decision_mode={status.plan.decision_mode}",
         (
             "当班写入者：—" if status.last_writer is None
             else f"当班写入者：{status.last_writer}（{status.last_writer_stage}）"

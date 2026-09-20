@@ -6,43 +6,40 @@
 
 ## 身份与配置目录
 
-本侧默认安装副本 = `~/.claude/skills/relay-light/`。**每一个** `relay_log.py add/status/lint` 调用都显式带本侧 `--config-dir`（HC-RL-A136）；不带时五情形解析可能撞上双侧歧义退出 3。
+本侧默认安装副本 = `~/.claude/skills/relay-light/`（只提供缺省模板）。**每一个** `relay_log.py` 的 add / status / lint 调用都显式带 `--config-dir <plan_dir>/config/`（HC-RL-A136）；不带时五情形解析可能撞上双侧歧义退出 3。
 
 ## 账本命令模板
 
 ### Windows（`python`）
 
 ```powershell
-python <RELAY_LOG> add --plan <plan_dir> --node <n> --event <e> --agent <a> --note "<t>" --config-dir ~/.claude/skills/relay-light/
-python <RELAY_LOG> status --plan <plan_dir> --json --config-dir ~/.claude/skills/relay-light/
-python <RELAY_LOG> lint --plan <plan_dir> --config-dir ~/.claude/skills/relay-light/
+python <RELAY_LOG> add --plan <plan_dir> --node <n> --event <e> --agent <a> --note "<t>" --config-dir <plan_dir>/config/
+python <RELAY_LOG> status --plan <plan_dir> --json --config-dir <plan_dir>/config/
+python <RELAY_LOG> lint --plan <plan_dir> --config-dir <plan_dir>/config/
 ```
 
 ### Linux（`python3`）
 
 ```bash
-python3 <RELAY_LOG> add --plan <plan_dir> --node <n> --event <e> --agent <a> --note "<t>" --config-dir ~/.claude/skills/relay-light/
-python3 <RELAY_LOG> status --plan <plan_dir> --json --config-dir ~/.claude/skills/relay-light/
-python3 <RELAY_LOG> lint --plan <plan_dir> --config-dir ~/.claude/skills/relay-light/
+python3 <RELAY_LOG> add --plan <plan_dir> --node <n> --event <e> --agent <a> --note "<t>" --config-dir <plan_dir>/config/
+python3 <RELAY_LOG> status --plan <plan_dir> --json --config-dir <plan_dir>/config/
+python3 <RELAY_LOG> lint --plan <plan_dir> --config-dir <plan_dir>/config/
 ```
 
 ### 远程（`bash -lc`）
 
 ```bash
-bash -lc "python3 <RELAY_LOG> status --plan <plan_dir> --json --config-dir ~/.claude/skills/relay-light/"
+bash -lc "python3 <RELAY_LOG> status --plan <plan_dir> --json --config-dir <plan_dir>/config/"
 ```
 
 ## agent 拉起
 
-- 开 pane：`herdr pane split --current --direction right --cwd <任务 worktree> --no-focus`；第二次 `split` 显式传目标 pane，不要用 `--current`。
-- **claude kind**：`herdr agent start --kind claude` 会撞 PATH 里无扩展名的 shim，必须经 shell 起再改名：
-  ```powershell
-  herdr pane run <pane_id> "claude --permission-mode acceptEdits"
-  herdr agent rename <pane_id> <名>
-  ```
-  herdr 数秒内自动识别 pane 内的 claude agent。
-- **codex kind**：`herdr agent start <名> --kind codex --pane <pane_id>` 直接可用，无 shim 坑；复核只读形态尾部加 `-- --sandbox read-only`。
-- 角色 → 发起方式查 `roles.toml`，本文件不写死模型。
+- 开 tab：`herdr tab create --workspace <ws> --cwd <任务 worktree> --label <角色名> --no-focus`，结果里的 `root_pane.pane_id` 就是目标 pane；一个 agent 一个 tab，不用 `pane split`。
+- **claude kind**：`herdr agent start <名> --kind claude --pane <pane_id> -- --model <m> --effort <e> --dangerously-skip-permissions` 在 Linux 直接可用（2026-09-21 本机实测；旧文说的 shim 坑只在 Windows 出现，Windows 仍走 `herdr pane run` + `agent rename`）。
+- **codex kind**：`herdr agent start <名> --kind codex --pane <pane_id> -- -m <model> -c model_reasoning_effort=<e> -a never`；复核只读形态尾部加 `--sandbox read-only`；本机不能加 `--sandbox workspace-write`。
+- **devin kind**：`herdr agent start <名> --kind devin --pane <pane_id> -- --model swe-2-max|swe-2-medium --permission-mode dangerous`。
+- **omp kind**：`herdr agent start <名> --kind omp --pane <pane_id> -- --model opencode-go/deepseek-flash --thinking <off|low|medium|high|xhigh|max>`。
+- 角色 → 发起方式查本计划 `config/roles.toml`，本文件不写死模型。派单 prompt 只发 ASCII 指针（读 `<文件>` 并照做），长中文提示词写文件。
 
 ## 环境预检（拉起前）
 

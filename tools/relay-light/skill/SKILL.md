@@ -41,7 +41,7 @@ relay-light 是一套接力编排协议：人拉起规划与编排，编排在�
 
 五阶段：W 建工作区 → C 施工 → R 复核 → X 返工 → F 收口备料。阶段实例 = 一个终端空间 + 一个监工；同一阶段可多次进入，用 `#k` 区分。
 
-- **W**：builder 建七件套与 `task_plan`，plan-reviewer 审 `task_plan`。
+- **W**：builder 建七件套与 `task_plan`；卡文允许路径写着「实施代码路径开工时另行登记」的，builder 同时把精确代码路径写进 DevPlan 该卡的 `dh:allowed-paths` 块（用户 2026-09-21 裁决：路径登记不需逐次确认），plan-reviewer 审 `task_plan` 并核登记未越出卡文变更范围（越出为 P1）。
 - **C**：按 `task_plan` 批次拆 C1..Cn；每批 coder + checker + scribe，decider `on:blocked`。
 - **R**：机器体检与四道闸（scribe 跑脚本）、按 Recipe 档位挂并行 reviewer、miner、收敛（scribe 汇总 `review.md`）。
 - **X**：coder 修 + reviewer 再审；轮数上限读 `dh-mapping.toml`，超限停 → strategist → 用户。
@@ -215,7 +215,7 @@ relay_log.py lint --plan <plan_dir> --amend-check after  --repo <repo> --snapsho
 
 ## 拓扑布局
 
-**终端空间** = herdr workspace，一个阶段实例一个，cwd 指向该卡的 worktree；编排另独占一个。空间内 agent 都是根 tab 里的 pane，tab 层不使用；一般不超过 4 个同时在场。不同仓库各开各的具名 session，session 名写进 marker。阶段结束关整个终端空间；全计划结束后先关空间再删 worktree。
+**终端空间** = herdr workspace，一个阶段实例一个，cwd 指向该卡的 worktree；编排另独占一个。空间内**一个 agent 一个 tab**（`herdr tab create --workspace <ws> --cwd <worktree> --label <角色名>` 取 root_pane 再拉 agent），不在同一 tab 里 split；一般不超过 4 个同时在场。不同仓库各开各的具名 session，session 名写进 marker。阶段结束关整个终端空间；全计划结束后先关空间再删 worktree。
 
 **任务工作区** = `docs/modules/<模块>/workspace/<卡>/` 下的七件套工件目录（brief / task_plan / progress / findings / lesson_candidates / review / execution_strategy）。
 
@@ -224,14 +224,16 @@ relay_log.py lint --plan <plan_dir> --amend-check after  --repo <repo> --snapsho
 ## 硬规则
 
 1. **凭据红线**：密钥 / 凭据值永不写入任何工件、账本、命令模板、派活文案或测试；证据先按白名单过滤。
-2. **档位唯一来源**：Recipe 档位（`heavy` / `normal` / `light`）的唯一来源是 DevPlan 任务卡的 `任务类型`（`task_type`）字段，写进 marker 的 `recipe=`。字段缺失时规划必须停下问用户，不得自行默认（A117）。
-3. **落点**：`relay_plan.md` 与账本一律落 `docs/modules/<模块>/relay/<plan_id>/`，不进任务工作区（A98）。
+2. **档位来源**：Recipe 档位（`heavy` / `normal` / `light`）按卡取自 DevPlan 任务卡的 `任务类型`（`task_type`）字段；marker `recipe=` 是计划默认档，卡与默认不同时在 `cards=` 里按 `<卡>:<档>` 覆盖（多卡计划允许不同档位混排，R 节点 reviewer 集按该卡档位展开）。字段缺失按 `normal` 处理，并在计划前言写明「task_type 缺失，按 normal 起草」（2026-09-21 用户裁决，取代 A117 的停下问用户）。
+3. **落点**：`relay_plan.md`、账本与本计划 `config/`（`roles.toml` + `dh-mapping.toml`）一律落 dh-relay 仓 `docs/relay/<施工仓名>/<模块>/<plan_id>/`，不进施工仓、不进任务工作区（2026-09-21 用户裁决，取代 A98 的施工仓内 `docs/modules/<模块>/relay/`）。计划正文引用施工仓文件用 `<施工仓名>:<仓相对路径>` 前缀。每条 `relay_log.py` 调用的 `--config-dir` 指向该计划的 `config/`；`config/roles.toml` 由用户在派单前定好，是本计划角色启动方式的唯一来源。
 4. **Linux 直跑**：在 Linux 侧收口前必须直跑 python 测试，命令与输出原样记入 `progress.md`（A19）。
 5. **写入者唯一**：`findings.md` / `lesson_candidates.md` 的写入者是 coder；`progress.md` 的写入者是 scribe；reviewer 各写各的 `review.<路>.md`。每份文件在一个节点内只有一个写入者（A67）。
 6. **coder 四行小结**：coder 每轮写完在 pane 打固定四行小结（做了什么 / 证据 / 偏离与 findings / 下一步），缺项写「无」（A66）。
 7. **scribe 素材边界**：scribe 写 `progress.md` 的素材来源按优先级为 ① 账本事件与 note（事实层）② 本批 diff 与 coder 四行小结 ③ checker / decider / 用户裁决的方案文件名与结论；素材里没有的不得发明，且不碰 `findings.md` / `lesson_candidates.md`（A66）。
 8. **等待必须有接收者**：`wait` 是阻塞式 CLI，返回那一刻必须有接收者（watch 推送、前台阻塞循环、或后台退出唤醒三种之一）；watch 未实现时不得结束回合空等。
-9. **不写死模型**：流程文档、模板、派活文案一律引用角色名与档位，模型取值只在 `roles.toml`。
+9. **不写死模型**：流程文档、模板、派活文案一律引用角色名与档位，模型取值只在本计划 `config/roles.toml`（用户提前定好；skill 副本里的 `roles.toml` 只是缺省模板）。
+12. **建树前置**：编排在每个阶段实例开始前核该卡 worktree 存在、分支为 `wt/<卡>`、基线为计划前言的 SHA，以及施工仓约定的共享目录软链已就位（wf-analytics-platform：v2 `.venv`、`frontend/node_modules`、`backend/data/datasets` 三条指向主仓）；缺任一即 `stage_result outcome=blocked` 交主控，编排不自行建树、不改软链。建树与软链由主控在派计划前完成并写进计划前言。
+13. **决策模式按卡**：marker `decision_mode=` 是计划默认，`cards=` 里可按 `<卡>:<档>:<auto|consult>` 覆盖；不做批次级。
 10. **模板无 kickoff / verify 签字类节点**：节点类型只有 `build` / `construction` / `review` / `rework` / `handoff`。
 11. **判定方封口纪律**：判定方判定 PASS 前，送审方与判定方均不记 `done`；FAIL 走 live 判定方的 `checkpoint` 路由回同一送审方；PASS 后按送审方→判定方顺序记终态。
 

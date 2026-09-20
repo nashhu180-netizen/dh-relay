@@ -6,30 +6,30 @@
 
 ## 身份与配置目录
 
-本侧默认安装副本 = `~/.codex/skills/relay-light/`。**每一个** `relay_log.py add/status/lint` 调用都显式带本侧 `--config-dir`（HC-RL-A136）；不带时五情形解析可能撞上双侧歧义退出 3。
+本侧默认安装副本 = `~/.codex/skills/relay-light/`（只提供缺省模板；每个计划的 `--config-dir` 指向该计划目录下的 `config/`）。**每一个** `relay_log.py` 的 add / status / lint 调用都显式带 `--config-dir <plan_dir>/config/`（HC-RL-A136）；不带时五情形解析可能撞上双侧歧义退出 3。
 
 ## 账本命令模板
 
 ### Windows（`python`）
 
 ```powershell
-python <RELAY_LOG> add --plan <plan_dir> --node <n> --event <e> --agent <a> --note "<t>" --config-dir ~/.codex/skills/relay-light/
-python <RELAY_LOG> status --plan <plan_dir> --json --config-dir ~/.codex/skills/relay-light/
-python <RELAY_LOG> lint --plan <plan_dir> --config-dir ~/.codex/skills/relay-light/
+python <RELAY_LOG> add --plan <plan_dir> --node <n> --event <e> --agent <a> --note "<t>" --config-dir <plan_dir>/config/
+python <RELAY_LOG> status --plan <plan_dir> --json --config-dir <plan_dir>/config/
+python <RELAY_LOG> lint --plan <plan_dir> --config-dir <plan_dir>/config/
 ```
 
 ### Linux（`python3`）
 
 ```bash
-python3 <RELAY_LOG> add --plan <plan_dir> --node <n> --event <e> --agent <a> --note "<t>" --config-dir ~/.codex/skills/relay-light/
-python3 <RELAY_LOG> status --plan <plan_dir> --json --config-dir ~/.codex/skills/relay-light/
-python3 <RELAY_LOG> lint --plan <plan_dir> --config-dir ~/.codex/skills/relay-light/
+python3 <RELAY_LOG> add --plan <plan_dir> --node <n> --event <e> --agent <a> --note "<t>" --config-dir <plan_dir>/config/
+python3 <RELAY_LOG> status --plan <plan_dir> --json --config-dir <plan_dir>/config/
+python3 <RELAY_LOG> lint --plan <plan_dir> --config-dir <plan_dir>/config/
 ```
 
 ### 远程（`bash -lc`）
 
 ```bash
-bash -lc "python3 <RELAY_LOG> status --plan <plan_dir> --json --config-dir ~/.codex/skills/relay-light/"
+bash -lc "python3 <RELAY_LOG> status --plan <plan_dir> --json --config-dir <plan_dir>/config/"
 ```
 
 ## agent 拉起
