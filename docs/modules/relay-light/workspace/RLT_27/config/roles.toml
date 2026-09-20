@@ -1,0 +1,43 @@
+[planner]
+model = "高档"
+launch = "codex"
+
+[orchestrator]
+model = "低档"
+launch = "codex"
+
+[monitor]
+model = "低档"
+launch = "codex"
+
+[builder]
+model = "低档"
+launch = "codex"
+
+[plan-reviewer]
+model = "高档"
+launch = "codex"
+
+[coder]
+model = "高档"
+launch = "codex"            # 本次试跑专用，使用用户默认模型，不覆盖全局配置
+
+[scribe]
+model = "低档"
+launch = "codex"
+
+[checker]
+model = "高档"
+launch = "codex"
+
+[decider]
+model = "高档"
+launch = "codex"
+
+[reviewer]
+model = "按档位"
+launch = "codex"
+
+[strategist]
+model = "高档"
+launch = "codex"

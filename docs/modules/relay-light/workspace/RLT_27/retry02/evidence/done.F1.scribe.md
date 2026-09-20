@@ -1,0 +1,22 @@
+# RLT_27 retry02 F1 scribe result
+
+- node: `F1`
+- agent: `scribe#1`
+- outcome: `PASS`
+- artifact: `docs/modules/relay-light/workspace/RLT_27/retry02/evidence/handoff.md`
+- additional outputs: appended factual F evidence to `review.md` and `progress.md`
+- runtime: fresh Herdr `r27b-f-scribe` at actual pane `w6:p2`; monitor `r27b-f-monitor` at `w6:p1`
+- retry: `retry02`
+- coordinator intervention: `1`
+- attempt01: `blocked and fully preserved`
+- W/C/R: `PASS` with durable artifacts and ledger closure before F1
+- status command: exact required retry02 command, exit `0`; observed F1=`open`, `closable=false`, reason=`scribe#1 无终态事件`, scribe ledger last event=`agent_launch`
+- lint command: exact required retry02 command without `--json`, exit `0`, output=`lint: ok`
+- routing evidence: W HC-RL-A144 seq6 token ineffective, rejected reviewer launch not appended, seq7 valid `ready_for_review`; C HC-RL-A146 first checker done rejected without ledger row, accepted seq23 used `ready_seq=20`
+- prior test evidence: natural exit `0`, `Ran 224 tests in 408.904s / OK`; not rerun by this worker
+- boundary: terminal state is not durable completion; this PASS is the scribe completion signal only and does not claim F1 node/stage closure
+- acceptance/security: restricted sandbox not proven; user acceptance unsigned; no verify
+- retained: all attempt01/retry02 workspaces, panes, agents, and the worktree; no cleanup
+- prohibited changes: none performed—no commit/verify/cleanup/core/global Skill/Git/permission/security/model change
+- deviation: one post-write read-only grep helper used unsafe double-quoted Markdown backticks, causing `PASS: command not found` and no-argument `xdg-open` help; it wrote nothing, was replaced by a safe single-quoted check, and does not affect the two required commands or PASS outcome
+- next: F monitor may inspect these outputs and only then apply ledger terminal/close predicates; scribe stops immediately and does not wait for `node_closed`
