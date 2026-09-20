@@ -2,6 +2,9 @@
 
 ## 版本收口授权与证据索引（2026-09-20）
 
+- 归档复核：fresh rlt27_closeout_miner 确认原始实证齐全、无凭据值发现；指出旧索引 RLT_26“进行中”容易与冻结覆盖冲突，已在索引前明确历史快照和当前调度，不修改旧卡成果。
+- 清理前备份：ThinkPad `/home/nash/work/rlt27-closeout-backup.UTULrx/RLT_27-before-version-closeout.tar.gz`，SHA-256 `9f9f46f1b114e21a5c45817cc991bf5fde20fd43b9d477f0e3df416c2b7aa233`。原始现场 55 文件逐个与归档 Git blob 对比，仅外层 brief/execution_strategy/lesson_candidates/progress/review/task_plan 六个本轮归档索引文件不同；所有 retry02 运行证据与两个原始账本一致。
+
 - miner 回流：已运行 dh mine relay-light RLT_27；fresh 实例 rlt27_closeout_miner 只读核对并抽取 1 条候选，见 lesson_candidates.md。模块正册/候选区均为空；为保持本卡允许路径，候选仅留任务内，不擅自入册。
 - 交付汇报：已发送并获确认，内容包括目标、真实结果、首次阻塞与重试、边界、独立复核、224 测试和收口范围。
 - 人验证据展示区：已发送，期望 Linux Codex 三层 W/C/R/F 闭合；实际全部 closed、errors=[]、lint ok；有一次说明修正后重试，未验证能力明确排除。用户已回复授权收口。
