@@ -14,13 +14,15 @@
 | C1 | TRT_22 | TRT_22:C#1 | construction | agent:checker | W1 | task_plan B0+B1：复现 cleanup 调用链、事务归属确认，RED 完整生产调用链失败测试 |
 | C2 | TRT_22 | TRT_22:C#2 | construction | agent:checker | C1 | task_plan B2：归池前恢复与恢复失败失效，GREEN + 定向回归；只改 P21 TRT_22 允许路径 |
 | R1 | TRT_22 | TRT_22:R#1 | review | agent:scribe | C2 | normal：requirement + lesson 并行；scribe 跑 `dh task-runtime` 体检、B3 回归命令并汇总 review.md |
-| F1 | TRT_22 | TRT_22:F#1 | handoff | agent:scribe | R1 | 备料：as-built 段落、AI 提交区、交付汇报、STB-A03 证据清单；不 push GitLab、不建 MR、不 verify |
+| X1 | TRT_22 | TRT_22:X#1 | rework | agent:requirement | R1 | 仅当 R1 stage_result 带 rework_required 才进入；coder 新实例修 requirement 打回项（STB-A03 commit 失败场景补真实测试证据），requirement 再审；轮数上限 2 |
+| F1 | TRT_22 | TRT_22:F#1 | handoff | agent:scribe | X1 | R1 无返工时 X1 由编排按 outcome 直接跳过（账本不开 X1 节点，F1 视 R1 为前置）；备料：as-built 段落、AI 提交区、交付汇报、STB-A03 证据清单；不 push GitLab、不建 MR、不 verify |
 | W2 | TRT_20 | TRT_20:W#1 | build | agent:plan-reviewer | F1 | builder 核对 69 工作区与 task_plan 对基线成立，补齐 B0 冻结项模板（等待预算来源、隐藏页策略）；plan-reviewer 按 normal 审 |
 | C3 | TRT_20 | TRT_20:C#1 | construction | agent:checker | W2 | task_plan B0+B1：冻结交互合同与复现基线；真实查询有界等待与协议分类（含真实 fetch 中止/清理） |
 | C4 | TRT_20 | TRT_20:C#2 | construction | agent:checker | C3 | task_plan B2：单飞轮询与状态保留（同页两条 GET 链全部经轮询 composable，审核 P1 项） |
 | C5 | TRT_20 | TRT_20:C#3 | construction | agent:checker | C4 | task_plan B3：页面接线与真实场景演示（本地 vitest + 组件测试；无 test 环境） |
 | R2 | TRT_20 | TRT_20:R#1 | review | agent:scribe | C5 | normal：requirement + lesson；scribe 跑前端定向测试与 `dh task-runtime` 体检，汇总 review.md |
-| F2 | TRT_20 | TRT_20:F#1 | handoff | agent:scribe | R2 | 备料同 F1；另列 test 人验（STB-H 项）步骤清单交主控 |
+| X2 | TRT_20 | TRT_20:X#1 | rework | agent:requirement | R2 | 同 X1 语义 |
+| F2 | TRT_20 | TRT_20:F#1 | handoff | agent:scribe | X2 | 备料同 F1；另列 test 人验（STB-H 项）步骤清单交主控 |
 
 ## agent 表
 
@@ -39,6 +41,9 @@
 | requirement | R1 | reviewer | roles.toml:reviewer | 71-TRT_22/review.requirement.md | | 只读；对 STB-A03 七种调用链覆盖逐项核 |
 | lesson | R1 | reviewer | roles.toml:reviewer | 71-TRT_22/review.lesson.md | | 只读；核教训库重犯与 lesson_candidates |
 | scribe | R1 | scribe | roles.toml:scribe | 71-TRT_22/review.md + progress.md | | 全部 reviewer done 后由 monitor 拉起；先体检后汇总 |
+| coder | X1 | coder | roles.toml:coder | rework.1.md + 修复代码/测试 + findings 行 | | 新实例，attempt 从 1 起；只改 P21 TRT_22 允许路径 |
+| requirement | X1 | reviewer | roles.toml:reviewer | review.rework.1.md | on:review_ready:coder | 只读；只复审被打回项 |
+| decider | X1 | decider | roles.toml:decider | 71-TRT_22/decision.<d>.md | on:blocked | |
 | scribe | F1 | scribe | roles.toml:scribe | as-built 段落、AI 提交区、交付汇报、证据清单 | | 只备料，不越权限闸 |
 | builder | W2 | builder | roles.toml:builder | 69-TRT_20 七件套核对 + task_plan 基线段与 B0 冻结模板 | | 不改 brief 目标/边界 |
 | plan-reviewer | W2 | plan-reviewer | roles.toml:plan-reviewer | 69-TRT_20/review.plan.md | on:review_ready:builder | normal 全量审 |
@@ -57,6 +62,9 @@
 | requirement | R2 | reviewer | roles.toml:reviewer | 69-TRT_20/review.requirement.md | | 只读；对 STB-A01 逐项核 |
 | lesson | R2 | reviewer | roles.toml:reviewer | 69-TRT_20/review.lesson.md | | 只读 |
 | scribe | R2 | scribe | roles.toml:scribe | 69-TRT_20/review.md + progress.md | | 全部 reviewer done 后由 monitor 拉起 |
+| coder | X2 | coder | roles.toml:coder | rework.1.md + 修复 + findings 行 | | 新实例 |
+| requirement | X2 | reviewer | roles.toml:reviewer | review.rework.1.md | on:review_ready:coder | 只读 |
+| decider | X2 | decider | roles.toml:decider | 69-TRT_20/decision.<d>.md | on:blocked | |
 | scribe | F2 | scribe | roles.toml:scribe | as-built 段落、AI 提交区、交付汇报、test 人验步骤 | | 只备料 |
 
 ## 角色启动参数
