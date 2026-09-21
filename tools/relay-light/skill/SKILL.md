@@ -27,6 +27,8 @@ relay-light 是一套接力编排协议：人拉起规划与编排，编排在�
 
 拉取顺序固定：**编排拉监工，监工拉其余**。编排不越级拉 agent；监工不跨阶段存活；规划不参与运行。checker / decider / strategist 都不写账本、不做复核、不改文件。
 
+**送审信号的账本写法**：agent 表里 `trigger=on:review_ready:<送审方>` 的判定方，只有在送审方**当前实例**最新一条事件是 `checkpoint` 且 note 含 `ready_for_review=<判定方名>` 时才能 `agent_launch`（HC-RL-A144）。送审方交稿时监工写的是 `checkpoint --note ready_for_review=plan-reviewer`，**不是 `done`**；`done` 是终态，写了之后判定方拉不起来、送审方也不能重拉（A60/A49），本阶段实例就没有合约内出路，只能 plan_amend 加新实例（2026-09-21 p21-normal 首跑 W1 即此死锁）。硬规则 11 的「判定 PASS 前送审方不记 done」在账本上就是这一条。
+
 **批内不换人**：checker 与 decider 的方案都送回同一个 coder，账本记 `checkpoint`，不新增 attempt。只有节点级返工（X 阶段新节点）才开新实例。
 
 ## 派活纪律与监工判活
@@ -58,7 +60,7 @@ relay-light 是一套接力编排协议：人拉起规划与编排，编排在�
 
 | agent | node | role | launch | output | trigger | note |
 |---|---|---|---|---|---|---|
-| builder | W<n> | builder | | 七件套与 task_plan.md | | |
+| builder | W<n> | builder | | 七件套与 task_plan.md | | 交稿记 `checkpoint ready_for_review=plan-reviewer`，PASS 后才记 done |
 | plan-reviewer | W<n> | plan-reviewer | | review.plan.md | on:review_ready:builder | |
 ```
 
@@ -75,7 +77,7 @@ relay-light 是一套接力编排协议：人拉起规划与编排，编排在�
 
 | agent | node | role | launch | output | trigger | note |
 |---|---|---|---|---|---|---|
-| coder | C<n> | coder | | 代码与 findings/lesson 行 | | |
+| coder | C<n> | coder | | 代码与 findings/lesson 行 | | 每批交稿记 `checkpoint ready_for_review=checker`，PASS 后才记 done |
 | checker | C<n> | checker | | check.C<n>.md | | |
 | scribe | C<n> | scribe | | progress.md | on:done:coder | |
 | decider | C<n> | decider | | decision.<d>.md | on:blocked | |
