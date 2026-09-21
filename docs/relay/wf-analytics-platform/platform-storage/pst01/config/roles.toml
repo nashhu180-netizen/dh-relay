@@ -7,11 +7,11 @@ launch = "claude --model fable --effort medium --dangerously-skip-permissions"
 
 [orchestrator]
 model = "codex sol medium"
-launch = "codex -m gpt-5.6-sol -c model_reasoning_effort=medium -a never"
+launch = "codex -m gpt-5.6-sol -c model_reasoning_effort=medium --dangerously-bypass-approvals-and-sandbox"
 
 [monitor]
 model = "codex sol medium"
-launch = "codex -m gpt-5.6-sol -c model_reasoning_effort=medium -a never"
+launch = "codex -m gpt-5.6-sol -c model_reasoning_effort=medium --dangerously-bypass-approvals-and-sandbox"
 
 [builder]
 model = "sonnet high"
@@ -39,7 +39,7 @@ launch = "claude --model fable --effort medium --dangerously-skip-permissions"
 
 [reviewer]
 model = "codex sol high 只读"
-launch = "codex -m gpt-5.6-sol -c model_reasoning_effort=high -a never --sandbox read-only"
+launch = "codex -m gpt-5.6-sol -c model_reasoning_effort=high --dangerously-bypass-approvals-and-sandbox"
 
 [strategist]
 model = "fable medium"
@@ -47,5 +47,5 @@ launch = "claude --model fable --effort medium --dangerously-skip-permissions"
 
 # RLT_29 试跑：把监工的机械职责拆给便宜的 watcher（不进 SKILL 角色表，只在本计划 config 生效）
 [watcher]
-model = "omp deepseek-flash low"
-launch = "omp --model opencode-go/deepseek-flash --thinking low"
+model = "devin swe-2 medium"
+launch = "devin --model swe-2-medium --permission-mode dangerous"

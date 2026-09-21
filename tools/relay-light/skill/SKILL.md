@@ -37,7 +37,7 @@ relay-light 是一套接力编排协议：人拉起规划与编排，编排在�
 
 **`agent_lost` 判活**：pane 的 `working → done` 不等于 agent 收工（长 `sleep` 中也会被报 `done`）；判 `agent_lost` 前必须同时确认 pane 无 `Running tools` 计时器在走、账本无该 agent 新行、Herdr `agent get` 状态非 working；不得单凭 pane 状态判死重拉。`ledger_silent` 仍按 A140 核 Herdr 状态 + pane 末行 + 允许路径产出：三者均无变化才中断；任一仍在变化不得中断。
 
-**codex 启动档位按主控侧分叉**：Claude 主控下 codex worker 以默认 sandbox 启动，不加 `--dangerously-bypass-approvals-and-sandbox`；worker 只在 worktree 内写文档时默认 sandbox 已够。Codex 主控下沿用既有 bypass 结论；仅在该主控侧的沙箱型只读启动不可用且账本连续 `NOT_RUN` 时，按环境预检改用 bypass 沙箱启动，提示词明确只读约束，并在 `agent_launch.note` 记录 `launch_fix=<token>`；不得把 bypass 写成无条件全局口径。
+**codex 启动档位按机器分叉**：沙箱可用的机器上 codex worker 以默认 sandbox 启动；沙箱撞 bwrap 的机器（ThinkPad Linux，任何 `--sandbox` 都跑不了 shell）一律 `--dangerously-bypass-approvals-and-sandbox` 启动，只读约束由派单 prompt 承担，`agent_launch.note` 记 `launch_fix=codex_bypass_bwrap`（2026-09-21 用户裁决）。Codex 主控下沿用既有 bypass 结论；仅在该主控侧的沙箱型只读启动不可用且账本连续 `NOT_RUN` 时，按环境预检改用 bypass 沙箱启动，提示词明确只读约束，并在 `agent_launch.note` 记录 `launch_fix=<token>`；不得把 bypass 写成无条件全局口径。
 
 ## 五阶段模板
 
