@@ -46,7 +46,7 @@ relay-light 是一套接力编排协议：人拉起规划与编排，编排在�
 - **W**：builder 建七件套与 `task_plan`；卡文允许路径写着「实施代码路径开工时另行登记」的，builder 同时把精确代码路径写进 DevPlan 该卡的 `dh:allowed-paths` 块（用户 2026-09-21 裁决：路径登记不需逐次确认），plan-reviewer 审 `task_plan` 并核登记未越出卡文变更范围（越出为 P1）。
 - **C**：按 `task_plan` 批次拆 C1..Cn；每批 coder + checker + scribe，decider `on:blocked`。
 - **R**：机器体检与四道闸（scribe 跑脚本）、按 Recipe 档位挂并行 reviewer、miner、收敛（scribe 汇总 `review.md`）。
-- **X**：coder 修 + reviewer 再审；轮数上限读 `dh-mapping.toml`，超限停 → strategist → 用户。
+- **X**：coder 修 + reviewer 再审；轮数上限读 `dh-mapping.toml`，超限停 → strategist → 用户。**X 节点必须由规划预先放进节点表**（每卡 R 后一个 `X<n>`，`close=agent:<打回路>`，F 依赖 X），R 无返工时编排按 `stage_result` 直接跳过不开该节点；不预置则 R 打回后编排无处可去只能停（2026-09-21 p21-normal 首跑教训）。
 - **F**：as-built、AI 提交区、交付汇报、证据展示区，全部由 scribe 备料。
 
 模板占位符：`<card>` = 卡号；`<prev>` = 上一节点号（首节点留空）；`<n>` = 节点序号；`<k>` = 阶段实例/返工轮次；`<d>` = 卡内决策文件序号（`decision.<d>.md` 全卡递增）；`<reviewer>`/`<路>` = 按 recipe 展开的 reviewer 名与其路名；`<打回路>` = R 阶段打回的那条 reviewer 路名。
@@ -129,6 +129,7 @@ reviewer 行数与名字由 marker `recipe=` 经 `dh-mapping.toml` 的 `[recipes
 **F 阶段收口 checklist**
 
 - [ ] 确认对应 worktree 已删（`git worktree list` / `git branch` 核对），先关终端空间再删树。
+- [ ] Issue 与 MR/PR 收口（2026-09-21 用户要求，实施细节待后续卡）：计划前言登记 Issue 号；F 阶段把分支推到远端并建 MR（GitLab，wf 仓须经 integrator 机）或 PR（GitHub），链接回填 review.md 提交区；合入/verify 仍按各仓授权。
 
 ## 账本用法
 

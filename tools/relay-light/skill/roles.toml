@@ -1,43 +1,47 @@
+# 缺省角色路由模板：每个计划复制到自己的 config/roles.toml 后按需改，计划级 config 才是运行时唯一来源。
+# 2026-09-21 用户裁决：relay 派的所有 agent 一律无限制模式（codex bypass、claude skip-permissions、devin dangerous），
+# 只读角色的只读约束由派单 prompt 承担；沙箱型启动在 ThinkPad Linux 撞 bwrap 起不来。
+
 [planner]
-model = "高档"
-launch = "claude opus"
+model = "fable medium"
+launch = "claude --model fable --effort medium --dangerously-skip-permissions"
 
 [orchestrator]
-model = "低档"
-launch = "herdr:codex"
+model = "opus medium"
+launch = "claude --model opus --effort medium --dangerously-skip-permissions"
 
 [monitor]
-model = "低档"
-launch = "herdr:codex"
+model = "codex sol medium"
+launch = "codex -m gpt-5.6-sol -c model_reasoning_effort=medium --dangerously-bypass-approvals-and-sandbox"
 
 [builder]
-model = "低档"
-launch = "zcode"
+model = "codex luna medium"
+launch = "codex -m gpt-5.6-luna -c model_reasoning_effort=medium --dangerously-bypass-approvals-and-sandbox"
 
 [plan-reviewer]
-model = "高档"
-launch = "claude opus"
+model = "codex luna medium（只读约束靠 prompt）"
+launch = "codex -m gpt-5.6-luna -c model_reasoning_effort=medium --dangerously-bypass-approvals-and-sandbox"
 
 [coder]
-model = "高档"
-launch = "zcode"            # 额度尽则 codex gpt-5.6-terra high
+model = "codex luna high"
+launch = "codex -m gpt-5.6-luna -c model_reasoning_effort=high --dangerously-bypass-approvals-and-sandbox"
 
 [scribe]
-model = "低档"
-launch = "zcode"
+model = "codex luna medium"
+launch = "codex -m gpt-5.6-luna -c model_reasoning_effort=medium --dangerously-bypass-approvals-and-sandbox"
 
 [checker]
-model = "高档"
-launch = "claude opus"
+model = "codex luna medium（只读约束靠 prompt）"
+launch = "codex -m gpt-5.6-luna -c model_reasoning_effort=medium --dangerously-bypass-approvals-and-sandbox"
 
 [decider]
-model = "高档"
-launch = "claude opus"
+model = "fable medium"
+launch = "claude --model fable --effort medium --dangerously-skip-permissions"
 
 [reviewer]
-model = "按档位"
-launch = "codex --sandbox read-only"
+model = "codex luna medium（只读约束靠 prompt）"
+launch = "codex -m gpt-5.6-luna -c model_reasoning_effort=medium --dangerously-bypass-approvals-and-sandbox"
 
 [strategist]
-model = "高档"
-launch = "claude opus"
+model = "fable medium"
+launch = "claude --model fable --effort medium --dangerously-skip-permissions"
