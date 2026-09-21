@@ -1,0 +1,51 @@
+# 本计划专用角色路由（relay_log 经 --config-dir 读取；不改 ~/.claude/skills 副本）。
+# 取值为用户 2026-09-21 指定；改这里即改本计划全部角色。
+
+[planner]
+model = "fable medium"
+launch = "claude --model fable --effort medium --dangerously-skip-permissions"
+
+[orchestrator]
+model = "codex sol medium"
+launch = "codex -m gpt-5.6-sol -c model_reasoning_effort=medium --dangerously-bypass-approvals-and-sandbox"
+
+[monitor]
+model = "codex sol medium"
+launch = "codex -m gpt-5.6-sol -c model_reasoning_effort=medium --dangerously-bypass-approvals-and-sandbox"
+
+[builder]
+model = "sonnet high"
+launch = "claude --model sonnet --effort high --dangerously-skip-permissions"
+
+[plan-reviewer]
+model = "opus"
+launch = "claude --model opus --dangerously-skip-permissions"
+
+[coder]
+model = "devin swe-2 max"
+launch = "devin --model swe-2-max --permission-mode dangerous"
+
+[scribe]
+model = "sonnet high"
+launch = "claude --model sonnet --effort high --dangerously-skip-permissions"
+
+[checker]
+model = "opus"
+launch = "claude --model opus --dangerously-skip-permissions"
+
+[decider]
+model = "fable medium"
+launch = "claude --model fable --effort medium --dangerously-skip-permissions"
+
+[reviewer]
+model = "codex sol high 只读"
+launch = "codex -m gpt-5.6-sol -c model_reasoning_effort=high --dangerously-bypass-approvals-and-sandbox"
+
+[strategist]
+model = "fable medium"
+launch = "claude --model fable --effort medium --dangerously-skip-permissions"
+
+# RLT_29 试跑：把监工的机械职责拆给便宜的 watcher（不进 SKILL 角色表，只在本计划 config 生效）
+[watcher]
+model = "devin swe-2 medium"
+launch = "devin --model swe-2-medium --permission-mode dangerous"

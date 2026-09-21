@@ -2541,6 +2541,81 @@ class RelayConfigTests(RelayCliTestCase):
                 self.assertRegex(result.stderr, r"^error: HC-RL-A116 ")
         self.assertFalse((self.plan_path.parent / "relay_log.jsonl").exists())
 
+    def _write_mixed_recipe_plan(self, *, r2_reviewers: list[str], cards: str) -> None:
+        self.write_plan(
+            node_rows=[
+                "| W1 | DHR_90 | DHR_90:W#1 | build | | | |",
+                "| C1 | DHR_90 | DHR_90:C#1 | construction | | W1 | |",
+                "| R1 | DHR_90 | DHR_90:R#1 | review | | C1 | |",
+                "| W2 | DHR_91 | DHR_91:W#1 | build | | R1 | |",
+                "| C2 | DHR_91 | DHR_91:C#1 | construction | | W2 | |",
+                "| R2 | DHR_91 | DHR_91:R#1 | review | | C2 | |",
+            ],
+            agent_rows=[
+                "| builder-a | W1 | builder | | task_plan.md | | |",
+                "| coder-a | C1 | coder | | code.md | | |",
+                "| requirement | R1 | reviewer | | review.requirement.md | | |",
+                "| lesson | R1 | reviewer | | review.lesson.md | | |",
+                "| builder-b | W2 | builder | | task_plan.md | | |",
+                "| coder-b | C2 | coder | | code.md | | |",
+                *(f"| {name} | R2 | reviewer | | review.{name}.md | | |" for name in r2_reviewers),
+            ],
+            marker=(
+                "<!-- relay-light:plan v1 skill=0.1.0 generated=2026-09-21 "
+                f"session=app recipe=normal cards={cards} -->"
+            ),
+        )
+
+    def test_cards_override_lets_one_plan_mix_recipe_tiers(self) -> None:
+        """HC-RL-A116b: ``cards=<card>:<recipe>`` makes that card's R instance follow its own tier."""
+        self._write_mixed_recipe_plan(
+            r2_reviewers=self.REVIEWERS["heavy"], cards="DHR_90,DHR_91:heavy"
+        )
+        result = self.run_lint_cli(self.plan_path.parent)
+        self.assertEqual(0, result.returncode, result.stderr)
+        status = self.run_cli("status", "--plan", str(self.plan_path.parent), "--json")
+        self.assertEqual(0, status.returncode, status.stderr)
+        self.assertEqual(["DHR_90", "DHR_91"], json.loads(status.stdout)["plan"]["cards"])
+        text = self.run_cli("status", "--plan", str(self.plan_path.parent))
+        self.assertEqual(0, text.returncode, text.stderr)
+        self.assertIn("卡：DHR_90, DHR_91:heavy      decision_mode=auto", text.stdout)
+
+    def test_cards_override_recipe_is_enforced_per_card(self) -> None:
+        """HC-RL-A116b: an overridden card whose reviewer set still follows the default is rejected."""
+        self._write_mixed_recipe_plan(
+            r2_reviewers=self.REVIEWERS["normal"], cards="DHR_90,DHR_91:heavy"
+        )
+        lint = self.run_lint_cli(self.plan_path.parent)
+        self.assertEqual(2, lint.returncode)
+        self.assertRegex(lint.stderr, r"^lint: HC-RL-A116 ")
+        self.assertIn("DHR_91:R#1", lint.stderr)
+        self.assertIn("heavy", lint.stderr)
+
+    def test_cards_override_rejects_unknown_recipe_or_mode(self) -> None:
+        """HC-RL-A116/A130: bad ``cards=`` suffixes fail at parse time with exit 3."""
+        for cards, rule in (("DHR_90:strict", "HC-RL-A116"), ("DHR_90:normal:maybe", "HC-RL-A130")):
+            with self.subTest(cards=cards):
+                self.write_plan(
+                    marker=(
+                        "<!-- relay-light:plan v1 skill=0.1.0 generated=2026-09-21 "
+                        f"session=app recipe=normal cards={cards} -->"
+                    )
+                )
+                result = self.run_lint_cli(self.plan_path.parent)
+                self.assertEqual(3, result.returncode)
+                self.assertRegex(result.stderr, rf"^error: {rule} ")
+
+    def test_cards_override_decision_mode_is_reported_per_card(self) -> None:
+        """HC-RL-A130b: ``cards=<card>:<recipe>:<mode>`` is parsed and shown by the text status."""
+        self._write_mixed_recipe_plan(
+            r2_reviewers=self.REVIEWERS["heavy"], cards="DHR_90::consult,DHR_91:heavy:auto"
+        )
+        status = self.run_cli("status", "--plan", str(self.plan_path.parent))
+        self.assertEqual(0, status.returncode, status.stderr)
+        self.assertIn("卡：DHR_90::consult, DHR_91:heavy:auto      decision_mode=auto", status.stdout)
+        document = json.loads(self.run_cli("status", "--plan", str(self.plan_path.parent), "--json").stdout)
+        self.assertEqual(["DHR_90", "DHR_91"], document["plan"]["cards"])
+
     def test_one_mismatched_r_instance_rejects_the_whole_plan(self) -> None:
         """HC-RL-A116: every active R instance is checked, not only the first one."""
         self.write_plan(
@@ -5364,13 +5439,15 @@ class SkillCoreDocTests(unittest.TestCase):
     def test_a117_recipe_sourced_from_task_type_only(self) -> None:
         text = self.skill_text()
         self.assertIn("task_type", text)
-        self.assertIn("唯一来源", text)
+        self.assertIn("按卡", text)
         # 字段缺失时必须问用户、不得自行默认
-        self.assertRegex(text, r"缺失.*问用户|问用户.*缺失|不得.{0,4}默认")
+        self.assertRegex(text, r"缺失按 `normal`")
+        self.assertIn("<卡>:<档>", text)
 
     def test_a98_plan_ledger_live_in_module_relay_dir(self) -> None:
         text = self.skill_text()
-        self.assertIn("docs/modules/<模块>/relay/<plan_id>/", text)
+        self.assertIn("docs/relay/<施工仓名>/<模块>/<plan_id>/", text)
+        self.assertIn("config/", text)
         self.assertRegex(text, r"不.{0,4}任务工作区|不进.{0,4}工作区")
 
     def test_a19_linux_direct_test_before_closeout(self) -> None:
@@ -6174,8 +6251,8 @@ class SkillAdapterTests(unittest.TestCase):
     """RLT_07 Batch 3 — HC-RL-A21/A26/A27/A136/A12 adapter 合同。"""
 
     ADAPTER_SIDES = {
-        "adapter-claude-code.md": "~/.claude/skills/relay-light/",
-        "adapter-codex.md": "~/.codex/skills/relay-light/",
+        "adapter-claude-code.md": "<plan_dir>/config/",
+        "adapter-codex.md": "<plan_dir>/config/",
     }
 
     @classmethod

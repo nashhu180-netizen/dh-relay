@@ -1,6 +1,5 @@
-# 缺省角色路由模板：每个计划复制到自己的 config/roles.toml 后按需改，计划级 config 才是运行时唯一来源。
-# 2026-09-21 用户裁决：relay 派的所有 agent 一律无限制模式（codex bypass、claude skip-permissions、devin dangerous），
-# 只读角色的只读约束由派单 prompt 承担；沙箱型启动在 ThinkPad Linux 撞 bwrap 起不来。
+# 本计划专用角色路由（relay_log 经 --config-dir 读取；不改 ~/.claude/skills 副本）。
+# 2026-09-21 首跑试点：用户指定编排 opus medium、其余 codex luna 省成本；本机 codex 任何 --sandbox 都撞 bwrap，一律 --dangerously-bypass-approvals-and-sandbox，只读角色的只读约束由派单 prompt 承担并在 agent_launch.note 记 launch_fix=codex_bypass_bwrap；decider/planner/strategist 保持 fable medium；改这里即改本计划全部角色。
 
 [planner]
 model = "fable medium"
@@ -11,8 +10,8 @@ model = "opus medium"
 launch = "claude --model opus --effort medium --dangerously-skip-permissions"
 
 [monitor]
-model = "codex sol medium"
-launch = "codex -m gpt-5.6-sol -c model_reasoning_effort=medium --dangerously-bypass-approvals-and-sandbox"
+model = "codex luna medium"
+launch = "codex -m gpt-5.6-luna -c model_reasoning_effort=medium --dangerously-bypass-approvals-and-sandbox"
 
 [builder]
 model = "codex luna medium"
@@ -45,3 +44,8 @@ launch = "codex -m gpt-5.6-luna -c model_reasoning_effort=medium --dangerously-b
 [strategist]
 model = "fable medium"
 launch = "claude --model fable --effort medium --dangerously-skip-permissions"
+
+# RLT_29 试跑：把监工的机械职责拆给便宜的 watcher（不进 SKILL 角色表，只在本计划 config 生效）
+[watcher]
+model = "devin swe-2 medium"
+launch = "devin --model swe-2-medium --permission-mode dangerous"
