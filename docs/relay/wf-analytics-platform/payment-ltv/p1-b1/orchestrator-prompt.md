@@ -8,5 +8,5 @@
 阶段实例开始前核该卡 worktree 存在、分支正确、三软链在（.venv / frontend/node_modules / backend/data/datasets）；缺任一即停并汇报，不自行建树。
 硬规则：`wait` 返回时必须有接收者（watch 推送 / 前台阻塞循环 / 后台退出唤醒三选一）；watch 未实现时不得结束回合空等。等监工优先盯 relay_log.jsonl 新行；监工空闲≥2 分钟且无新账本行即巡检其 pane。
 凭据/密钥值永不写进任何工件、账本或 prompt。禁止：新装包、push GitLab、建 MR、合入、verify、deploy、碰 test/prod、删 worktree。
-监工派单文案按 adapter 的模板；每个 agent 独立 tab（herdr tab create），派完读 pane 末行确认已提交。
+RLT_29 试跑：监工拉起后第一件事按本目录上级 README.md「RLT_29 试跑」分工表起一个 watcher（roles.toml:watcher，账本身份沿用该监工的 monitor#<n>），机械动作交 watcher，判断动作监工自己做。监工派单文案按 adapter 的模板；每个 agent 独立 tab（herdr tab create），派完读 pane 末行确认已提交。
 最后一个 F 节点 done 后在本 pane 打印四行总结（做了什么/证据/偏离/下一步）并停止。

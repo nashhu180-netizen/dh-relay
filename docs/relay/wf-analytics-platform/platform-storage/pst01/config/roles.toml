@@ -44,3 +44,8 @@ launch = "codex -m gpt-5.6-sol -c model_reasoning_effort=high -a never --sandbox
 [strategist]
 model = "fable medium"
 launch = "claude --model fable --effort medium --dangerously-skip-permissions"
+
+# RLT_29 试跑：把监工的机械职责拆给便宜的 watcher（不进 SKILL 角色表，只在本计划 config 生效）
+[watcher]
+model = "omp deepseek-flash low"
+launch = "omp --model opencode-go/deepseek-flash --thinking low"
