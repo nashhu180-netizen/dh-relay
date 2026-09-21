@@ -44,6 +44,7 @@ relay-light 是一套接力编排协议：人拉起规划与编排，编排在�
 五阶段：W 建工作区 → C 施工 → R 复核 → X 返工 → F 收口备料。阶段实例 = 一个终端空间 + 一个监工；同一阶段可多次进入，用 `#k` 区分。
 
 - **W**：builder 建七件套与 `task_plan`；卡文允许路径写着「实施代码路径开工时另行登记」的，builder 同时把精确代码路径写进 DevPlan 该卡的 `dh:allowed-paths` 块（用户 2026-09-21 裁决：路径登记不需逐次确认），plan-reviewer 审 `task_plan` 并核登记未越出卡文变更范围（越出为 P1）。
+- **W 可省的两种情形**（2026-09-21 用户裁决）：①卡的工作区与 `task_plan` 已预建且基线未变，节点表可不放 W，首个 C 节点 `depends_on` 留空，其批次 0 由 coder 核基线 / 允许路径 / 复现命令；②light 卡可不写 `task_plan`，批次内容、验证命令与停止条件写在该 C 节点的 note 里，checker 以节点 note 为对照。normal / heavy 卡必须有 `task_plan`（checker 的对照物、dh 体检的必查项）。
 - **C**：按 `task_plan` 批次拆 C1..Cn；每批 coder + checker + scribe，decider `on:blocked`。
 - **R**：机器体检与四道闸（scribe 跑脚本）、按 Recipe 档位挂并行 reviewer、miner、收敛（scribe 汇总 `review.md`）。
 - **X**：coder 修 + reviewer 再审；轮数上限读 `dh-mapping.toml`，超限停 → strategist → 用户。**X 节点必须由规划预先放进节点表**（每卡 R 后一个 `X<n>`，`close=agent:<打回路>`，F 依赖 X），R 无返工时编排按 `stage_result` 直接跳过不开该节点；不预置则 R 打回后编排无处可去只能停（2026-09-21 p21-normal 首跑教训）。
