@@ -4,6 +4,7 @@
 > 修订日志：
 > - 2026-09-23 builder#1 初稿（phase=plan，review_round=1 remediation_count=0）。
 > - 2026-09-23 builder#1 整改 1（按 `review.plan.md` round 1 FAIL）：P1-1 虚拟时钟改离散事件调度器 + 多线程节拍用例（batch 1 桩与 R-A82-3/7、R-A82-12、R-A83-1）；P1-2 D11 区分超时与提前失败并加 30 秒退避（R-A82-11）；P1-3 H12 探针改为 kill 后零提示原样观察 + 「操作者介入」节，watch 死亡发现机制新增 D12 **待 decider 裁决**（本棒 BLOCKED）；P1-4 删 batch 2 adapter 第 5 项、SKILL.md:40 冲突并入 F-004；P2-1～P2-5 与 4c/7/8b 一并处理（见各处「整改 1」标注）。
+> - 2026-09-24 builder#1 整改 1 续（按 `decisions.md` UD-1/UD-2 与 `decision.f007-watch-death.md` §4 B′/§6）：D12 落用户裁决 F「pane 内 shell 重启循环 + B′ 编排 tick 对账兜底」，新增 D13 退出码合同；batch 2 纳入 adapter 两层死亡处置句与 SKILL.md 三处（UD-2），补齐须同步的旧文本断言（`test_a21`「未实现」、`test_no_watch_subcommand_invoked` 反转、`test_a136` 枚举纳入 watch）；batch 3 H12 改为两段演示（kill 后自动恢复 / 关阶段级 watch pane 后编排 tick 对账发现），扮编排探针为新增实例须先过 model-allocation gate。仍为 3 批。
 
 ## 0. Zero-context 执行入口
 
@@ -28,13 +29,14 @@ env | grep -c '^RELAY_RECEIPT='   # 期望 0
 
 ## 1. 固定边界（三批共通）
 
-1. **允许路径闭集**（越界即 FAIL）：`tools/relay-light/relay_log.py`、`tools/relay-light/test_relay_log.py`、`tools/relay-light/skill/references/adapter-claude-code.md`、`tools/relay-light/skill/references/adapter-codex.md`、`docs/modules/relay-light/workspace/RLT_18/**`（`execution_strategy.md` 除外）。每批完成判据含：
+1. **允许路径闭集**（越界即 FAIL）：`tools/relay-light/relay_log.py`、`tools/relay-light/test_relay_log.py`、`tools/relay-light/skill/references/adapter-claude-code.md`、`tools/relay-light/skill/references/adapter-codex.md`、`tools/relay-light/skill/SKILL.md`（**UD-2 限定**：仅第 40 行 watcher 表述、硬规则 8、「放弃项」中「watch 未实现」过时措辞三处，只在 batch 2 改）、`docs/modules/relay-light/workspace/RLT_18/**`（`execution_strategy.md`、`decisions.md` 除外）。每批完成判据含：
    ```bash
    git -c core.quotepath=false diff origin/master --name-only    # 仅上述路径 + orchestrator 自己的 execution_strategy.md / DevPlan 任务行
-   git -c core.quotepath=false diff origin/master --stat -- docs/modules/relay-light/relay/ tools/relay-light/skill/SKILL.md tools/relay-light/install_skill.py docs/modules/relay-light/design/ AGENTS.md   # 期望空
+   git -c core.quotepath=false diff origin/master --stat -- docs/modules/relay-light/relay/ tools/relay-light/install_skill.py tools/relay-light/skill/roles.toml tools/relay-light/skill/dh-mapping.toml docs/modules/relay-light/design/ AGENTS.md   # 期望空
+   git -c core.quotepath=false diff origin/master -U0 -- tools/relay-light/skill/SKILL.md | grep -c '^@@'   # batch 1 期望 0；batch 2 起只允许 UD-2 三处（hunk ≤3，逐 hunk 在 path-audit.txt 标注对应项）
    git status --porcelain --ignored | grep __pycache__   # plan 期（2026-09-23 builder 实测）pre-existing 集合为空 → 期望仍为空
    ```
-2. **不动**：design/、AGENTS.md、SKILL.md 与 skill 其它文件、`install_skill.py`、`docs/modules/relay-light/relay/**`（字节不变）、as-built、用户级 skill 副本（`~/.claude/skills/relay-light/**`、`~/.codex/skills/relay-light/**`）。范围外发现只记 `findings.md`。
+2. **不动**：design/、AGENTS.md、SKILL.md 中 UD-2 三处以外的内容与 skill 其它文件、`install_skill.py`、`docs/modules/relay-light/relay/**`（字节不变）、as-built、用户级 skill 副本（`~/.claude/skills/relay-light/**`、`~/.codex/skills/relay-light/**`）。范围外发现只记 `findings.md`。
 3. **测试纪律**：每条命令带 `PYTHONDONTWRITEBYTECODE=1`；单测一律打桩 herdr 与时钟，不调真实 `herdr`、不真 sleep；已有 `__pycache__` 不删只登记。取旧实现作基线时钉死 `5ab3bba`，先 `git cat-file -e 5ab3bba^{commit}`，缺失 `git fetch --depth=1 origin 5ab3bba`，仍失败 `self.fail` 不 skip。
 4. **progress 写入**：只由当前 batch coder 在本批完成时向 `progress.md`「施工里程碑」追加**一行**、「证据账本」追加本批证据行；不记 pane/agent 状态、轮询、通知。
 5. **词汇**：只用 single-task 的 plan / batch / batch-review / workflow-final / e2；W/C/R/X/F 只在「被实现的完整 relay 合同」语境出现（watch 本身服务完整 relay 的阶段/编排两层）。
@@ -62,7 +64,8 @@ design §3.6 冻结了行为但未冻结以下机制；以下是本计划采用�
 | D9 | 去重口径 | 以 agent 为键记「上次已通知状态」；同一状态再次观察到（包括 30 秒 `get` 轮询看到的 settled 态、分段 wait 立即返回）一律不再发；只有观察到 `working` 后（即经历一次重挂）再返回的非 working 状态才算新转换，可再次通知（即使与上次同值）。 | 「同一 `(agent, 状态)` **转换**只通知一次」——`working→idle→working→idle` 是两次转换。plan-review 若判为「终身只一次」需改用例 R-A82-5。 |
 | D10 | tick 起点与归属 | tick 自 watch 启动起每 1200 秒一次（单调时钟，主循环驱动，不是 agent 线程）；阶段级与编排级 watch 各自发各自的 tick 给各自 `--notify`；退出时不补发。 | §3.6「20 分钟兜底计时由 watch 维持」；§7.2 收 tick 跑 status + agent list 对账。 |
 | D11 | herdr 失败 | 适配层返回 `(rc, stdout)`。**整改 1 区分两种 wait 非零**：① 超时返回（本次调用经虚拟/单调时钟测得耗时 ≥ timeout）→ 视为「未返回」立即重挂；② 提前非零返回（耗时 < timeout，如名字解析错、目标已关、herdr 自身报错）→ 先 `clock.sleep(30)` 再重试，**不得无间隔重挂**。`get` 非零或 JSON 不可解析 → 本轮跳过，下一次仍在 30 秒后（连续失败不加速）；`prompt` 非零 → stderr 报一行，不重试、**不标记已通知**（下一次观察可再试）。以上都不写账、不退出进程。任一 agent 线程任意 90 秒窗口内 herdr 调用（wait+get）≤ 4 次（R-A82-11）。 | 只通知不写账；失败不能伪装成已送达；design 486 的 30 秒节拍与 1437「不做秒级盯屏」禁止热循环。 |
-| D12 | watch 进程死亡由谁、怎样发现（P1-3） | **待 decider 裁决，本计划不自选**。design §7.2 只规定「有 watch 允许结束回合、无 watch 不得结束回合」，未规定 watch 中途死亡的发现者；Codex 侧无后台退出唤醒，结束回合后无任何机制能得知。候选见 `BLOCKED.builder.plan-remediation-1.md` 与 findings F-007。裁决前 batch 2 不得开工（adapter 第 3 项措辞依赖本条）。 | 选项涉及新增角色义务或与 design 482「单独开一个 pane」取舍，属方向/设计语义。 |
+| D12 | watch 进程死亡由谁、怎样发现（P1-3） | **已裁决**（`decisions.md` UD-1，用户 2026-09-24 选 F = 自动重启 + B′ 兜底）。三层：① **进程级**——watch 所在 pane 不直接跑 watch，而跑 shell 重启循环（D13）；进程崩溃或被杀几秒内由循环重拉，仍是 design 482「单独开一个 pane 运行」，不引入 watcher agent。② **阶段级 pane/shell 被关**——由编排收到**自己** watch 的 20 分钟 tick 做 §7.2 对账时发现：某 open stage 的 stage-lead 为 idle、该 stage 有未关节点、其 worker 已 idle/done/blocked 而账本无对应终态 → `herdr agent prompt <stage-lead> "[relay-light] stage-stalled <stage_id>"`；stage-lead 被任何 prompt 唤醒时**先核 watch 存活**（`pgrep -f 'relay_log.py watch --plan <plan_dir>'`；Windows `Get-CimInstance Win32_Process` 按 CommandLine 匹配），不在则按 D13 重拉或改前台 `herdr agent wait <agent> --timeout 1200000`。③ **编排级 watch 的 pane 被关**——如实写「无自动发现，依赖人工，按 §7.3 恢复」。完整 relay 不保留人肉 watcher agent；watch 仍只通知不写账、不做驱动器；对账与 `stage-stalled` 判定由编排（agent）按 adapter 执行，**不进 watch 程序**（程序不做停滞检测，design 1437）。 | 用户裁决；落字以 `decision.f007-watch-death.md` §6.3 B′ 草案为底，加自动重启层。 |
+| D13 | 重启循环与 watch 退出码合同 | watch 退出码：正常退出（阶段级末节点关闭 / 编排级末阶段 `stage_close`）**0**；参数/计划/账本/无 open stage 等确定性错误 **2**；其余（未捕获异常、被信号杀）为其它非零。重启循环只在退出码 ∉ {0, 2} 时 `sleep 5` 后重拉，0 与 2 即结束循环（防确定性错误每 5 秒空转）。Linux：`while :; do python3 <RELAY_LOG> watch --plan <plan_dir> --notify <名> --config-dir <plan_dir>/config/; rc=$?; [ "$rc" -eq 0 ] || [ "$rc" -eq 2 ] && break; sleep 5; done`；Windows：`while ($true) { python <RELAY_LOG> watch ...; if ($LASTEXITCODE -in 0,2) { break }; Start-Sleep 5 }`。重启后去重状态与 tick 计时从零开始：已 settled 的在场 agent 可能各再收一次通知，属预期，adapter 写明「重启后可能重复一次通知，按对账处理」。 | 程序内不做自重启（保持 watch 单一职责）；循环写在 adapter，由 R-A83-8 结构断言 + R-A83-12 退出码单测共同钉住。 |
 
 ## 3. 分批
 
@@ -110,18 +113,31 @@ design §3.6 冻结了行为但未冻结以下机制；以下是本计划采用�
 
 ### batch 2 — A83 + 两层退出 + adapter 改写
 
-- **开工前置（整改 1）**：D12 已由 decider/用户裁决并回写本文件。
-- **承接 HC**：`HC-RL-A83`（全部）；`HC-RL-A82` 编排级分支回归。
+- **开工前置（整改 1）**：D12 已由用户裁决（UD-1）并已回写本文件——满足。
+- **承接 HC**：`HC-RL-A83`（全部）；`HC-RL-A82` 编排级分支回归；UD-1 死亡处置落字；UD-2 SKILL 三处。
 - **目标**：20 分钟 tick；阶段级（D2）与编排级（D3）两层退出；两个 adapter 的等待段改写为「watch 默认、无 watch 回退」并写明节拍归属与 D5 `herdr=` 约定。
 - **文件与符号**：
   - `relay_log.py`：主循环 tick（D10）；`def _watch_should_exit(level, bound_stage, status) -> bool`；编排级在场者取法（D3）。
-  - `test_relay_log.py`：`WatchTests` 增用例；**改写** `test_a21_wait_receiver_and_three_methods` 中 `assertIn("未实现", text)` 一条（该断言在 watch 落地后语义过期），替换为不弱于原意的新断言（见下 R-A83-8），其余断言保持。
+  - `test_relay_log.py`：`WatchTests` 增用例；以下三条既有断言钉着旧文本，**必须同步**（builder 2026-09-24 全量 grep 两个测试文件确认只有这三处；`test_install_skill.py` 的 SingleTaskStructureTests 不涉及 watcher/watch/「未实现」，其五文件哈希断言比的是临时 home 安装副本与仓内源，SKILL 改动不破坏）：
+    - `SkillAdapterTests.test_a21_wait_receiver_and_three_methods`（约第 6293 行）：`assertIn("未实现", text)` 语义过期，替换为不弱于原意的新断言（R-A83-9），其余断言保持。
+    - `SkillAdapterTests.test_no_watch_subcommand_invoked`（约第 6356 行）：现断言 adapter **不含** `relay_log.py watch`，与本批目标正相反——**反转**为断言两份 adapter 均含 `<RELAY_LOG> watch` 调用（R-A83-8 承接），测试名改为 `test_watch_subcommand_documented`；在 progress 注明「反转而非删除」。
+    - `SkillAdapterTests.test_a136_every_call_carries_side_config_dir`（约第 6265 行）：枚举正则 `(?:add|status|lint)` 扩为 `(?:add|status|lint|watch)`，使 watch 调用行（含重启循环行）同样必须带 `--config-dir <plan_dir>/config/`；「三子命令各至少一次」保持并另加 watch 至少一次。
   - `adapter-claude-code.md`、`adapter-codex.md`：
     1. 「拉起 stage-lead / 编排 的 prompt 片段」硬规则句：去掉「watch 未实现时不得结束回合空等」，改为「有 watch 时允许结束回合靠 prompt 唤醒；无 watch 时不得结束回合空等」（§7.2 一句话原文）。
-    2. 「等待与接收者」方式 1 改为现行：`python3 <RELAY_LOG> watch --plan <dir> --notify <自己的 Herdr 名> --config-dir <本侧 skill 目录>`（Windows 写 `python`），在当前阶段终端空间单独开一个载体位运行——**沿用本侧 adapter 既有载体约定**（claude 侧现行「一 agent 一 tab」、codex 侧现行 pane 写法；与 design 482「pane」/1440「不使用 tab」的既有偏离不是本卡引入，登记 findings F-006）；编排层 `--level plan`；收到 `[relay-light] tick` 跑 `status` 与 `herdr agent list` 对账。
-    3. 「watch 未实现前一律走方式 2/3」改为「watch 默认；watch 未启动时回退方式 2（Claude 侧可 3），此时 20 分钟节拍由前台 `herdr agent wait <agent> --timeout 1200000` 维持」，并**显式写节拍归属**：有 watch → watch 维持；无 watch → 前台 wait 维持。**watch 中途死亡的发现者与动作按 D12 裁决原样落字**；裁决前本项不得施工（整改 1，P1-3）。
+    2. 「等待与接收者」方式 1 改为现行：`python3 <RELAY_LOG> watch --plan <dir> --notify <自己的 Herdr 名> --config-dir <本侧 skill 目录>`（Windows 写 `python`），在当前阶段终端空间单独开一个载体位运行——**沿用本侧 adapter 既有载体约定**（claude 侧现行「一 agent 一 tab」、codex 侧现行 pane 写法；与 design 482「pane」/1440「不使用 tab」的既有偏离不是本卡引入，登记 findings F-006）；编排层 `--level plan`；收到 `[relay-light] tick` 跑 `status` 与 `herdr agent list` 对账。**整改 1 续**：调用写法统一 `--config-dir <plan_dir>/config/`（与现有 add/status/lint 行一致，满足 `test_a136`），且在 pane 里不直接跑而跑 D13 重启循环（Linux 与 Windows 两种写法都写）。
+    3. 「watch 未实现前一律走方式 2/3」改为「watch 默认；watch 未启动时回退方式 2（Claude 侧可 3），此时 20 分钟节拍由前台 `herdr agent wait <agent> --timeout 1200000` 维持」，并**显式写节拍归属**：有 watch → watch 维持；无 watch → 前台 wait 维持。
+    3a. **watch 死亡处置（D12，两份 adapter 同义，Claude/Codex 对称）**：
+       - 进程级：「watch 所在 pane 跑重启循环（D13 两种写法）；进程崩溃或被杀几秒内自动重拉；重启后可能重复一次通知，按对账处理。」
+       - stage-lead 段：「整个 watch pane 被关时本层无自动发现，由编排 tick 对账兜底（最长 20 分钟）。收到 `[relay-light] stage-stalled <stage_id>` 或任何唤醒时，先核 watch 存活（`pgrep -f 'relay_log.py watch --plan <plan_dir>'`，Windows 用 `Get-CimInstance Win32_Process` 按 CommandLine 匹配），不在则按重启循环重拉，或改前台 `herdr agent wait <agent> --timeout 1200000`。」
+       - 编排段：「收到 `[relay-light] tick`：跑 `status --json` 与 `herdr agent list` 对账；某 open stage 的 stage-lead 为 idle、该 stage 有未关节点且其 worker 已 idle/done/blocked 而账本无对应终态 → `herdr agent prompt <stage-lead> "[relay-light] stage-stalled <stage_id>"`。编排自己的 watch pane 被关：无自动发现，依赖人工，按 §7.3 恢复。」
+       - 共通一句：「完整 relay 不设人肉 watcher agent；watch 只通知不写账，停滞判定由编排按上条执行，不进程序。」
     4. stage-lead `agent_launch` / 编排 `monitor_launch` 的 note 写 `herdr=<Herdr 名>`（D5）；未写时 watch 按 `<名字>-<attempt>` 猜。
-    5. ~~single-task 段补句~~ **整改 1（P1-4）删除**：该句与 SKILL.md:40「程序落地后人肉实例退役」字面冲突，SKILL 不在允许路径；冲突并入 findings F-004 交 orchestrator/decider 路由。本卡不改两个 adapter 的 single-task 段与「编排等待纪律」。
+    5. ~~single-task 段补句~~ **整改 1（P1-4）删除**：本卡不改两个 adapter 的 single-task 段与「编排等待纪律」；single-task 与 watch 程序的关系改由 SKILL.md 第 40 行承担（下项，UD-2）。
+  - `SKILL.md`（UD-2，只改三处，其它合同字节不变）：
+    1. 第 40 行 watcher 行职责列末句改为：「完整 relay 模式由 `relay_log.py watch` 程序承担、人肉实例退役；`single-task` 无账本，`phase=monitor` 仍由人肉 watcher 按 adapter 120 秒节拍承担」（UD-2 原文）。
+    2. 硬规则 8 末句「watch 未实现时不得结束回合空等」改为「有 watch 时允许结束回合、靠 prompt 唤醒；无 watch 时不得结束回合空等」（design §7.2 一句话）。
+    3. 「放弃项」第 5 条「不做 watch 推送的实现；watch 未实现时一律走前台 `wait` 回退」改为「watch 只通知不写账、不做驱动器与停滞检测；无 watch 时一律走前台 `wait` 回退」。
+    不改 SKILL 第 331 行 single-task monitor 段与其它任何内容。
 - **用例清单**（A83 oracle =「单测（打桩时钟）断言 tick 周期与退出条件；结构检查适配层写明归属」）：
 
   | ID | 用例 | 断言 | oracle 要素 |
@@ -133,9 +149,11 @@ design §3.6 冻结了行为但未冻结以下机制；以下是本计划采用�
   | R-A83-5 | 编排级退出 | `--level plan`：两阶段计划，第一阶段 `stage_close` 不退出；末阶段 `stage_close` 后退出 exit 0 | 编排级末阶段 `stage_close` |
   | R-A83-6 | 编排级盯 stage-lead | 编排级在场者为 open stage 的 `monitor#<n>`；其 stage `stage_close` 后该线程退出（D3） | A82 编排级分支 |
   | R-A83-10 | 编排级不越级报信（整改 1，P2 8b） | 计划含 stage-lead 与节点 worker 均在场；`--level plan` 下全部 `prompt` 调用的 agent 段只出现 `monitor#<n>`，对 worker 零 herdr 调用 | D3 |
+  | R-A83-12 | 退出码合同（整改 1 续，D13） | 阶段级末节点关闭 → `main(["watch", ...])` 返回 0；无 open stage / 计划 lint 失败 / 账本损坏 → 2；桩 `run_watch` 抛未捕获异常 → CLI 返回值 ∉ {0, 2}（或异常外抛），证明重启循环会重拉而非误停 | 自动重启前提 |
+  | R-A83-13 | SKILL UD-2 三处（整改 1 续） | SKILL.md 含 UD-2 第 40 行新句关键片段（`完整 relay 模式由`、`single-task` 无账本、`120 秒`）；硬规则 8 含「有 watch 时允许结束回合」；全文不含 `watch 未实现`、`不做 watch 推送的实现`；并断言对 `5ab3bba` 版 SKILL.md 三条中至少两条 FAIL（RED 有效，钉 SHA 纪律同 §1.3） | UD-2 落字 |
   | R-A83-11 | 空阶段不退出（整改 1，P2-5） | 绑定 stage 已 `stage_start` 但尚无 active 节点 / 节点未 `node_start` → 推进 90 秒不退出；首个节点加入并 `node_close`（且为唯一节点）后才退出 | D2 |
   | R-A83-7 | 退出后无 tick | 退出时刻之后无任何 prompt | 退出条件 |
-  | R-A83-8 | adapter 结构检查（两份各一） | 含 `relay_log.py watch`/`<RELAY_LOG> watch` 命令行且带 `--notify`、`--config-dir`；含 `[relay-light] tick`；含 `--timeout 1200000`；含节拍归属两句（有 watch→watch 维持；无 watch→前台 wait 维持）；含 `herdr=`；含 D12 裁决要求落字的 watch 死亡处置句（按裁决原文定断言）；**不再含** `watch 未实现`、`尚未实现`；硬规则句「`wait` 返回时必须有接收者」仍在 | 结构检查适配层写明归属 |
+  | R-A83-8 | adapter 结构检查（两份各一） | 含 `relay_log.py watch`/`<RELAY_LOG> watch` 命令行且带 `--notify`、`--config-dir`；含 `[relay-light] tick`；含 `--timeout 1200000`；含节拍归属两句（有 watch→watch 维持；无 watch→前台 wait 维持）；含 `herdr=`；含 D12 死亡处置关键词 `stage-stalled`、`pgrep -f 'relay_log.py watch`、`Win32_Process`、`依赖人工`、`§7.3`；含 D13 重启循环两种写法关键词（`while :; do`、`sleep 5`、`$LASTEXITCODE -in 0,2`、`Start-Sleep 5`）；**不再含** `watch 未实现`、`尚未实现`；硬规则句「`wait` 返回时必须有接收者」仍在 | 结构检查适配层写明归属 |
   | R-A83-9 | 旧断言替换不弱化 | 旧 `assertIn("未实现")` 删除处改为断言「无 watch」回退句存在 + `空等` 仍在；在 `5ab3bba` 版 adapter 上跑 R-A83-8 应 FAIL（钉 SHA 取旧文，按 §1.3 fetch 纪律） | RED 有效 |
 
 - **RED 先行**：先写 R-A83-*，对未改 adapter 与无 tick 实现跑应失败，存 `evidence/batch-2/red.txt`；再实现/改写至 GREEN。
@@ -145,11 +163,14 @@ design §3.6 冻结了行为但未冻结以下机制；以下是本计划采用�
   grep -c '未实现' skill/references/adapter-claude-code.md skill/references/adapter-codex.md   # 均为 0（仅限 watch 语境；如他处合法出现须在 progress 说明）
   grep -n 'timeout 1200000' skill/references/adapter-*.md    # 两份均命中
   grep -n '\[relay-light\] tick' skill/references/adapter-*.md    # 两份均命中
+  grep -c 'stage-stalled' skill/references/adapter-*.md    # 两份均 ≥1
+  grep -c 'watch 未实现\|不做 watch 推送的实现' skill/SKILL.md    # 0
+  cd ../.. && git -c core.quotepath=false diff origin/master -U0 -- tools/relay-light/skill/SKILL.md | grep -c '^@@'   # ≤3，且逐 hunk 对应 UD-2 三处
   ```
   外加 §1.1 路径审计与 §1.6 回归全绿（含 `test_install_skill` 的 single-task 结构断言不回归）。
 - **证据落点**：`evidence/batch-2/`（`red.txt`、`green.txt`、`adapter-grep.txt`、`regression-*.txt`、`path-audit.txt`）。
 - **signal**：`DONE.batch-2.coder.md`。
-- **注意**：adapter 改完后用户级副本与仓内源不一致属预期，**coder 不同步**；由 orchestrator 收口时取用户授权后 `install_skill.py --all`。
+- **注意**：adapter 与 SKILL.md 改完后 skill 五文件哈希变化，用户级副本与仓内源不一致属预期，**coder 不同步**；由 orchestrator 收口时取用户授权后 `install_skill.py --all`。
 
 ### batch 3 — 实测批（H11 / H12，只取证不判）
 
@@ -160,10 +181,15 @@ design §3.6 冻结了行为但未冻结以下机制；以下是本计划采用�
 - **探针设计**：
   - **H11-claude**：`rlt18-probe-lead-claude`（claude kind，扮被通知的 stage-lead）+ `rlt18-probe-worker`（任一 kind，扮在场 worker，fixture 账本记其 `agent_launch note=herdr=rlt18-probe-worker`）+ watch tab（`relay_log.py watch --plan <fixture> --notify rlt18-probe-lead-claude`）。先让 lead 执行一个 ≥90 秒的前台任务（例：让它跑 `sleep 90 && echo probe-busy-done`）确保 `agent get` 为 `working`；期间让 worker 完成一个短任务回 idle → watch 发 `[relay-light] <worker 的 ledger 标识，例 coder#1> -> idle`（D7）。记录：watch 发送时刻（watch stderr/stdout 或 coder 侧 `date` 对齐）、lead 忙态证据（`agent get` JSON 摘录 `agent_status`/`state_change_seq`）、lead 结束忙态后是否出现该 prompt 及其出现时刻与原文（`agent read` 摘录）。
   - **H11-codex**：同上，lead 换 codex kind（`rlt18-probe-lead-codex`，按 adapter 带 `--dangerously-bypass-approvals-and-sandbox`）。
-  - **H12（整改 1，P1-3）**：lead 按 batch 2 定稿 adapter 原样派单（含 D12 裁决落字的 watch 死亡处置），watch 运行、lead 已按「有 watch 允许结束回合」结束回合后，coder `kill` watch 进程（记录时刻与 PID）；**kill 后 coder 不向 lead 发任何 prompt/按键**，原样观察至 kill 后 T=25 分钟：记录 lead 下一次**自发**例行查看的时刻与内容（`agent get`/`agent read` 白名单摘录），或写「截至 kill 后 25 分钟未发生」。如确需人工介入，`H12.md` 单列「操作者介入」节写明时刻、原文与原因，供用户判断时区分；介入之后的观察不计入「自发」。允许真实等待 ≥25 分钟。
-- **产出**：`evidence/batch-3/H11-claude.md`、`H11-codex.md`、`H12.md`，每份只写「展示了什么、时刻、内容」+ 原始摘录文件引用，**不写结论**（结论格留给用户）；Herdr 输出先按白名单过滤（只保留 name/agent_status/state_change_seq/pane_id/时刻/prompt 原文），不录凭据、不录无关终端内容。
+  - **H12（整改 1 续，按 UD-1 两段演示；均为 kill/关闭后零提示原样观察）**：lead 与 watch 均按 batch 2 定稿 adapter 原样派单/启动（watch pane 跑 D13 重启循环）。
+    - **H12-① 进程级自动恢复**：watch 运行、lead 已按「有 watch 允许结束回合」结束回合后，coder `kill` watch **Python 进程**（不杀循环 shell，记录时刻与 PID）；不向任何探针发提示；记录重启循环重拉的时刻与新 PID（`pgrep -af 'relay_log.py watch'` 摘录）、重拉后第一条通知/tick 的时刻与原文（lead 侧 `agent read` 白名单摘录）。观察窗 ≤ 5 分钟。
+    - **H12-② 阶段级 pane 被关 → 编排 tick 对账发现**：fixture 账本另记 `monitor_launch note=herdr=rlt18-probe-orch stage_id=<s1>` 等编排级所需行；多开 `rlt18-probe-orch`（**扮编排的新增实例**，按 adapter 编排段派单）与一个 `--level plan --notify rlt18-probe-orch` 的编排级 watch pane（同样跑重启循环）。让 worker 回 idle 后关闭**阶段级** watch 的整个 pane（记录时刻），不向任何探针发提示，观察至关闭后 25 分钟：记录编排下一次 tick 时刻、编排对账输出摘录、是否发出 `[relay-light] stage-stalled <stage_id>` 及时刻、lead 收到后是否先核 watch 存活及其动作与时刻；或写「截至关闭后 25 分钟未发生」。
+    - 编排级 pane 被关不做实测（D12③ 按裁决如实写依赖人工），只在 `H12.md` 注明「未演示，依据 UD-1」。
+    - 如确需人工介入，`H12.md` 单列「操作者介入」节写明时刻、原文与原因；介入之后的观察不计入「自发」。允许真实等待 ≥25 分钟。
+    - **模型闸**：`rlt18-probe-orch` 与 H11/H12 其它探针一样属新增角色实例，启动前由 orchestrator 走 model-allocation gate 取得用户确认并写入 `execution_strategy.md`；派单未给出其已确认模型即写 `BLOCKED.batch-3.coder.md reason=probe_model_unconfirmed`。
+- **产出**：`evidence/batch-3/H11-claude.md`、`H11-codex.md`、`H12.md`（含 ①② 两节），每份只写「展示了什么、时刻、内容」+ 原始摘录文件引用，**不写结论**（结论格留给用户）；Herdr 输出先按白名单过滤（只保留 name/agent_status/state_change_seq/pane_id/时刻/prompt 原文），不录凭据、不录无关终端内容。
 - **收尾**：全部 `rlt18-probe-*` tab 关闭，`herdr agent list` 摘录证明无残留；watch 进程无残留（`pgrep -f 'relay_log.py watch'` 空）。
-- **完成判据**：三份证据文件存在且各含「时刻」「内容」两节与原始摘录引用（`H12.md` 另含「操作者介入」节，无介入写「无」）；fixture lint exit 0；无 `rlt18-probe-*` 残留；§1.1 路径审计（fixture 例外，上述精确 glob）与 §1.6 回归全绿。
+- **完成判据**：三份证据文件存在且各含「时刻」「内容」两节与原始摘录引用（`H12.md` 另含 H12-①、H12-② 两节与「操作者介入」节，无介入写「无」）；fixture lint exit 0；无 `rlt18-probe-*` 残留；§1.1 路径审计（fixture 例外，上述精确 glob）与 §1.6 回归全绿。
 - **signal**：`DONE.batch-3.coder.md`。
 
 ## 4. 批后与收口（orchestrator 路由，worker 不自续）

@@ -26,11 +26,11 @@ DevPlan 依赖 RLT_05、RLT_07、RLT_13、RLT_17；其中 **RLT_13 / RLT_17 由�
 
 ## 目标 (Outcome)
 
-交付 `relay_log.py watch --plan <dir> --notify <agent>`：只通知、不写账；每个在场 agent 一线程挂 `herdr agent wait`，返回即发短 ASCII 单行 prompt；发完不立即重挂，改 30 秒 `agent get` 轮询直到账本终态（退出）或回 `working`（重挂）；同一 `(agent, 状态)` 转换只通知一次；每 20 分钟 `[relay-light] tick`；阶段级在本阶段末节点 `node_close` 后退出、编排级在末阶段 `stage_close` 后退出。两个仓内 adapter 的等待段改为「watch 默认、无 watch 回退前台 `wait --timeout 1200000`」并写明节拍归属。最后真实 Herdr 实测 H11/H12 并交用户人判。
+交付 `relay_log.py watch --plan <dir> --notify <agent>`：只通知、不写账；每个在场 agent 一线程挂 `herdr agent wait`，返回即发短 ASCII 单行 prompt；发完不立即重挂，改 30 秒 `agent get` 轮询直到账本终态（退出）或回 `working`（重挂）；同一 `(agent, 状态)` 转换只通知一次；每 20 分钟 `[relay-light] tick`；阶段级在本阶段末节点 `node_close` 后退出、编排级在末阶段 `stage_close` 后退出。两个仓内 adapter 的等待段改为「watch 默认、无 watch 回退前台 `wait --timeout 1200000`」并写明节拍归属；watch 中途死亡按用户裁决 UD-1（`decisions.md`）处置：pane 内 shell 重启循环自动恢复进程，阶段级 pane 被关由编排 20 分钟 tick 对账发 `stage-stalled` 兜底，编排级 pane 被关如实写依赖人工。按 UD-2 同步 SKILL.md 三处 watch 过时措辞。最后真实 Herdr 实测 H11/H12 并交用户人判。
 
 ## 非目标
 
-- 不把 watch 变成驱动器或写者；不做秒级监控；不改 design/、SKILL.md、AGENTS.md、`install_skill.py`、`docs/modules/relay-light/relay/**`。
+- 不把 watch 变成驱动器或写者；不做秒级监控；不改 design/、AGENTS.md、SKILL.md 中 UD-2 三处以外的内容、`install_skill.py`、`docs/modules/relay-light/relay/**`。
 - 不做用户级 skill 副本同步（orchestrator 收口时另取用户授权）；不做 Windows 侧与 A125 终局回归（挂起）。
 
 ## 完成条件
