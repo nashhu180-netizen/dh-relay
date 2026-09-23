@@ -17,7 +17,8 @@
 
 | 闸 | review_round | remediation_count | reviewer | 结论 | durable signal / 工件 |
 |---|---:|---:|---|---|---|
-| plan-review | 1 | 0 | 待派 | 待定 | `DONE.plan-review.md` / `review.plan.md` |
+| plan-review | 1 | 0 | plan-reviewer#1 | FAIL（P1×4） | `DONE.plan-review.md` / `review.plan.md` |
+| builder 整改 1 | 2 | 1 | builder#1 | P1-1/2/4 与 P2 已改；P1-3 设计机制待裁决（D12） | `BLOCKED.builder.plan-remediation-1.md` |
 | batch-1 review | 1 | 0 | 待派 | 待定 | `DONE.batch-1.review.md` |
 | batch-2 review | 1 | 0 | 待派 | 待定 | `DONE.batch-2.review.md` |
 | batch-3 review | 1 | 0 | 待派 | 待定 | `DONE.batch-3.review.md` |
