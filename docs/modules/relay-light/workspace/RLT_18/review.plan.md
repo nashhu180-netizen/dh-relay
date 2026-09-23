@@ -125,3 +125,30 @@ UD-1 落地核对：UD-1 的五项在 D12/D13、adapter 3a、H12-①② 中都�
 ### 范围外发现
 
 无新增。
+
+## 复审 round 3（plan-reviewer#1 · review_round=3 · remediation_count=2）
+
+- 被审对象：`task_plan.md` @ `59ed241`（builder#1 整改 2），连同 `DONE.builder.plan-remediation-2.md`、`decisions.md`（UD-1/UD-2）。
+- RELAY_RECEIPT preflight = 0。本轮只核 round 2 的 P1-A/B/C 与 P2-A/B 是否闭合、有无新 P1；UD-1/UD-2 不重新评价方向。
+
+### 结论 PASS
+
+round 2 的三条 P1 全部闭合，两条 P2 已处理，没有发现新 P1。UD-1 的①②③三层与 UD-2 的 SKILL 三处，落字与上轮核对一致，整改 2 没有动到它们的语义。
+
+### round 2 闭合核对
+
+| 项 | 结论 | 依据 task_plan.md:行 |
+|---|---|---|
+| P1-A 退出码与运行期重读 | 闭合 | 69（D13）：退出码沿用现有合同，参数与无 open stage 为 2（`_error` 缺省 exit_code=2，relay_log.py:214），计划与配置为 3，账本为 4，不重映射；重启循环的停止集是 {0,2,3,4}，Linux `case` 与 Windows `-in` 两种写法同步；启动期先重试 2 次、间隔 2 秒，吸收瞬时态。60（D4）：运行期重读失败时，本轮跳过、stderr 报一行、沿用上次成功的快照、不退出；agent 线程读失败按「非终态」处理。用例覆盖：99（R-A82-14 半行）、100（R-A82-15 运行期 lint 失败）、155（R-A83-12 分码断言，含启动首读半行被重试吸收、未捕获异常 ∉ 停止集）。 |
+| P1-B 存活检查分层 | 闭合 | 68（D12②）、134（adapter 3a）：用 `pgrep -f -- '…watch --plan <plan_dir> --notify <自己的 Herdr 名>'` 按层定位，Windows `CommandLine -like` 同构。69、130（D13、adapter 第 2 项）：调用行固定 `--plan … --notify …` 为 watch 之后的首两个参数。159（R-A83-8）：断言每条 watch 调用行都匹配 `watch --plan \S+ --notify \S+`，且含带 `--notify` 的 pgrep 原文。 |
+| P1-C H12-② 顺序 | 闭合 | 189：worker 处于 working 时先关阶段级 watch pane（T1，附 worker 状态摘录）；worker 回 idle 记 T2；零提示观察到编排 tick（T3）之后。编排级 watch 须在 T1 前已运行，保证窗口内至少有一次 tick。另外还要核实 lead 没有被编排级 watch 误判为「在」。 |
+| P2-A H12-① 取 PID | 已处理 | 188：用 `^python3? .*relay_log\.py watch --plan <fixture> --notify rlt18-probe-lead-` 取 python 行，先做全量摘录，证明循环 shell 的 PID 不变、python 的 PID 已变。 |
+| P2-B 0/确定性错误不重拉 | 已处理 | 69 末句写明这是细化、不是偏离 UD-1①。 |
+
+### 新 P2（不阻断，batch 2 施工或 batch-review 时顺带处理即可）
+
+- **P2-C　`--notify` 名的前缀误命中**：`pgrep -f` 与 `-like '*…*'` 都是子串匹配。如果 stage-lead 名是另一个在场 watch 的 `--notify` 名的前缀（例如 `p21-C1` 与 `p21-C1-2`），存活检查可能误判「在」。调用行已固定 `--notify <名>` 后紧跟 ` --level `，建议 adapter 的存活检查模式把 ` --level` 也带上，写成 `--notify <名> --level stage`，并同步 R-A83-8 的关键词。
+
+### 范围外发现
+
+无新增。
