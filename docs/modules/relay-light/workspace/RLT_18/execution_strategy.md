@@ -23,6 +23,7 @@
 | plan-reviewer | Claude Opus 5.5 | medium | rlt18-plan-reviewer（plan-reviewer#1） | w4B:t4 / w4B:p4 | 2026-09-23 确认；实际 argv=`claude --model claude-opus-5-5 --effort medium --dangerously-skip-permissions`，Herdr 配置已核对 | confirmed-observed |
 | batch reviewer | Devin SWE-2 | Max | 每批一个 | 待 Herdr 返回 | 2026-09-23 用户修改为 SWE-2 Max；未启动 | confirmed-pending |
 | batch reviewer | Devin SWE-2 | Max | rlt18-b1-reviewer（batch-reviewer#b1） | w4B:t7 / w4B:p7 | 同上确认；实际 argv=`devin --model swe-2-max --permission-mode dangerous`，Herdr 配置已核对；DONE.batch-1.coder（`4b4b95c`）后派审；durable PASS 后单次 `/clear` 并复验为新 session（revision=5），随后关闭 tab | confirmed-observed-cleared-closed |
+| batch reviewer | Devin SWE-2 | Max | rlt18-b2-reviewer（batch-reviewer#b2） | w4B:t9 / w4B:p9 | 同上确认；实际 argv=`devin --model swe-2-max --permission-mode dangerous`，Herdr 配置已核对；DONE.batch-2.coder（`0f9686f`）后派审 | confirmed-observed |
 | coder | Devin SWE-2 | Max | 每批一个 | 待 Herdr 返回 | 2026-09-23 确认；未启动 | confirmed-pending |
 | coder | Devin SWE-2 | Max | rlt18-b1-coder（coder#b1，batch 1） | w4B:t6 / w4B:p6 | 同上确认；实际 argv=`devin --model swe-2-max --permission-mode dangerous`，Herdr 配置已核对；plan-review round 3 PASS（`57656bc`）后派 batch 1；batch-1 reviewer round 2 PASS（`d0a8196`）后单次 `/clear` 并复验为新 session（revision=5），随后关闭 tab | confirmed-observed-cleared-closed |
 | coder | Devin SWE-2 | Max | rlt18-b2-coder（coder#b2，batch 2） | w4B:t8 / w4B:p8 | 同上确认；实际 argv=`devin --model swe-2-max --permission-mode dangerous`，Herdr 配置已核对；batch 1 清理闸完成后派 batch 2 | confirmed-observed |
