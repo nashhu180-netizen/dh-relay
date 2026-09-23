@@ -1,11 +1,23 @@
 ---
 name: relay-light
-description: 轻量接力编排——用 relay_log.py 账本把「规划→编排→stage-lead→agent」的分工落到固定五阶段（W/C/R/X/F）上执行多卡任务。
+description: 轻量接力编排（relay-light / relay-lite / 简单版接力），两种模式：完整模式（relay_plan + relay_log.py 账本 + W/C/R/X/F 五阶段，多卡计划）与 single-task 单卡接力（编排只分发、builder/coder/审核/决策/复核分派、watcher 巡检，无账本）。触发：用户点名 relay-light/relay-lite/接力/简单版；或贴出多角色分工表（编排/施工/建 workspace 与 task_plan/审核/决策/复核/监督）让你「按分工开工 / 派活 / 拉 agent」；或要执行 relay_plan.md。交互型任务不进本 skill，走单会话。
 ---
 
 # relay-light
 
-relay-light 是一套接力编排协议：人拉起规划与编排，编排在每个阶段开一个终端空间并拉起 stage-lead，stage-lead 拉起该阶段所有 agent；全部状态只以 `relay_log.py` 账本为准。本文件是协议核心；两侧运行时的派活/等待命令写法见 `references/adapter-claude-code.md` 与 `references/adapter-codex.md`。
+relay-light 是一套接力编排协议，有两种互斥模式（选法见下节「模式选择」）：**完整模式**由人拉起规划与编排，编排在每个阶段开一个终端空间并拉起 stage-lead，stage-lead 拉起该阶段所有 agent，全部状态只以 `relay_log.py` 账本为准；**`single-task` 单卡接力**由编排直接分派各角色、watcher 旁路巡检，不建账本（见文末同名一节）。本文件是协议核心；两侧运行时的派活/等待命令写法见 `references/adapter-claude-code.md` 与 `references/adapter-codex.md`。
+
+## 模式选择（先定模式，再拉任何 agent）
+
+| 情形 | 走哪种 |
+|---|---|
+| 多张卡、要按依赖排进一份 `relay_plan.md` 执行 | 完整模式（五阶段 + 账本） |
+| 一张已落户的卡，用户给了多角色分工（编排只分发、建 workspace/task_plan、施工、审核、决策、复核、监督等），或说「简单版 / relay-lite / 单卡接力」 | **`single-task`** |
+| 命中下方「交互型任务」任一信号 | 不进 relay-light，走单会话 |
+
+- 用户没点名模式、上表又不能唯一判定时，**先问用户走哪种，再动手**；不得自行默认完整模式，也不得按记忆里的旧配方直接开跑。
+- 用户贴出的多角色分工表就是 `single-task` 的角色与模型提案：照它进 `single-task` 的 model-allocation gate，派单用 `[relay-light:single-task]` 标头，不另起一套 `dispatch/*.md` brief + `progress.md` `DONE` 信号的手动派活流程（那是 `single-task` 正式化之前的临时做法，已由本模式取代）。
+- 分工表里的「监督 / 监控 / monitor」对应 `single-task` 的 `phase=monitor`，即 watcher（只观察、只报信），不是完整模式的 stage-lead。
 
 ## 适用边界：交互型任务走单会话
 
