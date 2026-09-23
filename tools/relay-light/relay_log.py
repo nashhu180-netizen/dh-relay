@@ -3608,14 +3608,13 @@ def _watch_herdr_name(agent: str, launch_note: str) -> str | None:
 def _watch_present_agents(
     status: Status,
     entries: list[dict[str, object]],
-    level: str,
-    bound_stage: str | None,
+    bound_stage: str,
 ) -> list[tuple[str, str, str]]:
-    """Live agents in the watched scope as ``(node, ledger_agent, launch_note)``."""
+    """Live node agents of the bound stage as ``(node, ledger_agent, launch_note)``."""
     nodes = {
         node_state.node
         for node_state in status.nodes
-        if level != "stage" or node_state.stage_id == bound_stage
+        if node_state.stage_id == bound_stage
     }
     notes: dict[tuple[str, str], str] = {}
     for entry in entries:
@@ -3630,19 +3629,84 @@ def _watch_present_agents(
     ]
 
 
-def _watch_agent_terminal(ledger_path: Path, node: str, agent: str) -> bool:
-    """True once the ledger records this instance's terminal event."""
+def _watch_present_monitors(
+    status: Status,
+    entries: list[dict[str, object]],
+) -> list[tuple[str, str, str]]:
+    """Current stage-lead of every open stage as ``(stage_id, monitor#k, launch_note)``.
+
+    Plan-level presence comes from ``monitor_launch`` rows (O-1), never from
+    ``status.agents``: the launched instance's ledger id is the ordinal of
+    launches recorded for that stage, and ``herdr=`` in the launch note names
+    the Herdr agent to watch.
+    """
+    launches: dict[str, int] = {}
+    notes: dict[str, str] = {}
+    for entry in entries:
+        if entry["event"] != "monitor_launch":
+            continue
+        stage_id = _note_tokens(str(entry["note"])).get("stage_id")
+        if stage_id is None:
+            continue
+        launches[stage_id] = launches.get(stage_id, 0) + 1
+        notes[stage_id] = str(entry["note"])
+    return [
+        (stage_id, f"monitor#{launches[stage_id]}", notes[stage_id])
+        for stage_id in status.open_stages
+        if stage_id in launches
+    ]
+
+
+def _watch_agent_terminal(
+    ledger_path: Path,
+    scope: str,
+    agent: str,
+    stage_id: str | None = None,
+    stage_of: dict[str, str] | None = None,
+) -> bool:
+    """True once the ledger records this watched instance's terminal event.
+
+    ``scope`` is the ledger node for node agents; for a stage-lead thread it is
+    the watched ``stage_id`` itself.
+    """
     try:
         entries = read_ledger(ledger_path)
     except RelayError as exc:
         print(f"watch: ledger read failed ({exc.code}): {exc.message}", file=sys.stderr)
         return False
-    return any(
-        entry["node"] == node
-        and entry["agent"] == agent
-        and entry["event"] in TERMINAL_EVENTS
-        for entry in entries
-    )
+    if stage_id is None:
+        return any(
+            entry["node"] == scope
+            and entry["agent"] == agent
+            and entry["event"] in TERMINAL_EVENTS
+            for entry in entries
+        )
+    return _watch_monitor_terminal(entries, stage_id, agent, stage_of or {})
+
+
+def _watch_monitor_terminal(
+    entries: list[dict[str, object]],
+    stage_id: str,
+    agent: str,
+    stage_of: dict[str, str],
+) -> bool:
+    """A stage-lead watch ends on its ``stage_close``, a newer ``monitor_launch``
+    of the same stage, or a ``monitor_restart`` by a newer instance."""
+    own = agent.partition("#")[2]
+    launches = 0
+    for entry in entries:
+        event = str(entry["event"])
+        if event == "stage_close":
+            if _note_tokens(str(entry["note"])).get("stage_id") == stage_id:
+                return True
+        elif event == "monitor_launch":
+            if _note_tokens(str(entry["note"])).get("stage_id") == stage_id:
+                launches += 1
+        elif event == "monitor_restart" and stage_of.get(str(entry["node"])) == stage_id:
+            other = str(entry["agent"]).partition("#")[2]
+            if own.isdigit() and other.isdigit() and int(other) > int(own):
+                return True
+    return own.isdigit() and launches > int(own)
 
 
 def _watch_notify(herdr, notify: str, agent: str, state: str, notified: str | None) -> str | None:
@@ -3670,28 +3734,34 @@ def _watch_prompt(herdr, notify: str, text: str) -> None:
 
 def _watch_agent_loop(
     plan_dir: str,
-    node: str,
+    scope: str,
     agent: str,
     name: str,
     notify: str,
     herdr,
     clock,
     stop: threading.Event,
+    stage_id: str | None = None,
+    stage_of: dict[str, str] | None = None,
 ) -> None:
-    """One present agent: wait -> notify -> 30s get polling -> terminal exit."""
+    """One present agent: wait -> notify -> 30s get polling -> terminal exit.
+
+    ``scope`` is the ledger node for node agents; stage-lead threads pass the
+    watched ``stage_id`` as both scope and terminal scope.
+    """
     clock.enter()
     ledger_path = Path(plan_dir) / "relay_log.jsonl"
     try:
         notified: str | None = None
         polling = False
         while not stop.is_set():
-            if _watch_agent_terminal(ledger_path, node, agent):
+            if _watch_agent_terminal(ledger_path, scope, agent, stage_id, stage_of):
                 return
             if polling:
                 clock.sleep(WATCH_POLL_SECONDS)
                 if stop.is_set():
                     return
-                if _watch_agent_terminal(ledger_path, node, agent):
+                if _watch_agent_terminal(ledger_path, scope, agent, stage_id, stage_of):
                     return
                 state = herdr.get(name)
             else:
@@ -3744,6 +3814,30 @@ def _watch_startup(
     raise AssertionError("unreachable")
 
 
+def _watch_should_exit(level: str, bound_stage: str | None, status: Status) -> bool:
+    """Watcher-level stop contract (A83/D5).
+
+    Stage level: exit once every active node of the bound stage is ``closed``
+    — a stage with no active nodes (never started, or all superseded by amend)
+    is absent from ``status.stages`` and never satisfies this. Plan level:
+    exit once nothing remains — no open stage, no pending node, and the plan's
+    last stage is closed.
+    """
+    if level == "stage":
+        stage_state = next(
+            (stage for stage in status.stages if stage.stage_id == bound_stage),
+            None,
+        )
+        if stage_state is None:
+            return False
+        closed = {node.node for node in status.nodes if node.state == "closed"}
+        return all(node in closed for node in stage_state.nodes)
+    if status.open_stages or status.pending_nodes:
+        return False
+    last = status.stages[-1] if status.stages else None
+    return last is not None and last.state == "closed"
+
+
 def run_watch(
     plan_dir: str,
     notify: str,
@@ -3778,10 +3872,29 @@ def run_watch(
                     f"watch: reread failed ({exc.code}): {exc.message}",
                     file=sys.stderr,
                 )
-            for node, agent, note in _watch_present_agents(
-                status, entries, level, bound_stage
-            ):
-                key = (node, agent)
+                clock.sleep(WATCH_POLL_SECONDS)
+                continue
+            if _watch_should_exit(level, bound_stage, status):
+                break
+            stage_of = {
+                node_state.node: node_state.stage_id for node_state in status.nodes
+            }
+            if level == "plan":
+                present = [
+                    (stage_id, agent, note, stage_id)
+                    for stage_id, agent, note in _watch_present_monitors(
+                        status, entries
+                    )
+                ]
+            else:
+                present = [
+                    (node, agent, note, None)
+                    for node, agent, note in _watch_present_agents(
+                        status, entries, bound_stage
+                    )
+                ]
+            for scope, agent, note, stage_id in present:
+                key = (scope, agent)
                 if key in skipped:
                     continue
                 thread = threads.get(key)
@@ -3798,8 +3911,11 @@ def run_watch(
                 clock.expect_thread()
                 threads[key] = threading.Thread(
                     target=_watch_agent_loop,
-                    args=(plan_dir, node, agent, name, notify, herdr, clock, stop),
-                    name=f"watch:{node}:{agent}",
+                    args=(
+                        plan_dir, scope, agent, name, notify, herdr, clock,
+                        stop, stage_id, stage_of,
+                    ),
+                    name=f"watch:{scope}:{agent}",
                     daemon=True,
                 )
                 threads[key].start()
@@ -3808,6 +3924,14 @@ def run_watch(
                 _watch_prompt(herdr, notify, "[relay-light] tick")
                 next_tick = now + WATCH_TICK_SECONDS
             clock.sleep(WATCH_POLL_SECONDS)
+        stop.set()
+        for thread in threads.values():
+            thread.join(timeout=35)
+            if thread.is_alive():
+                print(
+                    f"watch: thread {thread.name} did not stop within 35s",
+                    file=sys.stderr,
+                )
         return 0
     finally:
         clock.leave()

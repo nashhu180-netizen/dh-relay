@@ -5590,6 +5590,35 @@ class SkillCoreDocTests(unittest.TestCase):
         self.assertRegex(text, r"不写.{0,12}`?blocked`?.{0,12}`?escalate`?|禁.{0,4}blocked")
         self.assertIn("七件套", text)
 
+    @staticmethod
+    def _skill_ud2_checks(text: str) -> list[bool]:
+        """三条 UD-2 断言的布尔化：当版全真，5ab3bba 基线至少两条为假。"""
+        watcher_row = all(
+            frag in text for frag in ("完整 relay 模式由", "single-task", "120 秒")
+        )
+        rule8 = "有 watch 时允许结束回合" in text
+        abandon5 = "盯屏" in text and "不做 watch 推送的实现" not in text
+        return [watcher_row, rule8, abandon5]
+
+    def test_a83_13_skill_ud2_wording(self) -> None:
+        """UD-2：watcher 行改写、硬规则 8、放弃项 5——三处收口措辞在文档层钉住；
+        同套断言在 5ab3bba 版 SKILL.md 上至少两条 FAIL（RED 有效）。"""
+        text = self.skill_text()
+        self.assertEqual([True, True, True], self._skill_ud2_checks(text))
+        self.assertNotIn("watch 未实现", text)
+        self.assertNotIn("不做 watch 推送的实现", text)
+        baseline = fetch_baseline_text("tools/relay-light/skill/SKILL.md")
+        if baseline is None:
+            self.fail(
+                "RLT_18 baseline unavailable: `git cat-file -e "
+                f"{RLT18_BASELINE_SHA}:tools/relay-light/skill/SKILL.md` "
+                "failed and fetch did not supply it; refusing to silently "
+                "skip the RED-validity check."
+            )
+        self.assertGreaterEqual(
+            self._skill_ud2_checks(baseline).count(False), 2
+        )
+
 
 class SkillTemplateTests(RelayCliTestCase):
     """RLT_07 Batch 2 — HC-RL-A95/A133/A127/A102/A113/A103/A114/A96 模板与运行时合同。"""
@@ -6265,17 +6294,29 @@ class SkillAdapterTests(unittest.TestCase):
             for name in cls.ADAPTER_SIDES
         }
 
+    # pgrep/Get-CimInstance 的 -like 模式行只是匹配模板、不是真实调用——
+    # 不纳入 --config-dir 检查面（P2-C：存活检查行允许不含 --config-dir）。
+    _PATTERN_LINE_MARKERS = ("pgrep", "Win32_Process", "CommandLine", "-like")
+
+    @classmethod
+    def _relay_log_calls(cls, text: str, subcommands: str) -> list[str]:
+        return [
+            ln
+            for ln in text.splitlines()
+            if re.search(
+                rf"(?:<RELAY_LOG>|relay_log\.py)\s+(?:{subcommands})\b", ln
+            )
+            and not any(m in ln for m in cls._PATTERN_LINE_MARKERS)
+        ]
+
     def test_a136_every_call_carries_side_config_dir(self) -> None:
         """枚举两 adapter 全部 relay_log.py 调用（命令模板写作 <RELAY_LOG> 占位）：
-        每处显式带本侧 --config-dir；add/status/lint 三子命令各至少一次。"""
+        每处显式带本侧 --config-dir；add/status/lint 三子命令各至少一次，
+        watch 调用至少一次且同样携带 --config-dir（A83 watch 默认后收口）。"""
         for name, side_dir in self.ADAPTER_SIDES.items():
             text = self._adapter_texts()[name]
-            # 枚举面 = 全部 add/status/lint 调用行（不认 --plan 是否存在——不带 --plan 的调用也要过 --config-dir 检查）
-            calls = [
-                ln
-                for ln in text.splitlines()
-                if re.search(r"(?:<RELAY_LOG>|relay_log\.py)\s+(?:add|status|lint)\b", ln)
-            ]
+            # 枚举面 = 全部 add/status/lint/watch 调用行（不认 --plan 是否存在——不带 --plan 的调用也要过 --config-dir 检查）
+            calls = self._relay_log_calls(text, "add|status|lint|watch")
             with self.subTest(adapter=name):
                 self.assertTrue(calls, f"{name} has no relay_log.py invocations")
                 for line in calls:
@@ -6289,6 +6330,10 @@ class SkillAdapterTests(unittest.TestCase):
                         ),
                         f"{name} missing a {sub} invocation",
                     )
+                self.assertTrue(
+                    self._relay_log_calls(text, "watch"),
+                    f"{name} missing a watch invocation",
+                )
                 # Windows python / Linux python3 双写法
                 self.assertIn("python3 <RELAY_LOG>", text)
                 self.assertIn("python <RELAY_LOG>", text)
@@ -6302,8 +6347,9 @@ class SkillAdapterTests(unittest.TestCase):
                 self.assertIn("前台", text)
                 self.assertIn("后台", text)
                 self.assertIn("--timeout", text)
-                # watch 未实现 → 前台 wait 回退必须写明
-                self.assertIn("未实现", text)
+                # watch 已实现且默认 → 「无 watch」回退句必须写明；空等禁令不变
+                self.assertIn("无 watch", text)
+                self.assertIn("回退", text)
                 self.assertIn("空等", text)
                 # A21 分句2：面向 stage-lead/编排的 prompt 片段必须含硬规则原文
                 self.assertIn("`wait` 返回时必须有接收者", text)
@@ -6356,12 +6402,83 @@ class SkillAdapterTests(unittest.TestCase):
                 self.assertNotIn("骨架占位", text, rel)
                 self.assertNotIn("由 RLT_07 交付", text, rel)
 
-    def test_no_watch_subcommand_invoked(self) -> None:
+    def _baseline_or_fail(self, relpath: str) -> str:
+        text = fetch_baseline_text(relpath)
+        if text is None:
+            self.fail(
+                f"RLT_18 baseline unavailable: `git cat-file -e "
+                f"{RLT18_BASELINE_SHA}:{relpath}` failed and `git fetch "
+                f"--depth=1 origin {RLT18_BASELINE_SHA}` did not supply it; "
+                "refusing to silently skip the RED-validity check."
+            )
+        return text
+
+    # R-A83-8/9 复用断言体：在当版 adapter 上全真、在 5ab3bba 基线上必假。
+    def _assert_adapter_watch_contract(self, text: str, name: str) -> None:
+        self.assertIn("watch --plan", text, name)
+        self.assertIn("--notify <自己的 Herdr 名>", text, name)
+        self.assertIn("--level <stage|plan>", text, name)
+        self.assertIn("[relay-light] tick", text, name)
+        self.assertIn("--timeout 1200000", text, name)
+        self.assertIn("herdr=", text, name)
+        self.assertIn("stage-stalled", text, name)
+        # P2-C：stage-lead 存活检查带 --notify + --level stage——编排级
+        # watch 命中不算；Windows 用 Win32_Process CommandLine -like 等效。
+        self.assertIn(
+            "pgrep -f -- 'relay_log.py watch --plan <plan_dir> "
+            "--notify <自己的 Herdr 名> --level stage'",
+            text,
+            name,
+        )
+        self.assertIn("Win32_Process", text, name)
+        self.assertIn("依赖人工", text, name)
+        self.assertIn("§7.3", text, name)
+        # D13：watch 跑 pane 内 shell 重启循环，非直接进程
+        self.assertIn("while :; do", text, name)
+        self.assertIn("0|2|3|4) break", text, name)
+        self.assertIn("sleep 5", text, name)
+        self.assertIn("$LASTEXITCODE -in 0,2,3,4", text, name)
+        self.assertIn("Start-Sleep 5", text, name)
+        self.assertIn("`wait` 返回时必须有接收者", text, name)
+        self.assertNotIn("watch 未实现", text)
+        self.assertNotIn("尚未实现", text)
+        # 每条 watch 调用行：--plan/--notify 顺序固定 + 本侧 --config-dir
+        for line in self._relay_log_calls(text, "watch"):
+            self.assertRegex(
+                line, r"watch --plan \S+ --notify \S+", f"{name}: {line}"
+            )
+            self.assertIn(
+                "--config-dir <plan_dir>/config/", line, f"{name}: {line}"
+            )
+
+    def test_watch_subcommand_documented(self) -> None:
+        """R-A83-8：两份 adapter 的 watch 合同——默认 watch + 无 watch 回退 +
+        死亡处置 + 重启循环关键字逐项在文档层钉住；载体约定各侧一词。"""
         for name in self.ADAPTER_SIDES:
             text = self._adapter_texts()[name]
             with self.subTest(adapter=name):
-                self.assertIsNone(re.search(r"relay_log\.py\s+watch", text))
-                self.assertIsNone(re.search(r"<RELAY_LOG>\s+watch", text))
+                self._assert_adapter_watch_contract(text, name)
+        carriers = {"adapter-claude-code.md": "tab", "adapter-codex.md": "pane"}
+        for name, carrier in carriers.items():
+            with self.subTest(adapter=name, carrier=carrier):
+                self.assertIn(carrier, self._adapter_texts()[name])
+
+    def test_a83_adapter_contract_red_baseline(self) -> None:
+        """R-A83-9：同一套 watch 合同断言在 5ab3bba 版 adapter 上必须 FAIL——
+        证明 R-A83-8 的 RED 有效（否则断言可能永真）。"""
+        rels = {
+            "adapter-claude-code.md": (
+                "tools/relay-light/skill/references/adapter-claude-code.md"
+            ),
+            "adapter-codex.md": (
+                "tools/relay-light/skill/references/adapter-codex.md"
+            ),
+        }
+        for name, relpath in rels.items():
+            with self.subTest(adapter=name):
+                baseline = self._baseline_or_fail(relpath)
+                with self.assertRaises(AssertionError):
+                    self._assert_adapter_watch_contract(baseline, name)
 
     def test_a141_dispatch_wait_and_sandbox_fallback_discipline(self) -> None:
         """HC-RL-A141: 两 adapter 各含三段原文——
@@ -8353,6 +8470,44 @@ def _watch_subprocess_violations(tree: ast.Module) -> list[str]:
     return violations
 
 
+# RLT_18 batch 2 — RED 有效性对照用 pinned 基线（任务卡开工时的 master）。
+# 与 RLT_24 同款纪律：CI 浅克隆可能缺该对象，取不到时调用方必须 fail，
+# 不得静默 skip——基线对照是 RED 断言的证据力所在。
+RLT18_BASELINE_SHA = "5ab3bba"
+
+
+def fetch_baseline_text(relpath: str) -> str | None:
+    """Return ``relpath``'s content at ``RLT18_BASELINE_SHA``.
+
+    ``None`` when the pinned object is missing even after a fetch attempt;
+    callers must fail loudly rather than silently skip the comparison.
+    """
+    repo = Path(__file__).resolve().parents[2]
+    spec = f"{RLT18_BASELINE_SHA}:{relpath}"
+    present = subprocess.run(
+        ["git", "cat-file", "-e", spec],
+        cwd=repo, capture_output=True, check=False,
+    )
+    if present.returncode != 0:
+        fetched = subprocess.run(
+            ["git", "fetch", "--depth=1", "origin", RLT18_BASELINE_SHA],
+            cwd=repo, text=True, capture_output=True, check=False,
+        )
+        present = subprocess.run(
+            ["git", "cat-file", "-e", spec],
+            cwd=repo, capture_output=True, check=False,
+        )
+        if fetched.returncode != 0 or present.returncode != 0:
+            return None
+    blob = subprocess.run(
+        ["git", "show", spec],
+        cwd=repo, text=True, capture_output=True, check=False,
+    )
+    if blob.returncode != 0:
+        return None
+    return blob.stdout
+
+
 class WatchTests(RelayCliTestCase):
     """RLT_18 batch 1 — HC-RL-A82/A101: notify-only watch, always stubbed."""
 
@@ -8402,11 +8557,12 @@ class WatchTests(RelayCliTestCase):
         *,
         level: str = "stage",
         notify: str = "lead-1",
+        results: list[int] | None = None,
     ) -> threading.Thread:
         clock.expect_thread()
-        thread = threading.Thread(
-            target=relay_log.run_watch,
-            args=(
+
+        def target() -> None:
+            rc = relay_log.run_watch(
                 str(self.plan_path.parent),
                 notify,
                 level,
@@ -8414,7 +8570,12 @@ class WatchTests(RelayCliTestCase):
                 herdr,
                 clock,
                 clock.stop_event,
-            ),
+            )
+            if results is not None:
+                results.append(rc)
+
+        thread = threading.Thread(
+            target=target,
             name="watch:main",
             daemon=True,
         )
@@ -8863,6 +9024,471 @@ class WatchTests(RelayCliTestCase):
             clock.advance_to(150)
         self.assertGreaterEqual(err.getvalue().count("\n"), 3)
         self.assertTrue(any(t.name == "watch:main" and t.is_alive() for t in threading.enumerate()))
+
+    # --- R-A83-1 -----------------------------------------------------------
+
+    def test_a83_1_tick_cadence(self) -> None:
+        """主循环每 1200 虚拟秒发一次 [relay-light] tick——1200/2400/3600 恰三次。"""
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        self._start_watch(clock, herdr)
+        # advance_to(0) 先等主循环首轮阻塞——把 next_tick 锚定在 now=0，
+        # 否则首轮 advance 与 next_tick 初始化竞争会让锚点漂移。
+        clock.advance_to(0)
+        for moment in list(range(150, 3601, 150)) + [3601]:
+            clock.advance_to(moment)
+        ticks = [
+            call for call in self._prompts(herdr)
+            if call["result"][0] == "[relay-light] tick"
+        ]
+        self.assertEqual([1200.0, 2400.0, 3600.0], [c["start"] for c in ticks])
+
+    # --- R-A83-2 -----------------------------------------------------------
+
+    def test_a83_2_tick_independent_of_state_prompts(self) -> None:
+        """tick 与状态通知相互独立：状态提示照常按去重规则发，tick 到点发。"""
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        self._start_watch(clock, herdr)
+        clock.advance_to(0)
+        for moment in range(150, 1201, 150):
+            clock.advance_to(moment)
+        texts = [c["result"][0] for c in self._prompts(herdr)]
+        self.assertEqual(
+            ["[relay-light] coder#1 -> idle", "[relay-light] tick"],
+            [t for t in texts if t.startswith("[relay-light]")],
+        )
+        clock.advance_to(2400)
+        texts = [c["result"][0] for c in self._prompts(herdr)]
+        self.assertEqual(1, texts.count("[relay-light] coder#1 -> idle"))
+        self.assertEqual(2, texts.count("[relay-light] tick"))
+
+    # --- R-A83-3 -----------------------------------------------------------
+
+    def test_a83_3_stage_exit_on_final_node_close(self) -> None:
+        """绑定 stage 末节点 node_close → 退出 0 并 join 线程；无关/非末节点不退出。"""
+        self.write_plan(
+            node_rows=[
+                "| C1 | DHR_90 | DHR_90:C#1 | construction | agent:coder | | |",
+                "| C2 | DHR_90 | DHR_90:C#1 | construction | agent:coder | | |",
+                "| X1 | DHR_90 | DHR_90:X#1 | rework | | C2 | |",
+            ],
+            agent_rows=[
+                "| coder | C1 | coder | | code.md | | |",
+                "| coder | C2 | coder | | code.md | | |",
+                "| coder | X1 | coder | | x.md | | |",
+            ],
+        )
+        self.write_ledger_rows((
+            ("2026-09-24T08:00:00+00:00", "C1", "plan_loaded", "orchestrator#1", "skill=0.1.0"),
+            ("2026-09-24T08:00:01+00:00", "C1", "stage_start", "orchestrator#1", "stage_id=DHR_90:C#1"),
+            ("2026-09-24T08:00:02+00:00", "C1", "monitor_launch", "orchestrator#1", "stage_id=DHR_90:C#1"),
+            ("2026-09-24T08:00:03+00:00", "C1", "node_start", "monitor#1", ""),
+            ("2026-09-24T08:00:04+00:00", "C1", "agent_launch", "coder#1", ""),
+        ))
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        results: list[int] = []
+        thread = self._start_watch(clock, herdr, results=results)
+        clock.advance_to(0)
+        # 无关 stage 的 node_close：不退出
+        self._append_ledger_row("X1", "node_close", "monitor#1")
+        clock.advance_to(30)
+        self.assertTrue(thread.is_alive())
+        # 绑定 stage 非末节点 close：不退出
+        self._append_ledger_row("C1", "node_close", "monitor#1")
+        clock.advance_to(60)
+        self.assertTrue(thread.is_alive())
+        # 末节点 close：退出 0，线程全部 join
+        self._append_ledger_row("C2", "node_close", "monitor#1")
+        clock.advance_to(90)
+        thread.join(timeout=5)
+        self.assertFalse(thread.is_alive())
+        self.assertEqual([0], results)
+        self.assertEqual([], self._watch_threads())
+
+    # --- R-A83-4 -----------------------------------------------------------
+
+    def test_a83_4_plan_amend_extends_bound_stage(self) -> None:
+        """plan_amend 给绑定 stage 加节点 → 原「末节点」close 不再触发退出；
+        真正末节点 close 后才退出。"""
+        self.write_plan(
+            node_rows=["| C1 | DHR_90 | DHR_90:C#1 | construction | agent:coder | | |"],
+            agent_rows=["| coder | C1 | coder | | code.md | | |"],
+        )
+        self.write_ledger_rows((
+            ("2026-09-24T08:00:00+00:00", "C1", "plan_loaded", "orchestrator#1", "skill=0.1.0"),
+            ("2026-09-24T08:00:01+00:00", "C1", "stage_start", "orchestrator#1", "stage_id=DHR_90:C#1"),
+            ("2026-09-24T08:00:02+00:00", "C1", "monitor_launch", "orchestrator#1", "stage_id=DHR_90:C#1"),
+            ("2026-09-24T08:00:03+00:00", "C1", "node_start", "monitor#1", ""),
+            ("2026-09-24T08:00:04+00:00", "C1", "agent_launch", "coder#1", ""),
+        ))
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        results: list[int] = []
+        thread = self._start_watch(clock, herdr, results=results)
+        clock.advance_to(0)
+        self.write_plan(
+            node_rows=[
+                "| C1 | DHR_90 | DHR_90:C#1 | construction | agent:coder | | |",
+                "| C2 | DHR_90 | DHR_90:C#1 | construction | agent:coder | | |",
+            ],
+            agent_rows=[
+                "| coder | C1 | coder | | code.md | | |",
+                "| coder | C2 | coder | | code.md | | |",
+            ],
+        )
+        self._append_ledger_row("C1", "plan_amend", "monitor#1", "decision.1.md nodes=C2")
+        self._append_ledger_row("C1", "node_close", "monitor#1")
+        clock.advance_to(30)
+        self.assertTrue(thread.is_alive())
+        self._append_ledger_row("C2", "node_close", "monitor#1")
+        clock.advance_to(60)
+        thread.join(timeout=5)
+        self.assertFalse(thread.is_alive())
+        self.assertEqual([0], results)
+
+    # --- R-A83-5 -----------------------------------------------------------
+
+    def _open_w_stage_rows(self) -> tuple[tuple[str, str, str, str, str], ...]:
+        """W#1 已开、monitor#1 在位、builder#1 已 launch 的两阶段 fixture 账本行。"""
+        return (
+            ("2026-09-24T08:00:00+00:00", "W1", "plan_loaded", "orchestrator#1", "skill=0.1.0"),
+            ("2026-09-24T08:00:01+00:00", "W1", "stage_start", "orchestrator#1", "stage_id=DHR_90:W#1"),
+            ("2026-09-24T08:00:02+00:00", "W1", "monitor_launch", "orchestrator#1", "stage_id=DHR_90:W#1 herdr=lead-w"),
+            ("2026-09-24T08:00:03+00:00", "W1", "node_start", "monitor#1", ""),
+            ("2026-09-24T08:00:04+00:00", "W1", "agent_launch", "builder#1", "herdr=builder-1"),
+        )
+
+    def test_a83_5_plan_level_exits_on_last_stage_close(self) -> None:
+        """编排级：前一 stage_close 不退出、末 stage_close 退出 0。"""
+        self.write_plan()
+        self.write_ledger_rows(self._open_w_stage_rows())
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["lead-w"] = [("idle", 0)]
+        herdr.get_default["lead-w"] = "idle"
+        herdr.wait_script["lead-c"] = [("idle", 0)]
+        herdr.get_default["lead-c"] = "idle"
+        results: list[int] = []
+        thread = self._start_watch(
+            clock, herdr, level="plan", notify="orch-1", results=results
+        )
+        clock.advance_to(0)
+        self.assertIn(
+            "watch:DHR_90:W#1:monitor#1",
+            {t.name for t in self._watch_threads()},
+        )
+        for event, agent, note in (
+            ("done", "builder#1", ""),
+            ("node_close", "monitor#1", ""),
+            ("stage_result", "monitor#1", "stage_id=DHR_90:W#1 outcome=done 节点收口"),
+            ("stage_close", "orchestrator#1", "stage_id=DHR_90:W#1"),
+        ):
+            self._append_ledger_row("W1", event, agent, note)
+        clock.advance_to(30)
+        self.assertTrue(thread.is_alive())
+        self.assertNotIn(
+            "watch:DHR_90:W#1:monitor#1",
+            {t.name for t in self._watch_threads()},
+        )
+        for event, agent, note in (
+            ("stage_start", "orchestrator#1", "stage_id=DHR_90:C#1"),
+            ("monitor_launch", "orchestrator#1", "stage_id=DHR_90:C#1 herdr=lead-c"),
+            ("node_start", "monitor#1", ""),
+        ):
+            self._append_ledger_row("C1", event, agent, note)
+        clock.advance_to(60)
+        self.assertTrue(thread.is_alive())
+        for event, agent, note in (
+            ("node_close", "monitor#1", ""),
+            ("stage_result", "monitor#1", "stage_id=DHR_90:C#1 outcome=done 收口"),
+            ("stage_close", "orchestrator#1", "stage_id=DHR_90:C#1"),
+        ):
+            self._append_ledger_row("C1", event, agent, note)
+        clock.advance_to(90)
+        thread.join(timeout=5)
+        self.assertFalse(thread.is_alive())
+        self.assertEqual([0], results)
+        self.assertEqual([], self._watch_threads())
+
+    # --- R-A83-6 -----------------------------------------------------------
+
+    def test_a83_6_plan_level_watches_stage_lead(self) -> None:
+        """编排级存在 monitor#1 线程、idle 变化 prompt 发给 --notify 方；
+        其 stage_close 后线程自行退出。"""
+        self.write_plan()
+        self.write_ledger_rows(self._open_w_stage_rows())
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["lead-w"] = [("idle", 0)]
+        herdr.get_default["lead-w"] = "idle"
+        self._start_watch(clock, herdr, level="plan", notify="orch-1")
+        clock.advance_to(0)
+        self.assertIn(
+            "watch:DHR_90:W#1:monitor#1",
+            {t.name for t in self._watch_threads()},
+        )
+        prompts = self._prompts(herdr, "orch-1")
+        self.assertEqual(1, len(prompts))
+        self.assertEqual("[relay-light] monitor#1 -> idle", prompts[0]["result"][0])
+        for event, agent, note in (
+            ("done", "builder#1", ""),
+            ("node_close", "monitor#1", ""),
+            ("stage_result", "monitor#1", "stage_id=DHR_90:W#1 outcome=done 节点收口"),
+            ("stage_close", "orchestrator#1", "stage_id=DHR_90:W#1"),
+        ):
+            self._append_ledger_row("W1", event, agent, note)
+        clock.advance_to(30)
+        self.assertNotIn(
+            "watch:DHR_90:W#1:monitor#1",
+            {t.name for t in self._watch_threads()},
+        )
+        self.assertTrue(
+            any(
+                t.name == "watch:main" and t.is_alive()
+                for t in threading.enumerate()
+            )
+        )
+
+    # --- R-A83-7 -----------------------------------------------------------
+
+    def test_a83_7_no_prompts_after_exit(self) -> None:
+        """退出后跨 tick 点不再产生任何通知——tick 与状态通知都不发。"""
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        results: list[int] = []
+        thread = self._start_watch(clock, herdr, results=results)
+        clock.advance_to(0)
+        self._append_ledger_row("C1", "node_close", "monitor#1")
+        clock.advance_to(30)
+        thread.join(timeout=5)
+        self.assertEqual([0], results)
+        sent = len(self._prompts(herdr))
+        for moment in (600, 1200, 2400):
+            clock.advance_to(moment)
+        self.assertEqual(sent, len(self._prompts(herdr)))
+
+    # --- R-A83-10 ----------------------------------------------------------
+
+    def test_a83_10_plan_level_never_prompts_workers(self) -> None:
+        """编排级只对 stage-lead 挂 wait/get，对 worker agent 零 Herdr 调用。"""
+        self.write_plan()
+        self.write_ledger_rows(self._open_w_stage_rows())
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["lead-w"] = [("idle", 0)]
+        herdr.get_default["lead-w"] = "idle"
+        herdr.wait_script["builder-1"] = [("idle", 0)]
+        herdr.get_default["builder-1"] = "idle"
+        self._start_watch(clock, herdr, level="plan", notify="orch-1")
+        clock.advance_to(0)
+        clock.advance_to(30)
+        observed = {
+            call["name"] for call in herdr.calls
+            if call["kind"] in {"wait", "get"}
+        }
+        self.assertEqual({"lead-w"}, observed)
+        prompt_texts = [c["result"][0] for c in self._prompts(herdr, "orch-1")]
+        self.assertTrue(prompt_texts)
+        for text in prompt_texts:
+            self.assertTrue(
+                text == "[relay-light] tick" or "monitor#" in text, text
+            )
+
+    # --- R-A83-11 ----------------------------------------------------------
+
+    def test_a83_11_empty_stage_never_exits(self) -> None:
+        """绑定 stage 节点未启动/全部 superseded → 永不退出（绑定对象不在）；
+        amend 补进第一个有效节点 + 其 node_close → 才退出。"""
+        self.write_plan(
+            node_rows=[
+                "| C1 | DHR_90 | DHR_90:C#1 | construction | agent:coder | | |",
+                "| X1 | DHR_90 | DHR_90:X#1 | rework | | | |",
+            ],
+            agent_rows=[
+                "| coder | C1 | coder | | code.md | | |",
+                "| coder | X1 | coder | | x.md | | |",
+            ],
+        )
+        self.write_ledger_rows((
+            ("2026-09-24T08:00:00+00:00", "X1", "plan_loaded", "orchestrator#1", "skill=0.1.0"),
+            ("2026-09-24T08:00:01+00:00", "X1", "stage_start", "orchestrator#1", "stage_id=DHR_90:X#1"),
+            ("2026-09-24T08:00:02+00:00", "X1", "monitor_launch", "orchestrator#1", "stage_id=DHR_90:X#1"),
+        ))
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        results: list[int] = []
+        thread = self._start_watch(clock, herdr, results=results)
+        for moment in (0, 30, 60, 90):
+            clock.advance_to(moment)
+        self.assertTrue(thread.is_alive())
+        # 绑定 stage 全部节点 superseded（替代节点在另一 stage）→ 仍不退出。
+        self.write_plan(
+            node_rows=[
+                "| C1 | DHR_90 | DHR_90:C#1 | construction | agent:coder | | |",
+                "| X1 | DHR_90 | DHR_90:X#1 | rework | | | superseded-by:C1 |",
+            ],
+            agent_rows=[
+                "| coder | C1 | coder | | code.md | | |",
+                "| coder | X1 | coder | | x.md | | |",
+            ],
+        )
+        self._append_ledger_row("X1", "plan_amend", "monitor#1", "decision.1.md nodes=C1")
+        for moment in (120, 150, 180):
+            clock.advance_to(moment)
+        self.assertTrue(thread.is_alive())
+        # amend 给绑定 stage 补进第一个有效节点 → close 后退出。
+        self.write_plan(
+            node_rows=[
+                "| C1 | DHR_90 | DHR_90:C#1 | construction | agent:coder | | |",
+                "| X1 | DHR_90 | DHR_90:X#1 | rework | | | superseded-by:C1 |",
+                "| X3 | DHR_90 | DHR_90:X#1 | rework | | C1 | |",
+            ],
+            agent_rows=[
+                "| coder | C1 | coder | | code.md | | |",
+                "| coder | X1 | coder | | x.md | | |",
+                "| coder | X3 | coder | | x3.md | | |",
+            ],
+        )
+        self._append_ledger_row("X1", "plan_amend", "monitor#1", "decision.2.md nodes=X3")
+        clock.advance_to(210)
+        self.assertTrue(thread.is_alive())
+        self._append_ledger_row("X3", "node_close", "monitor#1")
+        clock.advance_to(240)
+        thread.join(timeout=5)
+        self.assertFalse(thread.is_alive())
+        self.assertEqual([0], results)
+
+    # --- R-A83-12 ----------------------------------------------------------
+
+    def test_a83_12a_completion_exit_zero(self) -> None:
+        """绑定 stage 已全 close：main() 返回 0（逐字同完成路径）。"""
+        self.write_plan(
+            node_rows=["| C1 | DHR_90 | DHR_90:C#1 | construction | agent:coder | | |"],
+            agent_rows=["| coder | C1 | coder | | code.md | | |"],
+        )
+        self.write_ledger_rows((
+            ("2026-09-24T08:00:00+00:00", "C1", "plan_loaded", "orchestrator#1", "skill=0.1.0"),
+            ("2026-09-24T08:00:01+00:00", "C1", "stage_start", "orchestrator#1", "stage_id=DHR_90:C#1"),
+            ("2026-09-24T08:00:02+00:00", "C1", "monitor_launch", "orchestrator#1", "stage_id=DHR_90:C#1"),
+            ("2026-09-24T08:00:03+00:00", "C1", "node_start", "monitor#1", ""),
+            ("2026-09-24T08:00:04+00:00", "C1", "agent_launch", "coder#1", ""),
+            ("2026-09-24T08:00:05+00:00", "C1", "done", "coder#1", ""),
+            ("2026-09-24T08:00:06+00:00", "C1", "node_close", "monitor#1", ""),
+        ))
+        self.assertEqual(
+            0,
+            relay_log.main([
+                "watch", "--plan", str(self.plan_path.parent),
+                "--notify", "lead-1", "--config-dir", str(SKILL_DIR),
+            ]),
+        )
+
+    def test_a83_12b_args_and_no_open_stage_exit_two(self) -> None:
+        """参数错误/无 open stage → 2。"""
+        self.write_plan()
+        with redirect_stderr(io.StringIO()):
+            rc = relay_log.main([
+                "watch", "--plan", str(self.plan_path.parent),
+                "--config-dir", str(SKILL_DIR),
+            ])
+        self.assertEqual(2, rc)
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        results: list[int] = []
+        with redirect_stderr(io.StringIO()):
+            thread = self._start_watch(clock, herdr, results=results)
+            clock.advance_to(0)
+            thread.join(timeout=5)
+        self.assertEqual([2], results)
+
+    def test_a83_12c_plan_and_config_exit_three(self) -> None:
+        """plan lint 失败 → 3（启动期重试两次后退出）；配置目录无效 → 3。"""
+        self.plan_path.write_text("garbage\n", encoding="utf-8")
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        results: list[int] = []
+        with redirect_stderr(io.StringIO()):
+            thread = self._start_watch(clock, herdr, results=results)
+            clock.advance_to(1)
+            self.assertTrue(thread.is_alive())
+            clock.advance_to(5)
+            self.assertTrue(thread.is_alive())
+            clock.advance_to(7)
+            thread.join(timeout=5)
+        self.assertEqual([3], results)
+        self.write_plan()
+        with redirect_stderr(io.StringIO()):
+            rc = relay_log.main([
+                "watch", "--plan", str(self.plan_path.parent),
+                "--notify", "lead-1",
+                "--config-dir", str(self.plan_path.parent / "no-such"),
+            ])
+        self.assertEqual(3, rc)
+
+    def test_a83_12d_ledger_failure_retries_then_exit_four(self) -> None:
+        """启动期账本半行：两次 2 秒重试（无真 sleep）后退出 4。"""
+        self._stage_fixture()
+        ledger_path = self.plan_path.parent / "relay_log.jsonl"
+        ledger_path.write_bytes(ledger_path.read_bytes() + b'{"seq": 6, "ts')
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        results: list[int] = []
+        with redirect_stderr(io.StringIO()) as err:
+            thread = self._start_watch(clock, herdr, results=results)
+            clock.advance_to(1)
+            self.assertTrue(thread.is_alive())
+            clock.advance_to(5)
+            self.assertTrue(thread.is_alive())
+            clock.advance_to(7)
+            thread.join(timeout=5)
+        self.assertFalse(thread.is_alive())
+        self.assertEqual([4], results)
+        self.assertEqual(2, err.getvalue().count("retrying"))
+
+    def test_a83_12e_startup_half_line_recovers(self) -> None:
+        """启动期半行修复后正常进入——不退出，agent 线程按原有行为工作。"""
+        self._stage_fixture()
+        ledger_path = self.plan_path.parent / "relay_log.jsonl"
+        intact = ledger_path.read_bytes()
+        ledger_path.write_bytes(intact + b'{"seq": 6, "ts')
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        with redirect_stderr(io.StringIO()):
+            thread = self._start_watch(clock, herdr)
+            clock.advance_to(1)
+            ledger_path.write_bytes(intact)
+            clock.advance_to(3)
+        self.assertTrue(thread.is_alive())
+        self.assertEqual(1, len(self._prompts(herdr)))
+
+    def test_a83_12f_uncaught_exception_not_in_stop_set(self) -> None:
+        """run_watch 抛未捕获异常 → 不由 stop-set 收口（异常外抛，非 0/2/3/4）。"""
+        self.write_plan()
+        with mock.patch.object(
+            relay_log, "run_watch", side_effect=RuntimeError("boom")
+        ):
+            with self.assertRaises(RuntimeError):
+                relay_log.main([
+                    "watch", "--plan", str(self.plan_path.parent),
+                    "--notify", "lead-1", "--config-dir", str(SKILL_DIR),
+                ])
 
     # --- R-A101 ------------------------------------------------------------
 

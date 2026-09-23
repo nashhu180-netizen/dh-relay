@@ -13,6 +13,7 @@
 | batch | coder | 里程碑 | 证据引用 | 结论 |
 |---|---|---|---|---|
 | 1 | coder#b1 | watch 核心落地：`relay_log.py watch --plan --notify [--level stage|plan] [--config-dir]`；每在场 agent 一线程 wait→prompt→30s get 轮询；终态退出 / working 重挂 / (agent,状态) 去重 / 1200s tick；启动读失败 2s×2 重试、运行期重读失败不退出；A101 静态+运行旁证只读 | docs/modules/relay-light/workspace/RLT_18/evidence/batch-1/ | 已验证 |
+| 2 | coder#b2 | 两层退出与编排级在场者落地：阶段级末节点 node_close / 编排级末 stage_close 退出 0 并 join；编排级在场者改由 `monitor_launch` 账本行推导（O-1 替换，monitor#\<n\>）；空 stage 不满足退出、amend 追加节点重算；退出码 {0,2,3,4} 合同钉住；两 adapter 改写为 watch 默认+前台 wait 1200000 回退+D13 重启循环+D12 存活检查（pgrep/Win32_Process 带 --notify --level stage）+herdr= 约定+stage-stalled；SKILL.md UD-2 三处（watcher 行/硬规则8/放弃项5） | docs/modules/relay-light/workspace/RLT_18/evidence/batch-2/ | 已验证 |
 
 > 模板：`| <1|2|3> | <coder instance> | <简洁施工进展> | <repo-relative evidence paths> | <已验证|进行中|BLOCKED> |`
 
@@ -26,5 +27,10 @@
 | E-104 | 1 | pwsh 全仓回归 RELAY ALL PASS（SKIPPED: 1） | docs/modules/relay-light/workspace/RLT_18/evidence/batch-1/regression-pwsh.txt | `PYTHONDONTWRITEBYTECODE=1 pwsh -NoProfile -File tools/tests/run-relay-tests.ps1` → exit 0 |
 | E-105 | 1 | 路径审计：diff --check 干净；变更仅 `relay_log.py`+`test_relay_log.py`+本批证据；SKILL.md 0 hunk、design/adapter 未触 | docs/modules/relay-light/workspace/RLT_18/evidence/batch-1/path-audit.txt | `git diff --check`/`--name-only`/`--stat` → 符合允许路径闭集 |
 | E-106 | 1 | 整改 1（check.batch-1 P1-1）：删除 `tools/relay-light/__pycache__/` 并重跑 §1.1 全 4 条审计（含 `--ignored` __pycache__ 检查 → 空） | docs/modules/relay-light/workspace/RLT_18/evidence/batch-1/path-audit.txt | 4 条全绿；来源排查：一次未登记 `python3 -c` 探针（未带 PYTHONDONTWRITEBYTECODE）import 编译所致，已删除并补录审计 |
+| E-201 | 2 | RED：R-A83 新断言在旧实现上失败（无退出逻辑、编排级盯 worker 非 monitor、adapter 无 watch、SKILL UD-2 缺三处）；含 5ab3bba 基线 RED 有效性断言 | docs/modules/relay-light/workspace/RLT_18/evidence/batch-2/red.txt | `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest <R-A83 用例>` → FAIL/TIMEOUT 如文 |
+| E-202 | 2 | GREEN：WatchTests 39 + SkillAdapterTests 13 + SkillCoreDocTests 12 = 64 全过（3.585s，无真 sleep） | docs/modules/relay-light/workspace/RLT_18/evidence/batch-2/green.txt | `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_relay_log.WatchTests test_relay_log.SkillAdapterTests test_relay_log.SkillCoreDocTests` → exit 0 |
+| E-203 | 2 | Python 全量回归 281 tests OK（test_relay_log 262 + test_install_skill 19） | docs/modules/relay-light/workspace/RLT_18/evidence/batch-2/regression-python.txt | `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s . -p 'test_*.py'` → exit 0 |
+| E-204 | 2 | pwsh 全仓回归 RELAY ALL PASS（SKIPPED: 1，与基线一致的 psmux-real 豁免） | docs/modules/relay-light/workspace/RLT_18/evidence/batch-2/regression-pwsh.txt | `PYTHONDONTWRITEBYTECODE=1 pwsh -NoProfile -File tools/tests/run-relay-tests.ps1` → exit 0 |
+| E-205 | 2 | 路径审计：本批仅动 5 允许文件+本批证据；禁动路径 --stat 空；SKILL.md 恰 3 hunk（UD-2 三处逐条标注）；`__pycache__` 与 relay_plan/relay_log 工件审计均空 | docs/modules/relay-light/workspace/RLT_18/evidence/batch-2/path-audit.txt | §1.1 四条审计命令全绿 |
 
 > 模板：`| E-<batch><nn> | <1|2|3> | <一句话> | <repo-relative path> | <命令摘要与 exit/OK> |`

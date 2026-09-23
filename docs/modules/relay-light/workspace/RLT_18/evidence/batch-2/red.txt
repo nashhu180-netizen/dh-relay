@@ -1,0 +1,38 @@
+RED evidence — RLT_18 batch 2 (coder#b2, round 1)
+Commands run under tools/relay-light with PYTHONDONTWRITEBYTECODE=1, each new
+test invoked as `python3 -m unittest test_relay_log.<Class>.<test>`.
+
+== WatchTests (new R-A83 tests against batch-1 implementation) ==
+test_a83_1_tick_cadence .................... FAIL->OK after test-side fix
+  (initial run showed ticks [1350,2550]: first advance raced next_tick init;
+   anchored by advance_to(0) per established FakeClock discipline)
+test_a83_2_tick_independent_of_state_prompts  OK (tick emission exists)
+test_a83_3_stage_exit_on_final_node_close .. FAIL (no exit logic: watch:main alive after final node_close)
+test_a83_4_plan_amend_extends_bound_stage .. FAIL (no exit logic)
+test_a83_5_plan_level_exits_on_last_stage_close
+  FAIL: 'watch:DHR_90:W#1:monitor#1' not found in {'watch:W1:builder#1','watch:main'}
+  -> O-1 confirmed: plan level watches worker agents via status.agents, not monitors
+test_a83_6_plan_level_watches_stage_lead ... FAIL (same O-1 symptom)
+test_a83_7_no_prompts_after_exit ........... FAIL (results==[]: no exit)
+test_a83_10_plan_level_never_prompts_workers
+  FAIL: herdr wait/get observed {'builder-1'} not {'lead-w'} (O-1)
+test_a83_11_empty_stage_never_exits ........ FAIL (no exit logic)
+test_a83_12a_completion_exit_zero .......... TIMEOUT (watch never returns; killed by timeout 45)
+test_a83_12b_args_and_no_open_stage_exit_two OK (exit-2 contract already present)
+test_a83_12c_plan_and_config_exit_three .... FAIL->OK after timing fix
+  (retry sleeps are relative 2s from each attempt; attempts land at t~0,3,5)
+test_a83_12d_ledger_failure_retries_then_exit_four FAIL->OK after same timing fix
+test_a83_12e_startup_half_line_recovers .... OK (batch-1 startup retry contract)
+test_a83_12f_uncaught_exception_not_in_stop_set OK (uncaught propagates)
+
+== SkillAdapterTests / SkillCoreDocTests ==
+test_watch_subcommand_documented ........... FAIL x2 ('watch --plan' absent from both adapters)
+test_a83_adapter_contract_red_baseline ..... OK by design (new contract fails on 5ab3bba adapters)
+test_a136_every_call_carries_side_config_dir FAIL x2 (no watch invocation enumerated)
+test_a21_wait_receiver_and_three_methods ... FAIL x2 ('无 watch' fallback sentence absent)
+test_a83_13_skill_ud2_wording .............. FAIL ([False,False,False] on current SKILL.md;
+                                             baseline check also verified reachable via git show 5ab3bba)
+
+RED conclusion: missing = two-level exits, monitor_launch-based plan-level
+presence (O-1), adapter watch contract, SKILL UD-2 wording. Tick emission and
+startup retry contract already existed from batch 1 and are now pinned.

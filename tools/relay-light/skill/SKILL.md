@@ -37,7 +37,7 @@ relay-light 的 worker 不回头问用户，卡住只能写 `blocked` 交 decide
 | decider 决策 | stage-lead | 按需 | 施工 `blocked` 时产出可落地方案；不改任何文件，可在方案文件提出「需要改计划」并写明改动内容（改计划工作流见「planner-amend 改计划模板」） |
 | reviewer | stage-lead | 单路 | R 阶段各路复核，路数由 Recipe 决定 |
 | strategist 全局决策 | stage-lead | 按需 | 返工到轮数上限仍不过时产出全局方案；不改任何文件，可同样提出「需要改计划」（见「planner-amend 改计划模板」） |
-| watcher（旁路） | 编排或 stage-lead | 一个终端空间 | 只盯 agent 状态变化、只报信给本空间派活方；不派活、不写账本、不改文件。`relay_log.py watch` 程序落地后由程序承担、人肉实例退役；`single-task` 模式里的 `phase=monitor` 角色就是它 |
+| watcher（旁路） | 编排或 stage-lead | 一个终端空间 | 只盯 agent 状态变化、只报信给本空间派活方；不派活、不写账本、不改文件。完整 relay 模式由 `relay_log.py watch` 程序承担、人肉实例退役；`single-task` 模式无账本不接 watch，`phase=monitor` 角色仍以 120 秒节拍人肉充当 |
 
 拉取顺序固定：**编排拉 stage-lead，stage-lead 拉其余**。编排不越级拉 agent；stage-lead 不跨阶段存活；规划不参与运行。checker / decider / strategist 都不写账本、不做复核、不改文件。
 
@@ -284,7 +284,7 @@ relay_log.py lint --plan <plan_dir> --amend-check after  --repo <repo> --snapsho
 5. **写入者唯一**：`findings.md` / `lesson_candidates.md` 的写入者是 coder；`progress.md` 的写入者是 scribe；reviewer 各写各的 `review.<路>.md`。每份文件在一个节点内只有一个写入者（A67）。
 6. **coder 四行小结**：coder 每轮写完在 pane 打固定四行小结（做了什么 / 证据 / 偏离与 findings / 下一步），缺项写「无」（A66）。
 7. **scribe 素材边界**：scribe 写 `progress.md` 的素材来源按优先级为 ① 账本事件与 note（事实层）② 本批 diff 与 coder 四行小结 ③ checker / decider / 用户裁决的方案文件名与结论；素材里没有的不得发明，且不碰 `findings.md` / `lesson_candidates.md`（A66）。
-8. **等待必须有接收者**：`wait` 是阻塞式 CLI，返回那一刻必须有接收者（watch 推送、前台阻塞循环、或后台退出唤醒三种之一）；watch 未实现时不得结束回合空等。
+8. **等待必须有接收者**：`wait` 是阻塞式 CLI，返回那一刻必须有接收者（watch 推送、前台阻塞循环、或后台退出唤醒三种之一）；有 watch 时允许结束回合、靠 prompt 唤醒，无 watch 时不得结束回合空等。
 9. **不写死模型**：流程文档、模板、派活文案一律引用角色名与档位，模型取值只在本计划 `config/roles.toml`（用户提前定好；skill 副本里的 `roles.toml` 只是缺省模板）。
 12. **建树前置**：编排在每个阶段实例开始前核该卡 worktree 存在、分支为 `wt/<卡>`、基线为计划前言的 SHA，以及施工仓约定的共享目录软链已就位（wf-analytics-platform：v2 `.venv`、`frontend/node_modules`、`backend/data/datasets` 三条指向主仓）；缺任一即 `stage_result outcome=blocked` 交用户，编排不自行建树、不改软链。开局准备（建树与软链）由用户在派计划前完成并写进计划前言。
 13. **决策模式按卡**：marker `decision_mode=` 是计划默认，`cards=` 里可按 `<卡>:<档>:<auto|consult>` 覆盖；不做批次级。
@@ -344,5 +344,5 @@ relay_log.py lint --plan <plan_dir> --amend-check after  --repo <repo> --snapsho
 - `status` 不判产出是否合格，只判账本完整性。
 - 不设 `all_agents_done` 这类恒真枚举；节点关闭固定双条件合取。
 - 不做原子写、回滚、历史 manifest（安装器侧同此约定）。
-- 不做 watch 推送的实现；watch 未实现时一律走前台 `wait` 回退。
+- 不设人肉盯屏 watcher agent：等完成由 `relay_log.py watch`（默认）或前台 `herdr agent wait --timeout 1200000` 承担；状态变化通知、20 分钟 tick、120 秒空闲上报由程序负责，stage-lead/编排位的停滞对账由其本层 watch tick 驱动。
 - 不允许编排做判断题：`stage_result.outcome` 机械分路，不越级拉 agent，不缓存计划。

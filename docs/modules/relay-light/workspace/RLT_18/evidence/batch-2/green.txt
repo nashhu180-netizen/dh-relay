@@ -1,0 +1,59 @@
+== GREEN · RLT_18 batch 2 (A83 + 两层退出 + adapter 改写 + SKILL UD-2) ==
+日期: 2026-09-25 · 分支 wt/RLT_18 · 基线 origin/master@5ab3bba
+环境: PYTHONDONTWRITEBYTECODE=1, 全部 herdr/时钟打桩, 无真 sleep
+
+== 命令 ==
+cd tools/relay-light
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest \
+  test_relay_log.WatchTests \
+  test_relay_log.SkillAdapterTests \
+  test_relay_log.SkillCoreDocTests
+
+== 结果 ==
+Ran 64 tests in 3.585s — OK   (退出码 0; < 30 秒证明无真 sleep)
+
+== 覆盖核对(RED 项逐条转绿) ==
+WatchTests 39 全过, 其中本批新增 R-A83-*:
+  test_a83_1_tick_cadence                    OK  tick 1200/2400/3600 恰三次
+  test_a83_2_tick_independent_of_state_prompts OK  tick 与状态通知独立
+  test_a83_3_stage_exit_on_final_node_close  OK  末节点 node_close → 退出并 join
+  test_a83_4_plan_amend_extends_bound_stage  OK  amend 加节点后原末节点不再触发退出
+  test_a83_5_plan_level_exits_on_last_stage_close OK 编排级末 stage_close 退出
+  test_a83_6_plan_level_watches_stage_lead   OK  monitor#1 线程 + prompt 到 --notify
+  test_a83_7_no_prompts_after_exit           OK  退出后跨 tick 点零通知
+  test_a83_10_plan_level_never_prompts_workers OK 编排级对 worker 零 herdr 调用 (O-1 替换)
+  test_a83_11_empty_stage_never_exits        OK  空/未启动 stage 不满足退出
+  test_a83_12a_completion_exit_zero          OK  main() 正常完成 exit 0
+  test_a83_12b_args_and_no_open_stage_exit_two OK 参数错/无 open stage → 2
+  test_a83_12c_plan_and_config_exit_three    OK  plan lint 失败/配置无效 → 3 (启动重试 2 次)
+  test_a83_12d_ledger_failure_retries_then_exit_four OK 账本失败 2×2s 重试后 → 4
+  test_a83_12e_startup_half_line_recovers    OK  半行修复后正常进入
+  test_a83_12f_uncaught_exception_not_in_stop_set OK 未捕获异常外抛, 不入 {0,2,3,4}
+SkillAdapterTests 13 全过:
+  test_watch_subcommand_documented           OK  两 adapter watch 合同(默认/回退/tick/
+                                              D13 循环/pgrep+Win32_Process 存活检查/
+                                              herdr= 约定/stage-stalled/carrier)
+  test_a83_adapter_contract_red_baseline     OK  同一断言在 5ab3bba 上 FAIL (RED 有效性)
+  test_a136_every_call_carries_side_config_dir OK watch 调用纳入 --config-dir 枚举
+  test_a21_wait_receiver_and_three_methods   OK  等待三方式 + 「无 watch 不得空等」改写
+SkillCoreDocTests 12 全过:
+  test_a83_13_skill_ud2_wording              OK  watcher 行/硬规则8/放弃项5 三处措辞
+
+== 实现落点 (relay_log.py) ==
+- _watch_present_monitors: 编排级在场者由 read_ledger 的 monitor_launch 取
+  (stage_id 分组计数 → monitor#<n>), 不再经 status.agents (O-1 替换, 非仅新增)
+- _watch_monitor_terminal: stage_close / 更新 monitor_launch / monitor_restart 判终
+- _watch_agent_terminal/_watch_agent_loop: 支持 node-agent 与 stage-monitor 两 scope
+- _watch_should_exit: 阶段级=绑定 stage 存在且有 active 节点且全部 closed;
+  编排级=open_stages/pending_nodes 空且末 stage closed; 空 stage 不视为满足
+- run_watch: level 分路选择在场集合, 线程按 (scope,agent) 去重,
+  tick 每 1200s, 正常退出 join 全部 watcher 线程后 return 0
+
+== 文档落点 ==
+- adapter-claude-code.md / adapter-codex.md: watch 推送(默认, tab/pane 重启循环)
+  + 前台 wait --timeout 1200000 回退 + 节拍归属 + herdr= 约定
+  + watch 死亡处置(pgrep / Win32_Process --notify --level stage 存活检查,
+  编排位人工兜底, 不设人肉 watcher) + 「wait 返回时必须有接收者」保留
+- SKILL.md UD-2 三处(仅三 hunk): watcher 行(完整 relay 由 watch 承担,
+  single-task 以 120 秒节拍人肉充当)、硬规则8(有 watch 允许结束回合)、
+  放弃项5(不设人肉盯屏 watcher, watch 默认/前台 wait 回退)
