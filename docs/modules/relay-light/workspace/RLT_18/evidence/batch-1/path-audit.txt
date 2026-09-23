@@ -26,3 +26,60 @@ tools/relay-light/test_relay_log.py
 
 ## design dir stat (expect empty)
 (end)
+
+## remediation-1 (check.batch-1 P1-1) — §1.1 全 4 条审计重跑
+# date: 2026-09-23T17:55:10Z
+
+### [1/4] git -c core.quotepath=false diff origin/master --name-only
+# 期望：仅允许路径 + orchestrator 件
+docs/modules/relay-light/dev_plan/P1-RelayLight-开发方案.md
+docs/modules/relay-light/workspace/RLT_18/BLOCKED.builder.plan-remediation-1.md
+docs/modules/relay-light/workspace/RLT_18/DONE.batch-1.coder.md
+docs/modules/relay-light/workspace/RLT_18/DONE.batch-1.review.md
+docs/modules/relay-light/workspace/RLT_18/DONE.builder.md
+docs/modules/relay-light/workspace/RLT_18/DONE.builder.plan-remediation-1.md
+docs/modules/relay-light/workspace/RLT_18/DONE.builder.plan-remediation-2.md
+docs/modules/relay-light/workspace/RLT_18/DONE.decision.f007-watch-death.md
+docs/modules/relay-light/workspace/RLT_18/DONE.plan-review.md
+docs/modules/relay-light/workspace/RLT_18/DONE.plan-review.round-2.md
+docs/modules/relay-light/workspace/RLT_18/DONE.plan-review.round-3.md
+docs/modules/relay-light/workspace/RLT_18/brief.md
+docs/modules/relay-light/workspace/RLT_18/check.batch-1.md
+docs/modules/relay-light/workspace/RLT_18/decision.f007-watch-death.md
+docs/modules/relay-light/workspace/RLT_18/decisions.md
+docs/modules/relay-light/workspace/RLT_18/dispatch/README.md
+docs/modules/relay-light/workspace/RLT_18/dispatch/batch-coder.md
+docs/modules/relay-light/workspace/RLT_18/dispatch/batch-review.md
+docs/modules/relay-light/workspace/RLT_18/dispatch/decision.md
+docs/modules/relay-light/workspace/RLT_18/dispatch/monitor.md
+docs/modules/relay-light/workspace/RLT_18/dispatch/plan-builder.md
+docs/modules/relay-light/workspace/RLT_18/dispatch/plan-review.md
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-1/green.txt
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-1/path-audit.txt
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-1/red.txt
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-1/regression-pwsh.txt
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-1/regression-python.txt
+docs/modules/relay-light/workspace/RLT_18/execution_strategy.md
+docs/modules/relay-light/workspace/RLT_18/findings.md
+docs/modules/relay-light/workspace/RLT_18/lesson_candidates.md
+docs/modules/relay-light/workspace/RLT_18/progress.md
+docs/modules/relay-light/workspace/RLT_18/review.md
+docs/modules/relay-light/workspace/RLT_18/review.plan.md
+docs/modules/relay-light/workspace/RLT_18/task_plan.md
+tools/relay-light/relay_log.py
+tools/relay-light/test_relay_log.py
+
+### [2/4] git -c core.quotepath=false diff origin/master --stat -- docs/modules/relay-light/relay/ tools/relay-light/install_skill.py tools/relay-light/skill/roles.toml tools/relay-light/skill/dh-mapping.toml docs/modules/relay-light/design/ AGENTS.md
+# 期望空
+(end)
+
+### [3/4] git -c core.quotepath=false diff origin/master -U0 -- tools/relay-light/skill/SKILL.md | grep -c "^@@"
+# batch 1 期望 0
+0
+
+### [4/4] git status --porcelain --ignored | grep __pycache__
+# pre-existing 集合为空 → 期望仍为空（本步前先 rm -rf tools/relay-light/__pycache__）
+(empty — no __pycache__ anywhere)
+
+### 来源排查（如实说明）
+tools/relay-light/__pycache__/（relay_log.cpython-312.pyc + test_relay_log.cpython-312.pyc，mtime 2026-09-24 01:35）来源已定位：batch-1 coder 在写 path-audit 之前跑过一次未登记的 `python3 -c "..."` 交互探针（AST 闭包 sanity-check，`from test_relay_log import _watch_source_violations`），该命令未带 PYTHONDONTWRITEBYTECODE=1，import 链编译产生两个 .pyc。非外部工具、非测试套件泄漏（全部登记命令均带 PYTHONDONTWRITEBYTECODE=1）。处理：该目录晚于 plan 基线生成，不属 pre-existing，已 rm -rf；本文件自此补全 §1.1 第 4 条审计。

@@ -25,5 +25,6 @@
 | E-103 | 1 | Python 全量回归 245 tests OK（含既有 add/status/lint 合同） | docs/modules/relay-light/workspace/RLT_18/evidence/batch-1/regression-python.txt | `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_relay_log` → exit 0 |
 | E-104 | 1 | pwsh 全仓回归 RELAY ALL PASS（SKIPPED: 1） | docs/modules/relay-light/workspace/RLT_18/evidence/batch-1/regression-pwsh.txt | `PYTHONDONTWRITEBYTECODE=1 pwsh -NoProfile -File tools/tests/run-relay-tests.ps1` → exit 0 |
 | E-105 | 1 | 路径审计：diff --check 干净；变更仅 `relay_log.py`+`test_relay_log.py`+本批证据；SKILL.md 0 hunk、design/adapter 未触 | docs/modules/relay-light/workspace/RLT_18/evidence/batch-1/path-audit.txt | `git diff --check`/`--name-only`/`--stat` → 符合允许路径闭集 |
+| E-106 | 1 | 整改 1（check.batch-1 P1-1）：删除 `tools/relay-light/__pycache__/` 并重跑 §1.1 全 4 条审计（含 `--ignored` __pycache__ 检查 → 空） | docs/modules/relay-light/workspace/RLT_18/evidence/batch-1/path-audit.txt | 4 条全绿；来源排查：一次未登记 `python3 -c` 探针（未带 PYTHONDONTWRITEBYTECODE）import 编译所致，已删除并补录审计 |
 
 > 模板：`| E-<batch><nn> | <1|2|3> | <一句话> | <repo-relative path> | <命令摘要与 exit/OK> |`
