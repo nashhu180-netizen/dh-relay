@@ -1,0 +1,1 @@
+BLOCKED task=RLT_18 phase=plan agent=builder#1 batch=na path=na review_round=2 remediation_count=1 verdict=BLOCKED reason=needs_design_decision evidence=docs/modules/relay-light/workspace/RLT_18/findings.md,docs/modules/relay-light/workspace/RLT_18/task_plan.md,docs/modules/relay-light/workspace/RLT_18/review.plan.md
