@@ -34,8 +34,15 @@ as-built 不适用：纯证据归档，无生产实现变化。契约无变化�
 
 ## 人类签名区
 
+**状态澄清：用户结果确认已取得，但 verify 提交被 dev-harness 模块级强制钩子拦截，尚无 verify SHA；未销户、未清理任务树。详见 progress 的当前停止点。以下勾选仅记录真实对话确认，不声明提交成功。**
+
 | 验什么 | 做什么 | 通过标准 | 结果 |
 |---|---|---|---|
 | ThinkPad Linux Codex light 最小试跑可进入受控使用 | 查看已展示的闭环、独立复核、测试和介入记录 | W/C/R/F 闭合且边界真实披露 | 用户确认本次结果并授权收口，2026-09-20 |
 
-2026-09-20 用户看过试跑结论后先授权关闭 #52，随后对精确版本收口包回复“授权收口”。本卡最小试跑结果确认，授权 commit/push/PR/CI 后服务端合并/两端同步/verify/本卡任务树和分支清理。release_mode=full 仅限本卡合同；不包含 RLT_17 双主控全矩阵、normal/heavy、受限沙箱、watch 或自动改计划。verify SHA 待真实提交后回填。
+2026-09-20 用户看过试跑结论后先授权关闭 #52，随后对精确版本收口包回复“授权收口”。本卡最小试跑结果确认，授权 commit/push/PR/CI 后服务端合并/两端同步/verify/本卡任务树和分支清理。release_mode=full 仅限本卡合同；不包含 RLT_17 双主控全矩阵、normal/heavy、受限沙箱、watch 或自动改计划。
+
+- [x] 用户对话确认：授权收口；由 AI 依该确认记录，不增加用户未判断的矩阵项。
+- PR #53 已 squash 合入 master：759efceaa515a417e9e48d5f4e9ed094fe21290e。
+- 集成复验：Windows 与 ThinkPad master 各执行 retry02 status/lint，退出 0，4 阶段 closed、9 worker done、errors=[]；核心相对 d954428 无差异。Linux 原始 retry02 账本 SHA-256 未变。
+- PR CI run 35496787549 completed/success，三个必需 job 成功；relay-core 是既有 continue-on-error 观测项，本轮 failure，不冒充全 job 绿色。

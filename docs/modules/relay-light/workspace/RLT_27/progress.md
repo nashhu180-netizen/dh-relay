@@ -1,6 +1,15 @@
 # progress — RLT_27
 
+## 2026-09-20 最新用户决定：记录问题，暂停优化
+
+用户明确“问题记录下，但先不继续优化了”。检查器问题已记 findings.md 的 F-001，状态为用户确认暂缓；不启动 dev-harness 改造，也不继续 verify/销户/清理。Linux Codex 最小链路已验证，检查器优化不作为受控实战前置。下方收口尝试及诊断保留为历史事实，不构成继续优化授权。
+
 ## 版本收口授权与证据索引（2026-09-20）
+
+- **当前停止点：verify 被强制钩子阻断，未执行，未删树。** 2026-09-20 在已合入 master 759efce 上尝试授权 verify 提交，PreToolUse dev-harness 复核闸在命令执行前拒绝：模块 dh-check 59 项失败，包含旧任务档案缺项及 RLT_27 light 记录被 R11 按两轮独立代码复核校验。没有改命令名、换 Linux 入口、禁用 hook 或伪造复核以绕过；本轮未产生 verify SHA。收口包中剩余 verify/销户/清理因此保留，旧卡不修不续派。继续需要先解决检查器与本卡冻结 light 配方/存量模块问题的适用边界，属于当前证据归档之外的问题。
+- PR #53 已合入且两端 HEAD=759efce；以下集成复验与阻塞记录为未提交机械记录，需后续合法收口保存。两个 RLT_27 任务树/分支和备份均保留；Issue #52 保持用户指定的 CLOSED，不冒充完整生命周期完成。
+
+- E12 集成复验：PR #53 在 CI run 35496787549 completed/success 后 squash 合入 759efce；Windows/ThinkPad master 均 ff 到该版本，两端 status/lint exit 0，4 阶段 closed、9 worker done、errors=[]；tools 与 d954428 无 diff。PR 三项必需 job 均 success，relay-core 观测项 failure。
 
 - 归档复核：fresh rlt27_closeout_miner 确认原始实证齐全、无凭据值发现；指出旧索引 RLT_26“进行中”容易与冻结覆盖冲突，已在索引前明确历史快照和当前调度，不修改旧卡成果。
 - 清理前备份：ThinkPad `/home/nash/work/rlt27-closeout-backup.UTULrx/RLT_27-before-version-closeout.tar.gz`，SHA-256 `9f9f46f1b114e21a5c45817cc991bf5fde20fd43b9d477f0e3df416c2b7aa233`。原始现场 55 文件逐个与归档 Git blob 对比，仅外层 brief/execution_strategy/lesson_candidates/progress/review/task_plan 六个本轮归档索引文件不同；所有 retry02 运行证据与两个原始账本一致。
