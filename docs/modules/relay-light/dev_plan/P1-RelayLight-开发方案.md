@@ -1,11 +1,13 @@
-# P1-RelayLight 开发方案（**正式开发方案 · 更新至 2026-09-20**）
+# P1-RelayLight 开发方案（**正式开发方案 · 更新至 2026-09-22**）
+
+> **2026-09-22 RLT-B-09 / Issue #56**：用户已整版确认 `single-task` 模式与单验收单元卡 RLT_29，并授权连续推进 B、D 与后续版本协作动作；E10 后人验仍须看证据确认。RLT_29 为当前新增执行目标；旧卡冻结状态不因本事件自动解冻。
 
 > **2026-09-20 执行覆盖说明 / Issue #52**：用户明确授权创建 Issue 并按 Linux Codex 最小闭环范围开工。RLT_13/#48、RLT_25/#49（含 A12 候选）、RLT_26/#50 已登记 on-hold；保留全部成果与原验收，不续派。其余旧未启动车暂缓，不改原合同。当前唯一新增执行目标 RLT_27；旧表“下一步”不构成续做授权。RLT_27 仅验证 Linux Codex light 路径，不替代 RLT_17 双主控完整验收。冻结记录在各原任务树 progress、A12 候选头部及三个 Issue；本工作树接力结果是新任务唯一运行权威，Windows 镜像不得与 ThinkPad 并发写同一工件。
 
 <!-- dh:plan-type: 开发 -->
-<!-- dh:planning-event:v1 id=RLT-B-08 stage=B-adjust artifact=dev_plan/P1-RelayLight-开发方案.md review=../design/evidence/12-RLT-B08-RLT25-RLT26-交叉审核.md#review-rlt-b08 understanding=../design/evidence/12-RLT-B08-RLT25-RLT26-交叉审核.md#understanding-rlt-b08 -->
+<!-- dh:planning-event:v1 id=RLT-B-09 stage=B-adjust artifact=dev_plan/P1-RelayLight-开发方案.md review=../design/evidence/13-交叉审核记录-single-task模式.md#review-rlt-b09 understanding=../design/evidence/13-交叉审核记录-single-task模式.md#understanding-rlt-b09 -->
 
-> **历史规划事件索引（B；非活动声明，仅作追溯）**——既有事件的原始可解析 `planning-event` 声明注释已转为本索引；出处、含义与证据路径保持原值，Git 历史中仍可还原。**本计划活动声明为上面的 `RLT-B-08`；design 侧事件仍由正式输入声明。RLT-B-08 登记两卡与第 7 批，用户 2026-09-20 同次确认另行授权 RLT_26 D-start；RLT_25 尚待前置 A-adjust 整版确认并落盘。**
+> **历史规划事件索引（B；非活动声明，仅作追溯）**——既有事件的原始可解析 `planning-event` 声明注释已转为本索引；出处、含义与证据路径保持原值，Git 历史中仍可还原。**本计划当前活动声明为上面的 `RLT-B-09`；RLT-B-08 保留为上一事件。RLT-B-09 只新增 RLT_29 与第 8 批，不自动解冻任何旧卡。**
 >
 > | 事件 | stage | 证据（交叉审核记录） | 处理 |
 > |---|---|---|---|
@@ -57,11 +59,13 @@
 
 - **RLT-B-08 调整**：2026-09-20 用户对六项推荐方案明文「确认」：采用 B-08 首次正式登记；normal 目标三路（代码轮1、需求方向、教训），RLT_25 等独立 A-adjust 整版确认并落盘；RLT_26 并入 RLT_22 F-010（trigger 四态、三套计数、stage_result 旧口径），授权 Issue #50 补范围备注；RLT_25 不作旧第 3 批硬前置，仅记风险；五处机械簿记问题修正；两卡正式落盘后由 Devin SWE-2 Max 在独立 worktree 启动 RLT_26。Issue #49/#50；审核 v2 PASS，证据见 [evidence/12](../design/evidence/12-RLT-B08-RLT25-RLT26-交叉审核.md#understanding-rlt-b08)。RLT_13 来源 findings 仍在未合入 `wt/RLT_13`，不代填其状态。实数校正：旧表已有 21 卡（旧统计漏 RLT_23/24），新增后为 23 卡，非候选沿用的 19→21。随后用户明文「做之前 代码先提交推送」授权本次规划 commit/push，先推送再施工；PR/合并/verify/用户级 skill 同步尚未授权。
 
+- **RLT-B-09 调整**：2026-09-22 基于已整版确认的 RLT-A-13，新增单验收单元卡 RLT_29 与第 8 批，承接 `HC-RL-A159`～`A168`、`HC-RL-H19`；标准档、高危组件接线、`task_type=heavy`。用户确认 batch review 与 final review 是两道独立闸、模式名 `single-task`，并给出 D-start 与后续版本协作批量授权；E10 后人验结论仍保留用户闸。三轮审核形成史与确认见 [evidence/13](../design/evidence/13-交叉审核记录-single-task模式.md#understanding-rlt-a13)。本事件不改变旧卡冻结状态。
+
 ## 1. 概述
 
-- **交付什么**：Python 标准库单文件账本程序 `relay_log.py`（前四批 `add/status/lint`，第 5 批补 `watch`）、仓内单源的 relay-light skill 五件与两侧全量同步安装器、五阶段模板与 dev-harness 映射、仓内协议与测试登记、Windows/ThinkPad 四组合实跑及完整人验证据；`watch` 设计已冻结，**第 5 批必做**，独立成批以免前四批被它拖住。
-- **不含什么**：不改 dev-harness；不迁移或替换现役 dh-relay Runner/Ticket/Receipt；不做身份物理校验、停滞检测、锁、无 Herdr 退路、E11/E12/E13 接力；**前四批不依赖 `watch`**，各自可先验收，但 `watch` 本身不是可选项。
-- **承接设计**：唯一业务输入为 [`design/01-RelayLight-产品设计与验收.md`](../design/01-RelayLight-产品设计与验收.md)，承接其 133 条 `HC-RL-A*` 与 15 条 `HC-RL-H*`，共 148 条；README、`design/drafts/`、`evidence/` 只用于入口或形成史，不作业务输入。
+- **交付什么**：Python 标准库单文件账本程序 `relay_log.py`（前四批 `add/status/lint`，第 5 批补 `watch`）、仓内单源的 relay-light skill 五件与两侧全量同步安装器、完整 relay 五阶段模板，以及第 8 批新增的无 plan/log `single-task` 单卡接力模式；含仓内协议、结构测试、Windows/ThinkPad 实跑与人验证据。
+- **不含什么**：不改 dev-harness；不迁移或替换现役 dh-relay Runner/Ticket/Receipt；`single-task` 不改变完整 relay 账本、阶段或模板合同，也不扩张 Git/发布/verify/人验授权。
+- **承接设计**：唯一业务输入为 [`design/01-RelayLight-产品设计与验收.md`](../design/01-RelayLight-产品设计与验收.md)，承接其 143 条 `HC-RL-A*` 与 16 条 `HC-RL-H*`，共 159 条；README、`design/drafts/`、`evidence/` 只用于入口或形成史，不作业务输入。
 - **实施策略一句话**：先用只读一致性对照钉住与现役 Runner 的有意差异，再形成可跑的最小账本与 skill，在第一批跑出 Windows Claude 真计划闭环，随后补主控互换、异常/改计划、Linux，第 5 批补 `watch`。
 - **任务前缀 / 模块 slug**：`RLT_`（从 `RLT_01` 起，全模块唯一）/ `relay-light`（verify scope=`relay-light`）。
 - **落点约束**：skill 五文件唯一源落 `tools/relay-light/skill/`；两个用户级目录只是安装器 `--all` 产出的派生副本，不得就地编辑或反向同步。adapter 显式传本侧用户级副本；直接调用按 design §6.2.1 的五情形解析，不直接读取仓内源。
@@ -104,7 +108,7 @@
 
 ### 3.1 索引
 
-> **历史快照标识（2026-09-20）**：下表 RLT_01～RLT_26 的状态/备注保留冻结前记录，不作为当前活动任务判据；尤其 RLT_26 的“进行中 / 已授权 D-start”只描述冻结前状态。当前有效调度：RLT_13、RLT_25/A12、RLT_26 全部 on-hold，其他旧未启动车不启动；仅 RLT_27 行反映本轮试跑及版本收口状态。旧任务的解冻需要新的明确指示。
+> **活动调度标识（2026-09-22）**：RLT_01～RLT_28 的既有状态/备注继续按各自历史事实保留；RLT_13、RLT_25/A12、RLT_26 等已冻结项不因 RLT-B-09 自动解冻，其他旧未启动车也不启动。当前新增活动任务只有 RLT_29；其状态与工作区列反映本次已授权 D-start。
 
 <!-- dh:tasks -->
 
@@ -134,11 +138,54 @@
 | RLT_25 | 统一 normal Recipe 权威与闸门登记 | 标准 | 未开始 | 7 | 目标三路已裁决；前置 A-adjust 整版确认并落盘 | — | — | Issue #49；不作旧第 3 批硬前置；与 RLT_26 共用 skill 路径，后续施工须错开或合入后重新核基线 |
 | RLT_26 | resource_close 现役文档同步与旧口径清理 | 标准 | 进行中 | 7 | RLT_24（已满足） | [workspace/RLT_26](../workspace/RLT_26/) | — | Issue #50；并入 RLT_22 F-010；2026-09-20 已另行授权 Devin SWE-2 Max 独立 worktree D-start |
 | RLT_27 | ThinkPad Linux Codex 主控最小闭环 | 标准 | 待验收 | 独立试跑 | retry02 W/C/R/F 全闭合；2026-09-20 用户确认且授权版本收口；待集成 verify | [workspace/RLT_27](../workspace/RLT_27/) | — | Issue #52 已关闭；仅本卡 light 子范围；首次阻塞保留、协调修正一次；不替代 RLT_17 全矩阵 |
+| RLT_29 | 新增与完整 relay 并列的 single-task 单卡接力模式 | 标准 | 进行中 | 8 | RLT-A-13/RLT-B-09 已确认；Issue #56 | [workspace/RLT_29](../workspace/RLT_29/) | — | heavy；高危组件接线；D-start 批量授权来源=2026-09-22 用户整版确认；E10 后人验仍待用户 |
 
-> 工作区在 D 开工时按模板回填；本草案未开工，故统一填“—”。状态列仅使用“未开始”。
+> RLT_29 已按 D-start 建工作区；旧卡状态不因本次回填改变。
 
 
 ### 3.2 任务卡
+
+#### RLT_29
+
+`single-task` 单卡接力模式（Issue #56）
+
+<!-- dh:task-type:v1 task=RLT_29 type=heavy -->
+<!-- dh:review-policy:v1 task=RLT_29 mode=single-full-targeted max_attempts=2 -->
+<!-- dh:review-scope:v1 task=RLT_29 mode=type-plus-change -->
+
+- **目标**：在不改变完整 relay 的前提下，新增无 `relay_plan.md` / `relay_log.jsonl`、不用 W/C/R/X/F 的 `single-task` 模式；一任务一 Herdr workspace、每角色实例一独立具名 tab/pane，monitor 对 repo 完全只读，orchestrator 按实际 worker/reviewer/decider 自写的 durable signal 与 review/decision 工件机械路由 plan→batch→final→人验。
+- **非目标**：不修改 `relay_log.py`、完整 relay 计划/账本/五阶段合同或 dev-harness；不在协议中写死模型；不把最大工具权限解释为 Git/发布/verify/人验授权；不自动解冻旧卡。
+- **最小交付物**：供 relay-light 使用者启动的 single-task skill/双 adapter 合同、结构测试、安装副本一致性证明、真实 Herdr 自举演示与现役 as-built；到位边界是完整模式回归全绿、single-task heavy Recipe 可从工作区恢复并进入 E10 证据展示。
+- **验收口径**：
+  - **机器证**｜来源：[`design/01`](../design/01-RelayLight-产品设计与验收.md) + `HC-RL-A159`～`A160`｜模式互斥、拓扑、model-allocation gate 和授权边界成立，完整模式零回归。结构测试必须覆盖询问/确认先于任何 agent 启动、未确认阻断、逐角色修改、恢复沿用及变更重问；真实证据串联询问、用户确认、实际 Herdr tab/model/推理档与 execution_strategy 快照一致。
+  - **机器证**｜来源：design/01 + `HC-RL-A161`～`A162`｜plan/batch/final 生命周期、两道独立复核闸与各自轮次/接收者/超限分路成立。
+  - **机器证**｜来源：design/01 + `HC-RL-A163`～`A165`｜monitor 对 repo/workspace 零写入，只在 Herdr wait/get/read 并 prompt 通知；恢复依据 durable signals + review/decision + `execution_strategy.md` + Herdr 实态；`progress.md` 仅作 batch coder 施工证据索引；120 秒节拍、Enter 三条件、标头互斥成立。RELAY_RECEIPT 须按角色分流：产出型 builder/coder/reviewer/decider 只写精确 BLOCKED 后停；monitor 只用 Herdr prompt 非 durable 通知 orchestrator 后停，repo diff 为空且不写 BLOCKED；均不清 RELAY_*。
+  - **机器证**｜来源：design/01 + `HC-RL-A166`～`A168`｜Recipe 完成谓词、durable signal、仓内单源/双 adapter/安装副本/as-built 成立。
+  - **人判**｜来源：design/01 + `HC-RL-H19`｜用户查看真实 heavy single-task 自举证据，含完整模型分配询问→确认→实际 Herdr tab/model 与快照一致链，再判断该模式是否清楚、可控、值得日常使用；本次 builder/plan 的 Codex 调整仅覆盖对应角色，不补造其它角色确认。
+- **两层 final 复核证据（不得混写）**：
+  1. **workflow-final review 层**：single-task 每条适用 path 的每次整改后复核都必须派 **fresh reviewer**；最多返工 2 轮，不能用 dev-harness 同 reviewer targeted recheck 顶替。
+  2. **E2 Recipe `code_review` 层**：仍遵守本卡 `dh:review-policy:v1 mode=single-full-targeted`——完整 fresh 初审出现 open P0/P1 后，attempt 2 由**同一 `reviewer_session_id`**做 targeted recheck。该层是 dev-harness 收口证据，不降低 heavy 的代码轮1、代码轮2、需求方向、一致性、教训五路 Recipe。
+  - 两层分别登记 reviewer identity/session、输入 diff、finding 与结论；任何施工者不得复核自己的施工。若同一实际检查希望等价覆盖两层，必须同时满足两层更严格身份条件；因 fresh 与 same-reviewer 条件相斥，默认不得合并为一条证据。
+- **变更范围**：仓根 single-task 分流；skill 核心与双 adapter；必要结构测试；本卡工作区、真实演示证据与 as-built。
+- **允许路径**：<!-- dh:allowed-paths:v1 task=RLT_29 -->
+  - `AGENTS.md`
+  - `docs/modules/relay-light/design/01-RelayLight-产品设计与验收.md`
+  - `docs/modules/relay-light/design/evidence/13-交叉审核记录-single-task模式.md`
+  - `docs/modules/relay-light/dev_plan/P1-RelayLight-开发方案.md`
+  - `docs/modules/relay-light/workspace/RLT_29/**`
+  - `tools/relay-light/skill/SKILL.md`
+  - `tools/relay-light/skill/references/adapter-claude-code.md`
+  - `tools/relay-light/skill/references/adapter-codex.md`
+  - `tools/relay-light/skill/roles.toml`
+  - `tools/relay-light/test_install_skill.py`
+  - `docs/modules/relay-light/as-built/**`
+- **档位**：标准 · 高危（组件接线）。
+- **任务类型**：重核
+- **依赖 / 批次**：RLT-A-13 与 RLT-B-09 已于 2026-09-22 用户整版确认；第 8 批，单验收单元，无跨卡依赖。旧卡保持冻结。
+- **RLT_29 decision（2026-09-22）**：single-task 启动前，orchestrator 必须展示全部拟启动角色/实例的模型与推理档表并明确询问用户确认；用户可逐角色修改，未确认不得启动任何 agent。推荐默认仅是提案，模型不写死。确认后由 orchestrator 将确认来源、角色/实例、模型、推理档与实际 Herdr workspace/tab/pane 配置机械维护到 `execution_strategy.md`。恢复时可沿用已有明确确认且分配未变的配置；新增/更换角色或实例、换模型或推理档必须再次询问确认。monitor 对 repo/workspace 完全只读，其 prompt 通知不是 durable artifact；恢复只联合使用实际 worker/reviewer/decider 自写 durable signals、独立 review/decision、`execution_strategy.md` 与 Herdr 实态。`progress.md` 仅由当前 batch coder 写施工里程碑/证据引用。round-2 signal 保留原字节，仅按 task_plan §4 精确历史例外读取；round3 及未来所有 signal 强制新 schema。旧 post-decision PASS 已被本 user-adjust 规划变更取代，本调整独立复核前不放行施工。
+- **实施提示**：三批施工：C1 协议归属/AGENTS + skill 核心；C2 双 adapter、模型选择与 monitor/Enter/恢复；C3 结构测试、安装副本一致性、真实 Herdr 自举与 as-built。`roles.toml` 优先不改，角色选择落 `execution_strategy.md` 快照；只有现有计划级机制确实阻塞时才在允许路径内改并给证据。
+- **D-start 与 GitHub 授权**：来源为 2026-09-22 用户整版确认，Issue #56。用户同时授权后续 commit/push/PR/CI/merge/verify/清理/Issue close，但本 builder 节点不执行这些动作；E10 证据展示后的人验结论仍须用户确认。
+- **停止边界**：需要改 `relay_log.py`、完整模式合同、dev-harness、验收 ID/终点，或发现两层 final 复核无法分别取证时停止并交用户；不得以单一 reviewer、targeted recheck 或 batch PASS 降低 heavy 五路 Recipe。
 
 #### RLT_27
 
@@ -693,8 +740,9 @@ ThinkPad Linux Codex 最小闭环（Issue #52）。
 | 5 | RLT_18 | watch 的忙时推送、重挂、tick 与死亡兜底可演示 | 前四批全部验收 |
 | 6 | RLT_23、RLT_24 | RLT_11 转派回流：派活纪律与收口 checklist 成文；关闭动作拿到独立事件位与 outcome，使 §12「删失败怎么办」由「未实测」转为可实测 | 前置 **RLT-A-11 落盘**（Issue #37；**已满足**：2026-09-16 PR #41 `c404be9` 合入）——两卡的验收 ID 与 §12 口径均由该事件续发/修正；两卡之间无依赖，可并行 |
 | 7 | RLT_25、RLT_26 | normal Recipe 权威一致；resource_close 与 F-010 现役文档同步 | RLT_25 待三路 Recipe 前置 A-adjust 确认落盘；RLT_26 的 RLT_24 前置已满足且 D-start 已获授权；无相互任务依赖，共用路径施工错开 |
+| 8 | RLT_29 | single-task 从 plan review、三批 batch review、heavy 五路 final 到主会话人验的真实 Herdr 单卡闭环；完整 relay 零回归 | RLT-A-13/RLT-B-09、Issue #56 与 D-start 已确认；E10 后人验结论仍等用户 |
 
-**第一个端到端 demo 在第 1 批，完成点为 RLT_12。** 批次按可演示结果切；批内仍严格按任务依赖推进。RLT_20 号已并入 RLT_12 的开工首步，不复用。RLT_18 是设计已冻结的 watch 组件，固定第 5 批。全计划共 **23 张卡**（RLT_01~RLT_26 中去掉 RLT_04/RLT_06/RLT_20；RLT_20 号已并入 RLT_12；第 6 批 RLT_23/24 与第 7 批 RLT_25/26 均计入）。**RLT_22 排第 1 批**：它与 RLT_21 同形（都是程序/协议缺口回流、依赖只到第 1 批内的卡），输入已全部落盘无须等 RLT_12 验收，且必须赶在第 3 批的异常路径实跑（RLT_15 返工超限、RLT_16 卡内追加节点、RLT_19 新增任务卡）之前落地，否则那三卡会原样复现 C1 的节点内死锁。
+**第一个端到端 demo 在第 1 批，完成点为 RLT_12。** 批次按可演示结果切；批内仍严格按任务依赖推进。RLT_20 号已并入 RLT_12 的开工首步，不复用。RLT_18 是设计已冻结的 watch 组件，固定第 5 批。全计划共 **24 张卡**（RLT_01~RLT_27 中去掉 RLT_04/RLT_06/RLT_20，再加 RLT_29；RLT_20 号已并入 RLT_12；第 8 批 RLT_29 计入）。**RLT_22 排第 1 批**：它与 RLT_21 同形（都是程序/协议缺口回流、依赖只到第 1 批内的卡），输入已全部落盘无须等 RLT_12 验收，且必须赶在第 3 批的异常路径实跑（RLT_15 返工超限、RLT_16 卡内追加节点、RLT_19 新增任务卡）之前落地，否则那三卡会原样复现 C1 的节点内死锁。
 
 ## 5. §14 开发方案同步项对照
 
@@ -707,6 +755,7 @@ ThinkPad Linux Codex 最小闭环（Issue #52）。
 | 5. 三条教训候选回流 | RLT_11 | 仅回流 §15 明列三条并回链来源 |
 | 6. planner-amend 提示词与白名单 | RLT_09（机制）+ RLT_07（模板承载）+ RLT_16/RLT_19（实跑） | 输入四件、一次改完、lint 三次、禁区整份不落笔；白名单按精确路径登记，新卡 task_plan 不在其中 |
 | 7. 有意绕过 B-adjust 写入 AGENTS | RLT_08 | 只允许 relay-light 运行中白名单改计划；design/验收不绕 |
+| 9. single-task 单卡接力 | RLT_29 | skill/双 adapter/结构测试/安装一致性/真实 Herdr 自举/as-built；workflow-final fresh 与 E2 targeted 分层取证 |
 
 ## 6. 验收 ID → 任务卡对照（正好一次）
 
@@ -788,8 +837,14 @@ ThinkPad Linux Codex 最小闭环（Issue #52）。
 | HC-RL-A153 | RLT_23 | HC-RL-A154 | RLT_23 |
 | HC-RL-A155 | RLT_24 | HC-RL-A156 | RLT_24 |
 | HC-RL-A157 | RLT_24 | HC-RL-A158 | RLT_24 |
+| HC-RL-A159 | RLT_29 | HC-RL-A160 | RLT_29 |
+| HC-RL-A161 | RLT_29 | HC-RL-A162 | RLT_29 |
+| HC-RL-A163 | RLT_29 | HC-RL-A164 | RLT_29 |
+| HC-RL-A165 | RLT_29 | HC-RL-A166 | RLT_29 |
+| HC-RL-A167 | RLT_29 | HC-RL-A168 | RLT_29 |
+| HC-RL-H19 | RLT_29 |  |  |
 
-> 退役 ID 不进入对照表、不复用。附录按活动 ID 排序；实际覆盖集合以正式输入 §11 的 133+15=148 条为准（RLT-A-11 后）；A2 的 20 词命题由 RLT_24 承接，RLT_03 的旧版本证据原样保留；RLT_25/26 为一致性补证卡，不移交既有 owner。A35/A65/A71/A107 由 RLT-A-09 修订但 owner 不变，其修订后的证据由 RLT_22 的 A147/A150 与既有单测补例同批承接。
+> 退役 ID 不进入对照表、不复用。实际覆盖集合以正式输入 §11 的 143+16=159 条为准；A2 的 20 词命题由 RLT_24 承接，RLT_03 的旧版本证据原样保留；RLT_25/26 为一致性补证卡，不移交既有 owner；A159～A168/H19 由 RLT_29 单卡承接。A35/A65/A71/A107 由 RLT-A-09 修订但 owner 不变，其修订后的证据由 RLT_22 的 A147/A150 与既有单测补例同批承接。
 
 ## 7. 正式输入回流与实施证据要求
 
@@ -819,9 +874,9 @@ A′ 增补的裁决过程见 [`design/evidence/01-交叉审核记录-RelayLight
 
 ### 8.1 覆盖关
 
-- 从正式输入 §11 机器解析得到活动验收 **133 条 AI + 15 条人验 = 148 条**（RLT-A-11 已续发 A151～A158；RLT-B-08 两卡不新申领验收 ID）。
-- 本文件任务卡与 §6 对照表均按活动 ID 建映射：**148 个唯一 ID、0 漏项、0 重复**；退役 ID 未纳入。全计划 **23 张卡**，RLT_20 首次安装已并入 RLT_12；含 RLT_21/22、第 6 批 RLT_23/24 与本次 RLT_25/26。
-- §14 七个同步项全部落到 RLT_01/RLT_02/RLT_07/RLT_08/RLT_09/RLT_11/RLT_12/RLT_17，且第 4 项由 RLT_02 单独成卡。
+- 从正式输入 §11 机器解析得到活动验收 **143 条 AI + 16 条人验 = 159 条**（RLT-A-13 续发 A159～A168/H19）。
+- 本文件任务卡与 §6 对照表按活动 ID 建映射：**159 个唯一 ID、0 漏项、0 重复**；退役 ID 未纳入。全计划 **24 张卡**，RLT_20 首次安装已并入 RLT_12；第 8 批 RLT_29 是本次唯一新增卡。
+- §14 九个同步项均有 owner；第 9 项由 RLT_29 单卡承接，且 final 两层证据分开登记。
 
 ### 8.2 颗粒度关
 
@@ -831,13 +886,13 @@ A′ 增补的裁决过程见 [`design/evidence/01-交叉审核记录-RelayLight
 
 ### 8.3 依赖关
 
-- 依赖方向单向：RLT_01 独立并行；RLT_02 收口后，RLT_03 → RLT_05 → RLT_07 → RLT_08 → RLT_10 → RLT_12 构成首 demo 串行 6 卡。随后 RLT_13、RLT_14/RLT_15、RLT_09 → RLT_16 → RLT_19 → RLT_17 → RLT_18；RLT_21 → RLT_22 在第 1 批内串行；RLT_16 依赖 RLT_14 的 blocked→decider 验证，**23 张卡无环**；RLT_25 等三路 Recipe 的 A-adjust 整版确认落盘，RLT_26 依赖已验收 RLT_24，两卡互不依赖；RLT_25 不设旧第 3 批硬前置，只登记 normal 口径冲突风险。
+- 依赖方向单向；既有链与冻结状态不变。RLT_29 只依赖已确认的 RLT-A-13/RLT-B-09 与 Issue #56，不依赖或解冻旧卡；**24 张卡无环**。
 - 前置未验收不开放依赖卡；批次没有替代依赖列。
 - 第一个端到端 demo 明确在**第 1 批 RLT_12**；RLT_18 固定第 5 批，前四批完成后直接开工。
 
 ## 9. 计划完工
 
-- [ ] 23 张卡全部销户（RLT_20 号已并入 RLT_12），含第 5 批的 RLT_18（用户已裁决 watch 接着做）。
-- [ ] 第 1～6 批按 §6 owner 交付 133 条机器验收与 15 条人验（第 5 批含 watch、第 6 批承接 A151～A158）；第 7 批 RLT_25/26 补齐现役一致性与守门证据、不新增 ID，**总账 148 条全部有等价证据**。
-- [ ] Windows/Linux × Claude Code/Codex 四组合证据齐全；用户完成全部 15 条人判，其中 watch 的 2 条在第 5 批完成。
-- [ ] `verify(relay-light):` 只能在用户查看证据并明确授权后提交；本方案确认不授权 verify、merge、push 或 deploy，各卡仍单独开工。
+- [ ] 24 张卡全部销户（RLT_20 号已并入 RLT_12），含第 8 批 RLT_29。
+- [ ] §6 的 **143 条机器验收 + 16 条人验 = 159 条**全部有等价证据；RLT_29 单独交付 A159～A168/H19。
+- [ ] Windows/Linux × Claude Code/Codex 既有矩阵与 single-task heavy 自举证据齐全；用户完成全部 16 条人判。
+- [ ] `verify(relay-light):` 只能在用户查看证据并明确授权后提交；RLT_29 虽有批量版本授权，E10 后人验结论仍须用户确认。

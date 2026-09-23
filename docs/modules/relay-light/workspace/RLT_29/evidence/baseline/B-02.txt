@@ -1,0 +1,28 @@
+.usage: install_skill.py [-h] --all
+install_skill.py: error: the following arguments are required: --all
+usage: install_skill.py [-h] --all
+install_skill.py: error: the following arguments are required: --all
+usage: install_skill.py [-h] --all
+install_skill.py: error: the following arguments are required: --all
+usage: install_skill.py [-h] --all
+install_skill.py: error: unrecognized arguments: extra
+...error: injected mid-copy failure
+..error: skill source incomplete, missing: dh-mapping.toml
+......................................................................installed: /tmp/tmpbe71cpsp/home/.claude/skills/relay-light
+installed: /tmp/tmpbe71cpsp/home/.codex/skills/relay-light
+installed: /tmp/tmpaua6i3nh/home/.claude/skills/relay-light
+installed: /tmp/tmpaua6i3nh/home/.codex/skills/relay-light
+installed: /tmp/tmpmg11tmkd/home/.claude/skills/relay-light
+installed: /tmp/tmpmg11tmkd/home/.codex/skills/relay-light
+installed: /tmp/tmpmg11tmkd/home/.claude/skills/relay-light
+installed: /tmp/tmpmg11tmkd/home/.codex/skills/relay-light
+installed: /tmp/tmpmn3g0sln/home/.claude/skills/relay-light
+installed: /tmp/tmpmn3g0sln/home/.codex/skills/relay-light
+installed: /tmp/tmpmn3g0sln/home/.claude/skills/relay-light
+installed: /tmp/tmpmn3g0sln/home/.codex/skills/relay-light
+......lint: amend-check before ok (1 proposed path(s))
+..................................................................................................................................................
+----------------------------------------------------------------------
+Ran 228 tests in 446.534s
+
+OK

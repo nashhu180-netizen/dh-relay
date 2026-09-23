@@ -1,0 +1,3 @@
+out-of-scope: "docs/modules/relay-light/design/01-RelayLight-\344\272\247\345\223\201\350\256\276\350\256\241\344\270\216\351\252\214\346\224\266.md","docs/modules/relay-light/design/evidence/13-\344\272\244\345\217\211\345\256\241\346\240\270\350\256\260\345\275\225-single-task\346\250\241\345\274\217.md","docs/modules/relay-light/dev_plan/P1-RelayLight-\345\274\200\345\217\221\346\226\271\346\241\210.md"
+allowlist_exit=1
+diffcheck_exit=0

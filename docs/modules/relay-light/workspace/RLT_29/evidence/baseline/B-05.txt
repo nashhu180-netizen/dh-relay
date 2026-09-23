@@ -1,0 +1,3 @@
+plan/log audit: PASS (no relay_plan.md/relay_log.jsonl under workspace/RLT_29)
+planlog_exit=0
+forbidden_diff_exit=0

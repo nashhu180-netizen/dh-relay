@@ -1,0 +1,4 @@
+--- git diff 93d65cb -- roles.toml (expect empty) ---
+--- git status --porcelain roles.toml (expect empty) ---
+--- sha256 source ---
+8b86fbac4a4516a4c6836ef81361033c4cc5f3bb1b8133be2163e498ec2a1c4c  tools/relay-light/skill/roles.toml

@@ -1,0 +1,243 @@
+{
+  "rule": "rlt29-b04-r30-paths-v1",
+  "task": "RLT_29",
+  "phase": "batch",
+  "batch": "3",
+  "generated_by": "coder#b3 (same session, B-04 rerun-1)",
+  "captured_at": "2026-09-22T17:41:43.249054+00:00",
+  "cwd": "/home/nash/work/dh-relay/.dh-worktrees/RLT_29",
+  "commands": {
+    "tracked": "git -c core.quotepath=false diff --name-only 93d65cb --",
+    "b04": "dh relay-light",
+    "b06": "task_plan §6 verbatim allowed-path audit",
+    "diffcheck": "git diff --check"
+  },
+  "decision_refs": [
+    "decision.batch-3-b04.md",
+    "decision.batch-3-b04-evidence-id.md",
+    "review.plan.batch-3-b04.md (PASS)"
+  ],
+  "raw_refs": {
+    "baseline": {
+      "path": "docs/modules/relay-light/workspace/RLT_29/evidence/baseline/B-04.txt",
+      "sha256": "106bd3aa20faf2e7858f3c92ade507b7383ea9bf7311d0339eebef825953d1fe",
+      "declared_failures": 66,
+      "total_line": 66
+    },
+    "post": {
+      "path": "docs/modules/relay-light/workspace/RLT_29/evidence/batch-3/post-b04-rerun-1/B-04.txt",
+      "sha256": "ebff5460a3727bb4324d0cfb5d37235f789fbbb5f8526d84e9047ca77820c84c",
+      "exit": 1,
+      "declared_failures": 59,
+      "total_line": 59,
+      "warnings_declared": 35
+    }
+  },
+  "owned": {
+    "post_count": 0,
+    "post_items": []
+  },
+  "r30_normalization": {
+    "P": "workspace/RLT_27　R30 任务「RLT_27」类型=light 的实际改动超出任务卡登记的允许路径：",
+    "S": "——**停下，由用户重新定类**（非自动升级、非自动放行）；若属登记遗漏，先补进任务卡「变更范围」再继续",
+    "marker": "<RLT29_APPROVED_DYNAMIC_PATHS>",
+    "D": [
+      "AGENTS.md",
+      "docs/modules/relay-light/design/01-RelayLight-产品设计与验收.md",
+      "tools/relay-light/skill/SKILL.md",
+      "tools/relay-light/skill/references/adapter-claude-code.md",
+      "tools/relay-light/skill/references/adapter-codex.md",
+      "tools/relay-light/test_install_skill.py"
+    ],
+    "baseline_L": [
+      "docs/modules/relay-light/design/01-RelayLight-产品设计与验收.md"
+    ],
+    "post_L": [
+      "AGENTS.md",
+      "docs/modules/relay-light/design/01-RelayLight-产品设计与验收.md",
+      "tools/relay-light/skill/SKILL.md",
+      "tools/relay-light/skill/references/adapter-claude-code.md",
+      "tools/relay-light/skill/references/adapter-codex.md",
+      "tools/relay-light/test_install_skill.py"
+    ],
+    "baseline_raw": [
+      "workspace/RLT_27　R30 任务「RLT_27」类型=light 的实际改动超出任务卡登记的允许路径：docs/modules/relay-light/design/01-RelayLight-产品设计与验收.md——**停下，由用户重新定类**（非自动升级、非自动放行）；若属登记遗漏，先补进任务卡「变更范围」再继续"
+    ],
+    "post_raw": [
+      "workspace/RLT_27　R30 任务「RLT_27」类型=light 的实际改动超出任务卡登记的允许路径：AGENTS.md、docs/modules/relay-light/design/01-RelayLight-产品设计与验收.md、tools/relay-light/skill/SKILL.md、tools/relay-light/skill/references/adapter-claude-code.md、tools/relay-light/skill/references/adapter-codex.md、tools/relay-light/test_install_skill.py——**停下，由用户重新定类**（非自动升级、非自动放行）；若属登记遗漏，先补进任务卡「变更范围」再继续"
+    ],
+    "canonical": "workspace/RLT_27　R30 任务「RLT_27」类型=light 的实际改动超出任务卡登记的允许路径：<RLT29_APPROVED_DYNAMIC_PATHS>——**停下，由用户重新定类**（非自动升级、非自动放行）；若属登记遗漏，先补进任务卡「变更范围」再继续"
+  },
+  "raw_diff": {
+    "missing_in_post": [
+      "workspace/RLT_27　R30 任务「RLT_27」类型=light 的实际改动超出任务卡登记的允许路径：docs/modules/relay-light/design/01-RelayLight-产品设计与验收.md——**停下，由用户重新定类**（非自动升级、非自动放行）；若属登记遗漏，先补进任务卡「变更范围」再继续",
+      "workspace/RLT_29/review.md　R12 需求对齐证据表为空（至少一条需求/人验项的场景证据）",
+      "workspace/RLT_29/review.md　R17 review 未预填 brief 完成条件「durable signal 与路由不依赖终端状态；orchestrator 只分发/路由，产出型 builder/co」",
+      "workspace/RLT_29/review.md　R17 review 未预填 brief 完成条件「monitor 对 repo/workspace 完全只读，只在 Herdr wait/get/read 并 promp」",
+      "workspace/RLT_29/review.md　R17 review 未预填 brief 完成条件「single-task 标头字段合法且与完整 relay 标头互斥；产出型 builder/coder/reviewer」",
+      "workspace/RLT_29/review.md　R17 review 未预填 brief 完成条件「一任务一 Herdr workspace、每角色实例一独立具名 tab/pane；orchestrator 启动前展示全」",
+      "workspace/RLT_29/review.md　R17 review 未预填 brief 完成条件「用户查看含模型分配询问、确认及实际 Herdr tab/model 与快照一致链的真实 Herdr heavy sing」",
+      "workspace/RLT_29/review.md　R17 人验证据展示区/确认清单未覆盖人验项「用户查看含模型分配询问、确认及实际 Herdr tab/model 与快照一致链的真实 Herdr heavy sing」"
+    ],
+    "new_in_post": [
+      "workspace/RLT_27　R30 任务「RLT_27」类型=light 的实际改动超出任务卡登记的允许路径：AGENTS.md、docs/modules/relay-light/design/01-RelayLight-产品设计与验收.md、tools/relay-light/skill/SKILL.md、tools/relay-light/skill/references/adapter-claude-code.md、tools/relay-light/skill/references/adapter-codex.md、tools/relay-light/test_install_skill.py——**停下，由用户重新定类**（非自动升级、非自动放行）；若属登记遗漏，先补进任务卡「变更范围」再继续"
+    ]
+  },
+  "canonical_diff": {
+    "missing_in_post": [],
+    "new_in_post": []
+  },
+  "guards": [
+    {
+      "guard": "baseline.parseable",
+      "ok": true,
+      "detail": "err=None"
+    },
+    {
+      "guard": "baseline.parse_count_eq_declared_and_total",
+      "ok": true,
+      "detail": "declared=66 parsed=66 total=66"
+    },
+    {
+      "guard": "post.parseable",
+      "ok": true,
+      "detail": "err=None"
+    },
+    {
+      "guard": "post.parse_count_eq_declared_and_total",
+      "ok": true,
+      "detail": "declared=59 parsed=59 total=59"
+    },
+    {
+      "guard": "baseline.matches_summary_multiset",
+      "ok": true,
+      "detail": "parsed=66 summary=59+7"
+    },
+    {
+      "guard": "post.rlt29_owned_zero",
+      "ok": true,
+      "detail": "owned=0: []"
+    },
+    {
+      "guard": "baseline.r30_exactly_one_with_PS",
+      "ok": true,
+      "detail": "count=1"
+    },
+    {
+      "guard": "post.r30_exactly_one_with_PS",
+      "ok": true,
+      "detail": "count=1"
+    },
+    {
+      "guard": "baseline.L_exactly_design_doc",
+      "ok": true,
+      "detail": "L=['docs/modules/relay-light/design/01-RelayLight-产品设计与验收.md']"
+    },
+    {
+      "guard": "post.L_nonempty_no_dup",
+      "ok": true,
+      "detail": "L=['AGENTS.md', 'docs/modules/relay-light/design/01-RelayLight-产品设计与验收.md', 'tools/relay-light/skill/SKILL.md', 'tools/relay-light/skill/references/adapter-claude-code.md', 'tools/relay-light/skill/references/adapter-codex.md', 'tools/relay-light/test_install_skill.py']"
+    },
+    {
+      "guard": "post.L_subset_of_D",
+      "ok": true,
+      "detail": "extra=[]"
+    },
+    {
+      "guard": "tracked.before_eq_after",
+      "ok": true,
+      "detail": "before=7 after=7"
+    },
+    {
+      "guard": "post.L_in_stable_tracked_diff",
+      "ok": true,
+      "detail": "missing=[]"
+    },
+    {
+      "guard": "post.L_in_actual_allowlist",
+      "ok": true,
+      "detail": "each L path ∈ §6 allowed set"
+    },
+    {
+      "guard": "post.L_task_attribution_rlt29",
+      "ok": true,
+      "detail": "all six are RLT_29 registered allowed_exact paths"
+    },
+    {
+      "guard": "canonical.inherited_counter_eq_baseline_59",
+      "ok": true,
+      "detail": "post=59 baseline=59 diff=[]"
+    },
+    {
+      "guard": "post.no_unregistered_evidence_id_r8_warning",
+      "ok": true,
+      "detail": "count=0"
+    }
+  ],
+  "warnings_accounting": {
+    "baseline": 36,
+    "post": 35,
+    "note": "R16 test-evidence warning cleared by registered E-301 (type=test); R14 DevPlan 验收口径 warning persists truthfully; no R8 unregistered-ID warning for RLT_29; warnings recorded, never counted as failures"
+  },
+  "referenced_prior_gates": {
+    "B-01": {
+      "paths": [
+        "docs/modules/relay-light/workspace/RLT_29/evidence/batch-3/post/B-01.txt",
+        "docs/modules/relay-light/workspace/RLT_29/evidence/batch-3/post/B-01.exit"
+      ],
+      "sha256": [
+        "e5fb50b1f6dae3d6ca02b40af7aea213ac8644a1ac56137777aa13fa949f25c5",
+        "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+      ],
+      "rerun": false,
+      "note": "未重跑；被测面（tools/relay-light、plan/log 扫描、禁改路径）自原运行以来零变更，证据仍有效"
+    },
+    "B-02": {
+      "paths": [
+        "docs/modules/relay-light/workspace/RLT_29/evidence/batch-3/post/B-02.txt",
+        "docs/modules/relay-light/workspace/RLT_29/evidence/batch-3/post/B-02.exit"
+      ],
+      "sha256": [
+        "a99d9829502618455ac7afd2429c336ccbef3bd7ae984e50fbcb9ddb91da6bdb",
+        "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+      ],
+      "rerun": false,
+      "note": "未重跑；被测面（tools/relay-light、plan/log 扫描、禁改路径）自原运行以来零变更，证据仍有效"
+    },
+    "B-03": {
+      "paths": [
+        "docs/modules/relay-light/workspace/RLT_29/evidence/batch-3/post/B-03.txt",
+        "docs/modules/relay-light/workspace/RLT_29/evidence/batch-3/post/B-03.exit"
+      ],
+      "sha256": [
+        "b10286390c85aca8b941f94cdf27fcfd4acc2252c2f49bba0ebba7b4049ad7f4",
+        "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+      ],
+      "rerun": false,
+      "note": "未重跑；被测面（tools/relay-light、plan/log 扫描、禁改路径）自原运行以来零变更，证据仍有效"
+    },
+    "B-05": {
+      "paths": [
+        "docs/modules/relay-light/workspace/RLT_29/evidence/batch-3/post/B-05.txt"
+      ],
+      "sha256": [
+        "be06dc053f003b7c8a1e21db1132c28af13266ebf2d5b0c181ec17c504a2beb5"
+      ],
+      "rerun": false,
+      "note": "未重跑；被测面（tools/relay-light、plan/log 扫描、禁改路径）自原运行以来零变更，证据仍有效"
+    }
+  },
+  "other_gates": {
+    "b06_allowlist": {
+      "exit": 0,
+      "output": "allowed-path audit: PASS"
+    },
+    "diff_check": {
+      "exit": 0,
+      "output_bytes": 0
+    },
+    "open_p0p1": 0,
+    "plan_log_scan": "unchanged surface — original B-05 PASS cited above; workspace still has no relay_plan.md/relay_log.jsonl"
+  },
+  "overall_verdict": "PASS — B-04 rerun: post owned=0, canonical inherited Counter == baseline 59, all guards ok"
+}

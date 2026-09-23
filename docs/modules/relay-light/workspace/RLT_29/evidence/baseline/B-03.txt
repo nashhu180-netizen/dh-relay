@@ -1,0 +1,1160 @@
+=== relay-contract-schema.ps1 ===
+PASS  params SchemaVersion is string
+PASS  params tail bytes is positive int
+PASS  params probe threshold is positive int
+PASS  params stall threshold is positive int
+PASS  good plan accepted
+PASS  cycle rejected
+PASS  bad hash rejected
+PASS  unknown plan field rejected
+PASS  proposal generation rejected
+PASS  non-positive plan version rejected
+PASS  enum tokens are case sensitive
+PASS  date without time is not ISO timestamp
+PASS  node role enum rejected
+PASS  node next action enum rejected
+PASS  unknown node field rejected
+PASS  bad resume attempt rejected
+PASS  non-string dependency rejected
+PASS  duplicate node rejected
+PASS  unknown dependency rejected
+PASS  good active plan accepted
+PASS  active plan missing hash rejected
+PASS  good authority accepted
+PASS  zero generation rejected
+PASS  good receipt accepted
+PASS  receipt missing launch rejected
+PASS  receipt session field rejected
+PASS  receipt attempt type rejected
+PASS  good result schema accepted
+PASS  result enum is case sensitive
+PASS  git snapshot extra field rejected
+PASS  non-final result status rejected
+PASS  decision checkpoint schema accepted
+PASS  working checkpoint question rejected
+PASS  checkpoint answer field rejected
+PASS  observation event accepted
+PASS  event kind is case sensitive
+PASS  user answered event kind rejected
+PASS  non-control nonce rejected
+PASS  control missing nonce rejected
+PASS  complete control event accepted
+PASS  handoff header schema accepted
+SUITE PASS
+=== relay-contract-identity.ps1 ===
+PASS  good result accepted
+PASS  wrong plan rejected as stale plan
+PASS  wrong plan hash rejected as stale plan
+PASS  wrong node rejected
+PASS  stale attempt classified stale
+PASS  future attempt with current launch and session rejected
+PASS  wrong generation rejected
+PASS  wrong session rejected
+PASS  wrong launch rejected
+PASS  duplicate final rejected
+PASS  decision final rejected by schema
+PASS  working final rejected by schema
+PASS  decision checkpoint accepted
+PASS  working followup accepted
+PASS  checkpoint wrong session rejected
+PASS  checkpoint wrong launch rejected
+PASS  checkpoint stale attempt -> stale
+PASS  checkpoint after final rejected
+PASS  generated stale event validates
+PASS  B freezes transitive dependent C
+PASS  A freezes transitive dependent C
+PASS  independent B remains unfrozen
+PASS  chain A freezes B C D transitively
+PASS  chain C freezes D
+PASS  independent E has empty freeze set
+PASS  independent E is absent from every freeze set
+PASS  complete handoff header parsed
+PASS  handoff missing session rejected
+PASS  handoff bad first line rejected
+SUITE PASS
+=== relay-contract-transitions.ps1 ===
+PASS  terminal matrix edge set equals design oracle
+PASS  result matrix edge set equals design oracle
+PASS  launching -> launching unlisted
+PASS  launching -> running legal P1 edge
+PASS  launching -> idle unlisted
+PASS  launching -> stopped unlisted
+PASS  launching -> exited legal P1 edge
+PASS  launching -> unknown legal P1 edge
+PASS  running -> launching unlisted
+PASS  running -> running unlisted
+PASS  running -> idle legal P1 edge
+PASS  running -> stopped legal P1 edge
+PASS  running -> exited legal P1 edge
+PASS  running -> unknown legal P1 edge
+PASS  idle -> launching unlisted
+PASS  idle -> running legal P1 edge
+PASS  idle -> idle unlisted
+PASS  idle -> stopped legal P1 edge
+PASS  idle -> exited legal P1 edge
+PASS  idle -> unknown legal P1 edge
+PASS  stopped -> launching unlisted
+PASS  stopped -> running legal P1 edge
+PASS  stopped -> idle unlisted
+PASS  stopped -> stopped unlisted
+PASS  stopped -> exited legal P1 edge
+PASS  stopped -> unknown legal P1 edge
+PASS  exited -> launching unlisted
+PASS  exited -> running unlisted
+PASS  exited -> idle unlisted
+PASS  exited -> stopped unlisted
+PASS  exited -> exited unlisted
+PASS  exited -> unknown unlisted
+PASS  unknown -> launching unlisted
+PASS  unknown -> running legal P1 edge
+PASS  unknown -> idle legal P1 edge
+PASS  unknown -> stopped legal P1 edge
+PASS  unknown -> exited legal P1 edge
+PASS  unknown -> unknown unlisted
+PASS  working -> working unlisted
+PASS  working -> decision_required legal P1 edge
+PASS  working -> succeeded legal P1 edge
+PASS  working -> dependency_blocked legal P1 edge
+PASS  working -> interrupted_unknown legal P1 edge
+PASS  working -> quota_exhausted reserved
+PASS  decision_required -> working legal P1 edge
+PASS  decision_required -> decision_required unlisted
+PASS  decision_required -> succeeded legal P1 edge
+PASS  decision_required -> dependency_blocked legal P1 edge
+PASS  decision_required -> interrupted_unknown legal P1 edge
+PASS  decision_required -> quota_exhausted reserved
+PASS  succeeded -> working unlisted
+PASS  succeeded -> decision_required unlisted
+PASS  succeeded -> succeeded unlisted
+PASS  succeeded -> dependency_blocked unlisted
+PASS  succeeded -> interrupted_unknown unlisted
+PASS  succeeded -> quota_exhausted unlisted
+PASS  dependency_blocked -> working unlisted
+PASS  dependency_blocked -> decision_required unlisted
+PASS  dependency_blocked -> succeeded unlisted
+PASS  dependency_blocked -> dependency_blocked unlisted
+PASS  dependency_blocked -> interrupted_unknown unlisted
+PASS  dependency_blocked -> quota_exhausted unlisted
+PASS  interrupted_unknown -> working unlisted
+PASS  interrupted_unknown -> decision_required unlisted
+PASS  interrupted_unknown -> succeeded unlisted
+PASS  interrupted_unknown -> dependency_blocked unlisted
+PASS  interrupted_unknown -> interrupted_unknown unlisted
+PASS  interrupted_unknown -> quota_exhausted unlisted
+PASS  quota_exhausted -> working reserved
+PASS  quota_exhausted -> decision_required unlisted
+PASS  quota_exhausted -> succeeded unlisted
+PASS  quota_exhausted -> dependency_blocked unlisted
+PASS  quota_exhausted -> interrupted_unknown unlisted
+PASS  quota_exhausted -> quota_exhausted unlisted
+PASS  exited has no outgoing edges
+PASS  terminal matrix has no self loops
+PASS  result matrix has no self loops
+PASS  unknown has exactly four outgoing edges
+PASS  unknown edges require trusted probe or diagnosis
+PASS  result failure closes pair
+PASS  terminal failure closes pair
+PASS  dual legal pair accepted
+PASS  quota P1 edge reserved
+PASS  decision required quota edge reserved
+PASS  idle to running requires host observed new turn
+PASS  idle outgoing guards contain no resume
+PASS  matrix and params schema versions match
+PASS  unknown state rejected
+PASS  transition states are case sensitive
+SUITE PASS
+=== relay-contract-redaction.ps1 ===
+PASS  api key values leave no residue
+PASS  api key marker emitted
+PASS  api key hit counted
+PASS  sk token prefix removed with full value
+PASS  private key content leaves no residue
+PASS  private key marker emitted
+PASS  PEM block removed as a whole
+PASS  private key hit counted
+PASS  password leaves no residue
+PASS  password marker emitted
+PASS  password hit counted
+PASS  default output obeys byte limit
+PASS  sanitize before truncate removes boundary residue
+PASS  explicit MaxBytes override obeyed
+PASS  plain text passes unchanged
+PASS  handoff fixture sanitize leaves no residue
+PASS  result fixture sanitize leaves no residue
+PASS  event fixture sanitize leaves no residue
+PASS  session-tail residue fails closed
+SUITE PASS
+=== relay-contract-failures.ps1 ===
+PASS  halfwritten result rejected
+PASS  unknown result enum rejected
+PASS  probe error event schema accepted
+PASS  probe threshold suggests fail-closed pair
+PASS  probe suggested pair is legal
+PASS  probe below threshold does not advance
+PASS  decision required probe loss suggests fail-closed pair
+PASS  decision required probe pair is legal
+PASS  no progress past threshold is stalled
+PASS  stall suggested pair is legal
+PASS  stall snapshot state is case sensitive
+PASS  exit without result falls back to interrupted unknown
+PASS  exit fallback result transition is legal
+PASS  exit snapshot state is case sensitive
+PASS  succeeded review result does not complete task
+PASS  task completion field rejected
+SUITE PASS
+=== relay-runner-authority.ps1 ===
+PASS  params have eight keys including launch deadline and psmux keys
+PASS  launch deadline is positive integer
+PASS  first proposal activates generation one
+PASS  authority validates
+PASS  active plan validates
+PASS  immutable proposal stored
+PASS  activation event order is deterministic
+PASS  event occurred_at uses injected clock
+PASS  CAS conflict rejected
+PASS  CAS conflict leaves authority state bytes unchanged
+PASS  CAS rejection event recorded
+PASS  skipped plan version rejected
+PASS  wrong run rejected
+PASS  wrong proposer rejected
+PASS  dropping old node rejected
+PASS  changed old role rejected
+PASS  changed old next action rejected
+PASS  resume from another node rejected
+PASS  resume from wrong attempt rejected
+PASS  compatible replan activates
+PASS  new dependency pointing to old node rejected at B
+PASS  dropping old dependency rejected at C
+PASS  open run rejects invalid state snapshot
+PASS  proposal rejects invalid candidate state
+PASS  invalid candidate writes no authority files
+PASS  invalid candidate writes no proposal file
+PASS  invalid candidate records one rejection event
+PASS  bad plan hash rejected before activation
+PASS  existing different proposal is immutable when CAS passes
+PASS  single node is ready
+PASS  first attempt identifiers deterministic
+PASS  launch projects launching before first tick
+PASS  open run restores state exactly from file
+PASS  receipt validates with fake backend
+PASS  launch deadline derived from injected clock
+PASS  receipt exists before adapter launch
+PASS  launch receipt event exists
+PASS  launched node cannot start again
+PASS  launch-mismatch.json fail closes
+PASS  launch-mismatch.json reason recorded
+PASS  launch-mismatch.json pause reason is launch-failed
+PASS  launch handle mismatch literal covered
+PASS  launch-fail.json fail closes
+PASS  launch-fail.json reason recorded
+PASS  launch-fail.json pause reason is launch-failed
+PASS  adapter and fake launch failure literals covered
+PASS  fake adapter has exactly nine keys
+PASS  state rejects unknown completion field
+PASS  state rejects done task state
+PASS  create new refuses overwrite
+PASS  event id is deterministic
+PASS  event occurred_at changes with stepped injected clock
+PASS  fake launch script exhaustion rejected
+PASS  fake unknown session rejected
+PASS  unused P1 adapter verb rejected
+PASS  empty fake tape fails closed
+PASS  fake adapter exposes launch failure reason
+PASS  invalid internal event throws event-invalid
+PASS  invalid internal state throws state-invalid
+ASSERTIONS 59
+SUITE PASS
+=== relay-runner-ingest.ps1 ===
+PASS  succeeded result accepted
+PASS  final projected as succeeded
+PASS  succeeded review keeps task active
+PASS  next action review preserved
+PASS  node has exactly fourteen fields
+PASS  final result stored
+PASS  stored final validates
+PASS  accepted result event appended
+PASS  succeeded single node is not ready
+PASS  closed node is not observable
+PASS  duplicate final rejected immutable
+PASS  duplicate leaves final bytes unchanged
+PASS  result task state key rejected
+PASS  wrong generation classified stale
+PASS  stale result does not advance status
+PASS  stale result leaves state authority bytes unchanged
+PASS  wrong session result rejected
+PASS  result without attempt rejected
+PASS  halfwritten result rejected
+PASS  unknown node result rejected
+PASS  bad result enum rejected
+PASS  checkpoint wrong session rejected
+PASS  checkpoint answer key rejected
+PASS  halfwritten checkpoint rejected
+PASS  empty result rejects without throw or state change
+PASS  array result rejects without throw or state change
+PASS  empty checkpoint rejects without throw or state change
+PASS  single probe error remains below threshold
+PASS  same state working checkpoint accepted
+PASS  checkpoint snapshot stored
+PASS  checkpoint accepted event appended
+PASS  checkpoint refreshes progress time
+PASS  decision checkpoint projected
+PASS  working followup resumes projection
+PASS  final after decision sequence accepted
+PASS  checkpoint after final rejected
+PASS  blocked result requests replan
+PASS  blocked ack followed by stop
+PASS  blocked result accepted before stop return
+PASS  stop call observes accepted result event already persisted
+PASS  blocked final probes stopped session to exited without pausing task
+PASS  replan required suppresses ready nodes
+PASS  runner never invokes suspend or resume
+PASS  runner and fake adapter expose no input API
+PASS  blocked stop failure is recorded without changing accepted state
+ASSERTIONS 45
+SUITE PASS
+=== relay-runner-failures.ps1 ===
+PASS  launch deadline fail closes
+PASS  launch deadline event
+PASS  launch deadline paused invariant
+PASS  launch deadline no ready node
+PASS  launch deadline no further probe
+PASS  launch deadline authority bytes invariant
+PASS  probe loss projects both dimensions
+PASS  probe loss reason
+PASS  three probe failures recorded
+PASS  probe loss paused invariant
+PASS  probe loss no ready node
+PASS  probe loss no further probe
+PASS  probe loss authority bytes invariant
+PASS  stall threshold fail closes
+PASS  stall event recorded
+PASS  stall paused invariant
+PASS  stall no ready node
+PASS  stall no further probe
+PASS  stall authority bytes invariant
+PASS  periodic checkpoint prevents stall
+PASS  heartbeat remains running with progress
+PASS  decision wait forty ticks is not stalled
+PASS  decision wait still fail closes after three probe errors
+PASS  decision probe loss paused invariant
+PASS  decision probe loss no ready node
+PASS  decision probe loss no further probe
+PASS  decision probe loss authority bytes invariant
+PASS  exit without result fail closes
+PASS  early exit paused invariant
+PASS  early exit no ready node
+PASS  early exit no further probe
+PASS  early exit authority bytes invariant
+PASS  host exit uses fail closed observation
+PASS  host exit paused invariant
+PASS  host exit no ready node
+PASS  host exit no further probe
+PASS  host exit authority bytes invariant
+PASS  stopped fake session emits no host observation
+PASS  illegal terminal jump rejected
+PASS  illegal transition event recorded
+PASS  illegal jump paused invariant
+PASS  illegal jump no ready node
+PASS  illegal jump no further probe
+PASS  illegal jump authority bytes invariant
+PASS  worker interruption accepted and paused
+PASS  worker interruption paused invariant
+PASS  worker interruption no ready node
+PASS  worker interruption no further probe
+PASS  worker interruption authority bytes invariant
+PASS  quota final rejected reserved
+PASS  quota fallback projected interruption
+PASS  quota final not committed
+PASS  quota fallback paused invariant
+PASS  quota fallback no ready node
+PASS  quota fallback no further probe
+PASS  quota fallback authority bytes invariant
+PASS  halfwritten result rejected without pause or advance
+PASS  blocked final remains blocked after later probe errors
+PASS  blocked final business projection is unchanged
+PASS  blocked final does not emit probe-lost
+PASS  replan resets blocked A to waiting
+PASS  B is ready before resumed A
+PASS  B launches and probes after replan
+PASS  paused dependency keeps C waiting and not ready
+PASS  later tick keeps dependent C waiting and not ready
+ASSERTIONS 65
+SUITE PASS
+=== relay-runner-replay-blocked.ps1 ===
+PASS  blocked replay full signature exact equality
+PASS  blocked A1 exact session stopped
+PASS  A1 exit observed before v2 activation
+PASS  v2 starts B as launch two
+PASS  v2 starts fresh A attempt two
+PASS  fresh A receives resume source
+PASS  A2 succeeds
+PASS  A remains active overall after success
+PASS  B succeeds and replan flag clears
+PASS  late A1 produces stale plan event
+PASS  late A1 leaves state bytes unchanged
+PASS  late A1 leaves A2 final unchanged
+PASS  late A1 does not stop current session
+PASS  replay never calls suspend or resume
+PASS  exactly three receipts
+PASS  receipt sessions are unique
+PASS  fresh A session differs from A1
+PASS  trace records late stale reason
+ASSERTIONS 18
+SUITE PASS
+=== relay-runner-replay-decision.ps1 ===
+PASS  A and B launch in same first tick
+PASS  dependent C initially waits
+PASS  decision checkpoint accepted at tick three
+PASS  decision freezes dependent C
+PASS  independent B continues during decision
+PASS  C not ready while A unresolved
+PASS  wrong session followup rejected
+PASS  wrong followup leaves decision and freeze intact
+PASS  independent B succeeds while A waits
+PASS  A remains idle during decision wait
+PASS  host tape observes natural new turn
+PASS  no resume or suspend call
+PASS  same session working followup accepted
+PASS  working followup unfreezes C
+PASS  A success launches C in same tick
+PASS  C succeeds at tick ten
+PASS  all nodes end succeeded
+PASS  all tasks remain active overall
+PASS  decision replay full signature exact equality
+PASS  events contain no answer or user kind
+PASS  all replay events validate
+PASS  latest checkpoint snapshot is working
+PASS  replay and fake adapter expose no input API
+ASSERTIONS 23
+SUITE PASS
+=== relay-psmux-adapter.ps1 ===
+PASS  adapter has exactly nine keys
+PASS  backend is psmux
+PASS  session name is sanitized
+PASS  launch succeeds with exact receipt session ()
+PASS  launch returns session name
+PASS  launch returns psmux ids
+PASS  launch returns process ids
+PASS  launch returns exact window title
+PASS  registry file exists
+PASS  registry binds launch id
+PASS  nested-session variable cleared during psmux call
+PASS  nested-session variable restored
+PASS  client launcher receives exact name
+PASS  launch command order is fixed (collision check, wait for session, then titles)
+PASS  adapter never runs new-session or attach through exec (window owns the session)
+PASS  client launcher receives exact non-detached new-session argv
+PASS  title format is fixed
+PASS  recent pane probes running
+PASS  registry records activity fingerprint and time
+PASS  probe fingerprints screen via capture-pane
+PASS  stop confirms exact exit
+PASS  stop records stopped time
+PASS  unknown stop fails closed
+PASS  suspend is unavailable in p1
+PASS  resume is unavailable in p1
+PASS  adapter emits no observations
+PASS  every call has four fixed fields
+PASS  launch call observes receipt file
+PASS  collision launch fails closed
+PASS  collision does not create session
+PASS  newfail launch fails closed
+PASS  invisible launch fails closed
+PASS  invisible cleanup kills orphan
+PASS  unattached launch fails closed
+PASS  unattached cleanup kills orphan
+PASS  missing probe state
+PASS  first probe after launch reports running even when screen is quiet (F-015)
+PASS  idle probe state
+PASS  idle stays idle while screen unchanged
+PASS  dead probe state
+PASS  stage-1 timeout kills session and stops the client process (R2-01)
+PASS  stage-1 psmux failure after client start also cleans up (R2-01)
+PASS  client launcher exception becomes psmux-command-failed instead of escaping (R2-03)
+PASS  stop with transiently empty list but live pane still kills and confirms (R2-02)
+PASS  session missing from list while pane process alive is a probe error, not exited
+PASS  psmux failure becomes probe error
+PASS  ambiguous exact session fails closed
+PASS  stop timeout fails closed
+PASS  no equals-prefixed target is used
+PASS  adapter exposes no terminal input or imprecise existence command
+PASS  adapter never calls attach (F-016: attach -t ignores target)
+PASS  params has exactly eight keys
+PASS  new deadlines are positive
+ASSERTIONS 53
+SUITE PASS
+=== relay-psmux-real.ps1 ===
+SUITE SKIP relay-psmux-real (set RELAY_REAL_TERMINAL=1)
+=== relay-host-loop.ps1 ===
+PASS  first tick spawns orchestrator exactly once
+PASS  spawned proposal keeps host active
+PASS  next tick CAS activates proposal v1
+PASS  proposal is renamed consumed
+PASS  ready A launches after activation
+PASS  working checkpoint is ingested
+PASS  checkpoint tmp is renamed consumed
+PASS  decision checkpoint is projected
+PASS  decision freezes dependent C
+PASS  blocked result requests replan
+PASS  blocked result stops exact A session
+PASS  blocked result tmp is renamed consumed
+PASS  replanner spawns once for generation one
+PASS  proposal v2 activates and clears replan flag
+PASS  replanner remains deduplicated across later ticks
+PASS  v2 launches new prerequisite B
+PASS  B launch is recorded by adapter
+PASS  B success launches fresh A attempt two
+PASS  fresh A receives resume_from identity
+PASS  A2 success launches dependent C
+PASS  bad result is rejected and still consumed
+PASS  consumed bad result is not ingested twice
+PASS  all succeeded makes host tick terminal
+[relay-host] tick=14 A=launching/succeeded B=running/succeeded C=running/succeeded
+PASS  host loop returns 0 when terminal
+PASS  every tick returns one status line
+PASS  host state has exactly four contract fields
+PASS  host state persists spawner generations
+PASS  host state records consumed artifact paths
+/tmp/relay-test-host-a83ca22d48174879b1fe4c204f757f2d/timeline.md
+PASS  timeline has two header lines plus one row per event
+PASS  timeline rows include event identity columns
+[relay-host] tick=1 waiting-for-plan
+[relay-host] max ticks reached; unfinished=
+PASS  MaxTicks returns 2 for unfinished run
+[relay-host] tick=1 waiting-for-plan
+[relay-host] tick=2 A=unknown/working C=waiting/waiting
+[relay-host] done with unfinished=A=paused/launch-failed,C=waiting/
+PASS  failed launch pauses node A
+PASS  host loop returns 3 when done with a paused node (R1-04)
+PASS  outcome maps all-succeeded to 0 and not-done to 2
+PASS  host, worker entry and dogfood wrapper expose no forbidden control or input path
+ASSERTIONS 35
+SUITE PASS
+=== relay-agent-tool.ps1 ===
+relay-worker-entry: unsupported -Cli value 'CLAUDE' (case-sensitive: claude|codex|zcode)
+relay-worker-entry: unsupported -Cli value 'CLAUDE' (case-sensitive: claude|codex|zcode)
+relay-worker-entry: unsupported -Cli value 'CODEX' (case-sensitive: claude|codex|zcode)
+PASS  missing receipt exits 3
+PASS  missing receipt prints fixed diagnostic
+PASS  working checkpoint reports success
+PASS  working checkpoint written to attempt directory
+PASS  working checkpoint passes frozen schema
+PASS  checkpoint identity has seven exact receipt fields
+PASS  checkpoint carries note and tried list
+PASS  checkpoint leaves no partial file
+PASS  decision checkpoint passes frozen schema
+PASS  decision checkpoint preserves prompt fields
+PASS  decision checkpoint without note gets a default progress note
+PASS  invalid decision exits 4
+PASS  invalid decision does not replace valid checkpoint
+PASS  result writes handoff tail and tmp result
+PASS  handoff first line passes frozen header validator
+PASS  handoff includes supplied body
+PASS  tail is sanitized before persistence
+PASS  tail is bounded by SessionTailMaxBytes
+PASS  result passes frozen schema
+PASS  result contains complete git snapshot metadata
+PASS  result leaves no partial file
+PASS  result without changed paths or tests passes with empty arrays
+PASS  proposal fills hash and passes frozen schema
+PASS  proposal hash equals canonical hash
+PASS  proposal leaves no partial file
+PASS  invalid proposal exits 4
+PASS  invalid proposal writes no inbox artifact
+PASS  propose without receipt uses RELAY_RUN_ROOT inbox
+PASS  propose without receipt and run root fails closed
+PASS  worker entry dry run exits 0
+PASS  worker entry prints injected environment
+PASS  worker entry prints brief-derived command without launch
+PASS  worker entry dry run accepts zcode
+PASS  zcode dry run prints injected environment
+PASS  zcode dry run prints prompt-form command without launch
+PASS  worker entry rejects miscased cli instead of silently dispatching
+PASS  worker entry rejects miscased codex instead of silently dispatching
+PowerShell 7.6.6
+[relay-worker] session=S-0001 launch=L-0001 node=A attempt=1
+RELAY_RECEIPT=/tmp/relay-test-agent-tool-e97d3d64db3647688daf5c46eab24cbf/FAKE-RUN/launches/L-0001.json
+RELAY_RUN_ROOT=/tmp/relay-test-agent-tool-e97d3d64db3647688daf5c46eab24cbf/FAKE-RUN
+RELAY_ATTEMPT_DIR=/tmp/relay-test-agent-tool-e97d3d64db3647688daf5c46eab24cbf/FAKE-RUN/attempts/A/1
+RELAY_TOOL=/home/nash/work/dh-relay/.dh-worktrees/RLT_29/tools/host/relay-agent-tool.ps1
+PASS  worker entry exits nonzero under real -NoExit launcher on miscased cli
+PASS  worker entry rejects cli outside validateset
+PASS  worker entry launches zcode with prompt-form argv
+PowerShell 7.6.6
+[relay-worker] session=S-0001 launch=L-0001 node=A attempt=1
+PASS  worker entry real-launch branch rejects miscased cli without invoking any cli
+PowerShell 7.6.6
+[relay-worker] session=S-0001 launch=L-0001 node=A attempt=1
+PASS  worker entry real-launch branch rejects miscased codex without invoking any cli
+ASSERTIONS 42
+SUITE PASS
+=== relay-policy.ps1 ===
+[31;1mExit-RelayPolicyMissingInput: [0m/home/nash/work/dh-relay/.dh-worktrees/RLT_29/tools/policy/Invoke-RelayPolicyCheck.ps1:101[0m
+[31;1m[0m[36;1mLine |[0m
+[31;1m[0m[36;1m[36;1m 101 | [0m … Test-Path -LiteralPath $AfterPath))) { [36;1mExit-RelayPolicyMissingInput[0m }[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mrelay-policy: missing required input[0m
+[31;1mExit-RelayPolicyGuardError: [0m/home/nash/work/dh-relay/.dh-worktrees/RLT_29/tools/policy/Invoke-RelayPolicyCheck.ps1:140[0m
+[31;1m[0m[36;1mLine |[0m
+[31;1m[0m[36;1m[36;1m 140 | [0m   [36;1mExit-RelayPolicyGuardError ("relay-policy: guard error: " + $_.Exce[0m …[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mrelay-policy: guard error: policy-path-dotdot:[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m[31;1m[36;1m     | [31;1mtools/relay/../protocol/evil.ps1[0m
+[31;1mExit-RelayPolicyGuardError: [0m/home/nash/work/dh-relay/.dh-worktrees/RLT_29/tools/policy/Invoke-RelayPolicyCheck.ps1:140[0m
+[31;1m[0m[36;1mLine |[0m
+[31;1m[0m[36;1m[36;1m 140 | [0m   [36;1mExit-RelayPolicyGuardError ("relay-policy: guard error: " + $_.Exce[0m …[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mrelay-policy: guard error: policy-path-dotdot: src/alpha/../gamma/x.ts[0m
+[31;1mExit-RelayPolicyGuardError: [0m/home/nash/work/dh-relay/.dh-worktrees/RLT_29/tools/policy/Invoke-RelayPolicyCheck.ps1:140[0m
+[31;1m[0m[36;1mLine |[0m
+[31;1m[0m[36;1m[36;1m 140 | [0m   [36;1mExit-RelayPolicyGuardError ("relay-policy: guard error: " + $_.Exce[0m …[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mrelay-policy: guard error: policy-path-dotdot:[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m[31;1m[36;1m     | [31;1m.dh-relay/../.dh-runtime/n.json[0m
+[31;1mExit-RelayPolicyGuardError: [0m/home/nash/work/dh-relay/.dh-worktrees/RLT_29/tools/policy/Invoke-RelayPolicyCheck.ps1:140[0m
+[31;1m[0m[36;1mLine |[0m
+[31;1m[0m[36;1m[36;1m 140 | [0m   [36;1mExit-RelayPolicyGuardError ("relay-policy: guard error: " + $_.Exce[0m …[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mrelay-policy: guard error: policy-path-not-relative:[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m[31;1m[36;1m     | [31;1mD:/repo/.dh-runtime/n.json[0m
+[31;1mExit-RelayPolicyGuardError: [0m/home/nash/work/dh-relay/.dh-worktrees/RLT_29/tools/policy/Invoke-RelayPolicyCheck.ps1:140[0m
+[31;1m[0m[36;1mLine |[0m
+[31;1m[0m[36;1m[36;1m 140 | [0m   [36;1mExit-RelayPolicyGuardError ("relay-policy: guard error: " + $_.Exce[0m …[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mrelay-policy: guard error: policy-path-not-relative: ~/.dh-runtime/n.json[0m
+[31;1mExit-RelayPolicyGuardError: [0m/home/nash/work/dh-relay/.dh-worktrees/RLT_29/tools/policy/Invoke-RelayPolicyCheck.ps1:140[0m
+[31;1m[0m[36;1mLine |[0m
+[31;1m[0m[36;1m[36;1m 140 | [0m   [36;1mExit-RelayPolicyGuardError ("relay-policy: guard error: " + $_.Exce[0m …[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mrelay-policy: guard error: policy-path-not-relative: /.dh-runtime/n.json[0m
+[31;1mExit-RelayPolicyGuardError: [0m/home/nash/work/dh-relay/.dh-worktrees/RLT_29/tools/policy/Invoke-RelayPolicyCheck.ps1:140[0m
+[31;1m[0m[36;1mLine |[0m
+[31;1m[0m[36;1m[36;1m 140 | [0m   [36;1mExit-RelayPolicyGuardError ("relay-policy: guard error: " + $_.Exce[0m …[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mrelay-policy: guard error: policy-path-quoted:[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m[31;1m[36;1m     | [31;1m".dh-runtime/relay/\346\226\260.json"[0m
+[31;1mExit-RelayPolicyGuardError: [0m/home/nash/work/dh-relay/.dh-worktrees/RLT_29/tools/policy/Invoke-RelayPolicyCheck.ps1:140[0m
+[31;1m[0m[36;1mLine |[0m
+[31;1m[0m[36;1m[36;1m 140 | [0m   [36;1mExit-RelayPolicyGuardError ("relay-policy: guard error: " + $_.Exce[0m …[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mrelay-policy: guard error: policy-path-quoted:[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m[31;1m[36;1m     | [31;1m".dh-runtime/relay/\346\226\260.json"[0m
+[31;1mExit-RelayPolicyGuardError: [0m/home/nash/work/dh-relay/.dh-worktrees/RLT_29/tools/policy/Invoke-RelayPolicyCheck.ps1:140[0m
+[31;1m[0m[36;1mLine |[0m
+[31;1m[0m[36;1m[36;1m 140 | [0m   [36;1mExit-RelayPolicyGuardError ("relay-policy: guard error: " + $_.Exce[0m …[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mrelay-policy: guard error: policy-list-entry-not-string: "nested"[0m
+[31;1mExit-RelayPolicyInputError: [0m/home/nash/work/dh-relay/.dh-worktrees/RLT_29/tools/policy/Invoke-RelayPolicyCheck.ps1:109[0m
+[31;1m[0m[36;1mLine |[0m
+[31;1m[0m[36;1m[36;1m 109 | [0m … nt -eq 0) { [36;1mExit-RelayPolicyInputError 'relay-policy: empty after-pat[0m …[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mrelay-policy: empty after-path snapshot[0m
+PASS  normalize backslash and case
+PASS  collapse internal ./ segments
+PASS  Get-RelayPolicyPath throws on drive-relative path
+PASS  leading-slash and drive-module forms both throw not-relative
+PASS  non-relative wins over dotdot when both present
+PASS  guard error message includes the offending path
+PASS  not-relative guard error also includes the offending path
+PASS  path containing NUL throws control-char
+PASS  path containing bare CR throws control-char with path
+PASS  git-quoted path throws quoted with path
+PASS  tilde-dollar lock file is a normal relative path
+PASS  tilde-slash still throws not-relative
+PASS  posix ~user/ throws not-relative
+PASS  bare tilde throws not-relative
+PASS  leading-only quote throws quoted
+PASS  trailing-only quote throws quoted
+PASS  control-char outranks quoted
+PASS  quoted outranks not-relative
+PASS  not-relative outranks dotdot
+PASS  prefix must not swallow relayX
+PASS  under-root is case insensitive
+PASS  empty or null path is fail-closed
+PASS  all under tools/relay is ok
+PASS  dh-crew path is forbidden-root
+PASS  production file outside relay is rejected
+PASS  active state path is forbidden-root
+PASS  unknown path is unclassified
+PASS  authority fixture parses
+PASS  allow set includes authorized business code prefix
+PASS  allow set includes derived harness workspace
+PASS  allow set excludes bare module root
+PASS  incomplete snapshot throws
+PASS  authorized business code is writable
+PASS  exact file scope is writable
+PASS  sibling of exact file scope is rejected
+PASS  fixed relay content roots are writable
+PASS  unauthorized business path is rejected
+PASS  null snapshot is missing-authority
+PASS  empty written set is ok
+PASS  module relay folder hits
+PASS  legal module slug relay is not a hit
+PASS  legal module workspace is not a hit
+PASS  workspace card relay folder hits
+PASS  legal module workspace predicate is not a hit
+PASS  pre-existing module relay folder is not a hit
+PASS  new module relay folder with marker is rejected
+PASS  new workspace relay folder with marker is rejected
+PASS  new legacy root write is rejected
+PASS  unprobed marker is fail-closed
+PASS  legal module docs/modules/relay is not killed
+PASS  legal module workspace is not killed by landing
+PASS  module relay shape without marker is ok
+PASS  five side-effect categories split
+PASS  git observation stays in git bucket
+PASS  git ref is not fed to content policy
+PASS  git ref would violate content policy if mixed
+PASS  unknown category is unclassified
+PASS  content mode without args exits 2
+PASS  content mode with clean input exits 0
+PASS  dev-isolation rejects path with ..
+PASS  content rejects path with ..
+PASS  landing rejects path with ..
+PASS  dev-isolation rejects absolute drive path with exit 3
+PASS  content rejects tilde path with exit 3
+PASS  landing rejects leading-slash path with exit 3
+PASS  NUL-separated list is split, forbidden root still caught in dev-isolation
+PASS  NUL-separated list is split, legacy root still caught in landing
+PASS  CR-only separated list is split, forbidden root still caught
+PASS  CR-only separated list is split, legacy root still caught in landing
+PASS  git-quoted path in landing exits 3 instead of silently passing
+PASS  git-quoted path in dev-isolation exits 3
+PASS  JSON list with null entry exits 3
+PASS  JSON list with nested array entry exits 3
+PASS  porcelain status-prefixed entry is not silently accepted as under tools/relay/
+PASS  mode all multi-verdict reason is policy-violation:multi
+PASS  empty after-path file exits 2
+PASS  malformed snapshot array exits 3
+PASS  snapshot with null cards exits 3
+PASS  git status matches after-before snapshot
+PASS  oracle rejects unauthorized gamma write
+PASS  oracle allows authorized alpha write
+PASS  CLI independent check matches oracle
+SKIP  restricted-write ACL checks (Windows-only: icacls)
+ASSERTIONS 82
+SUITE PASS
+=== relay-contract-reason-coverage.ps1 ===
+PASS  production reason codes covered: 70
+SUITE PASS
+=== relay-light-log.ps1 ===
+test_a148_mixed_trigger_lanes_judge_independently (tools.relay-light.test_relay_log.RelayBackwardCompatTests.test_a148_mixed_trigger_lanes_judge_independently)
+One node, both trigger forms: the `on:done:` lane answers to A70, ... ok
+test_a148_rlt12_win_01_ledger_replays_verbatim (tools.relay-light.test_relay_log.RelayBackwardCompatTests.test_a148_rlt12_win_01_ledger_replays_verbatim)
+All 71 rows of the frozen ledger are accepted through `add`, in ... ok
+test_a148_rlt12_win_01_plan_lints_clean (tools.relay-light.test_relay_log.RelayBackwardCompatTests.test_a148_rlt12_win_01_plan_lints_clean)
+The pre-A09 plan passes lint unmodified — no migration, no warning. ... ok
+test_fixture_baseline_succeeds_in_utf8_environment (tools.relay-light.test_relay_log.RelayCliEncodingTests.test_fixture_baseline_succeeds_in_utf8_environment)
+Fixture sanity: identical commands already pass under UTF-8 stdio. ... ok
+test_lint_stderr_and_json_are_utf8_decodable_under_ascii_and_cp1252 (tools.relay-light.test_relay_log.RelayCliEncodingTests.test_lint_stderr_and_json_are_utf8_decodable_under_ascii_and_cp1252) ... ok
+test_status_stdout_is_utf8_decodable_under_ascii_and_cp1252 (tools.relay-light.test_relay_log.RelayCliEncodingTests.test_status_stdout_is_utf8_decodable_under_ascii_and_cp1252) ... ok
+test_a_config_without_one_frozen_tier_rejects_plans_using_it (tools.relay-light.test_relay_log.RelayConfigTests.test_a_config_without_one_frozen_tier_rejects_plans_using_it)
+HC-RL-A116: dropping a tier from the config cannot silently legitimize it either. ... ok
+test_an_r_instance_without_reviewer_rows_is_exempt_from_a116 (tools.relay-light.test_relay_log.RelayConfigTests.test_an_r_instance_without_reviewer_rows_is_exempt_from_a116)
+HC-RL-A116: a zero-reviewer R instance does not trigger the set check. ... ok
+test_broken_configuration_exits_three_with_the_frozen_rule_ids (tools.relay-light.test_relay_log.RelayConfigTests.test_broken_configuration_exits_three_with_the_frozen_rule_ids)
+HC-RL-A131/A92: roles and mapping failures are fail-closed on every subcommand. ... ok
+test_cards_override_decision_mode_is_reported_per_card (tools.relay-light.test_relay_log.RelayConfigTests.test_cards_override_decision_mode_is_reported_per_card)
+HC-RL-A130b: ``cards=<card>:<recipe>:<mode>`` is parsed and shown by the text status. ... ok
+test_cards_override_lets_one_plan_mix_recipe_tiers (tools.relay-light.test_relay_log.RelayConfigTests.test_cards_override_lets_one_plan_mix_recipe_tiers)
+HC-RL-A116b: ``cards=<card>:<recipe>`` makes that card's R instance follow its own tier. ... ok
+test_cards_override_recipe_is_enforced_per_card (tools.relay-light.test_relay_log.RelayConfigTests.test_cards_override_recipe_is_enforced_per_card)
+HC-RL-A116b: an overridden card whose reviewer set still follows the default is rejected. ... ok
+test_cards_override_rejects_unknown_recipe_or_mode (tools.relay-light.test_relay_log.RelayConfigTests.test_cards_override_rejects_unknown_recipe_or_mode)
+HC-RL-A116/A130: bad ``cards=`` suffixes fail at parse time with exit 3. ... ok
+test_default_config_dir_resolution_follows_the_five_cases (tools.relay-light.test_relay_log.RelayConfigTests.test_default_config_dir_resolution_follows_the_five_cases)
+HC-RL-A135/§6.2.1: single-side auto-detection; two-sided and zero-sided fail closed. ... ok
+test_each_recipe_tier_lints_a_matching_r_instance (tools.relay-light.test_relay_log.RelayConfigTests.test_each_recipe_tier_lints_a_matching_r_instance)
+HC-RL-A115/A116: each tier accepts its configured reviewer set regardless of row order. ... ok
+test_each_subcommand_help_exposes_config_dir (tools.relay-light.test_relay_log.RelayConfigTests.test_each_subcommand_help_exposes_config_dir)
+HC-RL-A135: add/status/lint each advertise --config-dir; the command set stays three. ... ok
+test_explicit_config_dir_is_normalized_and_percent_encoded (tools.relay-light.test_relay_log.RelayConfigTests.test_explicit_config_dir_is_normalized_and_percent_encoded)
+HC-RL-A135: `~/...` expands, normalizes to an absolute path and is recorded encoded. ... ok
+test_missing_explicit_config_dir_fails_closed (tools.relay-light.test_relay_log.RelayConfigTests.test_missing_explicit_config_dir_fails_closed)
+HC-RL-A135: an explicit config dir that does not exist exits 3 with no ledger write. ... ok
+test_one_mismatched_r_instance_rejects_the_whole_plan (tools.relay-light.test_relay_log.RelayConfigTests.test_one_mismatched_r_instance_rejects_the_whole_plan)
+HC-RL-A116: every active R instance is checked, not only the first one. ... ok
+test_plan_loaded_provenance_is_rebuilt_from_the_real_resolver (tools.relay-light.test_relay_log.RelayConfigTests.test_plan_loaded_provenance_is_rebuilt_from_the_real_resolver)
+HC-RL-A135/§6.2.1: forged config_dir/plan tokens never survive into the ledger. ... ok
+test_plan_loaded_records_the_normalized_absolute_plan_dir (tools.relay-light.test_relay_log.RelayConfigTests.test_plan_loaded_records_the_normalized_absolute_plan_dir)
+HC-RL-A135: a relative --plan is recorded as its normalized absolute path. ... ok
+test_recipe_reviewer_mismatch_is_rejected_as_a116 (tools.relay-light.test_relay_log.RelayConfigTests.test_recipe_reviewer_mismatch_is_rejected_as_a116)
+HC-RL-A116: an R instance whose reviewer set differs from its recipe is rejected. ... ok
+test_recipe_tiers_stay_within_the_frozen_three_value_enum (tools.relay-light.test_relay_log.RelayConfigTests.test_recipe_tiers_stay_within_the_frozen_three_value_enum)
+HC-RL-A116: adding a tier to the config must not legitimize recipe=<new tier>. ... ok
+test_recipe_value_must_name_a_configured_tier (tools.relay-light.test_relay_log.RelayConfigTests.test_recipe_value_must_name_a_configured_tier)
+HC-RL-A116: the marker recipe must name a configured tier even without R instances. ... ok
+test_shipped_dh_mapping_carries_the_four_frozen_content_classes (tools.relay-light.test_relay_log.RelayConfigTests.test_shipped_dh_mapping_carries_the_four_frozen_content_classes)
+HC-RL-A92: stages/recipes/limits/on_exceed are present and E11-E13 stay out of relay. ... ok
+test_shipped_recipes_match_the_dev_harness_node_table (tools.relay-light.test_relay_log.RelayConfigTests.test_shipped_recipes_match_the_dev_harness_node_table)
+HC-RL-A115: heavy/normal/light carry exactly the frozen reviewer paths. ... ok
+test_shipped_roles_toml_has_the_eleven_design_roles (tools.relay-light.test_relay_log.RelayConfigTests.test_shipped_roles_toml_has_the_eleven_design_roles)
+HC-RL-A131: roles.toml keys equal design §6.3 and every role carries model + launch. ... ok
+test_structural_lint_precedes_the_recipe_check (tools.relay-light.test_relay_log.RelayConfigTests.test_structural_lint_precedes_the_recipe_check)
+HC-RL-A116: a mismatching R instance is still reported under the structural rule. ... ok
+test_a139_launch_fix_is_freeform_note_token_exposed_in_status_json (tools.relay-light.test_relay_log.RelayLaunchFixStatusTests.test_a139_launch_fix_is_freeform_note_token_exposed_in_status_json)
+agent_launch.note 可含 launch_fix=<token>：add 不校验计划 launch 列、 ... ok
+test_a139_lint_ignores_launch_column_vs_ledger_mismatch (tools.relay-light.test_relay_log.RelayLaunchFixStatusTests.test_a139_lint_ignores_launch_column_vs_ledger_mismatch)
+lint 不因计划 launch 列与账本 launch_fix 事实不一致而失败。 ... ok
+test_a140_ledger_silent_marks_only_live_agents_over_threshold (tools.relay-light.test_relay_log.RelayLedgerSilenceTests.test_a140_ledger_silent_marks_only_live_agents_over_threshold)
+打桩时钟：账本最近事件超过阈值的在场 agent 标 ledger_silent； ... ok
+test_a140_monitor_templates_carry_silence_protocol (tools.relay-light.test_relay_log.RelayLedgerSilenceTests.test_a140_monitor_templates_carry_silence_protocol)
+SKILL.md 与两份 adapter 都含 ledger_silent 处置原文的四个关键锚点。 ... ok
+test_a140_silence_timeout_loads_with_default_and_override (tools.relay-light.test_relay_log.RelayLedgerSilenceTests.test_a140_silence_timeout_loads_with_default_and_override)
+dh-mapping.toml 可加载 limits.silence_timeout_min；缺省 30；非法类型拒。 ... ok
+test_a123_binds_plan_amend_whose_carrier_was_superseded (tools.relay-light.test_relay_log.RelayLifecycleTests.test_a123_binds_plan_amend_whose_carrier_was_superseded)
+HC-RL-A123: superseding the plan_amend carrier node must not orphan the binding. ... ok
+test_a89_lint_rejects_a_backward_cross_stage_dependency (tools.relay-light.test_relay_log.RelayLifecycleTests.test_a89_lint_rejects_a_backward_cross_stage_dependency)
+HC-RL-A89: a later stage may never be a dependency of an earlier stage (exact id). ... ok
+test_blocked_and_cancelled_finales_follow_the_frozen_rules (tools.relay-light.test_relay_log.RelayLifecycleTests.test_blocked_and_cancelled_finales_follow_the_frozen_rules)
+HC-RL-A118: blocked cannot close; cancelled must cite user_decision; both终局 then close. ... ok
+test_current_stage_prefers_the_open_instance_awaiting_close (tools.relay-light.test_relay_log.RelayLifecycleTests.test_current_stage_prefers_the_open_instance_awaiting_close)
+HC-RL-A106/A61: a started instance whose result awaits stage_close outranks a ... ok
+test_design_10_2_sequence_is_accepted_in_order_with_writer_runs (tools.relay-light.test_relay_log.RelayLifecycleTests.test_design_10_2_sequence_is_accepted_in_order_with_writer_runs)
+HC-RL-A89/A93/A105/A112: the §10.2 sequence is accepted row by row, in partition order. ... ok
+test_four_outcomes_drive_suggested_action_and_relaunch_count (tools.relay-light.test_relay_log.RelayLifecycleTests.test_four_outcomes_drive_suggested_action_and_relaunch_count)
+HC-RL-A106/A105: outcome → suggested_action, with failed relaunching the monitor once. ... ok
+test_monitor_owned_events_need_their_instances_stage_start (tools.relay-light.test_relay_log.RelayLifecycleTests.test_monitor_owned_events_need_their_instances_stage_start)
+HC-RL-A93: monitor writes only inside the instance's stage_start..stage_close window. ... ok
+test_monitor_relaunch_count_counts_only_failed_caused_relaunches (tools.relay-light.test_relay_log.RelayLifecycleTests.test_monitor_relaunch_count_counts_only_failed_caused_relaunches)
+HC-RL-A106/§3.5: only a launch after a `failed` result is a failed-caused relaunch. ... ok
+test_node_scoped_events_cannot_claim_a_foreign_stage (tools.relay-light.test_relay_log.RelayLifecycleTests.test_node_scoped_events_cannot_claim_a_foreign_stage)
+HC-RL-A93: a `stage_id=` note cannot reattribute a node's row to another instance. ... ok
+test_open_stages_lists_cross_card_parallel_instances (tools.relay-light.test_relay_log.RelayLifecycleTests.test_open_stages_lists_cross_card_parallel_instances)
+HC-RL-A111: two cards may hold an open instance each without any alert. ... ok
+test_plan_amend_requires_monitor_and_complete_note_and_is_repeatable (tools.relay-light.test_relay_log.RelayLifecycleTests.test_plan_amend_requires_monitor_and_complete_note_and_is_repeatable)
+HC-RL-A119: monitor#<n> writes it, note carries filename + nodes=, repeats freely. ... ok
+test_planner_amend_out_of_scope_lifecycle_contract (tools.relay-light.test_relay_log.RelayLifecycleTests.test_planner_amend_out_of_scope_lifecycle_contract)
+HC-RL-A122: planner-amend 只走 agent_launch → done；out-of-scope done.note ... ok
+test_repeated_stage_instances_stay_independent_and_alert_on_double_open (tools.relay-light.test_relay_log.RelayLifecycleTests.test_repeated_stage_instances_stay_independent_and_alert_on_double_open)
+HC-RL-A110/A111: R#1 and R#2 keep their own results; same-card double open是报警项. ... ok
+test_stage_close_requires_a_monitor_launch (tools.relay-light.test_relay_log.RelayLifecycleTests.test_stage_close_requires_a_monitor_launch)
+HC-RL-A89/§3.4: an instance needs at least one monitor_launch before it can close. ... ok
+test_stage_result_amend_summary_matches_stage_history (tools.relay-light.test_relay_log.RelayLifecycleTests.test_stage_result_amend_summary_matches_stage_history)
+HC-RL-A123: the amend summary is required iff this instance recorded a plan_amend. ... ok
+test_stage_result_and_close_preconditions_exit_two (tools.relay-light.test_relay_log.RelayLifecycleTests.test_stage_result_and_close_preconditions_exit_two)
+HC-RL-A112/A89/A105: result-before-close and illegal stage_close are fail closed. ... ok
+test_status_alerts_writer_and_handoff_violations_read_only (tools.relay-light.test_relay_log.RelayLifecycleTests.test_status_alerts_writer_and_handoff_violations_read_only)
+HC-RL-A85/A93: a legacy ledger is reported, never rewritten or rejected. ... ok
+test_status_mirrors_pre_start_and_attribution_warnings (tools.relay-light.test_relay_log.RelayLifecycleTests.test_status_mirrors_pre_start_and_attribution_warnings)
+HC-RL-A93/A89: legacy pre-start writes, foreign labels, launch-less closes are reported. ... ok
+test_writer_consistency_exits_two_for_every_frozen_owner (tools.relay-light.test_relay_log.RelayLifecycleTests.test_writer_consistency_exits_two_for_every_frozen_owner)
+HC-RL-A85: each event has exactly one legal writer, checked before it is appended. ... ok
+test_writer_handoff_forbids_writes_after_the_instance_closed (tools.relay-light.test_relay_log.RelayLifecycleTests.test_writer_handoff_forbids_writes_after_the_instance_closed)
+HC-RL-A93: stage_close ends the instance's write window. ... ok
+test_a147_review_rounds_is_a_projection_never_a_write_gate (tools.relay-light.test_relay_log.RelayLimitsTests.test_a147_review_rounds_is_a_projection_never_a_write_gate)
+HC-RL-A147: the third counter exhausts at the configured round count, ... ok
+test_attempt_and_x_loss_stops_trigger_independently (tools.relay-light.test_relay_log.RelayLimitsTests.test_attempt_and_x_loss_stops_trigger_independently)
+HC-RL-A107: each counter hits its own limit and opens the strategist exit alone. ... ok
+test_attempt_loss_stop_counts_stage_failed_relaunch_debt (tools.relay-light.test_relay_log.RelayLimitsTests.test_attempt_loss_stop_counts_stage_failed_relaunch_debt)
+HC-RL-A107: a stage failed after the last attempt also spends the counter. ... ok
+test_decider_chain_resume_stays_gate_free_in_auto_mode (tools.relay-light.test_relay_log.RelayLimitsTests.test_decider_chain_resume_stays_gate_free_in_auto_mode)
+HC-RL-A97: the decider chain keeps its own gate — auto mode adds no user_decision. ... ok
+test_plan_loaded_note_carries_config_dir_and_plan_keys (tools.relay-light.test_relay_log.RelayLimitsTests.test_plan_loaded_note_carries_config_dir_and_plan_keys)
+HC-RL-A99/§6.2.1: a caller note without the provenance keys still lands with both. ... ok
+test_plan_x_rounds_length_and_ids_come_from_the_loaded_config (tools.relay-light.test_relay_log.RelayLimitsTests.test_plan_x_rounds_length_and_ids_come_from_the_loaded_config)
+HC-RL-A99: one unchanged binary plans 2 or 3 X rounds purely from the config. ... ok
+test_strategist_chain_finales_require_a_user_decision_in_every_mode (tools.relay-light.test_relay_log.RelayLimitsTests.test_strategist_chain_finales_require_a_user_decision_in_every_mode)
+HC-RL-A97: resume/cancelled of a strategist chain need user_decision — auto too. ... ok
+test_strategist_chain_with_user_decision_runs_both_finales (tools.relay-light.test_relay_log.RelayLimitsTests.test_strategist_chain_with_user_decision_runs_both_finales)
+HC-RL-A97: user_decision unlocks resume; the cancelled finale stops the card. ... ok
+test_x_rounds_beyond_the_configured_limit_are_rejected_as_a97 (tools.relay-light.test_relay_log.RelayLimitsTests.test_x_rounds_beyond_the_configured_limit_are_rejected_as_a97)
+HC-RL-A97: a plan whose only violation is an X round over the limit fails exactly. ... ok
+test_a138_not_run_exhaustion_rejects_next_launch_a107 (tools.relay-light.test_relay_log.RelayNotRunRetryTests.test_a138_not_run_exhaustion_rejects_next_launch_a107)
+连续 attempt_max 条 NOT_RUN agent_lost 后，下一条 agent_launch 退 2 报 A107； ... ok
+test_a138_second_fix_group_and_premature_authorization_rejected (tools.relay-light.test_relay_log.RelayNotRunRetryTests.test_a138_second_fix_group_and_premature_authorization_rejected)
+每个 (node,agent) 至多一个 launch_fix 组；未止损时的授权 user_decision 同样退 2。 ... ok
+test_a138_status_reasons_list_not_run_count_and_fix_group (tools.relay-light.test_relay_log.RelayNotRunRetryTests.test_a138_status_reasons_list_not_run_count_and_fix_group)
+status 不可关原因列出 NOT_RUN 计数与 fix 组（未授权 / 已授权两态）。 ... ok
+test_a138_user_decision_authorizes_one_fix_group (tools.relay-light.test_relay_log.RelayNotRunRetryTests.test_a138_user_decision_authorizes_one_fix_group)
+user_decision launch_fix=<token> 记在被止损 agent 名下，授权一组重拉预算； ... ok
+test_allowlist_classes_and_precheck_rejections (tools.relay-light.test_relay_log.RelayPlanAmendGuardTests.test_allowlist_classes_and_precheck_rejections)
+三类白名单逐项通过；design/新卡/越界/绝对/穿越/重复/目录各例拒绝。 ... ok
+test_amend_after_lint_failure_restores_plan (tools.relay-light.test_relay_log.RelayPlanAmendGuardTests.test_amend_after_lint_failure_restores_plan)
+actual == proposed 但普通 lint 失败 → 从仓外副本恢复，lint 规则号透传。 ... ok
+test_before_rejects_bad_snapshot_dir (tools.relay-light.test_relay_log.RelayPlanAmendGuardTests.test_before_rejects_bad_snapshot_dir)
+snapshot-dir：必须绝对、未存在、无 symlink 父链、在仓与 git 元数据之外。 ... ok
+test_external_mutation_between_phases_fails_closed (tools.relay-light.test_relay_log.RelayPlanAmendGuardTests.test_external_mutation_between_phases_fails_closed)
+静默区破坏：HEAD/index/object database 任一变化与 before 双采样不一致都 fail closed。 ... ok
+test_failed_amend_restores_raw_bytes_mode_and_symlink_across_clean_eol_filter (tools.relay-light.test_relay_log.RelayPlanAmendGuardTests.test_failed_amend_restores_raw_bytes_mode_and_symlink_across_clean_eol_filter)
+clean/EOL filter 不参与快照与恢复：失败时还原的是工作树原始 bytes/mode/target。 ... ok
+test_mixed_forbidden_proposal_leaves_targets_and_proposal_unchanged (tools.relay-light.test_relay_log.RelayPlanAmendGuardTests.test_mixed_forbidden_proposal_leaves_targets_and_proposal_unchanged)
+禁区混合：预检整份拒绝，全部计划目标与输入方案文件原始状态零变化。 ... ok
+test_normal_lint_and_argument_contract (tools.relay-light.test_relay_log.RelayPlanAmendGuardTests.test_normal_lint_and_argument_contract)
+普通 lint 合同不变；amend-check 缺件按参数错误收口；顶层子命令仍三个。 ... ok
+test_sensitive_untracked_stays_out_of_object_database_and_durable_evidence (tools.relay-light.test_relay_log.RelayPlanAmendGuardTests.test_sensitive_untracked_stays_out_of_object_database_and_durable_evidence)
+敏感 untracked 的正文/文件名/哈希不进 object database，也不回显到进程输出。 ... ok
+test_snapshot_diff_captures_tracked_untracked_and_dirty_same_path_without_git_objects (tools.relay-light.test_relay_log.RelayPlanAmendGuardTests.test_snapshot_diff_captures_tracked_untracked_and_dirty_same_path_without_git_objects)
+P1-02 矩阵：改前 dirty 不混入、同路径二次修改不漏报、tracked/untracked 三态、 ... ok
+test_snapshot_dir_tolerates_realpath_name_expansion (tools.relay-light.test_relay_log.RelayPlanAmendGuardTests.test_snapshot_dir_tolerates_realpath_name_expansion)
+Windows 8.3 短路径等效形态：realpath 展开后字符串变化但父链无 symlink ... ok
+test_success_requires_actual_equal_proposed (tools.relay-light.test_relay_log.RelayPlanAmendGuardTests.test_success_requires_actual_equal_proposed)
+成功的唯一判据 actual == proposed：多路径=越界、少路径=no-op 都 fail closed。 ... ok
+test_a120_allows_append_and_superseded_separation (tools.relay-light.test_relay_log.RelayPlanLintTests.test_a120_allows_append_and_superseded_separation)
+HC-RL-A120: same-stage tail append and superseded separation pass lint. ... ok
+test_a120_keeps_four_hard_constraints (tools.relay-light.test_relay_log.RelayPlanLintTests.test_a120_keeps_four_hard_constraints)
+HC-RL-A120: a legal tail append does not relax A46/A72/A89/A109. ... ok
+test_a150_lint_mapping_table_binds_review_ready_rows (tools.relay-light.test_relay_log.RelayPlanLintTests.test_a150_lint_mapping_table_binds_review_ready_rows)
+A150: the §3.5 lint-rule mapping table binds both `on:review_ready:` rows. ... ok
+test_add_is_append_only_with_twenty_fixed_schema_events (tools.relay-light.test_relay_log.RelayPlanLintTests.test_add_is_append_only_with_twenty_fixed_schema_events) ... ok
+test_add_rejects_unknown_and_case_changed_events_without_writing (tools.relay-light.test_relay_log.RelayPlanLintTests.test_add_rejects_unknown_and_case_changed_events_without_writing) ... ok
+test_add_reports_genuine_append_failure_as_exit_four (tools.relay-light.test_relay_log.RelayPlanLintTests.test_add_reports_genuine_append_failure_as_exit_four) ... ok
+test_add_reports_ledger_read_failure_as_exit_four (tools.relay-light.test_relay_log.RelayPlanLintTests.test_add_reports_ledger_read_failure_as_exit_four) ... ok
+test_agent_authorization_has_four_exempt_prefixes_and_active_nodes (tools.relay-light.test_relay_log.RelayPlanLintTests.test_agent_authorization_has_four_exempt_prefixes_and_active_nodes) ... ok
+test_agent_launch_requires_node_start_and_terminal_agents_are_sealed (tools.relay-light.test_relay_log.RelayPlanLintTests.test_agent_launch_requires_node_start_and_terminal_agents_are_sealed) ... ok
+test_agent_rows_reference_existing_nodes_with_unique_names (tools.relay-light.test_relay_log.RelayPlanLintTests.test_agent_rows_reference_existing_nodes_with_unique_names) ... ok
+test_agent_state_transition_table_rejects_invalid_next_events (tools.relay-light.test_relay_log.RelayPlanLintTests.test_agent_state_transition_table_rejects_invalid_next_events) ... ok
+test_all_twenty_event_words_pass_lexical_validation (tools.relay-light.test_relay_log.RelayPlanLintTests.test_all_twenty_event_words_pass_lexical_validation)
+HC-RL-A2 (RLT_24): the frozen vocabulary is twenty words including ... ok
+test_attempts_are_keyed_by_node_and_agent_name (tools.relay-light.test_relay_log.RelayPlanLintTests.test_attempts_are_keyed_by_node_and_agent_name) ... ok
+test_attempts_are_per_node_and_only_relaunch_after_authorized_causes (tools.relay-light.test_relay_log.RelayPlanLintTests.test_attempts_are_per_node_and_only_relaunch_after_authorized_causes) ... ok
+test_by_is_derived_from_agent_prefix_under_the_frozen_writer_contract (tools.relay-light.test_relay_log.RelayPlanLintTests.test_by_is_derived_from_agent_prefix_under_the_frozen_writer_contract)
+HC-RL-A85: `by` mirrors the agent prefix, and only the owner may write the event. ... ok
+test_card_and_node_type_are_limited (tools.relay-light.test_relay_log.RelayPlanLintTests.test_card_and_node_type_are_limited) ... ok
+test_close_requires_an_active_agent_of_its_node (tools.relay-light.test_relay_log.RelayPlanLintTests.test_close_requires_an_active_agent_of_its_node) ... ok
+test_decider_and_strategist_escalations_stay_with_the_triggering_agent (tools.relay-light.test_relay_log.RelayPlanLintTests.test_decider_and_strategist_escalations_stay_with_the_triggering_agent) ... ok
+test_decision_and_user_decision_must_resume_before_original_agent_done (tools.relay-light.test_relay_log.RelayPlanLintTests.test_decision_and_user_decision_must_resume_before_original_agent_done) ... ok
+test_decision_mode_accepts_frozen_values_and_rejects_others (tools.relay-light.test_relay_log.RelayPlanLintTests.test_decision_mode_accepts_frozen_values_and_rejects_others) ... ok
+test_decision_repeats_helper_while_user_decision_uses_frozen_note_shape (tools.relay-light.test_relay_log.RelayPlanLintTests.test_decision_repeats_helper_while_user_decision_uses_frozen_note_shape)
+HC-RL-A69: decision repeats the helper; user_decision retains the design note shape. ... ok
+test_deep_acyclic_dependencies_do_not_raise_recursion_error (tools.relay-light.test_relay_log.RelayPlanLintTests.test_deep_acyclic_dependencies_do_not_raise_recursion_error) ... ok
+test_dependencies_cannot_target_superseded_nodes (tools.relay-light.test_relay_log.RelayPlanLintTests.test_dependencies_cannot_target_superseded_nodes) ... ok
+test_dependencies_must_exist_and_be_acyclic (tools.relay-light.test_relay_log.RelayPlanLintTests.test_dependencies_must_exist_and_be_acyclic) ... ok
+test_each_active_node_needs_an_active_agent (tools.relay-light.test_relay_log.RelayPlanLintTests.test_each_active_node_needs_an_active_agent) ... ok
+test_empty_and_bad_ledger_follow_status_and_add_exit_contracts (tools.relay-light.test_relay_log.RelayPlanLintTests.test_empty_and_bad_ledger_follow_status_and_add_exit_contracts) ... ok
+test_empty_cards_is_a_plan_parse_error_in_the_lint_cli (tools.relay-light.test_relay_log.RelayPlanLintTests.test_empty_cards_is_a_plan_parse_error_in_the_lint_cli) ... ok
+test_empty_ledger_pending_nodes_exclude_superseded_rows (tools.relay-light.test_relay_log.RelayPlanLintTests.test_empty_ledger_pending_nodes_exclude_superseded_rows)
+HC-RL-A128/A84: superseded rows are absent from empty-ledger pending_nodes. ... ok
+test_escalate_requires_exactly_one_matching_helper_token (tools.relay-light.test_relay_log.RelayPlanLintTests.test_escalate_requires_exactly_one_matching_helper_token)
+HC-RL-A69: escalate note must carry exactly one kind-matched helper token. ... ok
+test_fixed_tables_and_cells_fail_closed (tools.relay-light.test_relay_log.RelayPlanLintTests.test_fixed_tables_and_cells_fail_closed) ... ok
+test_forbidden_types_are_the_sole_violation_in_legal_plans (tools.relay-light.test_relay_log.RelayPlanLintTests.test_forbidden_types_are_the_sole_violation_in_legal_plans)
+HC-RL-A126: the forbidden type is the only violation in these fixtures. ... ok
+test_help_lists_exactly_the_three_frozen_subcommands (tools.relay-light.test_relay_log.RelayPlanLintTests.test_help_lists_exactly_the_three_frozen_subcommands) ... ok
+test_ledger_read_rejects_extra_keys_and_noncontinuous_seq (tools.relay-light.test_relay_log.RelayPlanLintTests.test_ledger_read_rejects_extra_keys_and_noncontinuous_seq) ... ok
+test_lint_and_default_dependencies_skip_superseded_rows (tools.relay-light.test_relay_log.RelayPlanLintTests.test_lint_and_default_dependencies_skip_superseded_rows)
+HC-RL-A128: lint ignores superseded rows and default dependencies skip them. ... ok
+test_lint_cli_exit_stderr_and_json_contract (tools.relay-light.test_relay_log.RelayPlanLintTests.test_lint_cli_exit_stderr_and_json_contract)
+HC-RL-A80: lint signature, exit codes 0/2/3, stderr shape, --json document. ... ok
+test_lint_cli_smoke_uses_success_and_plan_error_contracts (tools.relay-light.test_relay_log.RelayPlanLintTests.test_lint_cli_smoke_uses_success_and_plan_error_contracts) ... ok
+test_marker_requires_only_frozen_fields_and_allows_missing_generated (tools.relay-light.test_relay_log.RelayPlanLintTests.test_marker_requires_only_frozen_fields_and_allows_missing_generated) ... ok
+test_missing_and_zero_byte_ledgers_match_for_status_and_lint (tools.relay-light.test_relay_log.RelayPlanLintTests.test_missing_and_zero_byte_ledgers_match_for_status_and_lint)
+HC-RL-A84: a zero-byte ledger behaves exactly like an absent ledger. ... ok
+test_node_close_ignores_an_untriggered_agent (tools.relay-light.test_relay_log.RelayPlanLintTests.test_node_close_ignores_an_untriggered_agent) ... ok
+test_node_close_names_a_nonterminal_launched_agent_even_when_close_agent_is_done (tools.relay-light.test_relay_log.RelayPlanLintTests.test_node_close_names_a_nonterminal_launched_agent_even_when_close_agent_is_done) ... ok
+test_node_close_requires_all_terminals_and_configured_agent_done (tools.relay-light.test_relay_log.RelayPlanLintTests.test_node_close_requires_all_terminals_and_configured_agent_done) ... ok
+test_node_number_is_unique_even_when_superseded (tools.relay-light.test_relay_log.RelayPlanLintTests.test_node_number_is_unique_even_when_superseded) ... ok
+test_non_newline_terminated_ledger_is_rejected_without_append (tools.relay-light.test_relay_log.RelayPlanLintTests.test_non_newline_terminated_ledger_is_rejected_without_append) ... ok
+test_plan_loaded_note_requires_non_empty_skill_token (tools.relay-light.test_relay_log.RelayPlanLintTests.test_plan_loaded_note_requires_non_empty_skill_token)
+HC-RL-A18: plan_loaded must carry a non-empty skill=<version-or-token>. ... ok
+test_relaunch_attempt_increment_is_exact_after_terminal_causes (tools.relay-light.test_relay_log.RelayPlanLintTests.test_relaunch_attempt_increment_is_exact_after_terminal_causes) ... ok
+test_relay_log_imports_are_stdlib_only (tools.relay-light.test_relay_log.RelayPlanLintTests.test_relay_log_imports_are_stdlib_only)
+HC-RL-A16: every top-level import in relay_log.py is stdlib. ... ok
+test_runtime_plan_semantic_errors_map_to_exit_three_while_lint_is_two (tools.relay-light.test_relay_log.RelayPlanLintTests.test_runtime_plan_semantic_errors_map_to_exit_three_while_lint_is_two) ... ok
+test_runtime_trigger_and_dependency_gates (tools.relay-light.test_relay_log.RelayPlanLintTests.test_runtime_trigger_and_dependency_gates) ... ok
+test_same_card_stages_are_serial_but_cards_can_be_parallel (tools.relay-light.test_relay_log.RelayPlanLintTests.test_same_card_stages_are_serial_but_cards_can_be_parallel) ... ok
+test_stage_id_card_and_instance_are_structural (tools.relay-light.test_relay_log.RelayPlanLintTests.test_stage_id_card_and_instance_are_structural) ... ok
+test_stage_must_be_known_and_grouped_contiguously (tools.relay-light.test_relay_log.RelayPlanLintTests.test_stage_must_be_known_and_grouped_contiguously) ... ok
+test_static_forbidden_primitive_and_pane_guards (tools.relay-light.test_relay_log.RelayPlanLintTests.test_static_forbidden_primitive_and_pane_guards) ... ok
+test_status_and_lint_match_with_and_without_superseded_rows (tools.relay-light.test_relay_log.RelayPlanLintTests.test_status_and_lint_match_with_and_without_superseded_rows)
+HC-RL-A128/A73: superseded rows leave lint untouched and status observables equal, ... ok
+test_superseded_by_cannot_target_another_superseded_node (tools.relay-light.test_relay_log.RelayPlanLintTests.test_superseded_by_cannot_target_another_superseded_node) ... ok
+test_superseded_forms_are_exact_and_point_to_an_existing_node (tools.relay-light.test_relay_log.RelayPlanLintTests.test_superseded_forms_are_exact_and_point_to_an_existing_node) ... ok
+test_trigger_values_and_same_node_done_references_are_checked (tools.relay-light.test_relay_log.RelayPlanLintTests.test_trigger_values_and_same_node_done_references_are_checked) ... ok
+test_unicode_line_separators_round_trip_as_json_string_content (tools.relay-light.test_relay_log.RelayPlanLintTests.test_unicode_line_separators_round_trip_as_json_string_content)
+HC-RL-A38/A56: a successful add must remain one readable JSONL row. ... ok
+test_unreadable_ledger_status_exits_four (tools.relay-light.test_relay_log.RelayPlanLintTests.test_unreadable_ledger_status_exits_four)
+HC-RL-A45: status over an unreadable ledger exits 4 with a ledger error. ... ok
+test_valid_plan_defaults_decision_mode_and_resolves_default_dependency (tools.relay-light.test_relay_log.RelayPlanLintTests.test_valid_plan_defaults_decision_mode_and_resolves_default_dependency) ... ok
+test_a158_close_row_fixture_lints_and_preserves_projection (tools.relay-light.test_relay_log.RelayResourceCloseBackwardCompatTests.test_a158_close_row_fixture_lints_and_preserves_projection)
+Legal close rows appended to the terminal 71-row copy lint clean and ... ok
+test_a158_historical_source_bytes_and_71_row_replay (tools.relay-light.test_relay_log.RelayResourceCloseBackwardCompatTests.test_a158_historical_source_bytes_and_71_row_replay)
+SHA-256 the canonical source before and after; all 71 rows are ... ok
+test_a158_old_and_new_status_stable_fields_equal (tools.relay-light.test_relay_log.RelayResourceCloseBackwardCompatTests.test_a158_old_and_new_status_stable_fields_equal)
+The pinned-baseline (19-word) implementation and the new one ... ok
+test_a155_after_terminal_and_repeated_close_preserve_projection (tools.relay-light.test_relay_log.RelayResourceCloseTests.test_a155_after_terminal_and_repeated_close_preserve_projection)
+Close rows stay legal after node_close/stage_close and on never-started ... ok
+test_a155_blank_id_invalid_type_and_outcome_add_and_lint (tools.relay-light.test_relay_log.RelayResourceCloseTests.test_a155_blank_id_invalid_type_and_outcome_add_and_lint)
+§3.4: blank/whitespace ids, enum case-sensitivity, and a relative ... ok
+test_a155_duplicate_unknown_and_non_string_note_add_and_lint (tools.relay-light.test_relay_log.RelayResourceCloseTests.test_a155_duplicate_unknown_and_non_string_note_add_and_lint)
+§3.4: duplicate keys (even same-value), unknown keys, and trailing free ... ok
+test_a155_missing_base_keys_add_and_injected_lint (tools.relay-light.test_relay_log.RelayResourceCloseTests.test_a155_missing_base_keys_add_and_injected_lint)
+§3.4: each missing required key fails add and lint, naming the key. ... ok
+test_a155_status_warnings_preserve_old_a85_a93 (tools.relay-light.test_relay_log.RelayResourceCloseTests.test_a155_status_warnings_preserve_old_a85_a93)
+The close-row exemption in `_ledger_warnings` must not relax old checks: ... ok
+test_a155_three_ok_object_types_add_and_injected_lint (tools.relay-light.test_relay_log.RelayResourceCloseTests.test_a155_three_ok_object_types_add_and_injected_lint)
+§3.4: legal pane/workspace/worktree `ok` close rows — add 0, lint 0, ... ok
+test_a155_wire_encoding_and_token_grammar_add_and_lint (tools.relay-light.test_relay_log.RelayResourceCloseTests.test_a155_wire_encoding_and_token_grammar_add_and_lint)
+§3.4 wire format: single-pass %-decoding, one ASCII space per token, ... ok
+test_a155_wrong_writer_and_node_add_and_lint (tools.relay-light.test_relay_log.RelayResourceCloseTests.test_a155_wrong_writer_and_node_add_and_lint)
+§3.4: the writer follows the decoded object_type, and the node must be ... ok
+test_a156_failed_reason_search_and_status_schema (tools.relay-light.test_relay_log.RelayResourceCloseTests.test_a156_failed_reason_search_and_status_schema)
+HC-RL-A156: a legal `failed` row is a queryable fact — add/lint 0, ... ok
+test_a156_five_reason_rejections_add_and_injected_lint (tools.relay-light.test_relay_log.RelayResourceCloseTests.test_a156_five_reason_rejections_add_and_injected_lint)
+HC-RL-A156: with the three base fields legal, `failed` requires a ... ok
+test_a2_all_twenty_events_in_legal_runtime_contexts (tools.relay-light.test_relay_log.RelayResourceCloseTests.test_a2_all_twenty_events_in_legal_runtime_contexts)
+HC-RL-A2: each of the twenty event words succeeds through `add` in a ... ok
+test_a144_launch_gate_replaces_b1_placeholder (tools.relay-light.test_relay_log.RelayReviewReadySignalTests.test_a144_launch_gate_replaces_b1_placeholder)
+A144 (B2): a current-instance signal arms the launch; without one the ... ok
+test_a144_rejects_without_a_current_instance_signal (tools.relay-light.test_relay_log.RelayReviewReadySignalTests.test_a144_rejects_without_a_current_instance_signal)
+A144's nine rejections each exit 2 as A144 — never A70. ... ok
+test_a145_helper_scan_sees_decider_only (tools.relay-light.test_relay_log.RelayReviewReadySignalTests.test_a145_helper_scan_sees_decider_only)
+A69's helper-token scan does not claim `ready_for_review=`: a note ... ok
+test_a145_ready_signal_write_contract (tools.relay-light.test_relay_log.RelayReviewReadySignalTests.test_a145_ready_signal_write_contract)
+A145: one `ready_for_review=` token per note, naming a same-node ... ok
+test_a145_signals_burn_no_attempt_and_have_no_add_cap (tools.relay-light.test_relay_log.RelayReviewReadySignalTests.test_a145_signals_burn_no_attempt_and_have_no_add_cap)
+A145/A102: signals accompany no agent_launch, keep attempt at 1, and ... ok
+test_a146_gate_is_inert_without_a_signal_for_this_agent (tools.relay-light.test_relay_log.RelayReviewReadySignalTests.test_a146_gate_is_inert_without_a_signal_for_this_agent)
+No signal naming this agent → no gate: R-shaped reviewers and every ... ok
+test_a146_malformed_ready_seq_exits_two_not_crash (tools.relay-light.test_relay_log.RelayReviewReadySignalTests.test_a146_malformed_ready_seq_exits_two_not_crash)
+P2-1: `ready_seq` values that `str.isdigit()` accepts but `int()` ... ok
+test_a146_pairing_done_accepted_in_order (tools.relay-light.test_relay_log.RelayReviewReadySignalTests.test_a146_pairing_done_accepted_in_order)
+A146 positive: after PASS the sender seals first, then the reviewer's ... ok
+test_a146_pairing_gate_rejections (tools.relay-light.test_relay_log.RelayReviewReadySignalTests.test_a146_pairing_gate_rejections)
+A146's seven rejections each exit 2 as A146 — at done-write time. ... ok
+test_a146_rejects_at_done_write_time (tools.relay-light.test_relay_log.RelayReviewReadySignalTests.test_a146_rejects_at_done_write_time)
+The pairing gate fires on the `done` write itself — the row never ... ok
+test_a146_two_lanes_bind_their_own_ready_seq (tools.relay-light.test_relay_log.RelayReviewReadySignalTests.test_a146_two_lanes_bind_their_own_ready_seq)
+X node, two reviewer lanes — each `done` pairs with its own latest ... ok
+test_a137_blocked_with_valid_ref_accepted_while_nodes_open (tools.relay-light.test_relay_log.RelayStageResultRefTests.test_a137_blocked_with_valid_ref_accepted_while_nodes_open)
+节点未关 + blocked + 合法 ref= → 接受；同场景 done 仍拒 A112。 ... ok
+test_a137_fully_closed_stage_result_still_requires_ref (tools.relay-light.test_relay_log.RelayStageResultRefTests.test_a137_fully_closed_stage_result_still_requires_ref)
+全节点已关时 blocked/failed 同样强制合法最新 ref——缺 ref 各退 2 报 A137。 ... ok
+test_a137_missing_ref_and_unknown_instance_each_exit_two (tools.relay-light.test_relay_log.RelayStageResultRefTests.test_a137_missing_ref_and_unknown_instance_each_exit_two)
+缺 ref=、ref 指向本实例内不存在的 agent、跨实例引用，各退 2 报 A137。 ... ok
+test_a137_ref_overridden_by_resume_or_terminal_each_exit_two (tools.relay-light.test_relay_log.RelayStageResultRefTests.test_a137_ref_overridden_by_resume_or_terminal_each_exit_two)
+ref 引用已不是该 agent 最新事件（resume / 终态覆盖）各退 2 报 A137。 ... ok
+test_a137_stage_close_after_blocked_still_rejected (tools.relay-light.test_relay_log.RelayStageResultRefTests.test_a137_stage_close_after_blocked_still_rejected)
+blocked stage_result 被接受后，stage_close 仍被拒——A118 先于节点全关前置检查。 ... ok
+test_closed_reads_only_node_close_and_closable_is_independent (tools.relay-light.test_relay_log.RelayStatusProjectionTests.test_closed_reads_only_node_close_and_closable_is_independent)
+HC-RL-A81: closed comes from node_close alone; closable is derived separately. ... ok
+test_current_node_and_node_states_follow_the_frozen_table (tools.relay-light.test_relay_log.RelayStatusProjectionTests.test_current_node_and_node_states_follow_the_frozen_table)
+HC-RL-A61: dependency-unclosed=pending, node_start=open, otherwise ready. ... ok
+test_design_10_3_text_snapshot_is_reproduced_line_by_line (tools.relay-light.test_relay_log.RelayStatusProjectionTests.test_design_10_3_text_snapshot_is_reproduced_line_by_line)
+HC-RL-A43: six items, plan/skill/session, cards, writer, stage/node/agent detail. ... ok
+test_design_fixture_projects_the_complete_document (tools.relay-light.test_relay_log.RelayStatusProjectionTests.test_design_fixture_projects_the_complete_document)
+HC-RL-A62/A65/A81: the §10.1+§10.2 fixture has one exact full document. ... ok
+test_plan_without_checker_passes_lint_and_status_without_a_dangling_agent (tools.relay-light.test_relay_log.RelayStatusProjectionTests.test_plan_without_checker_passes_lint_and_status_without_a_dangling_agent)
+HC-RL-A134: a C plan with the checker removed still lints and projects cleanly. ... ok
+test_stage_result_projection_carries_five_keys_with_and_without_amend (tools.relay-light.test_relay_log.RelayStatusProjectionTests.test_stage_result_projection_carries_five_keys_with_and_without_amend)
+HC-RL-A62: top-level `last_stage_result` freezes three keys; `stages[].result` five. ... ok
+test_status_is_read_only_and_never_rejects_ledger_problems (tools.relay-light.test_relay_log.RelayStatusProjectionTests.test_status_is_read_only_and_never_rejects_ledger_problems)
+HC-RL-A44: status adds nothing, judges nothing, and reports anomalies without failing. ... ok
+test_status_json_schema_keys_types_and_order_are_exact (tools.relay-light.test_relay_log.RelayStatusProjectionTests.test_status_json_schema_keys_types_and_order_are_exact)
+HC-RL-A62: frozen top-level and nested key contracts, types, ordering and counts. ... ok
+test_status_reports_the_last_writer_and_silence_without_driving_actions (tools.relay-light.test_relay_log.RelayStatusProjectionTests.test_status_reports_the_last_writer_and_silence_without_driving_actions)
+HC-RL-A43: the on-duty writer and per-agent silence are ledger facts, not commands. ... ok
+test_status_rereads_appended_stage_in_plan_order (tools.relay-light.test_relay_log.RelayStatusProjectionTests.test_status_rereads_appended_stage_in_plan_order)
+HC-RL-A121: status re-reads the same plan; an appended X instance lands in plan order. ... ok
+test_status_wording_carries_no_quality_judgement (tools.relay-light.test_relay_log.RelayStatusProjectionTests.test_status_wording_carries_no_quality_judgement)
+HC-RL-A44: status restates ledger facts; no produce-quality verdict vocabulary. ... ok
+test_superseded_rows_only_change_the_ignored_count (tools.relay-light.test_relay_log.RelayStatusProjectionTests.test_superseded_rows_only_change_the_ignored_count)
+HC-RL-A73: superseded rows leave every other projection field identical. ... ok
+test_unlaunched_agents_are_never_reported_as_dangling (tools.relay-light.test_relay_log.RelayStatusProjectionTests.test_unlaunched_agents_are_never_reported_as_dangling)
+HC-RL-A65: a node whose coder is non-terminal does not make its scribe expected. ... ok
+test_a12_five_files_filled_not_skeleton (tools.relay-light.test_relay_log.SkillAdapterTests.test_a12_five_files_filled_not_skeleton) ... ok
+test_a136_every_call_carries_side_config_dir (tools.relay-light.test_relay_log.SkillAdapterTests.test_a136_every_call_carries_side_config_dir)
+枚举两 adapter 全部 relay_log.py 调用（命令模板写作 <RELAY_LOG> 占位）： ... ok
+test_a141_dispatch_wait_and_sandbox_fallback_discipline (tools.relay-light.test_relay_log.SkillAdapterTests.test_a141_dispatch_wait_and_sandbox_fallback_discipline)
+HC-RL-A141: 两 adapter 各含三段原文—— ... ok
+test_a21_wait_receiver_and_three_methods (tools.relay-light.test_relay_log.SkillAdapterTests.test_a21_wait_receiver_and_three_methods) ... ok
+test_a26_command_forms_claude_kind_and_stalled (tools.relay-light.test_relay_log.SkillAdapterTests.test_a26_command_forms_claude_kind_and_stalled) ... ok
+test_a27_dispatch_template_credential_ban (tools.relay-light.test_relay_log.SkillAdapterTests.test_a27_dispatch_template_credential_ban) ... ok
+test_dispatch_template_header_and_completion (tools.relay-light.test_relay_log.SkillAdapterTests.test_dispatch_template_header_and_completion)
+派活模板首行 = A34 冻结标头形态；relay-light 无 node_closed，完成即停。 ... ok
+test_no_watch_subcommand_invoked (tools.relay-light.test_relay_log.SkillAdapterTests.test_no_watch_subcommand_invoked) ... ok
+test_planner_amend_reference_isomorphic (tools.relay-light.test_relay_log.SkillAdapterTests.test_planner_amend_reference_isomorphic)
+RLT_09 B4 / A122：两 adapter 只保留指向 SKILL.md 核心模板的同构引用行。 ... ok
+test_a100_terminology_not_mixed (tools.relay-light.test_relay_log.SkillCoreDocTests.test_a100_terminology_not_mixed) ... ok
+test_a117_recipe_sourced_from_task_type_only (tools.relay-light.test_relay_log.SkillCoreDocTests.test_a117_recipe_sourced_from_task_type_only) ... ok
+test_a12_five_files_present (tools.relay-light.test_relay_log.SkillCoreDocTests.test_a12_five_files_present) ... ok
+test_a12_required_sections (tools.relay-light.test_relay_log.SkillCoreDocTests.test_a12_required_sections) ... ok
+test_a132_no_hardcoded_model_names (tools.relay-light.test_relay_log.SkillCoreDocTests.test_a132_no_hardcoded_model_names) ... ok
+test_a143_light_plan_review_severity_classification (tools.relay-light.test_relay_log.SkillCoreDocTests.test_a143_light_plan_review_severity_classification)
+HC-RL-A143: SKILL.md 的 plan-reviewer 模板写明 light 档两级分级—— ... ok
+test_a19_linux_direct_test_before_closeout (tools.relay-light.test_relay_log.SkillCoreDocTests.test_a19_linux_direct_test_before_closeout) ... ok
+test_a27_credential_values_never_written (tools.relay-light.test_relay_log.SkillCoreDocTests.test_a27_credential_values_never_written) ... ok
+test_a66_coder_four_line_summary (tools.relay-light.test_relay_log.SkillCoreDocTests.test_a66_coder_four_line_summary) ... ok
+test_a66_scribe_materials_and_boundary (tools.relay-light.test_relay_log.SkillCoreDocTests.test_a66_scribe_materials_and_boundary) ... ok
+test_a67_writer_mapping (tools.relay-light.test_relay_log.SkillCoreDocTests.test_a67_writer_mapping) ... ok
+test_a98_plan_ledger_live_in_module_relay_dir (tools.relay-light.test_relay_log.SkillCoreDocTests.test_a98_plan_ledger_live_in_module_relay_dir) ... ok
+test_ledger_note_contract_documented (tools.relay-light.test_relay_log.SkillCoreDocTests.test_ledger_note_contract_documented)
+add 强制的 note 合同、控制事件写入者与决策归属必须在 SKILL.md 可查（一致性 P1 整改钉住）。 ... ok
+test_planner_amend_template_contract (tools.relay-light.test_relay_log.SkillCoreDocTests.test_planner_amend_template_contract)
+RLT_09 B4 / HC-RL-A122：SKILL.md 必须给出可执行的 planner-amend 模板—— ... ok
+test_a102_checkpoint_round_trips_do_not_burn_attempts (tools.relay-light.test_relay_log.SkillTemplateTests.test_a102_checkpoint_round_trips_do_not_burn_attempts)
+A102: checkpoint 往返不消耗 attempt——lost 后重拉仍是 #2 而非更高号。 ... ok
+test_a103_rework_node_starts_fresh_attempt (tools.relay-light.test_relay_log.SkillTemplateTests.test_a103_rework_node_starts_fresh_attempt)
+A103: X 是新节点实例——C 节点 coder 到 #2，X1 内 coder 仍从 #1 起且互不干扰。 ... ok
+test_a113_attempt_only_after_lost_or_cancelled (tools.relay-light.test_relay_log.SkillTemplateTests.test_a113_attempt_only_after_lost_or_cancelled)
+A113: done 终态不允许重拉；agent_lost / cancelled 之后 attempt+1 合法。 ... ok
+test_a114_auto_mode_rejects_user_decision_on_decider_chain (tools.relay-light.test_relay_log.SkillTemplateTests.test_a114_auto_mode_rejects_user_decision_on_decider_chain) ... ok
+test_a114_cancelled_uses_triggering_agent (tools.relay-light.test_relay_log.SkillTemplateTests.test_a114_cancelled_uses_triggering_agent)
+A142: cancelled 纳入 A69 决策归属闸——触发 coder 名下可写，非触发 agent 退 2。 ... ok
+test_a114_consult_resume_without_user_decision_rejected (tools.relay-light.test_relay_log.SkillTemplateTests.test_a114_consult_resume_without_user_decision_rejected) ... ok
+test_a114_strategist_chain_cancelled_finale (tools.relay-light.test_relay_log.SkillTemplateTests.test_a114_strategist_chain_cancelled_finale)
+A114 strategist 链终局之二：user_decision 后 cancelled 记回原 coder。 ... ok
+test_a114_strategist_chain_on_rework_template (tools.relay-light.test_relay_log.SkillTemplateTests.test_a114_strategist_chain_on_rework_template)
+A114 strategist 链：记在触发 coder 名下、user_decision 永必需、无 blocked 起头。 ... ok
+test_a127_no_kickoff_or_verify_node_types (tools.relay-light.test_relay_log.SkillTemplateTests.test_a127_no_kickoff_or_verify_node_types) ... ok
+test_a149_c_minimal_ledger_fail_reviews_same_instance (tools.relay-light.test_relay_log.SkillTemplateTests.test_a149_c_minimal_ledger_fail_reviews_same_instance)
+A149/C: checker#1 FAILs over its own checkpoint routed back to ... ok
+test_a149_dh_mapping_note_names_three_counters (tools.relay-light.test_relay_log.SkillTemplateTests.test_a149_dh_mapping_note_names_three_counters)
+A149: `[limits.on_exceed].note` says three counters and names the ... ok
+test_a149_review_sealing_discipline_verbatim (tools.relay-light.test_relay_log.SkillTemplateTests.test_a149_review_sealing_discipline_verbatim)
+A149: the sealing discipline paragraph lands verbatim in SKILL.md's ... ok
+test_a149_w_and_x_triggers_switch_r_template_verbatim (tools.relay-light.test_relay_log.SkillTemplateTests.test_a149_w_and_x_triggers_switch_r_template_verbatim)
+A149: W's plan-reviewer and X's bounced lane take `on:review_ready:`; ... ok
+test_a149_w_minimal_ledger_relaunch_reconsumes_fresh_signal (tools.relay-light.test_relay_log.SkillTemplateTests.test_a149_w_minimal_ledger_relaunch_reconsumes_fresh_signal)
+A149/W: plan-reviewer#1 is lost; A49 relaunches #2 off the builder's ... ok
+test_a149_x_minimal_ledger_one_lane_fails_one_passes (tools.relay-light.test_relay_log.SkillTemplateTests.test_a149_x_minimal_ledger_one_lane_fails_one_passes)
+A149/X: two reviewer lanes on the X trigger — one FAILs and ... ok
+test_a95_a133_c_template_shape (tools.relay-light.test_relay_log.SkillTemplateTests.test_a95_a133_c_template_shape)
+A95/A133: C node carries coder+checker+scribe+decider with frozen triggers/close. ... ok
+test_a96_a114_decider_chain_positive_legs (tools.relay-light.test_relay_log.SkillTemplateTests.test_a96_a114_decider_chain_positive_legs)
+A96/A114 正例腿：两模式 resume 都记回原 coder#1，不新增 agent_launch。 ... ok
+test_five_stage_templates_extract (tools.relay-light.test_relay_log.SkillTemplateTests.test_five_stage_templates_extract) ... ok
+test_templates_lint_clean (tools.relay-light.test_relay_log.SkillTemplateTests.test_templates_lint_clean)
+Assembled main chain and rework chain both pass lint for every recipe tier. ... ok
+
+----------------------------------------------------------------------
+Ran 221 tests in 447.008s
+
+OK
+test_all_installs_five_files_to_both_sides (tools.relay-light.test_install_skill.InstallSkillTests.test_all_installs_five_files_to_both_sides) ... ok
+test_cli_requires_all_flag (tools.relay-light.test_install_skill.InstallSkillTests.test_cli_requires_all_flag) ... usage: install_skill.py [-h] --all
+install_skill.py: error: the following arguments are required: --all
+usage: install_skill.py [-h] --all
+install_skill.py: error: the following arguments are required: --all
+usage: install_skill.py [-h] --all
+install_skill.py: error: the following arguments are required: --all
+usage: install_skill.py [-h] --all
+install_skill.py: error: unrecognized arguments: extra
+ok
+test_five_file_set_is_closed_and_present (tools.relay-light.test_install_skill.InstallSkillTests.test_five_file_set_is_closed_and_present) ... ok
+test_manifest_fields_after_success (tools.relay-light.test_install_skill.InstallSkillTests.test_manifest_fields_after_success) ... ok
+test_mid_copy_failure_is_nonzero_and_rerun_converges (tools.relay-light.test_install_skill.InstallSkillTests.test_mid_copy_failure_is_nonzero_and_rerun_converges)
+HC-RL-A124: tamper one side, inject a mid-copy failure, rerun to converge. ... error: injected mid-copy failure
+ok
+test_overwrites_stale_replica (tools.relay-light.test_install_skill.InstallSkillTests.test_overwrites_stale_replica) ... ok
+test_source_missing_file_fails_closed (tools.relay-light.test_install_skill.InstallSkillTests.test_source_missing_file_fails_closed) ... error: skill source incomplete, missing: dh-mapping.toml
+ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.176s
+
+OK
+lint: amend-check before ok (1 proposed path(s))
+installed: /tmp/tmptfjwmsdv/home/.claude/skills/relay-light
+installed: /tmp/tmptfjwmsdv/home/.codex/skills/relay-light
+installed: /tmp/tmpxbsmeslh/home/.claude/skills/relay-light
+installed: /tmp/tmpxbsmeslh/home/.codex/skills/relay-light
+installed: /tmp/tmps8nkkgww/home/.claude/skills/relay-light
+installed: /tmp/tmps8nkkgww/home/.codex/skills/relay-light
+installed: /tmp/tmps8nkkgww/home/.claude/skills/relay-light
+installed: /tmp/tmps8nkkgww/home/.codex/skills/relay-light
+installed: /tmp/tmpgx328m1q/home/.claude/skills/relay-light
+installed: /tmp/tmpgx328m1q/home/.codex/skills/relay-light
+installed: /tmp/tmpgx328m1q/home/.claude/skills/relay-light
+installed: /tmp/tmpgx328m1q/home/.codex/skills/relay-light
+RELAY ALL PASS (SKIPPED: 1)

@@ -1,0 +1,1 @@
+BLOCKED task=RLT_29 phase=plan agent=builder#2 batch=3 path=na review_round=1 remediation_count=0 verdict=BLOCKED reason=r12_requires_registered_evidence_id_but_progress_write_forbidden evidence=docs/modules/relay-light/workspace/RLT_29/review.md,docs/modules/relay-light/workspace/RLT_29/progress.md,docs/modules/relay-light/workspace/RLT_29/decision.batch-3-b04.md

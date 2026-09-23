@@ -1,0 +1,4 @@
+--- diagnostic: same audit under GIT_CONFIG_PARAMETERS quotepath=off (no config writes) ---
+allowed-path audit: PASS
+changed_count=37
+diagnostic_exit=0

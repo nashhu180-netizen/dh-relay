@@ -241,6 +241,51 @@ relay_log.py lint --plan <plan_dir> --amend-check after  --repo <repo> --snapsho
 10. **模板无 kickoff / verify 签字类节点**：节点类型只有 `build` / `construction` / `review` / `rework` / `handoff`。
 11. **判定方封口纪律**：判定方判定 PASS 前，送审方与判定方均不记 `done`；FAIL 走 live 判定方的 `checkpoint` 路由回同一送审方；PASS 后按送审方→判定方顺序记终态。
 
+## `single-task` 单卡接力模式
+
+`single-task` 与上方完整 relay 模式并列、互斥：用于一张已落户任务卡的规划、施工、复核与人验接力，**不创建或读写 `relay_plan.md` / `relay_log.jsonl`，不使用 W/C/R/X/F 阶段词**；本节不改写上方任何完整模式合同，五阶段模板与账本行为不回归。
+
+### 标头与 phase 闭集
+
+- worker 派单 prompt 首行固定为 `[relay-light:single-task] worker · phase=<phase> · agent=<role>#<instance> · batch=<n|na> · round=<n> · workspace=<repo-relative-path>`；与完整 relay 的 `[relay-light] worker · node=...` 标头互斥，两套流水不交叉执行。
+- phase 闭集：`plan` / `plan-review` / `batch` / `batch-review` / `workflow-final` / `e2-code-review` / `decision` / `monitor` / `human-acceptance`；`batch=1|2|3|na`。
+- `RELAY_RECEIPT` fail closed 分流：进程环境存在 `RELAY_RECEIPT` 时，产出型 builder/coder/reviewer/decider 只写本角色精确 `BLOCKED.*.md` 单行 signal 后立即停止；monitor 保持 repo/workspace 零写入，只用 Herdr prompt 非 durable 通知 orchestrator 后立即停止，不写 `BLOCKED`。两个分支均不得清除任何 `RELAY_*` 环境变量。
+
+### model-allocation gate（启动任何 agent 之前的硬闸）
+
+- orchestrator 必须先向用户展示全部拟启动角色/实例的模型与推理档提案表，并明确询问确认；推荐默认仅是提案，不写死模型。用户可逐角色修改；**未获明确确认不得启动任何 agent**。
+- 确认后由 orchestrator 机械地把确认来源、角色/实例、模型、推理档写入 `execution_strategy.md`；未启动的 tab/pane 标 pending，启动后补齐实际 Herdr workspace/tab/pane 与观察来源并逐项比对。`execution_strategy.md` 由 orchestrator 在启动/更换角色时维护，monitor 与其它角色只读。
+- 恢复时可沿用已有明确确认且分配未变的快照；新增/更换角色或实例、换模型或推理档必须再次询问确认。超时、静默或最大工具权限均不推定确认；最大工具权限不扩张 commit/push/PR/merge/deploy/verify/人验授权。
+
+### 生命周期与计数
+
+固定生命周期：任务工作区七件套与 `task_plan.md` → plan review → 分批开发 + batch review → 开发后按 `task_type` Recipe 展开的全量 workflow-final review → E2 code_review → 主会话人验。batch review 与 workflow-final 是**两道独立闸**，batch PASS 不替代 final。
+
+- `review_round` 与 `remediation_count` 分开记：初审 `review_round=1 remediation_count=0`；plan/batch review 各最多整改 2 轮，FAIL 回同一 builder/coder、原 reviewer 复审；超限交 decider，六类方向问题（方向/范围/验收/数据语义/安全/生产影响）交用户。
+- workflow-final 每条适用 path 最多返工 2 轮，**每轮换 fresh reviewer**，不得复用上一轮实例冒充 fresh；E2 `code_review` 初审为完整 fresh，仅出现 open P0/P1 后由**同一 `reviewer_session_id`** 做 targeted attempt 2。两层证据分别登记身份/输入/finding/结论，条件相斥不得合并为一条。
+- 完成谓词：全部适用 `task_type` Recipe path PASS 或有可核查 N/A，最终汇总无 open P0/P1；heavy 五路（code-round1/code-round2/requirement/consistency/lesson）一条不少；单一 final reviewer、batch PASS 或 E2 receipt 均不替代整套 Recipe。施工者不复核自己的施工。
+
+### batch PASS 后会话清理闸
+
+- 仅当该批 batch reviewer 的 durable signal 为 PASS **且**本批工件齐全（本批交付物、验证证据、coder signal、review 产物、reviewer durable PASS）后，orchestrator 对本批 coder 与 batch reviewer **各执行一次 `/clear`** 并分别复验已清理，之后才启动下一批。终端 idle/done 或 coder DONE 不替代此门。
+- FAIL/整改期间禁止 `/clear`，保持原 coder/原 reviewer session，不借清理清零整改计数；清理失败或无法复验时不得启动下一批，也不盲目重复发送 `/clear`。monitor 常驻、不 clear；decider 按需拉起，不纳入每批固定 clear。
+
+### durable signal 与写者边界
+
+- 每个产出型 worker 的收口物是单行 signal：`DONE`/`BLOCKED` + `task phase agent batch path review_round remediation_count verdict evidence`（BLOCKED 另含 `reason=<snake_case>`），值无空白、证据为 repo 相对路径逗号分隔；写完即停，不等 `node_closed`，不碰完整模式 plan/log。
+- sole writer：`execution_strategy.md` 仅 orchestrator 写；各 review/check/decision 工件由对应 reviewer/decider 自写；`progress.md` 仅由当前顺序执行的 batch coder 在自己 batch 完成时追加**一条**简洁施工里程碑 + 证据引用——不记 pane/agent 状态、轮询、通知或终端输出；reviewer/monitor/orchestrator 不写 progress。
+- monitor 对 repo/workspace **完全只读**：不写 signal/progress/execution_strategy/轮询日志/通知日志或任何文档；不路由、不分派、不启动 agent。
+
+### monitor 节拍与安全 Enter
+
+- monitor 常驻，只做 Herdr wait/get/read：每 120 秒观察一次，无状态变化静默，有变化即时用 Herdr prompt 通知 orchestrator（通知不是 durable artifact）。
+- 安全 Enter：仅当三条件**同时**成立才发送一次并复验——①本次派单文本仍停在输入框（含 Devin queued 指令仍排队未发出）；②`state_change_seq` 未推进；③当前界面不是审批/确认 UI。任一不满足即不按；一次仍失败则通知 orchestrator 并换 fresh 实例，禁止连按。
+- monitor 命中 `RELAY_RECEIPT` 时同样 repo 零写入，只 prompt 通知 orchestrator 后停止。
+
+### 恢复依据
+
+恢复权威只有四类：worker/reviewer/decider 自写的 durable signals、独立 review/decision 工件、orchestrator 维护的 `execution_strategy.md`、Herdr 实态。`progress.md` 只是施工证据索引、monitor 通知只是即时提示，二者都不是运行真相；恢复/重启时从四类权威重建，不依赖终端存活状态。
+
 ## 放弃项
 
 - 不做身份校验：账本 `by` 字段标称写入者但不验真伪，换取零启动成本。

@@ -1,0 +1,4 @@
+--- B-06 rerun: verbatim revised task_plan §6 script ---
+allowed-path audit: PASS
+allowlist_exit=0
+diffcheck_exit=0

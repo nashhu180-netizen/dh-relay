@@ -1,0 +1,9 @@
+{
+  "id": "cli:workspace:list",
+  "result": {
+    "type": "workspace_list",
+    "workspaces": [
+      { "workspace_id": "w41", "tab_count": 11, "pane_count": 11 }
+    ]
+  }
+}

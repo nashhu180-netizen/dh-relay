@@ -1,0 +1,213 @@
+{
+  "task": "RLT_29",
+  "baseline_of": "93d65cb",
+  "generated_by": "batch-1 coder",
+  "entries": [
+    {
+      "command_id": "B-01",
+      "cwd": "/home/nash/work/dh-relay/.dh-worktrees/RLT_29",
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=tools/relay-light python3 -m unittest tools/relay-light/test_install_skill.py",
+      "exit": 0,
+      "failure_ids": [],
+      "classification": "pass",
+      "captured_at": "2026-09-22T12:43:55.541515+00:00",
+      "detail": {
+        "tests": 7,
+        "summary_line": "OK",
+        "note": "exit observed live at capture; output in B-01.txt"
+      }
+    },
+    {
+      "command_id": "B-02",
+      "cwd": "/home/nash/work/dh-relay/.dh-worktrees/RLT_29",
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=tools/relay-light python3 -m unittest discover -s tools/relay-light -p 'test*.py'",
+      "exit": 0,
+      "failure_ids": [],
+      "classification": "pass",
+      "captured_at": "2026-09-22T12:51:29.652492+00:00",
+      "detail": {
+        "tests": 228,
+        "summary_line": "OK",
+        "note": "exit observed at background command completion; output in B-02.txt"
+      }
+    },
+    {
+      "command_id": "B-03",
+      "cwd": "/home/nash/work/dh-relay/.dh-worktrees/RLT_29",
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=tools/relay-light pwsh -NoProfile -File tools/tests/run-relay-tests.ps1",
+      "exit": 0,
+      "failure_ids": [],
+      "classification": "pass",
+      "captured_at": "2026-09-22T13:50:15.554216+00:00",
+      "detail": {
+        "suite_summary": "RELAY ALL PASS (SKIPPED: 1)",
+        "note": "output in B-03.txt"
+      }
+    },
+    {
+      "command_id": "B-04",
+      "cwd": "/home/nash/work/dh-relay/.dh-worktrees/RLT_29",
+      "command": "dh relay-light",
+      "exit": 1,
+      "failure_ids": {
+        "inherited": [
+          "workspace/RLT_01/review.md　R4 缺「独立复核区」（review 三区缺一）",
+          "workspace/RLT_01/review.md　R4 缺「AI 提交区」（review 三区缺一）",
+          "workspace/RLT_01/review.md　R4 缺「人类签名区」（review 三区缺一）",
+          "workspace/RLT_01/review.md　R12 缺「需求对齐证据」表（不能用测试通过/代码复核替代需求验收）",
+          "workspace/RLT_05/review.md　R4 缺「独立复核区」（review 三区缺一）",
+          "workspace/RLT_05/review.md　R8 引用了未在 progress 证据账本登记的证据 E-089（编造或笔误？账本现有: E-001, E-002, E-003, E-004, E-005, E-006, E-007, E-008, E-009, E-010, E-011, E-012, E-013, E-014, E-015, E-016, E-017, E-018, E-019, E-020, E-021, E-022, E-023, E-024, E-025, E-026, E-027, E-028, E-029, E-030, E-031, E-032, E-033, E-034, E-035, E-036, E-037, E-038, E-039, E-040, E-041, E-042, E-043, E-044, E-045, E-046, E-047, E-048, E-049, E-050, E-051, E-052, E-053, E-054, E-055, E-056, E-057, E-058, E-059, E-060, E-061, E-062, E-063, E-070）",
+          "workspace/RLT_05/review.md　R8 引用了未在 progress 证据账本登记的证据 E-093（编造或笔误？账本现有: E-001, E-002, E-003, E-004, E-005, E-006, E-007, E-008, E-009, E-010, E-011, E-012, E-013, E-014, E-015, E-016, E-017, E-018, E-019, E-020, E-021, E-022, E-023, E-024, E-025, E-026, E-027, E-028, E-029, E-030, E-031, E-032, E-033, E-034, E-035, E-036, E-037, E-038, E-039, E-040, E-041, E-042, E-043, E-044, E-045, E-046, E-047, E-048, E-049, E-050, E-051, E-052, E-053, E-054, E-055, E-056, E-057, E-058, E-059, E-060, E-061, E-062, E-063, E-070）",
+          "workspace/RLT_05/review.md　R8 引用了未在 progress 证据账本登记的证据 E-094（编造或笔误？账本现有: E-001, E-002, E-003, E-004, E-005, E-006, E-007, E-008, E-009, E-010, E-011, E-012, E-013, E-014, E-015, E-016, E-017, E-018, E-019, E-020, E-021, E-022, E-023, E-024, E-025, E-026, E-027, E-028, E-029, E-030, E-031, E-032, E-033, E-034, E-035, E-036, E-037, E-038, E-039, E-040, E-041, E-042, E-043, E-044, E-045, E-046, E-047, E-048, E-049, E-050, E-051, E-052, E-053, E-054, E-055, E-056, E-057, E-058, E-059, E-060, E-061, E-062, E-063, E-070）",
+          "workspace/RLT_05/review.md　R8 引用了未在 progress 证据账本登记的证据 E-095（编造或笔误？账本现有: E-001, E-002, E-003, E-004, E-005, E-006, E-007, E-008, E-009, E-010, E-011, E-012, E-013, E-014, E-015, E-016, E-017, E-018, E-019, E-020, E-021, E-022, E-023, E-024, E-025, E-026, E-027, E-028, E-029, E-030, E-031, E-032, E-033, E-034, E-035, E-036, E-037, E-038, E-039, E-040, E-041, E-042, E-043, E-044, E-045, E-046, E-047, E-048, E-049, E-050, E-051, E-052, E-053, E-054, E-055, E-056, E-057, E-058, E-059, E-060, E-061, E-062, E-063, E-070）",
+          "workspace/RLT_05/review.md　R8 引用了未在 progress 证据账本登记的证据 E-092（编造或笔误？账本现有: E-001, E-002, E-003, E-004, E-005, E-006, E-007, E-008, E-009, E-010, E-011, E-012, E-013, E-014, E-015, E-016, E-017, E-018, E-019, E-020, E-021, E-022, E-023, E-024, E-025, E-026, E-027, E-028, E-029, E-030, E-031, E-032, E-033, E-034, E-035, E-036, E-037, E-038, E-039, E-040, E-041, E-042, E-043, E-044, E-045, E-046, E-047, E-048, E-049, E-050, E-051, E-052, E-053, E-054, E-055, E-056, E-057, E-058, E-059, E-060, E-061, E-062, E-063, E-070）",
+          "workspace/RLT_05/review.md　R8 引用了未在 progress 证据账本登记的证据 E-068（编造或笔误？账本现有: E-001, E-002, E-003, E-004, E-005, E-006, E-007, E-008, E-009, E-010, E-011, E-012, E-013, E-014, E-015, E-016, E-017, E-018, E-019, E-020, E-021, E-022, E-023, E-024, E-025, E-026, E-027, E-028, E-029, E-030, E-031, E-032, E-033, E-034, E-035, E-036, E-037, E-038, E-039, E-040, E-041, E-042, E-043, E-044, E-045, E-046, E-047, E-048, E-049, E-050, E-051, E-052, E-053, E-054, E-055, E-056, E-057, E-058, E-059, E-060, E-061, E-062, E-063, E-070）",
+          "workspace/RLT_05/review.md　R8 引用了未在 progress 证据账本登记的证据 E-078（编造或笔误？账本现有: E-001, E-002, E-003, E-004, E-005, E-006, E-007, E-008, E-009, E-010, E-011, E-012, E-013, E-014, E-015, E-016, E-017, E-018, E-019, E-020, E-021, E-022, E-023, E-024, E-025, E-026, E-027, E-028, E-029, E-030, E-031, E-032, E-033, E-034, E-035, E-036, E-037, E-038, E-039, E-040, E-041, E-042, E-043, E-044, E-045, E-046, E-047, E-048, E-049, E-050, E-051, E-052, E-053, E-054, E-055, E-056, E-057, E-058, E-059, E-060, E-061, E-062, E-063, E-070）",
+          "workspace/RLT_05/review.md　R8 引用了未在 progress 证据账本登记的证据 E-084（编造或笔误？账本现有: E-001, E-002, E-003, E-004, E-005, E-006, E-007, E-008, E-009, E-010, E-011, E-012, E-013, E-014, E-015, E-016, E-017, E-018, E-019, E-020, E-021, E-022, E-023, E-024, E-025, E-026, E-027, E-028, E-029, E-030, E-031, E-032, E-033, E-034, E-035, E-036, E-037, E-038, E-039, E-040, E-041, E-042, E-043, E-044, E-045, E-046, E-047, E-048, E-049, E-050, E-051, E-052, E-053, E-054, E-055, E-056, E-057, E-058, E-059, E-060, E-061, E-062, E-063, E-070）",
+          "workspace/RLT_05/review.md　R8 引用了未在 progress 证据账本登记的证据 E-085（编造或笔误？账本现有: E-001, E-002, E-003, E-004, E-005, E-006, E-007, E-008, E-009, E-010, E-011, E-012, E-013, E-014, E-015, E-016, E-017, E-018, E-019, E-020, E-021, E-022, E-023, E-024, E-025, E-026, E-027, E-028, E-029, E-030, E-031, E-032, E-033, E-034, E-035, E-036, E-037, E-038, E-039, E-040, E-041, E-042, E-043, E-044, E-045, E-046, E-047, E-048, E-049, E-050, E-051, E-052, E-053, E-054, E-055, E-056, E-057, E-058, E-059, E-060, E-061, E-062, E-063, E-070）",
+          "workspace/RLT_07/review.md　R4 缺「独立复核区」（review 三区缺一）",
+          "workspace/RLT_07/review.md　R4 缺「AI 提交区」（review 三区缺一）",
+          "workspace/RLT_07/review.md　R4 缺「人类签名区」（review 三区缺一）",
+          "workspace/RLT_07/review.md　R12 缺「需求对齐证据」表（不能用测试通过/代码复核替代需求验收）",
+          "workspace/RLT_09/review.md　R12 需求对齐证据第1行缺可解析证据 ID（E-00x）",
+          "workspace/RLT_09/review.md　R12 需求对齐证据第2行缺可解析证据 ID（E-00x）",
+          "workspace/RLT_09/review.md　R12 需求对齐证据第3行缺可解析证据 ID（E-00x）",
+          "workspace/RLT_09/review.md　R12 需求对齐证据第4行缺可解析证据 ID（E-00x）",
+          "workspace/RLT_09/review.md　R12 需求对齐证据第5行缺可解析证据 ID（E-00x）",
+          "workspace/RLT_09/review.md　R12 需求对齐证据第6行缺可解析证据 ID（E-00x）",
+          "workspace/RLT_10/review.md　R12 需求对齐证据第1行缺可解析证据 ID（E-00x）",
+          "workspace/RLT_10/review.md　R12 需求对齐证据第1行缺结论（满足 / 不满足 / 待人验）",
+          "workspace/RLT_10/review.md　R12 需求对齐证据第2行缺可解析证据 ID（E-00x）",
+          "workspace/RLT_10/review.md　R12 需求对齐证据第2行缺结论（满足 / 不满足 / 待人验）",
+          "workspace/RLT_10/review.md　R12 需求对齐证据第3行缺可解析证据 ID（E-00x）",
+          "workspace/RLT_10/review.md　R12 需求对齐证据第3行缺结论（满足 / 不满足 / 待人验）",
+          "workspace/RLT_10/review.md　R12 需求对齐证据第4行缺可解析证据 ID（E-00x）",
+          "workspace/RLT_10/review.md　R12 需求对齐证据第4行缺结论（满足 / 不满足 / 待人验）",
+          "workspace/RLT_11/brief.md　R3 缺「覆盖任务」段（brief 必须三段齐）",
+          "workspace/RLT_11/brief.md　R3 缺「完成条件」段（brief 必须三段齐）",
+          "workspace/RLT_22/review.md　R2 第189行是纯空表格行",
+          "workspace/RLT_23/brief.md　R3 缺「覆盖任务」段（brief 必须三段齐）",
+          "workspace/RLT_23/brief.md　R3 缺「完成条件」段（brief 必须三段齐）",
+          "workspace/RLT_23/brief.md　R3 缺「边界」段（brief 必须三段齐）",
+          "workspace/RLT_23/review.md　R4 缺「独立复核区」（review 三区缺一）",
+          "workspace/RLT_24/brief.md　R3 缺「覆盖任务」段（brief 必须三段齐）",
+          "workspace/RLT_24/review.md　R4 缺「独立复核区」（review 三区缺一）",
+          "workspace/RLT_24/review.md　R4 缺「AI 提交区」（review 三区缺一）",
+          "workspace/RLT_26/review.md　R12 缺「需求对齐证据」表（不能用测试通过/代码复核替代需求验收）",
+          "workspace/RLT_26/review.md　R17 review 未预填 brief 完成条件「机器证｜来源：design/01 §11 HC-RL-A2｜skill 三文件与 as-built 快照的事件词表 = 」",
+          "workspace/RLT_26/review.md　R17 review 未预填 brief 完成条件「机器证｜来源：design/01 §3.4 + HC-RL-A155｜SKILL.md 控制事件表含 resource_」",
+          "workspace/RLT_26/review.md　R17 review 未预填 brief 完成条件「机器证｜来源：design/01 §11 HC-RL-A156｜文档写明 outcome=failed 必须有非空非纯空」",
+          "workspace/RLT_26/review.md　R17 review 未预填 brief 完成条件「机器证｜来源：design/01 §12 + HC-RL-A157｜两份 adapter 与 F 阶段收口纪律含关闭失败」",
+          "workspace/RLT_26/review.md　R17 review 未预填 brief 完成条件「机器证｜来源：design/01 §11 HC-RL-A158｜as-built 快照注明向后兼容事实（rlt12-wi」",
+          "workspace/RLT_26/review.md　R17 review 未预填 brief 完成条件「机器证（2026-09-20 用户已批准并入）｜来源：design/01 HC-RL-A144～A150 / A137 」",
+          "workspace/RLT_26/review.md　R17 review 未预填 brief 完成条件「机器证｜来源：Issue #50 验收第 3 条｜skill 文本结构检查覆盖新增纪律原文（沿用既有 test_rela」",
+          "workspace/RLT_05/review.md　R11 已签 verify 但两轮独立复核未达标（结论\"待定\"/缺，或 <2 实名复核者）——补齐两轮换人复核再签",
+          "workspace/RLT_23/review.md　R11 已签 verify 但两轮独立复核未达标（结论\"待定\"/缺，或 <2 实名复核者）——补齐两轮换人复核再签",
+          "dev_plan/P1-RelayLight-开发方案.md　R7 任务「RLT_23」状态非法: 已验收",
+          "dev_plan/P1-RelayLight-开发方案.md　R7 任务「RLT_24」状态非法: 已验收",
+          "dev_plan/P1-RelayLight-开发方案.md　R7 任务「RLT_11」状态非法: 已验收",
+          "workspace/RLT_24　R18 自动收口未完成：任务「RLT_24」已进入已验收，但缺 E2 第一轮复核、E2 增量复核、E4 需求复核、一致性复核、E6 miner 回流、E7 as-built 收敛、E9 交付汇报、E10 人验证据展示区；不得以“已提交/测试通过”作为最终交付，必须继续跑到 E10 证据展示区已发出",
+          "workspace/RLT_27　R30 任务「RLT_27」类型=light 的实际改动超出任务卡登记的允许路径：docs/modules/relay-light/design/01-RelayLight-产品设计与验收.md——**停下，由用户重新定类**（非自动升级、非自动放行）；若属登记遗漏，先补进任务卡「变更范围」再继续",
+          "workspace/RLT_05　R13 任务「RLT_05」已已完成但工作区 findings 仍有 1 条 open P0/P1（带病收口；需标\"遗留→<去处>（已确认）\"+用户对话确认，或先修复再收口）",
+          "workspace/RLT_12　R13 任务「RLT_12」已已完成但工作区 findings 仍有 1 条 open P0/P1（带病收口；需标\"遗留→<去处>（已确认）\"+用户对话确认，或先修复再收口）"
+        ],
+        "rlt29_owned": [
+          "workspace/RLT_29/review.md　R12 需求对齐证据表为空（至少一条需求/人验项的场景证据）",
+          "workspace/RLT_29/review.md　R17 review 未预填 brief 完成条件「一任务一 Herdr workspace、每角色实例一独立具名 tab/pane；orchestrator 启动前展示全」",
+          "workspace/RLT_29/review.md　R17 review 未预填 brief 完成条件「monitor 对 repo/workspace 完全只读，只在 Herdr wait/get/read 并 promp」",
+          "workspace/RLT_29/review.md　R17 review 未预填 brief 完成条件「single-task 标头字段合法且与完整 relay 标头互斥；产出型 builder/coder/reviewer」",
+          "workspace/RLT_29/review.md　R17 review 未预填 brief 完成条件「durable signal 与路由不依赖终端状态；orchestrator 只分发/路由，产出型 builder/co」",
+          "workspace/RLT_29/review.md　R17 review 未预填 brief 完成条件「用户查看含模型分配询问、确认及实际 Herdr tab/model 与快照一致链的真实 Herdr heavy sing」",
+          "workspace/RLT_29/review.md　R17 人验证据展示区/确认清单未覆盖人验项「用户查看含模型分配询问、确认及实际 Herdr tab/model 与快照一致链的真实 Herdr heavy sing」"
+        ]
+      },
+      "classification": "expected-nonzero: 66 failures = 59 inherited noise + 7 RLT_29-owned (review.md R12 empty evidence table, 5x R17 unprefilled brief conditions, 1x R17 human-acceptance coverage); 36 warnings not classified as failures",
+      "captured_at": "2026-09-22T13:41:16.820209+00:00",
+      "detail": {
+        "failure_count": 66,
+        "warning_count": 36
+      }
+    },
+    {
+      "command_id": "B-05",
+      "cwd": "/home/nash/work/dh-relay/.dh-worktrees/RLT_29",
+      "command": "python3 plan/log audit (no relay_plan.md|relay_log.jsonl under workspace/RLT_29) ; git diff --exit-code 93d65cb -- tools/relay-light/relay_log.py docs/modules/relay-light/relay",
+      "exit": 0,
+      "failure_ids": [],
+      "classification": "pass",
+      "captured_at": "2026-09-22T13:42:04.880982+00:00",
+      "detail": {
+        "command_exits": [
+          {
+            "cmd": "plan/log audit",
+            "exit": 0
+          },
+          {
+            "cmd": "forbidden-path git diff",
+            "exit": 0
+          }
+        ]
+      }
+    },
+    {
+      "command_id": "B-06",
+      "cwd": "/home/nash/work/dh-relay/.dh-worktrees/RLT_29",
+      "command": "python3 allowed-path audit (task_plan §6 verbatim) ; git diff --check",
+      "exit": 1,
+      "failure_ids": [
+        "docs/modules/relay-light/design/01-RelayLight-产品设计与验收.md (reported out-of-scope as git-escaped name)",
+        "docs/modules/relay-light/design/evidence/13-交叉审核记录-single-task模式.md (reported out-of-scope as git-escaped name)",
+        "docs/modules/relay-light/dev_plan/P1-RelayLight-开发方案.md (reported out-of-scope as git-escaped name)"
+      ],
+      "classification": "fail: frozen §6 script compares git-escaped path names (core.quotepath unset -> git 2.43 quotes non-ASCII); all 3 flagged paths are members of allowed_exact — encoding artifact, not a scope violation. Diagnostic rerun of identical script under GIT_CONFIG_PARAMETERS='core.quotepath=false' exits 0 / 'allowed-path audit: PASS' (37 changed paths all in allowlist) — see B-06-diagnostic.txt. Frozen command cannot reach expected exit 0 in this environment; requires plan-level decision (e.g. sanction env normalization or amend §6 script).",
+      "captured_at": "2026-09-22T13:42:22.551263+00:00",
+      "detail": {
+        "command_exits": [
+          {
+            "cmd": "allowed-path audit (verbatim)",
+            "exit": 1
+          },
+          {
+            "cmd": "git diff --check",
+            "exit": 0
+          }
+        ],
+        "diagnostic": {
+          "env": "GIT_CONFIG_PARAMETERS='core.quotepath=false'",
+          "cmd": "identical §6 script",
+          "exit": 0,
+          "stdout": "allowed-path audit: PASS",
+          "changed_count": 37
+        }
+      }
+    }
+  ],
+  "post_baseline_reruns": [
+    {
+      "command_id": "B-06-rerun-quotepath",
+      "cwd": "/home/nash/work/dh-relay/.dh-worktrees/RLT_29",
+      "command": "python3 allowed-path audit (task_plan §6 verbatim, git calls with -c core.quotepath=false) ; git diff --check",
+      "exit": 0,
+      "failure_ids": [],
+      "classification": "pass: revised §6 command verbatim; 0 out-of-scope",
+      "captured_at": "2026-09-22T15:32:44.344737+00:00",
+      "detail": {
+        "command_exits": [
+          {
+            "cmd": "allowed-path audit (revised verbatim)",
+            "exit": 0,
+            "stdout": "allowed-path audit: PASS"
+          },
+          {
+            "cmd": "git diff --check",
+            "exit": 0
+          }
+        ],
+        "changed_count": 44,
+        "supersedes": "B-06 (original literal run exit=1, git quotepath encoding artifact) — original FAIL evidence and diagnostic preserved unchanged in B-06.txt / B-06-diagnostic.txt / summary.json entry B-06",
+        "decision_ref": "docs/modules/relay-light/workspace/RLT_29/decision.batch-1.quotepath.md",
+        "output_file": "docs/modules/relay-light/workspace/RLT_29/evidence/baseline/B-06-rerun-quotepath.txt"
+      }
+    }
+  ]
+}

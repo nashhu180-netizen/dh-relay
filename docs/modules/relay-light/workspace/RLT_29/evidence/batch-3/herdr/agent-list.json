@@ -1,0 +1,19 @@
+{
+  "id": "cli:agent:list",
+  "result": {
+    "type": "agent_list",
+    "agents": [
+      { "agent": "codex", "agent_status": "idle", "pane_id": "w41:p1", "tab_id": "w41:t1", "workspace_id": "w41" },
+      { "agent": "codex", "agent_status": "idle", "pane_id": "w41:p2", "tab_id": "w41:t2", "workspace_id": "w41" },
+      { "agent": "devin", "agent_status": "working", "pane_id": "w41:p3", "tab_id": "w41:t3", "workspace_id": "w41" },
+      { "agent": "codex", "agent_status": "idle", "pane_id": "w41:p4", "tab_id": "w41:t4", "workspace_id": "w41" },
+      { "agent": "codex", "agent_status": "idle", "pane_id": "w41:p5", "tab_id": "w41:t5", "workspace_id": "w41" },
+      { "agent": "devin", "agent_status": "idle", "pane_id": "w41:p6", "tab_id": "w41:t6", "workspace_id": "w41" },
+      { "agent": "devin", "agent_status": "done", "pane_id": "w41:p7", "tab_id": "w41:t7", "workspace_id": "w41" },
+      { "agent": "devin", "agent_status": "idle", "pane_id": "w41:p8", "tab_id": "w41:t8", "workspace_id": "w41" },
+      { "agent": "devin", "agent_status": "done", "pane_id": "w41:p9", "tab_id": "w41:t9", "workspace_id": "w41" },
+      { "agent": "devin", "agent_status": "working", "pane_id": "w41:pA", "tab_id": "w41:tA", "workspace_id": "w41" },
+      { "agent": "devin", "agent_status": "idle", "pane_id": "w41:pB", "tab_id": "w41:tB", "workspace_id": "w41" }
+    ]
+  }
+}

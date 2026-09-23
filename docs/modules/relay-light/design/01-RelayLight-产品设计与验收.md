@@ -1,13 +1,11 @@
 <!-- 01-RelayLight-产品设计与验收.md — relay-light 模块的正式设计输入；planning-event 与审核回链写在本文，不写在 README。 -->
 
-# RelayLight 产品设计与验收（**正式设计输入 · 更新至 2026-09-13**）
+# RelayLight 产品设计与验收（**正式设计输入 · 更新至 2026-09-22**）
 
 <!-- dh:topic tier=标准 review=RelayLight运行中改计划 -->
-<!-- dh:planning-event:v1 id=RLT-A-06 stage=A-full artifact=design/01-RelayLight-产品设计与验收.md review=evidence/07-交叉审核记录-RLT05合同缺口候选.md#review-rlt-a06 understanding=evidence/07-交叉审核记录-RLT05合同缺口候选.md#understanding-rlt-a06 -->
-<!-- dh:planning-event:v1 id=RLT-A-07 stage=A-adjust artifact=design/01-RelayLight-产品设计与验收.md review=evidence/08-交叉审核记录-RLT09-oracle澄清.md#review-rlt-a07 understanding=evidence/08-交叉审核记录-RLT09-oracle澄清.md#understanding-rlt-a07 -->
-<!-- dh:planning-event:v1 id=RLT-A-11 stage=A-adjust artifact=design/01-RelayLight-产品设计与验收.md review=evidence/11-交叉审核记录-RLT-A11-产物兜底与验收续发.md#review-rlt-a11 understanding=evidence/11-交叉审核记录-RLT-A11-产物兜底与验收续发.md#understanding-rlt-a11 -->
+<!-- dh:planning-event:v1 id=RLT-A-13 stage=A-full artifact=design/01-RelayLight-产品设计与验收.md review=evidence/13-交叉审核记录-single-task模式.md#review-rlt-a13 understanding=evidence/13-交叉审核记录-single-task模式.md#understanding-rlt-a13 -->
 
-> **历史规划事件索引（A-full；非活动声明，仅作追溯）**——旧事件的原始可解析 `planning-event` 声明注释已按 `RLT-A-06` 事件转为本索引；出处、含义与证据路径保持原值，未删除、未改写，Git 历史中仍可还原。**活动声明为上面的 `RLT-A-06`、`RLT-A-07` 与本次 `RLT-A-11`；DevPlan 活动事件仍是 `RLT-B-06`。**
+> **历史规划事件索引（A-full；非活动声明，仅作追溯）**——旧事件的原始可解析 `planning-event` 声明注释已按 `RLT-A-06` 事件转为本索引；出处、含义与证据路径保持原值，未删除、未改写，Git 历史中仍可还原。**当前活动声明仅为上面的 `RLT-A-13`；`RLT-A-06`、`RLT-A-07`、`RLT-A-11` 已转下方历史索引，DevPlan 活动事件以正式开发方案头部声明为准。**
 >
 > | 事件 | stage | 证据（交叉审核记录） | 处理 |
 > |---|---|---|---|
@@ -18,6 +16,8 @@
 >
 > 八条 A/B 旧事件（含 DevPlan 侧 `RLT-B-01`~`RLT-B-04`）的完整字段、替换缘由与确认来源见 [`design/evidence/06-交叉审核记录-RLT03阶段合同补充.md`](evidence/06-交叉审核记录-RLT03阶段合同补充.md)与本轮 `evidence/07`。
 
+> **RLT-A-13 single-task 模式增补 2026-09-22（用户已整版确认）**——新增与完整 relay 并列、互斥的 `single-task` 模式：不创建 `relay_plan.md` / `relay_log.jsonl`，不用 W/C/R/X/F；一任务一 Herdr workspace、每角色实例一独立具名 tab/pane；生命周期为 workspace/task_plan → plan review → 分批开发与 batch review → 按 `task_type` 展开的开发后全量复核 → 主会话人验。monitor 对 repo 完全只读，只在 Herdr 终端 wait/get/read 并即时 prompt 通知 orchestrator；恢复依据为 durable signals、独立 review/decision 工件、`execution_strategy.md` 配置与 Herdr 实态。模型/推理档由用户启动时逐角色选择并由 orchestrator 维护到 `execution_strategy.md`；标头、重试上限、120 秒监控与 Enter 防误触、Recipe 完成判据及授权边界见 §7.5。续发 `HC-RL-A159`～`HC-RL-A168` 与 `HC-RL-H19`，旧 ID 不改号、不复用；活动总账 148→159。三轮 fresh 审核与四项用户裁决见 [`evidence/13-交叉审核记录-single-task模式.md`](evidence/13-交叉审核记录-single-task模式.md)。GitHub Issue #56；标准档、高危组件接线；本行不代表验收或 verify。
+>
 > **RLT-A-11 最小 A-adjust 2026-09-16（用户已逐条裁决开放项）**——§12 表尾补兜底类行：计划目录 / 任务工作区内未被前六类点名的持久化产物随所在目录同口径保留；新增「账本复现接力现场、workspace 文档 + git + Issue 复现施工现场」职责分层口径并回链 `HC-RL-H10`，账本 `note` 内 `commit=<sha>` 定位为顺手旁注、squash 后失效不构成契约破坏。续发 HC-RL-A151～A158 八条（RLT_23 承接 A151～A154、RLT_24 承接 A155～A158）；经 O-005 裁决本事件扩界：账本事件层新增第 20 个控制事件 `resource_close` 并冻结其 `note` wire format（§1.3 / §3.2～§3.4 同步，§12 两类终端空间「删失败怎么办」单元格给出取证路径），**修订既有行 A2（19→20 词，为本事件唯一改动的既有验收行）**；其余旧行**不退役、不改号、不复用**，退役清单不增。活动总账 140→148。复核结论、用户裁决与晋级范围见 [`evidence/11-交叉审核记录-RLT-A11-产物兜底与验收续发.md`](evidence/11-交叉审核记录-RLT-A11-产物兜底与验收续发.md)。**本行只记设计晋级，不代表 D-start、不代表验收、不代表 verify。**
 
 > **RLT-A-10 最小澄清 2026-09-15（用户已裁决）**——RLT_21 施工时发现 `HC-RL-A143` 的 oracle 期望值与本条自己冻结的分级规则不可兼得：按冻结四类逐条计级，预演 `review.plan.md` 两轮 P1 的诚实复算结果是 **3 P1 + 2 P2**，而原写的 1 P1 + 4 P2 只有额外引入未冻结的「同根去重 / 残留折级」口径才能达到。用户 2026-09-15 在两个出口中裁决取**修订 oracle 期望值**（而非补一套去重/折级规则），故本次**只改 A143 的「怎么验」列期望数字并写明计级口径**；A143 的命题列一字不改。**验收 ID 未新增、未删除、未改号**，活动总账仍为 140（AI 125 + 人验 15）。证据与逐条计级明细见 [`workspace/RLT_21/findings.md`](../workspace/RLT_21/findings.md) 的 F-009。**本行只记 oracle 澄清，不代表 D-start、不代表验收、不代表 verify。**
@@ -939,6 +939,47 @@ herdr agent wait <agent> --timeout 1200000
 - 布局：同时在场 agent ≤3 时监工占左侧整列、其余右侧上下分；4 个时四格；一般不超过 4 个。**第二次 `pane split` 要显式传目标 pane，不要用 `--current`**。
 - 账本 agent 标识用 `<名字>#<attempt>`，**不记 pane ID**（关闭后不复用且带空间前缀）。
 
+### 7.5 `single-task`：单任务轻量接力模式
+
+`single-task` 与本文件既有完整 relay 模式并列，二者互斥。它用于一张已落户任务卡的规划、施工、复核与人验接力，不建立跨卡/阶段账本：**不创建或读写 `relay_plan.md`、`relay_log.jsonl`，不使用 W/C/R/X/F 词表**；完整模式原合同与现役行为零回归。
+
+#### 7.5.1 拓扑、角色与运行快照
+
+- 一张任务卡对应一个 Herdr workspace；每个角色实例使用一个独立、具名 agent tab/pane。orchestrator 只分发工作与依据 durable signal 路由，不代做施工、复核或结果判断。
+- **model-allocation gate**：single-task 启动前，orchestrator 必须展示全部拟启动角色/实例的模型与推理档表并明确询问用户确认；用户可逐角色修改，未确认不得启动任何 agent。推荐默认仅是提案，模型不写死。确认后先将确认来源、角色/实例、模型、推理档写入 `execution_strategy.md`；启动后补齐实际 Herdr workspace/tab/pane 与观察来源并逐项比对。恢复时可沿用已有明确确认且分配未变的快照；新增/更换角色或实例、换模型或推理档必须再次询问确认，不能由超时或最大工具权限推定确认。
+- `execution_strategy.md` 只保存用户确认的模型分配与实际启动配置，由 orchestrator 在启动或更换角色时机械维护；未启动的 tab/pane 标 pending。monitor 对该文件及全部 repo 只读。当前主会话负责询问，不为询问另启 agent。仓内 `roles.toml` 继续只是完整模式/缺省模板，不为满足本模式而强改。
+- 最大工具权限不等于模型确认，只改变工具可用面，不扩大授权边界：commit、push、PR、merge、deploy、verify 与人验仍分别受用户明确授权控制。
+
+#### 7.5.2 生命周期与两道独立复核闸
+
+固定生命周期为：**任务工作区七件套与 `task_plan.md` → plan review → 分批开发 + batch review → 开发后按 `task_type` Recipe 展开的全量 final review → 主会话展示证据并等人验**。
+
+- plan review 与每批 batch review 各最多整改 2 轮；FAIL 回同一 builder/coder，原 reviewer 复审，不借换人清零轮次。
+- batch review 只证明该批差异可进入下一批，不能替代开发后 final review；这是两道独立闸。
+- final review 对每条适用的 `task_type` path 最多返工 2 轮；**每一轮都派 fresh reviewer**，不得复用上一轮实例冒充 fresh。超过上限交 decider；方向、范围、验收、数据语义、安全或生产影响必须交用户裁决。
+- **证据分层**：上述 workflow-final review 与 dev-harness E2 的 `dh:review-policy:v1 mode=single-full-targeted` 是两个证据层，禁止混写。workflow-final 整改后复审要求 fresh reviewer；E2 `code_review` 的 open P0/P1 targeted recheck 要求同一 `reviewer_session_id`。两层分别登记身份、输入、findings、结论；条件相斥时不得宣称一条记录等价覆盖两层。任何施工者不得复核自己的施工，heavy 的代码轮1、代码轮2、需求方向、一致性、教训五路不得减少。
+- 完成判据：全部适用 Recipe path 为 PASS 或有可核查 N/A，最终汇总无 open P0/P1。单一 final reviewer 不能替代 Recipe；`lessons-absent` 只形成可核查 N/A。
+
+RLT_29 plan round-3 超限后的兼容裁决（2026-09-22）：`DONE.plan-review.md` 继续仅作 round-1 旧 schema 历史输入。唯一新增兼容例外是 RLT_29 的 `DONE.plan-review.round-2.md`：它在新 schema 冻结前已产生，保留原字节，既不补字段也不伪装为新 schema 合格样本。orchestrator 仅当精确文件名及旧字段 `task=RLT_29 phase=plan-review agent=plan-reviewer#1 review_round=2 remediation_count=1 verdict=FAIL p0=0 p1=1 evidence=review.plan.md` 全部匹配，且 SHA-256 为 `9f6cf3a3b0d73f2060f2483d0d79342862cf0302b9bc687b57cf8dd7921ed62f` 时，将其识别为该次历史 FAIL；由 plan-review 语境只在读取解释层得到 batch/path 不适用，不回写文件、不改变 FAIL 或整改计数。文件名提供轮次定位，旧字段提供任务、角色、轮次、结论与证据定位，二者交叉核对足以唯一识别；不匹配即阻断。自 round 3 及未来所有 DONE/BLOCKED signal 强制新 schema（包括 `batch/path`，plan-review 为 `batch=na path=na`）；不存在面向未来的缺字段兼容。每轮 plan-review 新建带轮号且不可覆盖的文件，worker 写完 signal 即停。详见 workspace/RLT_29/decision.plan-round-3.md；此裁决不代替原 plan-reviewer 复核，也不重置整改上限。
+
+#### 7.5.3 恢复依据与施工证据索引
+
+single-task 的 durable 状态只来自实际 worker/reviewer/decider 自己写入的 `DONE` / `BLOCKED` / review / decision 工件。恢复时联合读取这些 durable 工件、orchestrator 维护的 `execution_strategy.md` 配置与 Herdr 实态；`progress.md` 仅是施工进展与验证证据索引，由当前顺序执行的 batch coder 在自己 batch 追加一条简洁里程碑/证据引用，不是运行真相，不得记录 pane/agent 状态、轮询、通知或终端输出。reviewer、monitor、orchestrator 均不写 `progress.md`。
+
+#### 7.5.4 监控节拍与 Enter 防误触
+
+monitor 对 repo 完全只读，只在 Herdr 终端执行 wait/get/read。每 120 秒观察一次；无状态变化时静默，有变化时立即用 prompt 通知 orchestrator。通知不是 durable artifact，monitor 不写 `progress.md`、`execution_strategy.md`、`DONE`/`BLOCKED`、轮询日志、通知日志或任何 workspace/repo 文档。只有同时满足下列条件才发送一次 Enter，并在发送后复验：本次派单文本仍停在输入框、`state_change_seq` 未推进、当前界面不是审批/确认 UI。任一条件不满足即不按；一次仍失败则通知 orchestrator 并换 fresh 实例，不连续按 Enter。
+
+#### 7.5.5 标头、互斥与停止语义
+
+single-task worker prompt 首行固定为：
+
+```text
+[relay-light:single-task] worker · phase=<plan|batch|final|decision|monitor> · agent=<role>#<instance> · batch=<n|na> · round=<n> · workspace=<repo-relative-path>
+```
+
+该标头与完整 relay 的 `[relay-light] worker · node=...` 标头互斥。single-task 的产出型 builder/coder/reviewer/decider 写出 `DONE` 或 `BLOCKED` durable signal 后立即停止，不等 `node_closed`，不读写完整模式 plan/log。若进程环境存在 `RELAY_RECEIPT`，必须按角色 fail closed 分流：产出型 builder/coder/reviewer/decider 只写本角色精确 `BLOCKED.*.md` 后停止；monitor 保持 repo/workspace 零写入，只用 Herdr prompt 向 orchestrator 发送非 durable 通知后立即停止，不写 `BLOCKED`。两个分支均不得自行清除任何 `RELAY_*` 环境变量。
+
 ## 8. 决策状态与显式选择
 
 ### 8.1 待决策项：**无，全部已决**
@@ -1195,7 +1236,7 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 
 > 分栏依据**验收二分**：机器能完整证明的进 AI 栏，只有需要用户凭业务判断「结果对不对 / 能不能用」的进人验栏。复合观察点已原子化，共享 E-ID 的两条分列两栏。
 >
-> **共 148 条：AI 自动验收 133 条 + 人类验收 15 条**（2026-09-11 RLT-A-06 退役 A91/A108、续发 A131～A136，AI 净增 4；退役 H2、续发 H18，人验净值 0；2026-09-14 RLT-A-08 续发 A137～A143，AI 净增 7；2026-09-15 RLT-A-09 续发 A144～A150，AI 净增 7，人验净值 0，退役清单不增；2026-09-16 RLT-A-11 续发 A151～A158，并修订既有行 A2——账本事件层白名单 19→20 词，保号不改号，为本事件唯一改动的既有验收行；AI 净增 8，人验净值 0，退役清单不增）。
+> **共 159 条：AI 自动验收 143 条 + 人类验收 16 条**（2026-09-11 RLT-A-06 退役 A91/A108、续发 A131～A136，AI 净增 4；退役 H2、续发 H18，人验净值 0；2026-09-14 RLT-A-08 续发 A137～A143，AI 净增 7；2026-09-15 RLT-A-09 续发 A144～A150，AI 净增 7，人验净值 0，退役清单不增；2026-09-16 RLT-A-11 续发 A151～A158，并修订既有行 A2——账本事件层白名单 19→20 词，保号不改号，为本事件唯一改动的既有验收行；AI 净增 8，人验净值 0；2026-09-22 RLT-A-13 续发 A159～A168 与 H19，AI 净增 10、人验净增 1，退役清单不增）。
 >
 > **已退役且不再复用的 ID**：HC-RL-A1、HC-RL-A3、HC-RL-A4、HC-RL-A6、HC-RL-A20、HC-RL-A22、HC-RL-A23、HC-RL-A25、HC-RL-A64、HC-RL-A86、HC-RL-A88、HC-RL-A90、HC-RL-A91、HC-RL-A108（原子化拆分）；HC-RL-A8、HC-RL-A76、HC-RL-A79、HC-RL-H2、HC-RL-H8、HC-RL-H9（语义或结构调整）。
 
@@ -1336,6 +1377,16 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 | HC-RL-A156 | 关闭事件失败原因条件（RLT_24）：在其余字段合法时，outcome=failed 必须有非空且非纯空白的 reason，outcome=ok 必须无 reason；add 落盘前与 lint 接受行前执行同一条件校验，合法 failed 可检索且 lint 通过，不新增 status --json 字段 | 对 add 与直接植入行后的 lint 各测：failed 无 reason、reason 为空、reason 解码后纯空白，以及 ok 带非空或空 reason 均退出 2；failed 带有效原因通过并按 seq/object_id 检索到原行；add 拒绝均不改账本。所有反例保持 A155 基础字段合法 |
 | HC-RL-A157 | §12 两类终端空间「删失败怎么办」取证路径可执行（RLT-A-11 新增，RLT_24 承接 F-004）：RLT_24 **不修改设计正文**，只执行并验证 RLT-A-11 已冻结的 §12 取证路径——两类终端空间各制造至少一例可控关闭失败（实跑或打桩并明确标注），账本含合法 `resource_close outcome=failed` 行，以 `seq` / `object_id` 实际检索到该行，处置记录落 workspace 的 evidence / progress | 证据含命令与观察结果、合法失败行、按 `seq` / `object_id` 实际检索的输出、人工处置记录或明确的待人工处理状态（不冒称已处置）；结构存在与可执行取证均由本条核验 |
 | HC-RL-A158 | 历史账本向后兼容（RLT-A-11 新增，RLT_24）：引入 `resource_close` 后，原 71 行 `rlt12-win-01` 账本字节不变、全部旧行在新实现下被接受、`lint` 退出 0、与旧实现基线的稳定 `status` 字段一致（固定输入、排除动态时间字段）；含合法 `resource_close` 行的 fixture `lint` 退出 0，插入前后 agent / node / stage 派生结果一致 | 单测：71 行原样重放断言逐条接受、`lint` 退出 0、与基线 `status` 输出一致（排除动态时间字段）；含合法关闭行的 fixture 断言派生不变；不把历史兼容写成历史补记 |
+| HC-RL-A159 | `single-task` 与完整 relay 并列且互斥：single-task 不创建/读写 `relay_plan.md`、`relay_log.jsonl`，不使用 W/C/R/X/F；完整模式模板与行为不回归 | 结构测试检查两套标头与模式分流；真实 single-task 演示的允许路径中不存在 plan/log；既有 relay-light 测试全绿 |
+| HC-RL-A160 | 一任务一 Herdr workspace、每角色实例一独立具名 tab/pane；orchestrator 启动前展示全部角色/实例的模型/推理档并询问确认，未确认不得启动任何 agent；允许逐角色修改，恢复沿用已确认且未变快照，新增/更换角色或实例、模型/推理档须重新确认；`execution_strategy.md` 保存确认来源及实际角色/模型/实例/tab 快照；最大工具权限不扩张 Git/发布/verify/人验授权 | 结构测试覆盖 skill/双 adapter 的先询问后启动、未确认阻断、逐角色修改、恢复复用与变更重问、默认仅提案及授权独立；真实证据必须串联分配表、询问、用户确认、Herdr 实际 tab/model/推理档与快照一致；不能只查字段存在 |
+| HC-RL-A161 | 生命周期固定为 workspace/task_plan → plan review → 分批开发+batch review → 按 `task_type` 展开的 final review → 主会话人验；batch 与 final 是两道独立闸 | 结构测试核阶段顺序、批次产物与 final Recipe 展开；反例：只有 batch PASS 时不得产生完成信号 |
+| HC-RL-A162 | plan/batch review 各最多整改 2 轮，FAIL 回同 builder/coder、原 reviewer 复审；workflow-final 每条适用 path 最多返工 2 轮且每轮 fresh reviewer；该证据层与 E2 `code_review` 同 reviewer targeted recheck 分开登记、不得混写；超限交 decider，六类方向问题交用户 | 结构测试核轮次、接收者、fresh 与证据层标签；反例拒绝用同 reviewer targeted receipt 冒充 workflow-final fresh 复审；演示可追溯路由并核施工者不复核自己；超限 fail closed |
+| HC-RL-A163 | monitor 对 repo/workspace 完全只读，只在 Herdr wait/get/read 并把状态变化即时 prompt 给 orchestrator；通知不是 durable artifact。恢复依据为 worker/reviewer/decider 自写 durable signals 与独立 review/decision、orchestrator 维护的 `execution_strategy.md` 及 Herdr 实态。`progress.md` 仅由当前 batch coder 写施工里程碑/证据引用 | 结构测试正例核对恢复四类输入和 batch coder 写者；反例必须断言 monitor 不写 repo/workspace，拒绝 monitor 写 progress/execution_strategy/DONE/BLOCKED/轮询或通知日志 |
+| HC-RL-A164 | monitor 每 120 秒 wait/get，无变化静默；仅在本次派单仍在输入框、state_change_seq 未推进、非审批确认 UI 三条件同时成立时发送一次 Enter 并复验，失败通知 orchestrator/换 fresh，禁止连按 | adapter 结构测试逐句命中；打桩三条件正反例、单次 Enter 与失败升级；无变化周期不新增通知 |
+| HC-RL-A165 | single-task 首行标头字段闭集为 phase/agent/batch/round/workspace，与完整 relay 标头互斥；产出型 builder/coder/reviewer/decider 在 DONE/BLOCKED 后即停、不等 node_closed、不碰 full plan/log。存在 RELAY_RECEIPT 时分流 fail closed：产出型角色只写本角色精确 BLOCKED 后停；monitor 只用 Herdr prompt 非 durable 通知 orchestrator 后停，repo/workspace 零写入且不写 BLOCKED；所有分支均不清 RELAY_* | 标头 parser/结构测试覆盖合法值与缺失/混用/冲突反例；环境注入 RELAY_RECEIPT 时分别断言产出型角色精确 BLOCKED 是唯一写入，以及 monitor 分支 repo diff 为空、只有 Herdr prompt 通知；正反例均断言无清环境动作 |
+| HC-RL-A166 | 完成须全部适用 `task_type` Recipe path PASS 或可核查 N/A，最终汇总无 open P0/P1；单一 final reviewer 不替代 Recipe | heavy/normal/light 合成工作区结构测试；缺一路、伪 N/A、open P0/P1、单 reviewer 代全路均拒，完整 heavy 路径通过 |
+| HC-RL-A167 | `single-task` 的 durable signal 与路由不依赖终端状态：orchestrator 只分发并按 DONE/BLOCKED 与 review 产物路由，产出型 builder/coder/reviewer/decider 写信号后停止；monitor 通知始终是非 durable Herdr prompt | 真实 Herdr 演示核对每个产出型角色的独立信号、接收者与停止点，并核对 monitor 无 repo signal；终端 idle/done 但无 durable signal 的反例不得推进 |
+| HC-RL-A168 | 仓内 skill 单源、双 adapter、安装副本一致性与 as-built 同步覆盖 single-task；`roles.toml` 若现有计划级选择机制足够则保持不变，不为凑改动写死模型 | `test_install_skill.py` 与安装器临时 home 测试全绿；五文件源/副本哈希一致；as-built 列出现役 single-task 合同与真实演示证据；`roles.toml` diff 有/无均给可核理由 |
 
 ### 11.2 人类验收栏
 
@@ -1356,6 +1407,7 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 | HC-RL-H10 | **〔E-账本〕** 只给你账本，不给别的 | `relay_log.jsonl` 全文 | 你能否只凭它还原出当时发生了什么、卡在哪、谁救的场 |
 | HC-RL-H11 | **〔watch 实测〕** 监工正在 `working` 时 watch 发来的 prompt 是否被排队而非丢弃——Claude Code 与 Codex **分别验** | 两种监工各自：制造 working → 触发推送 → 展示收到时刻与内容 | 推送在忙时是否可靠，要不要退回前台循环 |
 | HC-RL-H12 | **〔watch 实测〕** watch 进程死亡后 20 分钟兜底是否接住 | 杀掉 watch → 展示下一次例行查看的时刻与发现 | 兜底是否兜得住，20 分钟是否可接受 |
+| HC-RL-H19 | **〔single-task 自举〕** 用真实 Herdr 运行一张 heavy 卡，从 plan review、三批 batch review 到五路 final Recipe 与主会话证据展示；启动前先向你展示全角色/实例模型与推理档表并询问，确认后才启动；可逐角色修改，恢复或变更遵守 A160 | 模型分配询问与用户明确确认记录、实际 Herdr tab/model/推理档和确认配置逐项一致的证据（缺项不算通过）、一任务一 workspace 的 tab/pane 清单、orchestrator 维护的 `execution_strategy.md`、monitor repo 零写入证据、batch coder 施工里程碑索引、各批与 final durable signal、两道独立复核闸、无 relay_plan/relay_log 的路径审计、关键失败/恢复或打桩证据 | single-task 是否比完整 relay 更适合单卡工作；运行恢复、120 秒监控、复核路由与最终人验是否清楚、可控、值得日常使用 |
 
 ## 12. 持久化产物与退场路径
 
@@ -1405,6 +1457,7 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 6. **改计划实例的提示词与白名单校验**：`planner-amend` 的提示词模板须含输入四件、一次改完、跑 lint 修到过；碰禁区时三类计划目标与输入方案文件均零变化，不写 `blocked` / `escalate` / `plan_amend`，只在普通 `done.note` 写结构化「超出范围」原因，由 monitor 续写 `stage_result outcome=blocked`。白名单校验须用紧邻本次动作的改前/改后快照取得精确变更集。→ HC-RL-A122
 7. **绕过 B-adjust 的决定要写进 AGENTS.md**：relay-light **有意绕过** dev-harness「改开发方案须 B-adjust 用户确认」这条，须在 AGENTS.md 的 relay-light 编排协议段注明，免得后来人当成违规。→ HC-RL-A28 / §1.3
 8. **Linux 预演回流（RLT-A-08）**：`stage_result` 按 outcome 分校验与 `ref=` 引用、环境性 NOT_RUN 出口、`launch_fix=` 记账、静默超时配置与监工模板、派活提交/等待纪律与沙箱替代预检、`decision_mode` 模式门与 `cancelled` 归属闸，须由一张标准档卡承接；用户 2026-09-14 裁决**不作 RLT_12 硬依赖**——RLT_12 可先跑，但带已知缺口开工须另取风险确认，并在证据中写明 A112/NOT_RUN 缺口口径；light 卡 plan-review 按 A143 分级。→ HC-RL-A137～A143
+9. **single-task 单卡接力**：一张 heavy 标准档卡同时承接 skill 核心、双 adapter、结构测试、安装副本一致性、真实 Herdr 自举与 as-built；workflow-final fresh 复审与 E2 同 reviewer targeted recheck 分层取证，不能降低五路 Recipe。→ HC-RL-A159～A168 / HC-RL-H19
 
 ## 15. 查漏自查（对照 dev-harness `references/查漏清单.md`）
 
@@ -1424,6 +1477,6 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 | 密钥红线 | §13 与 skill 核心引用宪章第 6 条，HC-RL-A27 以规则原文检查为主、grep 为 smoke。 |
 | 跨语言复用风险 | 账本是 Python、现役 Runner 是 PowerShell，只能借手法不能借代码；且只借纯追加、不借原子替换。 |
 | 验收二分与原子化 | 已按机器证/人判分栏，人验栏只留业务判断。AI 栏凡含两个以上可独立失败断言的均已拆分。共享 E-ID：E-链路（HC-RL-A30 / HC-RL-H1）、E-账本（HC-RL-A31 / HC-RL-H10）。 |
-| 验收 ID 稳定性 | 包内唯一，新条目一律续号；RLT-A-06 退役 A91/A108/H2，续发 A131～A136/H18，不复用旧号；RLT-A-08 续发 A137～A143、RLT-A-09 续发 A144～A150、RLT-A-11 续发 A151～A158，三者**均只续号，不退役、不改号、不复用**；RLT-A-11 另**修订既有行 A2**（账本事件层白名单 19→20 词，保号不改号——经 2026-09-16 用户裁决 O-005 出口 A 授权，为本事件唯一改动的既有验收行）。完整退役清单见 §11，A131～A134 保留 `split-from`，H18 保留 `supersedes`。 |
+| 验收 ID 稳定性 | 包内唯一，新条目一律续号；RLT-A-06 退役 A91/A108/H2，续发 A131～A136/H18，不复用旧号；RLT-A-08 续发 A137～A143、RLT-A-09 续发 A144～A150、RLT-A-11 续发 A151～A158、RLT-A-13 续发 A159～A168/H19，均只续号、不复用；RLT-A-11 另修订既有行 A2。完整退役清单见 §11。 |
 | 一致性对照 | 已列为 §14 第 4 条开发方案同步项。 |
 | 数据口径契约 | 本模块不涉及指标口径，N/A。 |
