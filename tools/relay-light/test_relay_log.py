@@ -3585,7 +3585,7 @@ DESIGN_10_2_ADDS = (
     ("W1", "stage_close", "orchestrator#1", "stage_id=DHR_90:W#1"),
     ("C1", "stage_start", "orchestrator#1", "stage_id=DHR_90:C#1"),
 )
-# §10.2 写入者区间：编排 1-3、监工 4-10、编排 11-12（A93）
+# §10.2 写入者区间：编排 1-3、stage-lead 4-10、编排 11-12（A93）
 DESIGN_10_2_WRITERS = ("orchestrator",) * 3 + ("monitor",) * 7 + ("orchestrator",) * 2
 
 
@@ -5837,7 +5837,7 @@ class SkillTemplateTests(RelayCliTestCase):
         self.assertEqual(
             [
                 "| <reviewer> | R<n> | reviewer | | review.<路>.md | | 按 recipe 展开为并行多行 |",
-                "| scribe | R<n> | scribe | | review.md（含体检/四道闸脚本与 miner 汇总） | | 空 trigger 是约定例外——trigger 词表表达不了「等全员 done」：监工在全部 reviewer done 后按本 note 拉起 |",
+                "| scribe | R<n> | scribe | | review.md（含体检/四道闸脚本与 miner 汇总） | | 空 trigger 是约定例外——trigger 词表表达不了「等全员 done」：stage-lead 在全部 reviewer done 后按本 note 拉起 |",
             ],
             blocks["R"]["agent"],
         )
@@ -6302,9 +6302,9 @@ class SkillAdapterTests(unittest.TestCase):
                 # watch 未实现 → 前台 wait 回退必须写明
                 self.assertIn("未实现", text)
                 self.assertIn("空等", text)
-                # A21 分句2：面向监工/编排的 prompt 片段必须含硬规则原文
+                # A21 分句2：面向 stage-lead/编排的 prompt 片段必须含硬规则原文
                 self.assertIn("`wait` 返回时必须有接收者", text)
-                self.assertIn("拉起监工", text)
+                self.assertIn("拉起 stage-lead", text)
                 # blocked 返回必须走升级分路，不许被记成 done
                 self.assertRegex(text, r"blocked.{0,20}记.{0,4}blocked|blocked.{0,20}升级")
 
@@ -6363,7 +6363,7 @@ class SkillAdapterTests(unittest.TestCase):
     def test_a141_dispatch_wait_and_sandbox_fallback_discipline(self) -> None:
         """HC-RL-A141: 两 adapter 各含三段原文——
         ① agent start 后 wait --until idle 再 prompt，prompt 后读 pane 末行核真提交；
-        ② 编排等待优先账本文件事件监听 + 监工连续空闲 ≥2 分钟且无新账本行告警；
+        ② 编排等待优先账本文件事件监听 + stage-lead 连续空闲 ≥2 分钟且无新账本行告警；
         ③ 沙箱型只读启动不可用的预检替代（bypass 沙箱 + 提示词只读约束 + launch_fix=）。"""
         segments = (
             ("--until idle", "pane 末行", "send-keys"),
@@ -6836,7 +6836,7 @@ class RelayLaunchFixStatusTests(RelayCliTestCase):
 
 
 class RelayLedgerSilenceTests(RelayCliTestCase):
-    """RLT_21 C1 — HC-RL-A140：limits.silence_timeout_min 与 ledger_silent 监工提示。"""
+    """RLT_21 C1 — HC-RL-A140：limits.silence_timeout_min 与 ledger_silent stage-lead 提示。"""
 
     def _write_plan(self) -> None:
         self.write_plan(
