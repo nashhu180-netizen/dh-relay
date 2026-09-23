@@ -105,5 +105,5 @@
 - PR 与合入：PR #57 在 2026-09-23 经用户对话确认已作为维护者检查并同意合并；修订版 `833a156d96918ad4402d2a599d10c56fe412f3b1` 的 GitHub CI workflow `35808798414` 为 success，三项必需 job（relay-light Python、relay-tests Ubuntu/Windows）均 success；`relay-core` 在现行 `continue-on-error` 配置下仅观测、job failure。PR squash 合入 `master` 的提交为 `319d2b0983e3cd6b348b2ade7b83d8fd231478f0`。
 - PR P1 整改：自动复核发现原 Herdr 全局枚举证据带有非本卡 workspace 元数据；合入版仅保留 `w41` 和本卡核验所需字段。原提交曾短暂推送，不将此写作“从未上传”；详见 `findings.md`。
 - E12 合入后集成复验：在 `319d2b0983e3cd6b348b2ade7b83d8fd231478f0` 基线上执行 `python3 -m unittest discover -s tools/relay-light -p 'test_*.py'`，退出码 0，`Ran 240 tests ... OK`；执行 `pwsh -NoProfile -File tools/tests/run-relay-tests.ps1`，退出码 0，最终 `RELAY ALL PASS (SKIPPED: 1)`（其中 relay-light 子套 `Ran 221 tests ... OK`）。
-- verify 提交 SHA：待实际合入后回填；不预填分支 SHA。
-- 当前状态：E11 人验已认可，workflow-final 五路与 E2 均 PASS；PR #57 已合入且 E12 复验通过，待 verify 和销户，未预写完成。
+- verify 提交 SHA：`a8a6596b0da610f67152f353ce57b75ef1c4fc61`（PR #58 采用保留该提交 SHA 的 merge 方式进入主干；合入前本记录仍属 PR 候选事实）。
+- 当前状态：E11 人验已认可，workflow-final 五路与 E2 均 PASS；PR #57 已合入且 E12 复验通过；verify 提交与 E13 DevPlan 销户记录由 PR #58 一并进入主干，Issue #56 仅在该 PR 合入且清理闸闭合后关闭。
