@@ -75,3 +75,53 @@ SKILL.md:40 写的是「watcher（旁路）……`relay_log.py watch` 程序落�
 
 - SKILL.md:40（watcher 由程序承担、人肉实例退役）与 single-task 无账本的事实冲突，见 P1-4；建议并入 F-004 一起路由。
 - design/01:1440「Herdr tab 这一层：不使用」与 claude adapter 现行「一 agent 一 tab」（adapter-claude-code.md:42、125）不一致，这个偏离在本卡之前就存在。只登记，不在本卡处理。
+
+## 复审 round 2（plan-reviewer#1 · review_round=2 · remediation_count=1）
+
+- 被审对象：`task_plan.md` @ `397dd58`（builder#1 整改 1 及续），连同 `findings.md`、`decisions.md`（UD-1/UD-2）、`decision.f007-watch-death.md`、`BLOCKED`/`DONE.builder.plan-remediation-1.md`、`dispatch/README.md` 与 DevPlan 的 UD-2 增行。
+- RELAY_RECEIPT preflight = 0。UD-1、UD-2 是用户裁决，本轮不重新评价方向，只核落地是否忠实。
+
+### 结论 FAIL
+
+round 1 的 P1-1～P1-4 **全部闭合**，UD-1/UD-2 的落字也忠实。但整改引入的 D13 重启循环和 H12-② 探针带出 **3 条新 P1**，它们会让 UD-1 的①②两层在真实运行或 H12 取证中失效，须回 builder。
+
+### round 1 P1 闭合核对
+
+| P1 | 结论 | 依据 task_plan.md:行 |
+|---|---|---|
+| P1-1 线程/时钟确定性 | 闭合 | 80（离散事件调度器，`advance_to` 负责静止等待与墙钟上限，线程 sleep 不叠加）；87（R-A82-3 多线程下精确成立）；96（R-A82-12 A/B/tick 节拍互不叠加）；91（R-A82-7 真线程 + join 收敛） |
+| P1-2 wait 提前失败热循环 | 闭合 | 66（D11 按耗时区分超时返回与提前失败，提前失败 sleep 30；`get` 连续失败不加速；90 秒窗口 ≤4 次）；95（R-A82-11 两子测） |
+| P1-3 H12 代做兜底 / 死亡发现机制 | 闭合（机制已按 UD-1 落字；探针另见新 P1-C） | 67–68（D12/D13）；129–133（adapter 3a）；184–189（H12 两段、零提示、「操作者介入」节、模型闸） |
+| P1-4 adapter 与 SKILL:40 冲突 | 闭合 | 135（原第 5 项已删）；136–140（UD-2 的 SKILL 三处，第 40 行逐字取 UD-2 原文）；153（R-A83-13 含 RED 钉 SHA）；32/36/168（SKILL hunk ≤3 的审计） |
+
+UD-1 落地核对：UD-1 的五项在 D12/D13、adapter 3a、H12-①② 中都有对应，且无越界添加。这五项是：①pane 内 shell 重启循环、不引入 watcher agent；②编排 tick 对账后发 `stage-stalled`，lead 醒来先核 watch 存活；③编排级 pane 被关如实写「依赖人工，按 §7.3 恢复」；④完整 relay 不保留人肉 watcher；⑤停滞判定不进程序（design 1437）。UD-2 核对：README/DevPlan 允许路径已加 SKILL.md，并限定三处；task_plan §1.1/§1.2 与 R-A83-13 一致。round 1 的 P2 各项也已处理：4c→R-A82-13，7→R-A101-1 AST，8b→D3 + R-A83-10，P2-2→写原始 JSONL，P2-3→精确 glob + fixture lint，P2-4/P2-5→R-A83-11。
+
+### 新 P1
+
+**P1-A　D13 退出码合同与现有退出码不符，且没有区分「运行中重读失败」（判据 7/8，影响 UD-1①）**
+
+- 现状：`relay_log.py` 对计划解析/lint 失败、配置失败走 exit **3**（`_runtime_plan` 1605–1612 把 lint 错误转为 `RelayError(3)`；design §3.1 表），账本读取/解析失败走 exit **4**（`_ledger_error`）。D13（68）却把「参数/计划/账本/无 open stage」统称 **2**，重启循环只在 `rc ∉ {0,2}` 时重拉；R-A83-12（152）也断言「计划 lint 失败 / 账本损坏 → 2」。计划没有写「watch 把 3/4 重映射为 2」，coder 复用现有函数时自然得到 3/4。结果是：启动时计划坏了，重启循环每 5 秒空转一次，这正是 D13 自称要防的情况。
+- 更严重的是：D4（59）要求每 30 秒重读 plan + ledger，但计划没有规定运行中某一次重读失败怎么办。现实中有两个触发源：(a) `append_event` 用缓冲文本写（relay_log.py:2773–2774），读者可能读到最后一行未以换行结尾，`_ledger_lines` 随即判「last ledger line is not newline-terminated」（exit 4）；(b) planner-amend 改 `relay_plan.md` 并非原子写。瞬时失败如果让 watch 退出，按 2 处理就是循环停止、watch 静默永久死亡，UD-1① 失效；按 3/4 处理则会重拉，但去重被重置，产生重复通知。
+- 整改：
+  1. 分两类写清。**启动期**确定性错误（参数、计划不可用、配置、账本损坏、无 open stage）退出且循环不重拉；把循环的停止集合写成与实际一致，例如 `{0,2,3,4}`，或者明写 watch 统一重映射为 2，并在 R-A83-12 分别断言。
+  2. **运行期**重读失败：本轮跳过、stderr 报一行、30 秒后再读，**不退出**；连续失败也不加速。
+  3. 补用例：运行中把账本末行写成无换行的半行，下一轮不退出、不通知；补齐换行后恢复正常。
+
+**P1-B　「先核 watch 存活」的 pgrep 模式分不清阶段级与编排级（判据 6，影响 UD-1②）**
+
+- adapter 3a stage-lead 段（131）与 D12（67）用 `pgrep -f 'relay_log.py watch --plan <plan_dir>'`。可是编排级 watch 与阶段级 watch 的 `--plan` 是**同一个 plan 目录**（D1、H12-② 186 两个都跑）。阶段级 pane 被关后，这个模式仍会命中编排级 watch，lead 会误判「watch 在」而不重拉。H12-② 演示的恰好就是这个场景，兜底会在最后一步失效，取证结果也会被误读。
+- 整改：存活检查必须能按层级和通知对象定位。例如匹配 `relay_log.py watch --plan <plan_dir> --notify <自己的 Herdr 名>`，要求 watch 调用行固定参数顺序，并在 R-A83-8 断言调用行里 `--notify` 紧跟 `--plan`；或者用 `--level stage` 加 `--notify` 的组合。Windows 的 CommandLine 匹配同样处理。R-A83-8 的关键词随之更新。
+
+**P1-C　H12-② 事件顺序会让兜底不被触发（判据 6）**
+
+- 186 写的是「让 worker 回 idle **后**关闭阶段级 watch 的整个 pane」。worker 回 idle 时阶段级 watch 还活着，它会照常通知 lead，lead 醒来处理，账本不会出现「worker 停而无终态」。编排 tick 对账也就找不到停滞，演示不到 B′ 兜底，得到的「未发出 stage-stalled」会被误读成「兜底没接住」。
+- 整改：顺序改为：先在 worker 仍 `working` 时关闭阶段级 watch pane（记录时刻），再让 worker 完成短任务回 idle（记录时刻），然后零提示观察到编排下一次 tick 之后。lead 事先处于「有 watch 允许结束回合」的空闲态。`H12.md` 须记录这三个时刻，外加关闭时 `agent get` 的 worker 状态摘录。
+
+### P2（不阻断）
+
+- **P2-A**　H12-① 要求「只 kill Python 进程、不杀循环 shell」（185），但 `pgrep -f 'relay_log.py watch'` 在循环以 `bash -c '...'` 形式运行时也会命中 shell。建议写明取 PID 用 `pgrep -f '^python3? .*relay_log\.py watch'`，或者先 `pgrep -af` 摘录再人工挑出 python 行记证。
+- **P2-B**　UD-1 ① 说的是「watch 退出后短暂等待即重拉」，D13 把 0/2 排除在重拉之外（正常结束、确定性错误），这是合理细化，不算偏离。整改 P1-A 时保持这一取向即可。
+
+### 范围外发现
+
+无新增。
