@@ -20,7 +20,9 @@
 | plan-review | 1 | 0 | plan-reviewer#1 | FAIL（P1×4） | `DONE.plan-review.md` / `review.plan.md` |
 | builder 整改 1 | 2 | 1 | builder#1 | P1-1/2/4 与 P2 已改；P1-3 先 BLOCKED 待裁决（D12） | `BLOCKED.builder.plan-remediation-1.md` |
 | builder 整改 1 续（UD-1/UD-2 后） | 2 | 1 | builder#1 | D12/D13 落裁决、batch 2 纳入 SKILL 三处与旧断言同步、H12 两段演示 | `DONE.builder.plan-remediation-1.md` |
-| plan-review 复审 | 2 | 1 | plan-reviewer#1 | 待定 | `DONE.plan-review.round-2.md` |
+| plan-review 复审 | 2 | 1 | plan-reviewer#1 | FAIL（新 P1×3：P1-A/B/C） | `DONE.plan-review.round-2.md` / `review.plan.md`「复审 round 2」 |
+| builder 整改 2（plan 阶段最后一次） | 3 | 2 | builder#1 | P1-A 退出码与运行期容错、P1-B 存活检查按层级定位、P1-C H12-② 事件顺序；P2-A/B | `DONE.builder.plan-remediation-2.md` |
+| plan-review 复审 | 3 | 2 | plan-reviewer#1 | 待定 | `DONE.plan-review.round-3.md` |
 | batch-1 review | 1 | 0 | 待派 | 待定 | `DONE.batch-1.review.md` |
 | batch-2 review | 1 | 0 | 待派 | 待定 | `DONE.batch-2.review.md` |
 | batch-3 review | 1 | 0 | 待派 | 待定 | `DONE.batch-3.review.md` |
