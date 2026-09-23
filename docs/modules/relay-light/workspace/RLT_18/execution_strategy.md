@@ -19,8 +19,8 @@
 |---|---|---|---|---|---|---|
 | orchestrator | 主会话（不在确认表） | — | rlt18-orch | w4B:t1 / w4B:p1 | — | observed |
 | monitor | Devin SWE-2 | medium | rlt18-monitor（monitor#1） | w4B:t2 / w4B:p3 | 2026-09-23 确认；实际 argv=`devin --model swe-2-medium --permission-mode dangerous`（gate 前已启动，见上节） | confirmed-observed |
-| builder | Claude Opus 5.5 | medium | rlt18-builder（builder#1） | w4B:t3 / w4B:p2 | 2026-09-23 确认；实际 argv=`claude --model claude-opus-5-5 --effort medium --dangerously-skip-permissions`（gate 前已启动，切换后 `/clear` 再派） | confirmed-observed |
-| plan-reviewer | Claude Opus 5.5 | medium | plan-reviewer#1 | 待 Herdr 返回 | 2026-09-23 确认；未启动 | confirmed-pending |
+| builder | Claude Opus 5.5 | medium | rlt18-builder（builder#1） | w4B:t3 / w4B:p2 | 2026-09-23 确认；实际 argv=`claude --model claude-opus-5-5 --effort medium --dangerously-skip-permissions`（gate 前已启动，切换后 `/clear` 再派）；plan 阶段 DONE.builder.md 已交 | confirmed-observed |
+| plan-reviewer | Claude Opus 5.5 | medium | rlt18-plan-reviewer（plan-reviewer#1） | w4B:t4 / w4B:p4 | 2026-09-23 确认；实际 argv=`claude --model claude-opus-5-5 --effort medium --dangerously-skip-permissions`，Herdr 配置已核对 | confirmed-observed |
 | batch reviewer | Devin SWE-2 | Max | 每批一个 | 待 Herdr 返回 | 2026-09-23 用户修改为 SWE-2 Max；未启动 | confirmed-pending |
 | coder | Devin SWE-2 | Max | 每批一个 | 待 Herdr 返回 | 2026-09-23 确认；未启动 | confirmed-pending |
 | decider | Claude Fable 5.1 | medium | decider#1（按需） | 待 Herdr 返回 | 2026-09-23 确认；未启动 | confirmed-pending |
