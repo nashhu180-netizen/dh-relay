@@ -7,6 +7,19 @@ description: 轻量接力编排——用 relay_log.py 账本把「规划→编�
 
 relay-light 是一套接力编排协议：人拉起规划与编排，编排在每个阶段开一个终端空间并拉起 stage-lead，stage-lead 拉起该阶段所有 agent；全部状态只以 `relay_log.py` 账本为准。本文件是协议核心；两侧运行时的派活/等待命令写法见 `references/adapter-claude-code.md` 与 `references/adapter-codex.md`。
 
+## 适用边界：交互型任务走单会话
+
+relay-light 的 worker 不回头问用户，卡住只能写 `blocked` 交 decider / strategist。需要与用户高频交互的任务放进来只会反复 `blocked → escalate → resume`，还白开 checker / scribe 等角色，因此**不进 relay-light**（完整模式与 `single-task` 都不进），改由**单个 Agent 会话**按 dev-harness 与用户直接对话推进（2026-09-23 用户裁决，#63）。
+
+判定信号，任一命中即走单会话：
+
+- 需要用户在测试环境 / 跳板机 / 生产机上亲手执行命令或贴回输出；
+- 需要用户输入凭据、扫码或做物理操作（凭据值仍按硬规则 1 不入任何工件）；
+- 预计与用户来回确认 **≥3 次**；
+- 下一步取决于上一步的现场输出，无法预先拆成批次与 `task_plan`。
+
+单会话只替代「多 agent 施工」这一段：dev-harness 的入口闸、Recipe 复核（施工者不复核自己的卡）、verify、需求境证据照常生效；过程与证据由该会话写进任务工作区 `progress.md`。多卡计划中混入一张交互卡时，本版不在节点表里建模：把该卡移出本计划、单会话做完后再作为后续计划的前置条件（交互节点类型暂缓，见 #63）。
+
 ## 角色表
 
 十二个角色（含旁路 watcher）。**模型档全部写在 `roles.toml`**，这里只写职责与拉取关系，不写死模型。
