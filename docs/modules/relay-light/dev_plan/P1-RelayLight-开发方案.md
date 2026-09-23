@@ -23,11 +23,11 @@
 >
 > 七条 A/B 旧事件（含 design 侧 `RLT-A-02`~`RLT-A-04`）的完整字段、替换缘由与本次确认来源见 [`../design/evidence/06-交叉审核记录-RLT03阶段合同补充.md`](../design/evidence/06-交叉审核记录-RLT03阶段合同补充.md)。
 <!-- dh:status
-汇报: RLT_09 已完成并 squash 合入 master（PR #19，`c72f124`）；plan_amend/A120 放宽/status 重读/A122 白名单守门与 planner-amend 模板/stage_result amend 摘要落地，并入 F-003 UTF-8 输出防护（Windows CI 已验证）；design/01 经 RLT-A-07 最小 A-adjust 澄清 A121/A122 与 §4.5.2 禁区处理
+汇报: RLT_29 single-task 已完成单卡真实接力、人验与合入后复验；验收后的 7 条改进项已进入验收池，verify 主干 SHA 与销户待回填。RLT_09 已完成并 squash 合入 master（PR #19，`c72f124`）；plan_amend/A120 放宽/status 重读/A122 白名单守门与 planner-amend 模板/stage_result amend 摘要落地，并入 F-003 UTF-8 输出防护（Windows CI 已验证）；design/01 经 RLT-A-07 最小 A-adjust 澄清 A121/A122 与 §4.5.2 禁区处理
 现状: RLT_01/07/08/10/09 均已合入；**RLT_12 与 RLT_21 已于 2026-09-15 squash 合入 master**（PR #25 `7981556`、PR #27 `124a5c9`）——真计划 `rlt12-win-01` 五阶段 W/C/R/X/F 全闭合、账本 71 行 lint ok，RLT_21 七条验收落地、单测 181 全绿 skipped=0；两卡均有 `verify(relay-light):` 提交；**两卡已于 2026-09-15 由用户整体授权验收通过并授权 AI 代记（原话「授权，你帮我代签」），两份 `review.md` 人类签名区已落记**——用户未逐条给出人判结论，H10「只给账本」的独立展示未实际进行，如需逐条主观判断须另行补签。A143 的 oracle 期望值已按用户同日裁决改为 `3 P1 + 2 P2`（design/01 的 RLT-A-10 最小澄清），RLT_21 findings F-009 随之闭合。**RLT_22 已于 2026-09-16 squash 合入 master**（PR #31 `0a909dd`）——A144~A150 七条验收全部落地，CI 三硬门（relay-light Python、relay-tests ubuntu/windows）全绿，`relay-core` 按 `continue-on-error` 只作观测且与上一 PR 同样因环境 socket 权限失败、本卡未动任何 Node 文件；单测 203 例 OK、仓级 runner `RELAY ALL PASS (SKIPPED: 1)`；有 `verify(relay-light):` 提交；**用户 2026-09-16 明确答复「全部授权」放行 push / PR / 合并 / verify 代签 / skill 两侧重同步，AI 代记；该授权是对放行动作的授权，不构成对 review.md 人类签名区任一行的逐条人判**，各行已记「未逐条人判 · 整体授权放行」，确认结论为「带风险放行」。skill 两侧重同步已于同日自 master 主检出执行完成，五文件源与 `.claude` / `.codex` 两副本 sha256 三处一致
-进行到: P1 ▸ 第 1 批 RLT_01/02/03/05/07/08/10/21/12/22 已合入（本批任务卡全部收口） ▸ 第 3 批 RLT_09 提前完成（Linux 可做）
+进行到: P1 ▸ 第 8 批 RLT_29 已经 PR #57 合入，verify 待 PR #58 squash 合入，主干 SHA 与销户随后回填 ▸ 第 1 批 RLT_01/02/03/05/07/08/10/21/12/22 已合入（本批任务卡全部收口） ▸ 第 3 批 RLT_09 提前完成（Linux 可做）
 下一步: **RLT_11 已于 2026-09-16 squash 合入 master 并经用户确认验收**（PR #34 `856d9b3`；验收落记 PR #36 `0b7a72f`），第 2 批剩 RLT_13（Windows Codex 主控复跑并验证纯配置换协作）。**RLT_11 的七条转派项已于同日由用户逐条裁决并立户**：F-001/F-002 → RLT-A-11 最小 A-adjust（Issue #37，改设计正文须走原路）；F-003/F-005/F-006/F-007 → RLT_23 轻档卡（Issue #38）；F-004 → RLT_24 标准档卡（Issue #39）。三者构成新增第 6 批；**RLT-A-11 已于 2026-09-16 squash 合入 master**（PR #41 `c404be9`；Issue #37；§12 兜底类行、职责分层口径回链 `HC-RL-H10`、续发 `HC-RL-A151`～`HC-RL-A158`、冻结 `resource_close` 第 20 事件词与 wire format 并修订 A2；证据见 design/evidence/11；R 开发后复核 APPROVE，CI 三硬门全绿，`relay-core` 按 `continue-on-error` 只作观测、同样因环境 socket 权限失败）——**RLT_23/RLT_24 的「RLT-A-11 落盘」前置已满足**，两卡仍须各自取得 D-start 授权方可开工。**RLT_23 已于 2026-09-17 squash 合入 master**（PR #43 `f62c472`；Issue #38；A151～A154 落地，两路复核 APPROVE，CI 三硬门绿，skill 两侧已重同步），**2026-09-17 用户「你帮我代签」AI 代记验收**；第 6 批剩 RLT_24。**RLT_24 已于 2026-09-17 squash 合入 master**（PR #45 `1359fc6`；Issue #39；`resource_close` 第 20 事件词与 wire format 落地，normal 三路复核闭合，CI 三硬门绿），**2026-09-17 用户「你帮我代签验收」AI 代记验收**；第 6 批全部完成。**现役差异**：RLT_24 已实现 20 词；skill/adapters/as-built 的滞后由 RLT_26 承接，不把文档未同步误报为程序仍为 19 词。RLT_22 已合入，第 3 批异常路径实跑（RLT_15/RLT_16/RLT_19）的节点内死锁前置已解除。**两条转派项已登记承接（2026-09-20，尚未完成）**：F-005 → RLT_25 / Issue #49；F-010 → RLT_26 / Issue #50。来源：`workspace/RLT_22/findings.md` 的 **F-005**（normal 档复核路数三份权威打架：AGENTS.md 宪章#5 三路 vs `dh-mapping.toml` 两路 vs dev-harness 模板第 4 路，对齐落点超出单卡允许路径）与 **F-010**（`as-built/RLT_05-实现快照.md` 的 trigger 口径仍写三态与 `on:done:` 单一前置，未含 A144~A147）
-本次: RLT-B-08 首登已确认；第 7 批 RLT_25 未开始（A-adjust 待确认），RLT_26 已在 wt/RLT_26 落户（workspace/RLT_26），准备基线先提交推送再派发；规划提交 660c9be 已推送，尚未创建 PR。RLT_26 后续状态以任务树 DevPlan/workspace 为准。
+本次: RLT_29 / Issue #56 单卡交付已获用户 2026-09-23 人验认可；PR #57 squash 合入 `319d2b0`，合入后 Python 240 tests OK、完整 relay 回归 PASS；verify 候选由 PR #58 承载，实际主干 SHA 与销户待后续回填。第 7 批 RLT_25/RLT_26 等旧卡状态仍以各自任务树 DevPlan/workspace 为准，不因本卡销户改写。
 看什么: design/01-RelayLight-产品设计与验收.md + 本文件
 阻塞: RLT_07 F-002/F-003（decision_mode 模式门 + cancelled 归属闸）→ RLT_21 承接；RLT_12 Linux 预演 DR-F-001～006 见 workspace/RLT_12/evidence/linux-dry-run/README.md（预演分支）；RLT_08 F-4（visual_map.md 沿先例不建、模块级 knowledge/ 归 RLT_11）；**RLT_11 新增转派 F-001～F-007**（§12 枚举非穷举、账本 `commit=` 在 squash 后悬空、删树无机制保证、关闭证据粒度缺口、herdr prompt 排队不投递、codex bypass flag 被本地分类器拦、pane `done` 不等于 agent 收工），见 workspace/RLT_11/findings.md；RLT_10 F-002（仓根无 .gitignore 忽略 __pycache__）；RLT_09 findings 见 workspace/RLT_09/findings.md
 -->
@@ -108,7 +108,7 @@
 
 ### 3.1 索引
 
-> **活动调度标识（2026-09-22）**：RLT_01～RLT_28 的既有状态/备注继续按各自历史事实保留；RLT_13、RLT_25/A12、RLT_26 等已冻结项不因 RLT-B-09 自动解冻，其他旧未启动车也不启动。当前新增活动任务只有 RLT_29；其状态与工作区列反映本次已授权 D-start。
+> **活动调度标识（2026-09-23）**：RLT_01～RLT_28 的既有状态/备注继续按各自历史事实保留；RLT_13、RLT_25/A12、RLT_26 等已冻结项不因 RLT-B-09 自动解冻，其他旧未启动车也不启动。RLT_29 已经用户人验认可、PR #57 合入并完成合入后复验；verify 待 PR #58 squash，实际主干 SHA 与销户回填后才退出活动任务。
 
 <!-- dh:tasks -->
 
@@ -138,9 +138,9 @@
 | RLT_25 | 统一 normal Recipe 权威与闸门登记 | 标准 | 未开始 | 7 | 目标三路已裁决；前置 A-adjust 整版确认并落盘 | — | — | Issue #49；不作旧第 3 批硬前置；与 RLT_26 共用 skill 路径，后续施工须错开或合入后重新核基线 |
 | RLT_26 | resource_close 现役文档同步与旧口径清理 | 标准 | 进行中 | 7 | RLT_24（已满足） | [workspace/RLT_26](../workspace/RLT_26/) | — | Issue #50；并入 RLT_22 F-010；2026-09-20 已另行授权 Devin SWE-2 Max 独立 worktree D-start |
 | RLT_27 | ThinkPad Linux Codex 主控最小闭环 | 标准 | 待验收 | 独立试跑 | retry02 W/C/R/F 全闭合；2026-09-20 用户确认且授权版本收口；待集成 verify | [workspace/RLT_27](../workspace/RLT_27/) | — | Issue #52 已关闭；仅本卡 light 子范围；首次阻塞保留、协调修正一次；不替代 RLT_17 全矩阵 |
-| RLT_29 | 新增与完整 relay 并列的 single-task 单卡接力模式 | 标准 | 进行中 | 8 | RLT-A-13/RLT-B-09 已确认；Issue #56 | [workspace/RLT_29](../workspace/RLT_29/) | — | heavy；高危组件接线；D-start 批量授权来源=2026-09-22 用户整版确认；E10 后人验仍待用户 |
+| RLT_29 | 新增与完整 relay 并列的 single-task 单卡接力模式 | 标准 | 待验收 | 8 | RLT-A-13/RLT-B-09 已确认；Issue #56 | [workspace/RLT_29](../workspace/RLT_29/) | 2026-09-23 / verify 主干 SHA 待 PR #58 squash 后回填 | heavy；高危组件接线；2026-09-23 用户「认可收口」并检查同意 PR #57；七条 P2 进验收池；PR #57 squash `319d2b0`；E13 销户待回填 |
 
-> RLT_29 已按 D-start 建工作区；旧卡状态不因本次回填改变。
+> RLT_29 已按 D-start 建工作区，完成 E11 人验与 E12 合入复验；E13 待实际主干 verify SHA 回填后销户。旧卡状态不因本次回填改变。
 
 
 ### 3.2 任务卡
@@ -179,6 +179,7 @@
   - `tools/relay-light/skill/roles.toml`
   - `tools/relay-light/test_install_skill.py`
   - `docs/modules/relay-light/as-built/**`
+  - `docs/acceptance/验收池.md`（仅限用户 2026-09-23 明确选择入池的 E2 七条 P2；E13 去向回填）
 - **档位**：标准 · 高危（组件接线）。
 - **任务类型**：重核
 - **依赖 / 批次**：RLT-A-13 与 RLT-B-09 已于 2026-09-22 用户整版确认；第 8 批，单验收单元，无跨卡依赖。旧卡保持冻结。
