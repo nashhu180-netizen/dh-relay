@@ -13,7 +13,10 @@ import stat
 import sys
 import subprocess
 import tempfile
+import threading
+import time
 import tomllib
+import traceback
 import unittest
 from contextlib import redirect_stderr
 from datetime import datetime, timedelta, timezone
@@ -953,10 +956,10 @@ class RelayPlanLintTests(RelayCliTestCase):
             foreign, f"non-stdlib top-level imports in relay_log.py: {foreign}"
         )
 
-    def test_help_lists_exactly_the_three_frozen_subcommands(self) -> None:
+    def test_help_lists_exactly_the_frozen_subcommands(self) -> None:
         result = self.run_cli("--help")
         self.assertEqual(0, result.returncode)
-        self.assertRegex(result.stdout, r"\{add,status,lint\}")
+        self.assertRegex(result.stdout, r"\{add,status,lint,watch\}")
 
     def test_add_is_append_only_with_twenty_fixed_schema_events(self) -> None:
         self.write_plan()
@@ -2799,7 +2802,7 @@ class RelayConfigTests(RelayCliTestCase):
         self.assertRegex(lint.stderr, r"^lint: HC-RL-A89 ")
 
     def test_each_subcommand_help_exposes_config_dir(self) -> None:
-        """HC-RL-A135: add/status/lint each advertise --config-dir; the command set stays three."""
+        """HC-RL-A135: add/status/lint each advertise --config-dir; the command set stays frozen."""
         for subcommand in SUBCOMMANDS:
             with self.subTest(subcommand=subcommand):
                 result = self.run_cli(subcommand, "--help")
@@ -2807,7 +2810,7 @@ class RelayConfigTests(RelayCliTestCase):
                 self.assertIn("--config-dir", result.stdout)
         top_level = self.run_cli("--help")
         self.assertEqual(0, top_level.returncode)
-        self.assertRegex(top_level.stdout, r"\{add,status,lint\}")
+        self.assertRegex(top_level.stdout, r"\{add,status,lint,watch\}")
 
     def test_explicit_config_dir_is_normalized_and_percent_encoded(self) -> None:
         """HC-RL-A135: `~/...` expands, normalizes to an absolute path and is recorded encoded."""
@@ -4518,10 +4521,10 @@ class RelayLimitsTests(RelayCliTestCase):
             str(limit_three), Path(self.tempdir.name) / "missing-home"
         )
         self.assertEqual(3, len(planner("DHR_90", relay_log.load_config(resolved))))
-        # The public CLI is still exactly the three frozen subcommands.
+        # The public CLI is still exactly the frozen subcommands.
         top_level = self.run_cli("--help")
         self.assertEqual(0, top_level.returncode)
-        self.assertRegex(top_level.stdout, r"\{add,status,lint\}")
+        self.assertRegex(top_level.stdout, r"\{add,status,lint,watch\}")
 
     def test_attempt_and_x_loss_stops_trigger_independently(self) -> None:
         """HC-RL-A107: each counter hits its own limit and opens the strategist exit alone."""
@@ -8063,6 +8066,884 @@ class RelayCliEncodingTests(RelayCliTestCase):
                 self.assertEqual(2, result.returncode)
                 document = json.loads(result.stdout.decode("utf-8"))
                 self.assertIn("卡X", json.dumps(document, ensure_ascii=False))
+
+
+# ---------------------------------------------------------------------------
+# RLT_18 batch 1 — HC-RL-A82/A101 watch: herdr and clock are always stubbed.
+# ---------------------------------------------------------------------------
+
+
+class FakeClock:
+    """Discrete-event virtual clock shared by every watch thread in a test.
+
+    ``sleep`` registers a wake point then blocks the caller; ``advance_to`` is
+    the only place virtual time moves, releasing due sleepers one at a time in
+    (wake_at, registration) order and waiting for each released thread to block
+    again or leave before releasing the next — so sleeps in different threads
+    never stack onto each other. ``expect_thread``/``enter``/``leave`` close the
+    spawn gap: a thread counts from the moment it is expected, not from its
+    first sleep.
+    """
+
+    class _Sleeper:
+        __slots__ = ("seq", "wake_at", "event", "blocked", "gone")
+
+        def __init__(self, seq: int, wake_at: float) -> None:
+            self.seq = seq
+            self.wake_at = wake_at
+            self.event = threading.Event()
+            self.blocked = True
+            self.gone = False
+
+    def __init__(self) -> None:
+        self.stop_event = threading.Event()
+        self._now = 0.0
+        self._seq = 0
+        self._pending = 0
+        self._sleepers: dict[int, FakeClock._Sleeper] = {}
+        self._cv = threading.Condition()
+
+    def monotonic(self) -> float:
+        return self._now
+
+    def expect_thread(self) -> None:
+        with self._cv:
+            self._pending += 1
+
+    def enter(self) -> None:
+        with self._cv:
+            if self._pending:
+                self._pending -= 1
+            self._sleepers.setdefault(
+                threading.get_ident(), FakeClock._Sleeper(-1, float("inf"))
+            ).blocked = False
+            self._cv.notify_all()
+
+    def leave(self) -> None:
+        with self._cv:
+            ident = threading.get_ident()
+            record = self._sleepers.get(ident)
+            if record is None:
+                record = FakeClock._Sleeper(-1, float("inf"))
+                self._sleepers[ident] = record
+            record.blocked = False
+            record.gone = True
+            self._cv.notify_all()
+
+    def sleep(self, seconds: float) -> None:
+        if seconds <= 0:
+            return
+        with self._cv:
+            record = FakeClock._Sleeper(self._seq, self._now + seconds)
+            self._seq += 1
+            self._sleepers[threading.get_ident()] = record
+            self._cv.notify_all()
+        while not record.event.wait(0.05):
+            if self.stop_event.is_set():
+                with self._cv:
+                    record.blocked = False
+                    self._cv.notify_all()
+                return
+
+    def advance_to(self, moment: float) -> None:
+        if moment < self._now:
+            raise AssertionError(f"FakeClock cannot go back from {self._now} to {moment}")
+        deadline = time.monotonic() + 5
+        self._now = moment
+        while True:
+            self._wait_quiescent(deadline)
+            with self._cv:
+                due = [
+                    record
+                    for record in self._sleepers.values()
+                    if record.blocked and not record.gone and record.wake_at <= moment
+                ]
+                if not due:
+                    return
+                record = min(due, key=lambda item: (item.wake_at, item.seq))
+                record.blocked = False
+                record.event.set()
+
+    def _wait_quiescent(self, deadline: float) -> None:
+        with self._cv:
+            while True:
+                if self._pending == 0 and all(
+                    record.blocked or record.gone for record in self._sleepers.values()
+                ):
+                    return
+                if time.monotonic() > deadline:
+                    raise AssertionError(
+                        "FakeClock threads did not settle within 5s\n" + self._thread_stacks()
+                    )
+                self._cv.wait(0.01)
+
+    @staticmethod
+    def _thread_stacks() -> str:
+        return "\n".join(
+            f"--- thread {ident}\n" + "".join(traceback.format_stack(frame))
+            for ident, frame in sys._current_frames().items()
+        )
+
+
+class FakeHerdr:
+    """Scripted ``herdr`` adapter: every call is logged with virtual start/end."""
+
+    def __init__(self, clock: FakeClock) -> None:
+        self.clock = clock
+        self.calls: list[dict[str, object]] = []
+        self.wait_script: dict[str, list[tuple[str | None, float]]] = {}
+        self.wait_default: dict[str, tuple[str | None, float]] = {}
+        self.get_script: dict[str, list[str | None]] = {}
+        self.get_default: dict[str, str | None] = {}
+        self.prompt_failures: dict[str, int] = {}
+        self._lock = threading.Lock()
+
+    def _record(self, kind: str, name: str, start: float, result: object) -> None:
+        with self._lock:
+            self.calls.append(
+                {
+                    "kind": kind,
+                    "name": name,
+                    "start": start,
+                    "end": self.clock.monotonic(),
+                    "result": result,
+                }
+            )
+
+    def wait(self, name: str, timeout_ms: int = 30000) -> str | None:
+        start = self.clock.monotonic()
+        queue = self.wait_script.setdefault(name, [])
+        result, duration = (
+            queue.pop(0) if queue else self.wait_default.get(name, (None, timeout_ms / 1000))
+        )
+        if duration:
+            self.clock.sleep(duration)
+        self._record("wait", name, start, result)
+        return result
+
+    def get(self, name: str) -> str | None:
+        start = self.clock.monotonic()
+        queue = self.get_script.setdefault(name, [])
+        result = queue.pop(0) if queue else self.get_default.get(name)
+        self._record("get", name, start, result)
+        return result
+
+    def prompt(self, name: str, text: str) -> bool:
+        start = self.clock.monotonic()
+        remaining = self.prompt_failures.get(name, 0)
+        if remaining:
+            self.prompt_failures[name] = remaining - 1
+        self._record("prompt", name, start, (text, not remaining))
+        return not remaining
+
+
+_WATCH_ROOTS = ("run_watch", "HerdrClient", "WatchClock")
+_WATCH_BANNED_CALLS = frozenset(
+    {"append_event", "_add_command", "_write_json_restricted", "_restricted_writer"}
+)
+_WATCH_BANNED_ATTRS = frozenset({"write_text", "write_bytes"})
+_WATCH_BANNED_OS_ATTRS = frozenset({"replace", "rename"})
+_WATCH_WRITE_MODES = frozenset("awx+")
+
+
+def _watch_source_violations(source: str) -> list[str]:
+    """HC-RL-A101 oracle: no ledger/file write call inside the watch call closure.
+
+    The closure starts at every ``_watch*``/``run_watch``/``HerdrClient``/
+    ``WatchClock`` module-level def and follows any module-level name it
+    references. Separately, every ``subprocess.run``/``Popen`` whose first
+    argument is a ``"herdr"``-led list literal or a non-literal must sit inside
+    the ``HerdrClient`` class body.
+    """
+    tree = ast.parse(source)
+    module_defs = {
+        node.name: node
+        for node in tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+    }
+    roots = {
+        name
+        for name in module_defs
+        if name.startswith("_watch") or name in _WATCH_ROOTS
+    }
+    closure: dict[str, ast.AST] = {}
+    worklist = sorted(roots)
+    while worklist:
+        name = worklist.pop()
+        if name in closure or name not in module_defs:
+            continue
+        node = module_defs[name]
+        closure[name] = node
+        for sub in ast.walk(node):
+            if (
+                isinstance(sub, ast.Name)
+                and sub.id in module_defs
+                and sub.id not in closure
+            ):
+                worklist.append(sub.id)
+    violations: list[str] = []
+    for owner, node in closure.items():
+        for sub in ast.walk(node):
+            if not isinstance(sub, ast.Call):
+                continue
+            func = sub.func
+            if isinstance(func, ast.Name):
+                if func.id in _WATCH_BANNED_CALLS:
+                    violations.append(f"{owner}:{sub.lineno} calls {func.id}")
+                elif func.id == "open":
+                    mode = sub.args[1] if len(sub.args) > 1 else None
+                    for keyword in sub.keywords:
+                        if keyword.arg == "mode":
+                            mode = keyword.value
+                    if mode is None:
+                        continue
+                    if not (isinstance(mode, ast.Constant) and isinstance(mode.value, str)):
+                        violations.append(f"{owner}:{sub.lineno} open() with unresolved mode")
+                    elif set(mode.value) & _WATCH_WRITE_MODES:
+                        violations.append(f"{owner}:{sub.lineno} open() in write mode")
+            elif isinstance(func, ast.Attribute):
+                if func.attr in _WATCH_BANNED_ATTRS:
+                    violations.append(f"{owner}:{sub.lineno} calls .{func.attr}")
+                elif isinstance(func.value, ast.Name):
+                    if func.value.id == "os" and func.attr in _WATCH_BANNED_OS_ATTRS:
+                        violations.append(f"{owner}:{sub.lineno} calls os.{func.attr}")
+                    elif func.value.id == "shutil":
+                        violations.append(f"{owner}:{sub.lineno} calls shutil.{func.attr}")
+    violations += _watch_subprocess_violations(tree)
+    if not roots:
+        violations.append("no watch roots found")
+    for required in ("run_watch", "HerdrClient"):
+        if required not in closure:
+            violations.append(f"watch closure missing {required}")
+    return violations
+
+
+def _watch_subprocess_violations(tree: ast.Module) -> list[str]:
+    parents = {
+        child: node for node in ast.walk(tree) for child in ast.iter_child_nodes(node)
+    }
+    violations: list[str] = []
+    for sub in ast.walk(tree):
+        if not (
+            isinstance(sub, ast.Call)
+            and isinstance(sub.func, ast.Attribute)
+            and sub.func.attr in {"run", "Popen"}
+            and isinstance(sub.func.value, ast.Name)
+            and sub.func.value.id == "subprocess"
+            and sub.args
+        ):
+            continue
+        first = sub.args[0]
+        constrained = True
+        if isinstance(first, (ast.List, ast.Tuple)) and first.elts:
+            head = first.elts[0]
+            if isinstance(head, ast.Constant) and isinstance(head.value, str):
+                constrained = head.value == "herdr"
+        if not constrained:
+            continue
+        node: ast.AST = sub
+        inside = False
+        while node in parents:
+            node = parents[node]
+            if isinstance(node, ast.ClassDef) and node.name == "HerdrClient":
+                inside = True
+                break
+        if not inside:
+            violations.append(f"line {sub.lineno}: subprocess call outside HerdrClient")
+    return violations
+
+
+class WatchTests(RelayCliTestCase):
+    """RLT_18 batch 1 — HC-RL-A82/A101: notify-only watch, always stubbed."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.thread_errors: list[str] = []
+        previous_hook = threading.excepthook
+
+        def capture(args) -> None:
+            self.thread_errors.append(
+                f"{getattr(args.thread, 'name', '?')}: {args.exc_value!r}"
+            )
+
+        threading.excepthook = capture
+        self.addCleanup(setattr, threading, "excepthook", previous_hook)
+        self.addCleanup(self.assertEqual, [], self.thread_errors)
+
+    def _stage_fixture(
+        self,
+        agents: tuple[tuple[str, str], ...] = (("coder#1", ""),),
+        stage_id: str = "DHR_90:C#1",
+        node: str = "C1",
+    ) -> None:
+        self.write_plan(
+            node_rows=[f"| {node} | DHR_90 | {stage_id} | construction | agent:coder | | |"],
+            agent_rows=[
+                f"| coder | {node} | coder | | code.md | | |",
+                f"| checker | {node} | checker | | check.md | | |",
+            ],
+        )
+        rows = [
+            ("2026-09-24T08:00:00+00:00", node, "plan_loaded", "orchestrator#1", "skill=0.1.0"),
+            ("2026-09-24T08:00:01+00:00", node, "stage_start", "orchestrator#1", f"stage_id={stage_id}"),
+            ("2026-09-24T08:00:02+00:00", node, "monitor_launch", "monitor#1", f"stage_id={stage_id}"),
+            ("2026-09-24T08:00:03+00:00", node, "node_start", "monitor#1", ""),
+        ]
+        rows += [
+            ("2026-09-24T08:00:04+00:00", node, "agent_launch", agent, note)
+            for agent, note in agents
+        ]
+        self.write_ledger_rows(tuple(rows))
+
+    def _start_watch(
+        self,
+        clock: FakeClock,
+        herdr: FakeHerdr,
+        *,
+        level: str = "stage",
+        notify: str = "lead-1",
+    ) -> threading.Thread:
+        clock.expect_thread()
+        thread = threading.Thread(
+            target=relay_log.run_watch,
+            args=(
+                str(self.plan_path.parent),
+                notify,
+                level,
+                repo_config(),
+                herdr,
+                clock,
+                clock.stop_event,
+            ),
+            name="watch:main",
+            daemon=True,
+        )
+        thread.start()
+        self.addCleanup(self._stop_watch, clock, thread)
+        return thread
+
+    @staticmethod
+    def _stop_watch(clock: FakeClock, thread: threading.Thread) -> None:
+        clock.stop_event.set()
+        thread.join(timeout=10)
+
+    @staticmethod
+    def _ledger_row_line(seq: int, node: str, event: str, agent: str, note: str = "") -> str:
+        return json.dumps(
+            {
+                "seq": seq,
+                "ts": "2026-09-24T09:00:00+00:00",
+                "node": node,
+                "event": event,
+                "agent": agent,
+                "by": "orchestrator" if agent.startswith("orchestrator#") else "monitor",
+                "note": note,
+            },
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
+
+    def _append_ledger_row(self, node: str, event: str, agent: str, note: str = "") -> str:
+        """Append one raw JSONL row (seq continues); never via append_event."""
+        ledger_path = self.plan_path.parent / "relay_log.jsonl"
+        seq = len(ledger_path.read_text(encoding="utf-8").splitlines()) + 1
+        line = self._ledger_row_line(seq, node, event, agent, note)
+        with open(ledger_path, "a", encoding="utf-8", newline="") as handle:
+            handle.write(line + "\n")
+        return line
+
+    @staticmethod
+    def _calls(herdr: FakeHerdr, kind: str, name: str | None = None) -> list[dict[str, object]]:
+        return [
+            call
+            for call in herdr.calls
+            if call["kind"] == kind and (name is None or call["name"] == name)
+        ]
+
+    def _prompts(self, herdr: FakeHerdr, name: str = "lead-1") -> list[dict[str, object]]:
+        return self._calls(herdr, "prompt", name)
+
+    @staticmethod
+    def _watch_threads() -> list[threading.Thread]:
+        return [t for t in threading.enumerate() if t.name.startswith("watch:")]
+
+    # --- R-A82-1 -----------------------------------------------------------
+
+    def test_a82_1_wait_return_sends_prompt(self) -> None:
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        self._start_watch(clock, herdr)
+        clock.advance_to(0)
+        prompts = self._prompts(herdr)
+        self.assertEqual(1, len(prompts))
+        self.assertEqual(("[relay-light] coder#1 -> idle", True), prompts[0]["result"])
+        text = prompts[0]["result"][0]
+        self.assertTrue(text.isascii())
+        self.assertNotIn("\n", text)
+
+    # --- R-A82-2 -----------------------------------------------------------
+
+    def test_a82_2_no_immediate_reattach_after_notify(self) -> None:
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        self._start_watch(clock, herdr)
+        clock.advance_to(0)
+        clock.advance_to(29)
+        self.assertEqual(1, len(self._calls(herdr, "wait", "coder-1")))
+        self.assertEqual([], self._calls(herdr, "get", "coder-1"))
+        clock.advance_to(30)
+        gets = self._calls(herdr, "get", "coder-1")
+        self.assertEqual([30.0], [call["start"] for call in gets])
+        self.assertEqual(1, len(self._calls(herdr, "wait", "coder-1")))
+
+    # --- R-A82-3 -----------------------------------------------------------
+
+    def test_a82_3_get_polling_every_30_seconds(self) -> None:
+        self._stage_fixture(agents=(("coder#1", ""), ("checker#1", "")))
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        for name in ("coder-1", "checker-1"):
+            herdr.wait_script[name] = [("idle", 0)]
+            herdr.get_default[name] = "idle"
+        self._start_watch(clock, herdr)
+        clock.advance_to(0)
+        for moment in (30, 60, 90):
+            clock.advance_to(moment)
+        for name in ("coder-1", "checker-1"):
+            starts = [call["start"] for call in self._calls(herdr, "get", name)]
+            self.assertEqual([30.0, 60.0, 90.0], starts[:3], name)
+
+    # --- R-A82-4 -----------------------------------------------------------
+
+    def _terminal_exit(self, event: str) -> None:
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        self._start_watch(clock, herdr)
+        clock.advance_to(0)
+        clock.advance_to(15)
+        self._append_ledger_row("C1", event, "coder#1")
+        clock.advance_to(30)
+        clock.advance_to(60)
+        self.assertEqual(
+            [],
+            [c for c in self._calls(herdr, "get", "coder-1") if c["start"] >= 30],
+        )
+        self.assertFalse(
+            any(
+                t.name == "watch:C1:coder#1" and t.is_alive()
+                for t in threading.enumerate()
+            )
+        )
+
+    def test_a82_4a_done_exits_thread(self) -> None:
+        self._terminal_exit("done")
+
+    def test_a82_4b_agent_lost_exits_thread(self) -> None:
+        self._terminal_exit("agent_lost")
+
+    def test_a82_4c_cancelled_exits_thread(self) -> None:
+        self._terminal_exit("cancelled")
+
+    # --- R-A82-5 -----------------------------------------------------------
+
+    def test_a82_5_working_reattaches_and_renotifies(self) -> None:
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0), ("idle", 0)]
+        herdr.get_script["coder-1"] = ["working"]
+        herdr.get_default["coder-1"] = "idle"
+        self._start_watch(clock, herdr)
+        clock.advance_to(0)
+        clock.advance_to(30)
+        names = [call["kind"] for call in herdr.calls]
+        self.assertEqual(["wait", "prompt", "get", "wait", "prompt"], names)
+        prompts = self._prompts(herdr)
+        self.assertEqual(2, len(prompts))
+        self.assertEqual(
+            "[relay-light] coder#1 -> idle", prompts[1]["result"][0]
+        )
+        clock.advance_to(60)
+        self.assertEqual(2, len(self._prompts(herdr)))
+
+    # --- R-A82-6 -----------------------------------------------------------
+
+    def test_a82_6_same_transition_notified_once(self) -> None:
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        self._start_watch(clock, herdr)
+        clock.advance_to(0)
+        for moment in (30, 60, 90):
+            clock.advance_to(moment)
+        self.assertEqual(1, len(self._prompts(herdr)))
+        self.assertEqual(1, len(self._calls(herdr, "wait", "coder-1")))
+
+    # --- R-A82-7 -----------------------------------------------------------
+
+    def test_a82_7_each_agent_own_thread_and_join(self) -> None:
+        self._stage_fixture(agents=(("coder#1", ""), ("checker#1", "")))
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.wait_script["checker-1"] = [("blocked", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        herdr.get_default["checker-1"] = "blocked"
+        self._start_watch(clock, herdr)
+        clock.advance_to(0)
+        self.assertEqual(
+            {"[relay-light] coder#1 -> idle", "[relay-light] checker#1 -> blocked"},
+            {call["result"][0] for call in self._prompts(herdr)},
+        )
+        names = {t.name for t in self._watch_threads()}
+        self.assertIn("watch:C1:coder#1", names)
+        self.assertIn("watch:C1:checker#1", names)
+        clock.stop_event.set()
+        deadline = time.monotonic() + 5
+        for thread in self._watch_threads():
+            thread.join(timeout=max(0, deadline - time.monotonic()))
+        self.assertFalse(any(t.is_alive() for t in self._watch_threads()))
+
+    # --- R-A82-8 -----------------------------------------------------------
+
+    def test_a82_8_new_present_agent_gets_thread(self) -> None:
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.wait_script["checker-1"] = [("blocked", 0)]
+        self._start_watch(clock, herdr)
+        clock.advance_to(0)
+        self.assertEqual(1, len(self._prompts(herdr)))
+        clock.advance_to(15)
+        self._append_ledger_row("C1", "agent_launch", "checker#1")
+        clock.advance_to(30)
+        self.assertIn(
+            "watch:C1:checker#1", {t.name for t in self._watch_threads()}
+        )
+        self.assertIn(
+            "[relay-light] checker#1 -> blocked",
+            {call["result"][0] for call in self._prompts(herdr)},
+        )
+
+    # --- R-A82-9 -----------------------------------------------------------
+
+    def test_a82_9_herdr_name_resolution(self) -> None:
+        self._stage_fixture(
+            agents=(("coder#1", "herdr=probe-x"), ("checker#1", ""), ("codér#1", ""))
+        )
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["probe-x"] = [("idle", 0)]
+        herdr.wait_script["checker-1"] = [("idle", 0)]
+        with redirect_stderr(io.StringIO()) as err:
+            self._start_watch(clock, herdr)
+            clock.advance_to(0)
+        self.assertEqual(1, len(self._calls(herdr, "wait", "probe-x")))
+        self.assertEqual(1, len(self._calls(herdr, "wait", "checker-1")))
+        self.assertEqual([], self._calls(herdr, "wait", "codér-1"))
+        self.assertEqual(1, err.getvalue().count("\n"))
+        self.assertIn("codér#1", err.getvalue())
+        self.assertEqual(
+            {"[relay-light] coder#1 -> idle", "[relay-light] checker#1 -> idle"},
+            {call["result"][0] for call in self._prompts(herdr)},
+        )
+
+    # --- R-A82-10 ----------------------------------------------------------
+
+    def test_a82_10_failed_prompt_retries_next_observation(self) -> None:
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        herdr.prompt_failures["lead-1"] = 1
+        self._start_watch(clock, herdr)
+        clock.advance_to(0)
+        self.assertEqual(
+            [("[relay-light] coder#1 -> idle", False)],
+            [call["result"] for call in self._prompts(herdr)],
+        )
+        clock.advance_to(30)
+        self.assertEqual(
+            [
+                ("[relay-light] coder#1 -> idle", False),
+                ("[relay-light] coder#1 -> idle", True),
+            ],
+            [call["result"] for call in self._prompts(herdr)],
+        )
+        clock.advance_to(60)
+        self.assertEqual(2, len(self._prompts(herdr)))
+
+    # --- R-A82-11 ----------------------------------------------------------
+
+    def test_a82_11a_early_wait_failure_backs_off(self) -> None:
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_default["coder-1"] = (None, 0)
+        self._start_watch(clock, herdr)
+        for moment in (0, 30, 60, 90):
+            clock.advance_to(moment)
+        calls = [
+            call
+            for call in herdr.calls
+            if call["name"] == "coder-1" and call["kind"] in {"wait", "get"}
+        ]
+        self.assertLessEqual(len(calls), 4)
+        self.assertEqual([0.0, 30.0, 60.0, 90.0], [call["start"] for call in calls])
+        self.assertEqual([], self._prompts(herdr))
+
+    def test_a82_11b_wait_timeout_reattaches_immediately(self) -> None:
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_default["coder-1"] = (None, 30)
+        self._start_watch(clock, herdr)
+        for moment in (0, 30, 60, 90, 120):
+            clock.advance_to(moment)
+        waits = self._calls(herdr, "wait", "coder-1")
+        self.assertEqual([0.0, 30.0, 60.0, 90.0], [call["start"] for call in waits])
+        for earlier, later in zip(waits, waits[1:]):
+            self.assertEqual(0.0, later["start"] - earlier["end"])
+        self.assertEqual([], self._prompts(herdr))
+
+    # --- R-A82-12 ----------------------------------------------------------
+
+    def test_a82_12_thread_beats_do_not_stack(self) -> None:
+        self._stage_fixture(agents=(("coder#1", ""), ("checker#1", "")))
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.wait_script["checker-1"] = [("idle", 10)]
+        herdr.get_default["coder-1"] = "idle"
+        herdr.get_default["checker-1"] = "idle"
+        self._start_watch(clock, herdr)
+        for moment in (0, 10, 30, 40, 60, 70, 90, 100):
+            clock.advance_to(moment)
+        self.assertEqual(
+            [30.0, 60.0, 90.0],
+            [call["start"] for call in self._calls(herdr, "get", "coder-1")][:3],
+        )
+        self.assertEqual(
+            [40.0, 70.0, 100.0],
+            [call["start"] for call in self._calls(herdr, "get", "checker-1")][:3],
+        )
+        clock.advance_to(1200)
+        ticks = [
+            call
+            for call in self._prompts(herdr)
+            if call["result"][0] == "[relay-light] tick"
+        ]
+        self.assertEqual([1200.0], [call["start"] for call in ticks])
+
+    # --- R-A82-13 ----------------------------------------------------------
+
+    def _bad_state_not_sent(self, state: str) -> None:
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [(state, 0)]
+        herdr.get_default["coder-1"] = state
+        with redirect_stderr(io.StringIO()) as err:
+            self._start_watch(clock, herdr)
+            for moment in (0, 30, 60):
+                clock.advance_to(moment)
+        self.assertEqual([], self._prompts(herdr))
+        self.assertEqual(1, err.getvalue().count("\n"))
+        self.assertTrue(
+            any(
+                t.name == "watch:C1:coder#1" and t.is_alive()
+                for t in threading.enumerate()
+            )
+        )
+
+    def test_a82_13a_non_ascii_state_not_sent(self) -> None:
+        self._bad_state_not_sent("idlé")
+
+    def test_a82_13b_newline_state_not_sent(self) -> None:
+        self._bad_state_not_sent("idle\nx")
+
+    def test_a82_13c_bad_agent_name_skipped(self) -> None:
+        self._stage_fixture(agents=(("codér#1", ""),))
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        with redirect_stderr(io.StringIO()) as err:
+            self._start_watch(clock, herdr)
+            for moment in (0, 30, 60):
+                clock.advance_to(moment)
+        self.assertEqual([], herdr.calls)
+        self.assertEqual(1, err.getvalue().count("\n"))
+        self.assertIn("codér#1", err.getvalue())
+
+    # --- R-A82-14 ----------------------------------------------------------
+
+    def test_a82_14_runtime_ledger_half_line_tolerated(self) -> None:
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        ledger_path = self.plan_path.parent / "relay_log.jsonl"
+        intact = ledger_path.read_bytes()
+        with redirect_stderr(io.StringIO()) as err:
+            self._start_watch(clock, herdr)
+            clock.advance_to(0)
+            clock.advance_to(30)
+            ledger_path.write_bytes(intact + b'{"seq": 6, "ts')
+            for moment in (60, 90):
+                clock.advance_to(moment)
+            self.assertEqual(1, len(self._prompts(herdr)))
+            self.assertTrue(any(t.name == "watch:main" and t.is_alive() for t in threading.enumerate()))
+            self.assertTrue(
+                any(
+                    t.name == "watch:C1:coder#1" and t.is_alive()
+                    for t in threading.enumerate()
+                )
+            )
+            self.assertEqual(
+                [60.0, 90.0],
+                [call["start"] for call in self._calls(herdr, "get", "coder-1")][1:],
+            )
+            ledger_path.write_bytes(
+                intact
+                + (self._ledger_row_line(6, "C1", "done", "coder#1") + "\n").encode("utf-8")
+            )
+            clock.advance_to(120)
+        self.assertGreaterEqual(err.getvalue().count("\n"), 2)
+        self.assertFalse(
+            any(
+                t.name == "watch:C1:coder#1" and t.is_alive()
+                for t in threading.enumerate()
+            )
+        )
+        self.assertEqual(
+            [], [c for c in self._calls(herdr, "get", "coder-1") if c["start"] >= 120]
+        )
+
+    # --- R-A82-15 ----------------------------------------------------------
+
+    def test_a82_15_runtime_plan_lint_failure_tolerated(self) -> None:
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        good_plan = self.plan_path.read_bytes()
+        with redirect_stderr(io.StringIO()) as err:
+            self._start_watch(clock, herdr)
+            clock.advance_to(0)
+            clock.advance_to(30)
+            self.plan_path.write_text("garbage\n", encoding="utf-8")
+            for moment in (60, 90, 120):
+                clock.advance_to(moment)
+            self.assertEqual(1, len(self._prompts(herdr)))
+            self.assertTrue(
+                any(
+                    t.name == "watch:C1:coder#1" and t.is_alive()
+                    for t in threading.enumerate()
+                )
+            )
+            self.assertEqual(
+                [30.0, 60.0, 90.0, 120.0],
+                [call["start"] for call in self._calls(herdr, "get", "coder-1")],
+            )
+            self.plan_path.write_bytes(good_plan)
+            clock.advance_to(150)
+        self.assertGreaterEqual(err.getvalue().count("\n"), 3)
+        self.assertTrue(any(t.name == "watch:main" and t.is_alive() for t in threading.enumerate()))
+
+    # --- R-A101 ------------------------------------------------------------
+
+    def test_a101_1_watch_closure_has_no_writes(self) -> None:
+        source = Path(__file__).with_name("relay_log.py").read_text(encoding="utf-8")
+        self.assertEqual([], _watch_source_violations(source))
+
+    def test_a101_2_checker_flags_injected_write(self) -> None:
+        source = Path(__file__).with_name("relay_log.py").read_text(encoding="utf-8")
+        anchor = "        polling = False"
+        self.assertIn(anchor, source)
+        mutated = source.replace(
+            anchor,
+            '        append_event(plan_dir, "n", "done", "a#1", "", config)\n' + anchor,
+            1,
+        )
+        violations = _watch_source_violations(mutated)
+        self.assertTrue(
+            any("append_event" in violation for violation in violations),
+            violations,
+        )
+
+    def test_a101_3_watch_run_leaves_plan_and_ledger_bytes(self) -> None:
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        plan_bytes = self.plan_path.read_bytes()
+        ledger_path = self.plan_path.parent / "relay_log.jsonl"
+        ledger_bytes = ledger_path.read_bytes()
+        appended = ""
+        with mock.patch.object(relay_log, "append_event") as mocked_append:
+            self._start_watch(clock, herdr)
+            clock.advance_to(0)
+            clock.advance_to(15)
+            appended = self._append_ledger_row("C1", "done", "coder#1")
+            clock.advance_to(30)
+            clock.advance_to(60)
+            mocked_append.assert_not_called()
+        self.assertEqual(plan_bytes, self.plan_path.read_bytes())
+        self.assertEqual(
+            ledger_bytes + (appended + "\n").encode("utf-8"), ledger_path.read_bytes()
+        )
+
+    # --- R-CLI-1 -----------------------------------------------------------
+
+    def test_cli_watch_argument_contract(self) -> None:
+        self.write_plan()
+        plan_dir = str(self.plan_path.parent)
+        cases = (
+            ("missing --plan", ("watch", "--notify", "x", "--config-dir", str(SKILL_DIR))),
+            ("missing --notify", ("watch", "--plan", plan_dir, "--config-dir", str(SKILL_DIR))),
+            (
+                "whitespace --notify",
+                ("watch", "--plan", plan_dir, "--notify", "bad name", "--config-dir", str(SKILL_DIR)),
+            ),
+            (
+                "non-ascii --notify",
+                ("watch", "--plan", plan_dir, "--notify", "codér", "--config-dir", str(SKILL_DIR)),
+            ),
+        )
+        for desc, argv in cases:
+            with self.subTest(case=desc):
+                result = self.run_cli(*argv, config_dir=None)
+                self.assertEqual(2, result.returncode)
+                self.assertEqual("", result.stdout)
+        help_result = self.run_cli("watch", "--help")
+        self.assertEqual(0, help_result.returncode)
+        self.assertIn("--notify", help_result.stdout)
+        self.assertIn("--config-dir", help_result.stdout)
+        before = sorted(path.name for path in self.plan_path.parent.iterdir())
+        result = self.run_cli(
+            "watch", "--plan", plan_dir, "--notify", "lead-1",
+            "--config-dir", str(SKILL_DIR), config_dir=None,
+        )
+        self.assertEqual(2, result.returncode)
+        self.assertIn("watch_no_open_stage", result.stderr)
+        self.assertEqual(
+            before, sorted(path.name for path in self.plan_path.parent.iterdir())
+        )
 
 
 if __name__ == "__main__":

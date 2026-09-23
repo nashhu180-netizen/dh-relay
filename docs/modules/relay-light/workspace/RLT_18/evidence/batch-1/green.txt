@@ -1,0 +1,25 @@
+# GREEN evidence — RLT_18 batch 1 (WatchTests)
+# command: cd tools/relay-light && PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_relay_log.WatchTests
+# date: 2026-09-23T17:29:47Z
+
+...watch: herdr prompt to lead-1 failed for '[relay-light] coder#1 -> idle'
+.....................
+----------------------------------------------------------------------
+Ran 24 tests in 3.050s
+
+OK
+
+exit_code=0
+
+# --help check
+# command: PYTHONDONTWRITEBYTECODE=1 python3 relay_log.py watch --help
+usage: relay_log.py watch [-h] --plan PLAN --notify NOTIFY
+                          [--level {stage,plan}] [--config-dir CONFIG_DIR]
+
+options:
+  -h, --help            show this help message and exit
+  --plan PLAN
+  --notify NOTIFY
+  --level {stage,plan}
+  --config-dir CONFIG_DIR
+exit_code=0

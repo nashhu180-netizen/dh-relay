@@ -1,0 +1,37 @@
+# regression-pwsh — RLT_18 batch 1
+# command: PYTHONDONTWRITEBYTECODE=1 pwsh -NoProfile -File tools/tests/run-relay-tests.ps1
+# date: 2026-09-23T17:39:59Z
+# tail of captured output:
+
+test_model_allocation_gate_precedes_launch_section (tools.relay-light.test_install_skill.SingleTaskStructureTests.test_model_allocation_gate_precedes_launch_section) ... ok
+test_model_allocation_negative_examples (tools.relay-light.test_install_skill.SingleTaskStructureTests.test_model_allocation_negative_examples) ... ok
+test_monitor_repo_workspace_zero_write (tools.relay-light.test_install_skill.SingleTaskStructureTests.test_monitor_repo_workspace_zero_write) ... ok
+test_one_workspace_one_named_tab_or_pane_per_instance (tools.relay-light.test_install_skill.SingleTaskStructureTests.test_one_workspace_one_named_tab_or_pane_per_instance) ... ok
+test_phase_closed_set_is_nine_phases_not_legacy_five (tools.relay-light.test_install_skill.SingleTaskStructureTests.test_phase_closed_set_is_nine_phases_not_legacy_five) ... ok
+test_recovery_authorities_are_durable_only (tools.relay-light.test_install_skill.SingleTaskStructureTests.test_recovery_authorities_are_durable_only) ... ok
+test_relay_receipt_fail_closed_split_monitor_vs_producers (tools.relay-light.test_install_skill.SingleTaskStructureTests.test_relay_receipt_fail_closed_split_monitor_vs_producers) ... ok
+test_roles_toml_stays_full_relay_default_template (tools.relay-light.test_install_skill.SingleTaskStructureTests.test_roles_toml_stays_full_relay_default_template) ... ok
+test_single_task_mode_declared_parallel_and_exclusive (tools.relay-light.test_install_skill.SingleTaskStructureTests.test_single_task_mode_declared_parallel_and_exclusive) ... ok
+
+----------------------------------------------------------------------
+Ran 19 tests in 0.210s
+
+OK
+lint: amend-check before ok (1 proposed path(s))
+installed: /tmp/tmp7kg5hyzh/home/.claude/skills/relay-light
+installed: /tmp/tmp7kg5hyzh/home/.codex/skills/relay-light
+installed: /tmp/tmpzjm2541g/home/.claude/skills/relay-light
+installed: /tmp/tmpzjm2541g/home/.codex/skills/relay-light
+installed: /tmp/tmp2zh49rvy/home/.claude/skills/relay-light
+installed: /tmp/tmp2zh49rvy/home/.codex/skills/relay-light
+installed: /tmp/tmp2zh49rvy/home/.claude/skills/relay-light
+installed: /tmp/tmp2zh49rvy/home/.codex/skills/relay-light
+installed: /tmp/tmp16ci27b_/home/.claude/skills/relay-light
+installed: /tmp/tmp16ci27b_/home/.codex/skills/relay-light
+installed: /tmp/tmp16ci27b_/home/.claude/skills/relay-light
+installed: /tmp/tmp16ci27b_/home/.codex/skills/relay-light
+installed: /tmp/tmp5aacs639/home/.claude/skills/relay-light
+installed: /tmp/tmp5aacs639/home/.codex/skills/relay-light
+RELAY ALL PASS (SKIPPED: 1)
+
+result: RELAY ALL PASS (SKIPPED: 1), exit_code=0

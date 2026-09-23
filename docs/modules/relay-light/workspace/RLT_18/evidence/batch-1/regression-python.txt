@@ -1,0 +1,8 @@
+# regression-python — RLT_18 batch 1
+# command: cd tools/relay-light && PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_relay_log
+# date: 2026-09-23T17:39:59Z
+
+Ran 245 tests in 483.076s
+
+OK
+exit_code=0
