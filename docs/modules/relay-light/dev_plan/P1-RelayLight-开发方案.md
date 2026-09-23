@@ -134,7 +134,7 @@
 | RLT_16 | 实跑卡内追加节点的运行中改计划 | 标准 | 未开始 | 3 | RLT_09、RLT_12、RLT_14 | — | — | — |
 | RLT_19 | 实跑新增任务卡并追加阶段 | 标准 | 未开始 | 3 | RLT_09、RLT_12、RLT_16 | — | — | 新卡七件套由 W 阶段 builder 建 |
 | RLT_17 | ThinkPad 上完成 Linux 双主控取证账与实跑 | 标准 | 未开始 | 4 | RLT_10、RLT_13、RLT_19 | — | — | 难取证方向账；用户设备依赖 |
-| RLT_18 | 实现并实测 watch 通知与兜底 | 标准 | 未开始 | 5 | RLT_05、RLT_07、RLT_13、RLT_17 | — | — | 最终 adapter 后两机重同步 |
+| RLT_18 | 实现并实测 watch 通知与兜底 | 标准 | 进行中 | 5 | RLT_05、RLT_07、RLT_13、RLT_17（RLT_13/17 由用户 2026-09-23 对话豁免） | [workspace/RLT_18](../workspace/RLT_18/) | — | Issue #65；用户 2026-09-23 D-start 并豁免 RLT_13/RLT_17 前置，已知影响：RLT_17 将在带 watch 的 adapter 上跑、Windows 两副本与 A125 终局回归挂起待 Windows 机、verify 可能被模块级钩子拦（同 RLT_27 F-001）；最终 adapter 后两机重同步 |
 | RLT_25 | 统一 normal Recipe 权威与闸门登记 | 标准 | 未开始 | 7 | 目标三路已裁决；前置 A-adjust 整版确认并落盘 | — | — | Issue #49；不作旧第 3 批硬前置；与 RLT_26 共用 skill 路径，后续施工须错开或合入后重新核基线 |
 | RLT_26 | resource_close 现役文档同步与旧口径清理 | 标准 | 进行中 | 7 | RLT_24（已满足） | [workspace/RLT_26](../workspace/RLT_26/) | — | Issue #50；并入 RLT_22 F-010；2026-09-20 已另行授权 Devin SWE-2 Max 独立 worktree D-start |
 | RLT_27 | ThinkPad Linux Codex 主控最小闭环 | 标准 | 待验收 | 独立试跑 | retry02 W/C/R/F 全闭合；2026-09-20 用户确认且授权版本收口；待集成 verify | [workspace/RLT_27](../workspace/RLT_27/) | — | Issue #52 已关闭；仅本卡 light 子范围；首次阻塞保留、协调修正一次；不替代 RLT_17 全矩阵 |
