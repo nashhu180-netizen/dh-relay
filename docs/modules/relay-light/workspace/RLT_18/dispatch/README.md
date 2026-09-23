@@ -26,10 +26,11 @@ tools/relay-light/relay_log.py
 tools/relay-light/test_relay_log.py
 tools/relay-light/skill/references/adapter-claude-code.md
 tools/relay-light/skill/references/adapter-codex.md
+tools/relay-light/skill/SKILL.md               （UD-2：仅 watcher 表述与「watch 未实现」过时措辞）
 docs/modules/relay-light/workspace/RLT_18/**   （execution_strategy.md 除外，仅 orchestrator 写）
 ```
 仅 orchestrator 可写：`execution_strategy.md`、DevPlan 第 137 行 RLT_18 任务行。用户级 skill 副本（`~/.claude/skills/relay-light/**`、`~/.codex/skills/relay-light/**` 及 Windows 两处）**worker 一律不碰**，由 orchestrator 收口时展示目标、取得用户当次授权后同步。
-**不动**：design/、AGENTS.md、`SKILL.md` 及 skill 其它文件、`install_skill.py`、`docs/modules/relay-light/relay/**`（字节不得变）、as-built、其它卡工作区。范围外发现只记 `findings.md`。
+**不动**：design/、AGENTS.md、SKILL.md 中 UD-2 以外内容及 skill 其它文件、`install_skill.py`、`docs/modules/relay-light/relay/**`（字节不得变）、as-built、其它卡工作区。范围外发现只记 `findings.md`。
 
 ## 写者边界（sole writer）
 
