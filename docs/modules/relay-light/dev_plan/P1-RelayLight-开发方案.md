@@ -179,6 +179,7 @@
   - `tools/relay-light/skill/roles.toml`
   - `tools/relay-light/test_install_skill.py`
   - `docs/modules/relay-light/as-built/**`
+  - `docs/acceptance/验收池.md`（仅限用户 2026-09-23 明确选择入池的 E2 七条 P2；E13 去向回填）
 - **档位**：标准 · 高危（组件接线）。
 - **任务类型**：重核
 - **依赖 / 批次**：RLT-A-13 与 RLT-B-09 已于 2026-09-22 用户整版确认；第 8 批，单验收单元，无跨卡依赖。旧卡保持冻结。

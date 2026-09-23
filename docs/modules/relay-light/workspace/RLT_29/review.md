@@ -101,7 +101,7 @@
 |---|---|---|---|
 | 用户查看含模型分配询问、确认及实际 Herdr tab/model 与快照一致链的真实 Herdr heavy single-task 自举证据，判断该模式是否清楚、可控、值得日常使用。 | E10 时查看模型分配询问与确认来源、w41 一任务一 workspace/逐角色 tab-pane-model 实态及 `execution_strategy.md` 快照、durable signals 与独立 review/decision、仅由 batch coder 登记且不作为运行真相的 progress 证据索引、workflow-final 五路与 E2 两层证据、无 plan/log 审计及完整模式回归；不得以 monitor 通知或 progress 替代 durable 证据 | 用户确认实际链条完整，且判断 single-task 清楚、可控、值得日常使用；缺 workflow-final/E2/E10 任一环或未获用户明确确认均不通过 | [x] 2026-09-23 用户「认可收口」；整卡认可，未逐条签 |
 
-- 确认记录：2026-09-23 用户在 E10 摘要与明确的人验问题后回复「认可收口」；E11 本地收口授权包生效。七条 P2 同日选择「进入验收池（推荐）」；已登记 ACC-2026-09-23-01～07（`dh accept list --all` 可查）。
+- 确认记录：2026-09-23 用户在 E10 摘要与明确的人验问题后回复「认可收口」；E11 本地收口授权包生效。七条 P2 同日选择「进入验收池（推荐）」；已登记 ACC-2026-09-23-01～07 于仓库跟踪的 `docs/acceptance/验收池.md`。Linux 上 `dh accept list --all` 因外部项目配置只注册 Windows 根而未枚举本仓，故不以该命令回显冒充入池证据；详见 `findings.md` E13 纠错。
 - PR 与合入：PR #57 在 2026-09-23 经用户对话确认已作为维护者检查并同意合并；修订版 `833a156d96918ad4402d2a599d10c56fe412f3b1` 的 GitHub CI workflow `35808798414` 为 success，三项必需 job（relay-light Python、relay-tests Ubuntu/Windows）均 success；`relay-core` 在现行 `continue-on-error` 配置下仅观测、job failure。PR squash 合入 `master` 的提交为 `319d2b0983e3cd6b348b2ade7b83d8fd231478f0`。
 - PR P1 整改：自动复核发现原 Herdr 全局枚举证据带有非本卡 workspace 元数据；合入版仅保留 `w41` 和本卡核验所需字段。原提交曾短暂推送，不将此写作“从未上传”；详见 `findings.md`。
 - E12 合入后集成复验：在 `319d2b0983e3cd6b348b2ade7b83d8fd231478f0` 基线上执行 `python3 -m unittest discover -s tools/relay-light -p 'test_*.py'`，退出码 0，`Ran 240 tests ... OK`；执行 `pwsh -NoProfile -File tools/tests/run-relay-tests.ps1`，退出码 0，最终 `RELAY ALL PASS (SKIPPED: 1)`（其中 relay-light 子套 `Ran 221 tests ... OK`）。
