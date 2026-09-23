@@ -1,0 +1,3 @@
+installed: /tmp/tmp.UvZWBmqIEq/home/.claude/skills/relay-light
+installed: /tmp/tmp.UvZWBmqIEq/home/.codex/skills/relay-light
+install rc=0 home=/tmp/tmp.UvZWBmqIEq/home

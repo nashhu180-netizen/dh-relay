@@ -1,0 +1,71 @@
+=== w41:p1 ===
+codex
+=== w41:p2 ===
+codex -m gpt-5.6-sol -c model_reasoning_effort=medium --dangerously-bypass-approvals-and-sandbox
+=== w41:p3 ===
+devin --model swe-2-medium --permission-mode dangerous --respect-workspace-trust false
+/home/nash/.local/share/devin/cli/_versions/3000.11.1/bin/devin acp
+npm exec @playwright/mcp@latest
+npm exec chrome-devtools-mcp@latest --no-usage-statistics
+sh -c chrome-devtools-mcp --no-usage-statistics
+chrome-devtools-mcp
+sh -c playwright-mcp
+node /home/nash/.npm/_npx/9833c18b2d85bc59/node_modules/.bin/playwright-mcp
+=== w41:p4 ===
+codex -m gpt-5.6-sol -c model_reasoning_effort=medium --dangerously-bypass-approvals-and-sandbox
+=== w41:p5 ===
+codex -m gpt-6-astra -c model_reasoning_effort=medium --dangerously-bypass-approvals-and-sandbox
+=== w41:p6 ===
+devin --model swe-2-max --permission-mode dangerous --respect-workspace-trust false
+/home/nash/.local/share/devin/cli/_versions/3000.11.1/bin/devin acp
+npm exec @playwright/mcp@latest
+npm exec chrome-devtools-mcp@latest --no-usage-statistics
+sh -c chrome-devtools-mcp --no-usage-statistics
+chrome-devtools-mcp
+sh -c playwright-mcp
+node /home/nash/.npm/_npx/9833c18b2d85bc59/node_modules/.bin/playwright-mcp
+=== w41:p7 ===
+devin --model swe-2-max --permission-mode dangerous --respect-workspace-trust false
+/home/nash/.local/share/devin/cli/_versions/3000.11.1/bin/devin acp
+npm exec chrome-devtools-mcp@latest --no-usage-statistics
+npm exec @playwright/mcp@latest
+sh -c chrome-devtools-mcp --no-usage-statistics
+chrome-devtools-mcp
+sh -c playwright-mcp
+node /home/nash/.npm/_npx/9833c18b2d85bc59/node_modules/.bin/playwright-mcp
+=== w41:p8 ===
+devin --model swe-2-max --permission-mode dangerous
+/home/nash/.local/share/devin/cli/_versions/3000.11.1/bin/devin acp
+npm exec @playwright/mcp@latest
+npm exec chrome-devtools-mcp@latest --no-usage-statistics
+sh -c playwright-mcp
+node /home/nash/.npm/_npx/9833c18b2d85bc59/node_modules/.bin/playwright-mcp
+sh -c chrome-devtools-mcp --no-usage-statistics
+chrome-devtools-mcp
+=== w41:p9 ===
+devin --model swe-2-max --permission-mode dangerous
+/home/nash/.local/share/devin/cli/_versions/3000.11.1/bin/devin acp
+npm exec @playwright/mcp@latest
+npm exec chrome-devtools-mcp@latest --no-usage-statistics
+sh -c chrome-devtools-mcp --no-usage-statistics
+chrome-devtools-mcp
+sh -c playwright-mcp
+node /home/nash/.npm/_npx/9833c18b2d85bc59/node_modules/.bin/playwright-mcp
+=== w41:pA ===
+devin --model swe-2-max --permission-mode dangerous
+/home/nash/.local/share/devin/cli/_versions/3000.11.1/bin/devin acp
+npm exec @playwright/mcp@latest
+npm exec chrome-devtools-mcp@latest --no-usage-statistics
+sh -c chrome-devtools-mcp --no-usage-statistics
+chrome-devtools-mcp
+sh -c playwright-mcp
+node /home/nash/.npm/_npx/9833c18b2d85bc59/node_modules/.bin/playwright-mcp
+=== w41:pB ===
+devin --model swe-2-max --permission-mode dangerous
+/home/nash/.local/share/devin/cli/_versions/3000.11.1/bin/devin acp
+npm exec @playwright/mcp@latest
+npm exec chrome-devtools-mcp@latest --no-usage-statistics
+sh -c chrome-devtools-mcp --no-usage-statistics
+chrome-devtools-mcp
+sh -c playwright-mcp
+node /home/nash/.npm/_npx/9833c18b2d85bc59/node_modules/.bin/playwright-mcp

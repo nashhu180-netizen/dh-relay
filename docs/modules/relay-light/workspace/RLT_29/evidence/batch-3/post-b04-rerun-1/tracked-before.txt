@@ -1,0 +1,7 @@
+AGENTS.md
+docs/modules/relay-light/design/01-RelayLight-产品设计与验收.md
+docs/modules/relay-light/dev_plan/P1-RelayLight-开发方案.md
+tools/relay-light/skill/SKILL.md
+tools/relay-light/skill/references/adapter-claude-code.md
+tools/relay-light/skill/references/adapter-codex.md
+tools/relay-light/test_install_skill.py

@@ -1,0 +1,26 @@
+{
+  "command_id": "B-06-rerun-quotepath",
+  "cwd": "/home/nash/work/dh-relay/.dh-worktrees/RLT_29",
+  "command": "python3 allowed-path audit (task_plan §6 verbatim, git calls with -c core.quotepath=false) ; git diff --check",
+  "exit": 0,
+  "failure_ids": [],
+  "classification": "pass: revised §6 command verbatim; 0 out-of-scope",
+  "captured_at": "2026-09-22T15:32:44.344737+00:00",
+  "detail": {
+    "command_exits": [
+      {
+        "cmd": "allowed-path audit (revised verbatim)",
+        "exit": 0,
+        "stdout": "allowed-path audit: PASS"
+      },
+      {
+        "cmd": "git diff --check",
+        "exit": 0
+      }
+    ],
+    "changed_count": 44,
+    "supersedes": "B-06 (original literal run exit=1, git quotepath encoding artifact) — original FAIL evidence and diagnostic preserved unchanged in B-06.txt / B-06-diagnostic.txt / summary.json entry B-06",
+    "decision_ref": "docs/modules/relay-light/workspace/RLT_29/decision.batch-1.quotepath.md",
+    "output_file": "docs/modules/relay-light/workspace/RLT_29/evidence/baseline/B-06-rerun-quotepath.txt"
+  }
+}

@@ -1,0 +1,1 @@
+DONE task=RLT_29 phase=plan-review agent=plan-reviewer#2 batch=na path=na review_round=user-adjust remediation_count=0 verdict=FAIL p0=0 p1=1 evidence=docs/modules/relay-light/workspace/RLT_29/review.plan.monitor-contract.md

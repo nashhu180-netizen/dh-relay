@@ -1,0 +1,103 @@
+{
+  "task": "RLT_29",
+  "phase": "batch",
+  "batch": "3",
+  "generated_by": "batch-3 coder",
+  "captured_at": "2026-09-22T16:58:01.370085+00:00",
+  "baseline_ref": "docs/modules/relay-light/workspace/RLT_29/evidence/baseline/summary.json (+ summary-rerun-quotepath.json for B-06)",
+  "post_dir": "docs/modules/relay-light/workspace/RLT_29/evidence/batch-3/post/",
+  "commands": [
+    {
+      "command_id": "B-01",
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=tools/relay-light python3 -m unittest tools/relay-light/test_install_skill.py",
+      "baseline_exit": 0,
+      "post_exit": 0,
+      "baseline_detail": "7 tests OK",
+      "post_detail": "19 tests OK (8 install + 11 single-task structure)",
+      "verdict": "pass"
+    },
+    {
+      "command_id": "B-02",
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=tools/relay-light python3 -m unittest discover -s tools/relay-light -p 'test*.py'",
+      "baseline_exit": 0,
+      "post_exit": 0,
+      "baseline_detail": "228 tests OK",
+      "post_detail": "240 tests OK",
+      "verdict": "pass"
+    },
+    {
+      "command_id": "B-03",
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=tools/relay-light pwsh -NoProfile -File tools/tests/run-relay-tests.ps1",
+      "baseline_exit": 0,
+      "post_exit": 0,
+      "baseline_detail": "RELAY ALL PASS (SKIPPED: 1)",
+      "post_detail": "RELAY ALL PASS (SKIPPED: 1)",
+      "verdict": "pass"
+    },
+    {
+      "command_id": "B-05",
+      "command": "python3 plan/log scan under workspace/RLT_29 + git diff --exit-code 93d65cb -- tools/relay-light/relay_log.py docs/modules/relay-light/relay",
+      "baseline_exit": 0,
+      "post_exit": 0,
+      "baseline_detail": "plan/log audit PASS; forbidden diff empty",
+      "post_detail": "plan/log audit PASS; forbidden diff empty",
+      "verdict": "pass"
+    },
+    {
+      "command_id": "B-06",
+      "command": "task_plan §6 verbatim allowed-path audit (git -c core.quotepath=false) + git diff --check",
+      "baseline_exit": 0,
+      "post_exit": 0,
+      "baseline_detail": "allowed-path audit: PASS; diff --check clean (rerun-quotepath per decision.batch-1.quotepath.md)",
+      "post_detail": "allowed-path audit: PASS; diff --check clean",
+      "verdict": "pass"
+    },
+    {
+      "command_id": "B-04",
+      "command": "dh relay-light",
+      "baseline_exit": 1,
+      "post_exit": 1,
+      "baseline_detail": {
+        "failures": 66,
+        "inherited": 59,
+        "rlt29_owned": 7,
+        "warnings": 36
+      },
+      "post_detail": {
+        "failures": 66,
+        "rlt29_owned_still_present": 7,
+        "inherited_summary_drift": 1,
+        "warnings": 36
+      },
+      "missing_in_post": [
+        "workspace/RLT_27　R30 任务「RLT_27」类型=light 的实际改动超出任务卡登记的允许路径：docs/modules/relay-light/design/01-RelayLight-产品设计与验收.md——**停下，由用户重新定类**（非自动升级、非自动放行）；若属登记遗漏，先补进任务卡「变更范围」再继续"
+      ],
+      "new_or_changed_in_post": [
+        "workspace/RLT_27　R30 任务「RLT_27」类型=light 的实际改动超出任务卡登记的允许路径：AGENTS.md、docs/modules/relay-light/design/01-RelayLight-产品设计与验收.md、tools/relay-light/skill/SKILL.md、tools/relay-light/skill/references/adapter-claude-code.md、tools/relay-light/skill/references/adapter-codex.md、tools/relay-light/test_install_skill.py——**停下，由用户重新定类**（非自动升级、非自动放行）；若属登记遗漏，先补进任务卡「变更范围」再继续"
+      ],
+      "rlt29_owned_remaining": [
+        "workspace/RLT_29/review.md　R12 需求对齐证据表为空（至少一条需求/人验项的场景证据）",
+        "workspace/RLT_29/review.md　R17 review 未预填 brief 完成条件「durable signal 与路由不依赖终端状态；orchestrator 只分发/路由，产出型 builder/co」",
+        "workspace/RLT_29/review.md　R17 review 未预填 brief 完成条件「monitor 对 repo/workspace 完全只读，只在 Herdr wait/get/read 并 promp」",
+        "workspace/RLT_29/review.md　R17 review 未预填 brief 完成条件「single-task 标头字段合法且与完整 relay 标头互斥；产出型 builder/coder/reviewer」",
+        "workspace/RLT_29/review.md　R17 review 未预填 brief 完成条件「一任务一 Herdr workspace、每角色实例一独立具名 tab/pane；orchestrator 启动前展示全」",
+        "workspace/RLT_29/review.md　R17 review 未预填 brief 完成条件「用户查看含模型分配询问、确认及实际 Herdr tab/model 与快照一致链的真实 Herdr heavy sing」",
+        "workspace/RLT_29/review.md　R17 人验证据展示区/确认清单未覆盖人验项「用户查看含模型分配询问、确认及实际 Herdr tab/model 与快照一致链的真实 Herdr heavy sing」"
+      ],
+      "verdict": "fail"
+    }
+  ],
+  "gate_predicates": {
+    "b01_b02_b03_exit0_no_new_failures": true,
+    "b04_inherited_noise_identical_set_and_summary": false,
+    "b04_rlt29_owned_zero_at_post": false,
+    "plan_log_scan_empty_and_forbidden_diff_empty": true,
+    "allowlist_audit_and_diff_check_exit0": true,
+    "open_p0p1": 0
+  },
+  "blocking_facts": [
+    "7/7 baseline RLT_29-owned failures still present at post: review.md R12 (empty 需求对齐证据 table) + 6x R17 (brief-condition prefill / human-acceptance coverage). review.md is outside batch-3 allowed paths (review/check forbidden) — cannot be fixed by this worker.",
+    "1 inherited line drifted: workspace/RLT_27 R30 summary expanded to list RLT_29's own tracked writes (AGENTS.md, SKILL.md, both adapters, test_install_skill.py) attributed to RLT_27's frozen light card by dh-check; not fixable without editing DevPlan (forbidden) or reverting required work."
+  ],
+  "overall_verdict": "BLOCKED — §5.3 predicates 2/3 unmet (RLT_29-owned failures nonzero; inherited-noise summary drift)"
+}

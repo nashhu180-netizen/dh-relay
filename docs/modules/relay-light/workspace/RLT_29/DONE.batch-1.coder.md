@@ -1,0 +1,1 @@
+DONE task=RLT_29 phase=batch agent=coder#b1 batch=1 path=na review_round=1 remediation_count=0 verdict=READY evidence=docs/modules/relay-light/workspace/RLT_29/evidence/baseline/summary.json,docs/modules/relay-light/workspace/RLT_29/evidence/batch-1/

@@ -45,6 +45,12 @@
 - 分工：编排管阶段，监工管本阶段节点，worker 只完成当前节点；写完完成信号即停，无 node_closed，不越位派活、不回头问用户、不自行续节点。
 - 计划例外：relay-light 运行中的白名单追加有意绕过 B-adjust；例外只覆盖任务卡、开发方案任务行与接力计划追加，设计与验收仍走 dev-harness。
 
+### single-task 单卡接力段（与上方 full relay 标头互斥）
+
+- 判定：派单 prompt 首行是 `[relay-light:single-task] worker · phase=<phase> · agent=<角色>#<实例> · batch=<n|na> · round=<n> · workspace=<任务工作区>` 时按本段执行；该标头与上方 `[relay-light] worker · node=...` 互斥——见 single-task 标头不进入 full relay 流水，见 full 标头不适用本段。
+- 分工与停止：orchestrator 只按 durable signal 分发/路由；产出型 builder/coder/reviewer/decider 只完成派单指向的一件事，写出 `DONE`/`BLOCKED` 单行 signal 后立即停止——不等 `node_closed`，不创建/读写 `relay_plan.md`/`relay_log.jsonl`，不越位派活、不回头问用户、不自行续节点。monitor 对 repo/workspace 完全只读，只在 Herdr wait/get/read 并 prompt 通知 orchestrator，不写任何 signal/progress/日志、不路由不分派。
+- RELAY_RECEIPT fail closed 分流：进程环境存在 `RELAY_RECEIPT` 时，产出型角色只写本角色精确 `BLOCKED.*.md` 单行 signal 后停止；monitor 保持 repo/workspace 零写入，只用 Herdr prompt 非 durable 通知 orchestrator 后停止，不写 BLOCKED。两个分支都不得清除任何 `RELAY_*` 环境变量。
+
 ## 编排协议段（worker 铁律 · 被派进本仓的 agent 必读）
 
 > **谁读**：任何被派进本仓的 worker（Claude / Codex / …），无论施工还是复核——包括被 relay 自举流水拉起的每一棒。

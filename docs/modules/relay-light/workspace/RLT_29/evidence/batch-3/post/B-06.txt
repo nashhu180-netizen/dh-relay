@@ -1,0 +1,3 @@
+allowed-path audit: PASS
+allowlist_exit=0
+diffcheck_exit=0

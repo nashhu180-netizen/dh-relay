@@ -1,0 +1,49 @@
+test_all_installs_five_files_to_both_sides (tools.relay-light.test_install_skill.InstallSkillTests.test_all_installs_five_files_to_both_sides) ... ok
+test_cli_requires_all_flag (tools.relay-light.test_install_skill.InstallSkillTests.test_cli_requires_all_flag) ... usage: install_skill.py [-h] --all
+install_skill.py: error: the following arguments are required: --all
+usage: install_skill.py [-h] --all
+install_skill.py: error: the following arguments are required: --all
+usage: install_skill.py [-h] --all
+install_skill.py: error: the following arguments are required: --all
+usage: install_skill.py [-h] --all
+install_skill.py: error: unrecognized arguments: extra
+ok
+test_five_file_set_is_closed_and_present (tools.relay-light.test_install_skill.InstallSkillTests.test_five_file_set_is_closed_and_present) ... ok
+test_manifest_fields_after_success (tools.relay-light.test_install_skill.InstallSkillTests.test_manifest_fields_after_success) ... ok
+test_mid_copy_failure_is_nonzero_and_rerun_converges (tools.relay-light.test_install_skill.InstallSkillTests.test_mid_copy_failure_is_nonzero_and_rerun_converges)
+HC-RL-A124: tamper one side, inject a mid-copy failure, rerun to converge. ... error: injected mid-copy failure
+ok
+test_overwrites_stale_replica (tools.relay-light.test_install_skill.InstallSkillTests.test_overwrites_stale_replica) ... ok
+test_roles_toml_replica_bytes_identical_to_source (tools.relay-light.test_install_skill.InstallSkillTests.test_roles_toml_replica_bytes_identical_to_source) ... ok
+test_source_missing_file_fails_closed (tools.relay-light.test_install_skill.InstallSkillTests.test_source_missing_file_fails_closed) ... error: skill source incomplete, missing: dh-mapping.toml
+ok
+test_durable_signal_schema_and_stop (tools.relay-light.test_install_skill.SingleTaskStructureTests.test_durable_signal_schema_and_stop) ... ok
+test_model_allocation_gate_hard_contract (tools.relay-light.test_install_skill.SingleTaskStructureTests.test_model_allocation_gate_hard_contract) ... ok
+test_model_allocation_gate_precedes_launch_section (tools.relay-light.test_install_skill.SingleTaskStructureTests.test_model_allocation_gate_precedes_launch_section) ... ok
+test_model_allocation_negative_examples (tools.relay-light.test_install_skill.SingleTaskStructureTests.test_model_allocation_negative_examples) ... ok
+test_monitor_repo_workspace_zero_write (tools.relay-light.test_install_skill.SingleTaskStructureTests.test_monitor_repo_workspace_zero_write) ... ok
+test_one_workspace_one_named_tab_or_pane_per_instance (tools.relay-light.test_install_skill.SingleTaskStructureTests.test_one_workspace_one_named_tab_or_pane_per_instance) ... ok
+test_phase_closed_set_is_nine_phases_not_legacy_five (tools.relay-light.test_install_skill.SingleTaskStructureTests.test_phase_closed_set_is_nine_phases_not_legacy_five) ... ok
+test_recovery_authorities_are_durable_only (tools.relay-light.test_install_skill.SingleTaskStructureTests.test_recovery_authorities_are_durable_only) ... ok
+test_relay_receipt_fail_closed_split_monitor_vs_producers (tools.relay-light.test_install_skill.SingleTaskStructureTests.test_relay_receipt_fail_closed_split_monitor_vs_producers) ... ok
+test_roles_toml_stays_full_relay_default_template (tools.relay-light.test_install_skill.SingleTaskStructureTests.test_roles_toml_stays_full_relay_default_template) ... ok
+test_single_task_mode_declared_parallel_and_exclusive (tools.relay-light.test_install_skill.SingleTaskStructureTests.test_single_task_mode_declared_parallel_and_exclusive) ... ok
+
+----------------------------------------------------------------------
+Ran 19 tests in 0.194s
+
+OK
+installed: /tmp/tmpytcc9skd/home/.claude/skills/relay-light
+installed: /tmp/tmpytcc9skd/home/.codex/skills/relay-light
+installed: /tmp/tmp8brgd3nm/home/.claude/skills/relay-light
+installed: /tmp/tmp8brgd3nm/home/.codex/skills/relay-light
+installed: /tmp/tmp_k8ingm5/home/.claude/skills/relay-light
+installed: /tmp/tmp_k8ingm5/home/.codex/skills/relay-light
+installed: /tmp/tmp_k8ingm5/home/.claude/skills/relay-light
+installed: /tmp/tmp_k8ingm5/home/.codex/skills/relay-light
+installed: /tmp/tmp9_gzuj46/home/.claude/skills/relay-light
+installed: /tmp/tmp9_gzuj46/home/.codex/skills/relay-light
+installed: /tmp/tmp9_gzuj46/home/.claude/skills/relay-light
+installed: /tmp/tmp9_gzuj46/home/.codex/skills/relay-light
+installed: /tmp/tmptvyg9ypl/home/.claude/skills/relay-light
+installed: /tmp/tmptvyg9ypl/home/.codex/skills/relay-light
