@@ -53,3 +53,27 @@
 - `cd tools/relay-light && PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_relay_log.WatchTests -v` → 24/24 OK，2.839s
 - `PYTHONDONTWRITEBYTECODE=1 python3 relay_log.py watch --help` → 含 `--plan/--notify/--level/--config-dir`
 - `git show --stat 4b4b95c` → 10 文件：2 代码文件 + 本批证据 5 + progress/lesson/DONE signal；dev_plan diff 仅 RLT_18 行 + UD-2 行
+
+## 复审 round 2（2026-09-24，batch-reviewer#b1）
+
+> 范围：只核 P1-1 闭合 + 整改有无引入新问题。整改提交 `b6bd264`（docs，5 个 workspace 文件，零代码改动）。
+
+### P1-1 闭合核对
+
+| 要求 | 结果 | 证据 |
+|---|---|---|
+| 删除 `tools/relay-light/__pycache__/` | 闭合 | 本棒实测：`find . -name __pycache__ -type d` 全树为空；`git status --porcelain --ignored \| grep __pycache__` 空（非仅删除 tracked 面，目录本身已不存在） |
+| 重跑 §1.1 全 4 条审计并补录 | 闭合 | `path-audit.txt` 新增「remediation-1」节：[1/4] name-only 仅允许路径+orchestrator 件；[2/4] stat 守护空；[3/4] SKILL.md 0 hunk；[4/4] `__pycache__` grep 空（登记时间 17:55Z） |
+| 来源如实说明 | 闭合 | path-audit 末段 + progress E-106：定位为一次未登记 `python3 -c` 探针（AST 闭包 sanity-check，未带 PYTHONDONTWRITEBYTECODE）import 编译产生两个 .pyc——与初审「存在未登记 python 执行」的判断一致；非外部工具、非套件泄漏 |
+
+### 整改范围与新问题
+
+- 整改提交 `b6bd264` 仅触 `DONE.batch-1.coder.remediation-1.md`、`path-audit.txt`、`regression-python.txt`、`regression-pwsh.txt`、`progress.md`——全部在 `workspace/RLT_18/` 内，**零代码改动**（relay_log.py / test_relay_log.py 未再触），无新越界。
+- `progress.md`：仅在证据账本追加 E-106 一行；施工里程碑仍只 batch 1 一行——写者边界未被破坏。
+- 回归证据：remediation 后复跑 `unittest discover` 264 tests（245 test_relay_log + 19 test_install_skill，18:04Z）与 pwsh `RELAY ALL PASS (SKIPPED: 1)` 均 OK——代码未变，结论与初审复跑（24/24 OK）一致；顺带把 §1.6 discover 口径（含 test_install_skill）补齐，属收紧非弱化。
+- `DONE.batch-1.coder.remediation-1.md`：单行 schema 齐（review_round=2 remediation_count=1 verdict=READY），4 个 evidence 路径均存在。
+- 小问题：无。整改未引入新问题。
+
+### 复审 round 2 结论：**PASS**
+
+P1-1 三项要求全部闭合并有本棒独立核实；整改未引入新问题。batch 1（watch 核心 + A82 + A101）通过 batch-review。初审 O-1~O-6 观察项不变，留给 batch 2 / orchestrator 知悉。
