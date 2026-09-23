@@ -23,15 +23,19 @@
 | plan-reviewer | Claude Opus 5.5 | medium | rlt18-plan-reviewer（plan-reviewer#1） | w4B:t4 / w4B:p4 | 2026-09-23 确认；实际 argv=`claude --model claude-opus-5-5 --effort medium --dangerously-skip-permissions`，Herdr 配置已核对 | confirmed-observed |
 | batch reviewer | Devin SWE-2 | Max | 每批一个 | 待 Herdr 返回 | 2026-09-23 用户修改为 SWE-2 Max；未启动 | confirmed-pending |
 | batch reviewer | Devin SWE-2 | Max | rlt18-b1-reviewer（batch-reviewer#b1） | w4B:t7 / w4B:p7 | 同上确认；实际 argv=`devin --model swe-2-max --permission-mode dangerous`，Herdr 配置已核对；DONE.batch-1.coder（`4b4b95c`）后派审；durable PASS 后单次 `/clear` 并复验为新 session（revision=5），随后关闭 tab | confirmed-observed-cleared-closed |
-| batch reviewer | Devin SWE-2 | Max | rlt18-b2-reviewer（batch-reviewer#b2） | w4B:t9 / w4B:p9 | 同上确认；实际 argv=`devin --model swe-2-max --permission-mode dangerous`，Herdr 配置已核对；DONE.batch-2.coder（`0f9686f`）后派审 | confirmed-observed |
+| batch reviewer | Devin SWE-2 | Max | rlt18-b2-reviewer（batch-reviewer#b2） | w4B:t9 / w4B:p9 | 同上确认；实际 argv=`devin --model swe-2-max --permission-mode dangerous`，Herdr 配置已核对；DONE.batch-2.coder（`0f9686f`）后派审；durable PASS 后单次 `/clear` 并复验为新 session（revision=5），随后关闭 tab | confirmed-observed-cleared-closed |
 | coder | Devin SWE-2 | Max | 每批一个 | 待 Herdr 返回 | 2026-09-23 确认；未启动 | confirmed-pending |
 | coder | Devin SWE-2 | Max | rlt18-b1-coder（coder#b1，batch 1） | w4B:t6 / w4B:p6 | 同上确认；实际 argv=`devin --model swe-2-max --permission-mode dangerous`，Herdr 配置已核对；plan-review round 3 PASS（`57656bc`）后派 batch 1；batch-1 reviewer round 2 PASS（`d0a8196`）后单次 `/clear` 并复验为新 session（revision=5），随后关闭 tab | confirmed-observed-cleared-closed |
-| coder | Devin SWE-2 | Max | rlt18-b2-coder（coder#b2，batch 2） | w4B:t8 / w4B:p8 | 同上确认；实际 argv=`devin --model swe-2-max --permission-mode dangerous`，Herdr 配置已核对；batch 1 清理闸完成后派 batch 2 | confirmed-observed |
+| coder | Devin SWE-2 | Max | rlt18-b2-coder（coder#b2，batch 2） | w4B:t8 / w4B:p8 | 同上确认；实际 argv=`devin --model swe-2-max --permission-mode dangerous`，Herdr 配置已核对；batch 1 清理闸完成后派 batch 2；batch-2 reviewer PASS（`777d2e2`）后单次 `/clear` 并复验为新 session（revision=5），随后关闭 tab | confirmed-observed-cleared-closed |
 | decider | Claude Fable 5.1 | medium | rlt18-decider（decider#1） | w4B:t5 / w4B:p5 | 2026-09-23 确认；实际 argv=`claude --model claude-fable-5-1 --effort medium --dangerously-skip-permissions`，Herdr 配置已核对；因 BLOCKED.builder.plan-remediation-1（F-007）拉起 | confirmed-observed |
 | workflow-final reviewer | Devin SWE-2 | Max | 每路每轮 fresh | 待 Herdr 返回 | 2026-09-23 确认；未启动 | confirmed-pending |
 | E2 code reviewer | Devin SWE-2 | Max | attempt 1 fresh | 待 Herdr 返回 | 2026-09-23 确认；未启动 | confirmed-pending |
 
 权限：用户指示全部最大（claude `--dangerously-skip-permissions`、devin `--permission-mode dangerous`）。最大工具权限不扩张 commit/push/PR/merge/verify/人验授权。
+
+## batch 3 fixture 路径豁免（plan-review round 1 P2-3 条件，orchestrator 登记）
+
+single-task「不创建/读写 relay_plan.md / relay_log.jsonl」的路径审计，对且仅对 glob `docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/fixture/**` 例外：那是被测对象 watch 的输入 fixture（完整 relay 最小计划 + 账本），不是本卡运行账本；不含凭据，须过完整 lint。2026-09-24 orchestrator 登记。
 
 ## 授权
 
