@@ -27,6 +27,10 @@
 | coder | Devin SWE-2 | Max | 每批一个 | 待 Herdr 返回 | 2026-09-23 确认；未启动 | confirmed-pending |
 | coder | Devin SWE-2 | Max | rlt18-b1-coder（coder#b1，batch 1） | w4B:t6 / w4B:p6 | 同上确认；实际 argv=`devin --model swe-2-max --permission-mode dangerous`，Herdr 配置已核对；plan-review round 3 PASS（`57656bc`）后派 batch 1；batch-1 reviewer round 2 PASS（`d0a8196`）后单次 `/clear` 并复验为新 session（revision=5），随后关闭 tab | confirmed-observed-cleared-closed |
 | coder | Devin SWE-2 | Max | rlt18-b2-coder（coder#b2，batch 2） | w4B:t8 / w4B:p8 | 同上确认；实际 argv=`devin --model swe-2-max --permission-mode dangerous`，Herdr 配置已核对；batch 1 清理闸完成后派 batch 2；batch-2 reviewer PASS（`777d2e2`）后单次 `/clear` 并复验为新 session（revision=5），随后关闭 tab | confirmed-observed-cleared-closed |
+| probe（batch 3 实测） | Claude Sonnet 5 | low | rlt18-probe-lead-claude（扮 stage-lead，H11 Claude 侧 / H12） | 由 batch-3 coder 按实测特别授权拉起 | 2026-09-24 用户 AskUserQuestion 点选「按表确认」；指定 argv=`claude --model claude-sonnet-5 --effort low --dangerously-skip-permissions` | confirmed-pending |
+| probe（batch 3 实测） | GPT-5.6 Sol | low | rlt18-probe-lead-codex（扮 stage-lead，H11 Codex 侧） | 同上 | 同上；指定 argv=`codex -m gpt-5.6-sol -c model_reasoning_effort=low --dangerously-bypass-approvals-and-sandbox` | confirmed-pending |
+| probe（batch 3 实测） | Devin SWE-2 | medium | rlt18-probe-worker（扮在场 worker） | 同上 | 同上；指定 argv=`devin --model swe-2-medium --permission-mode dangerous` | confirmed-pending |
+| probe（batch 3 实测） | Claude Sonnet 5 | low | rlt18-probe-orch（扮编排，H12-②） | 同上 | 同上；指定 argv=`claude --model claude-sonnet-5 --effort low --dangerously-skip-permissions` | confirmed-pending |
 | decider | Claude Fable 5.1 | medium | rlt18-decider（decider#1） | w4B:t5 / w4B:p5 | 2026-09-23 确认；实际 argv=`claude --model claude-fable-5-1 --effort medium --dangerously-skip-permissions`，Herdr 配置已核对；因 BLOCKED.builder.plan-remediation-1（F-007）拉起 | confirmed-observed |
 | workflow-final reviewer | Devin SWE-2 | Max | 每路每轮 fresh | 待 Herdr 返回 | 2026-09-23 确认；未启动 | confirmed-pending |
 | E2 code reviewer | Devin SWE-2 | Max | attempt 1 fresh | 待 Herdr 返回 | 2026-09-23 确认；未启动 | confirmed-pending |
