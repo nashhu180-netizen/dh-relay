@@ -50,3 +50,8 @@
 
 **Issue #65 正文扩界已完成**（orchestrator 2026-09-24，授权来源 UD-5 Q1 选项文本）：原正文一字未改；「范围」节末追加【扩界 2026-09-24 · RLT-A-14】子条；正文末追加「扩界记录（RLT-A-14，2026-09-24）」节（C 组行按 U-1 采纳落为第 8 行，H12 行去掉 U-2 备选括注）。改正文而非评论。
 - 2026-09-24 追记：按 A-14 fresh-01 审核 P3-5，orchestrator 在 Issue #65「扩界记录」节补「取代关系」一句（本节取代正文「不改 design」与「H12 20 分钟兜底」两处）。A-14 fresh-01 P2-1 orchestrator 小决策选 (a)：候选稿「pane / tab」统一为「pane」，adapter 用 tab 的既有漂移登记 findings。
+
+## UD-7 · RLT-A-14 用户整版确认（2026-09-24）
+
+- orchestrator 主会话白话讲解候选稿 6 点后，AskUserQuestion 用户点选「确认晋级」。确认对象 `design/drafts/A14/A14-候选.md` @ `e7c127d`。已记入 `design/evidence/14-…` understanding 节。
+- 后续：晋级 design/01（coder，照抄候选稿）→ 晋级复核（fresh）→ DevPlan RLT_18 H12 口径行 B-adjust（orchestrator）；U1 GREEN 前置已满足。

@@ -57,5 +57,11 @@
 ## 三、讲解、理解对齐与用户整版确认
 
 <a id="understanding-rlt-a14"></a>
+<!-- dh:planning-evidence:v1 event=RLT-A-14 artifact=design/01-RelayLight-产品设计与验收.md kind=understanding -->
 
-> **待填（预留节）**：本节留给 orchestrator 在主会话讲解（可用 `drafts/A14/brief.md` §7）并完成理解对齐后填写。填写时请在本锚点下补 `<!-- dh:planning-evidence:v1 event=RLT-A-14 artifact=design/01-RelayLight-产品设计与验收.md kind=understanding -->` 标记（格式同 `evidence/13` 第 44–45 行）。截至本审核，讲解、理解对齐与用户整版确认**均未发生**；本节为空，不构成任何确认证据。
+orchestrator（RLT_18 主会话）2026-09-24 在 fresh-01 PASS 且整改 1（`e7c127d`）后，于主会话向用户白话讲解候选稿 6 点，随后 AskUserQuestion 请用户整版确认。
+
+- 用户裁决链（均为用户点选或原话，见 `workspace/RLT_18/decisions.md`）：UD-3 人判原话「还是加个 watch 的agent 10分钟检查一次。编排不做这个事情」；UD-5 Q1 本卡同分支 A-full、Q2 每终端空间一个、Q3 只取消存活检查（tick 与通用对账保留）、Q4–Q6 按推荐；UD-6 U-1 写明编排拉 watcher 为唯一例外、U-2 H12 保号升契约 v2。
+- 讲解要点（与候选稿对应）：①§2 角色表新增旁路 watcher，11→12 角色，每终端空间一个、10 分钟只读巡检、缺席报信本空间派活方重拉、不派活不写账不改文件不自拉，single-task monitor 不受影响（A-01/A-02）；②§7.3「watch 挂掉」三层——进程级循环自拉、载体级 watcher 发 `watch-down` 由派活方重拉、watcher 自身缺席由派活方对账顺带重拉，残余风险接受（A-03/A-05）；③编排不做 watch 存活对账，20 分钟 tick 只做通用对账，程序零改动，A82/A83/A101 不动（A-03/A-04）；④§2.1/§7.1 写明编排在自己空间拉 watcher 不算越级（C-01/C-02）；⑤H12 保号升契约 v2：判「watcher 10 分钟巡检是否接住、10 分钟是否可接受」，展示进程级自拉与阶段级/编排级 pane 被关后的发现、通知与重拉时刻（A-06）；⑥§13 不做清单措辞、头部声明换 RLT-A-14、历史索引与增补说明、验收总账仍 159（A-07、B 组）。
+- **用户整版确认**：2026-09-24 AskUserQuestion「RLT-A-14 整版设计稿（上面 6 点）是否确认晋级进正式设计文档？」用户点选「确认晋级」（选项原文为「确认晒级」，系选项笔误，语义即确认晋级）。确认对象 = `drafts/A14/A14-候选.md` @ `e7c127d`。
+- 本节不代表 verify、验收或 RLT_18 完成；晋级、晋级复核与 DevPlan H12 口径行 B-adjust 仍按流程闸依次进行。
