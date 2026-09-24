@@ -75,3 +75,40 @@
 - `git show fe1cf00 --stat` → 仅 workspace 文件；`git log` 确认探针模型闸 624685a 先于派工
 - 凭据模式扫描（api_key/secret/token/bearer/ghp_/sk- 等）→ 无命中
 - 逐行核读：三份证据 md × 全部 12 份 raw + 4 份 probe-briefs + 3 组 fixture（plan/ledger/config）
+
+## 复审 round 2（2026-09-24，整改 1 = commit `e144dac`）
+
+> 只核上轮 F-1~F-8、O-1/O-2 闭合 + 整改有无新问题。逐字核新文本 vs raw；确认未补造 raw（e144dac 仅改 md + signal，raw/ 零改动）、人判结论格仍全空、无新夸大。
+
+### 结论：PASS
+
+F-1~F-8 全部闭合：证据文字与 raw 逐字一致；未保存的 pane 原文一律如实标注「未保存/以同期记录为准」；未定来源一律「来源未定+候选+不作结论」并落 findings F-008。整改无新问题。
+
+### 逐条闭合核对
+
+| 项 | 上轮问题 | 整改与复核 | 结论 |
+|---|---|---|---|
+| F-1 | 「短暂 h12-stage python 08:08:30/08:08:50 采样存在」被 poll log 否定 | H12.md 中间观测改为「最后出现于 08:08:09 采样，08:08:30 起只剩 3 个 watch，poll log 未捕获」——与 raw 逐行一致（本棒再核 line 46–70）；第二条 `coder#1 -> done` 改「来源未定」+ 候选（短命重拉/去重缺口/其它）+「不作结论」；一条由 h11-claude watch post-working 通知解释（worker done→working→done 复位去重后再发——机制与轨迹相符）。H11-claude.md 附带观测、progress.md batch-3 行、E-301 同步改实；findings.md 新增 F-008 登记待复核 | 闭合 |
+| F-2 | lead-codex working 夸大到 08:12:14 | 改为「working 08:06:28→08:10:12，done 自 08:10:32」——与 poll log 逐行一致 | 闭合 |
+| F-3 | codex「第二条通知 08:15:59 pane 读」无据 | 改为「另一次 pane 读曾见…**该次 pane 原文未保存**，现存快照仅此一条（第 46 行）」+ 来源未定 + 与 findings F-008 同源；布置节另如实披露 07:57 首通在已存快照转写中不可见（第 28/31 行引号核对无误） | 闭合 |
+| F-4 | H11-claude 行级引用错 + 排队形态无据 | 引文全部改准并逐条复核无误：0809.txt 通知 :4 / Ran :6 / 答 :8 / done :10 / 空输入框 :43 / 后台事件 :12–38；t3.txt 通知 :23,:27 / Ran :25 / 答 :29 / done :31。「08:09:3x 排队形态滞留输入区」改标「该次 pane 原文未保存」，机制另引 orch-ghost-tick.txt | 闭合 |
+| F-5 | 重拉首通 pane 原文未留存 | H12.md H12-① 改「据 h12-1-kill-sequence.txt 同期记录…**pane 原文未保存**，以同期二手记录为准」 | 闭合 |
+| F-6 | 「8:57」笔误 | 删除；改「当时 pane 读显示…（done 7:57）；该应答的 pane 原文未保存，现存最早快照 08:09:58」 | 闭合 |
+| F-7 | 「3m 14s」失引 +「8:10 完成」无据 | 改「3m 35s」（与 raw:49 逐字一致）；「8:10 完成」改「快照时刻仍在等待；完成时刻据 poll 介于 08:10:12–08:10:32，pane 原文未保存」 | 闭合 |
+| F-8 | tick 后观察窗 ~2min < 规格 5min | 新增「观察窗注记」节如实披露：规定记录项已在窗内齐获、提前收口原因为探针清点与收尾时限 | 闭合 |
+| O-1 | fixture monitor_launch 字面偏差 | H12.md 头部新增「口径注记」披露偏差并留作人判/orchestrator 确认项 | 闭合（登记） |
+| O-2 | monitor#1->done ×2 vs 3 | 改「×3（7:54、8:08、8:09）」引 pane-orch-t3.txt 第 18–34 行——行域复核无误 | 闭合 |
+
+### 新问题检查
+
+- 未补造 raw：`git show e144dac --name-only` 无任何 raw/ 路径；raw 内容字节不变。
+- 无冒写人判：三份「人判结论」仍全空。
+- 新文本措辞全部降级/对齐 raw，未见新夸大或新错引（本轮已逐条比对行号与引文）。
+- 允许路径：整改提交仍仅 workspace 文件；工作区 `git status --porcelain` 干净。
+- DONE.batch-3.coder.remediation-1.md：单行 schema 齐（review_round=2 remediation_count=1 verdict=READY），5 条 evidence 路径均存在。
+
+### 遗留（不阻塞 PASS，转 orchestrator/人判）
+
+- findings F-008（第二条 `coder#1 -> done` 与 codex 第二条 `› [relay-light]` 来源未定；pid 3779796 来源未定）——待复核登记项，建议 workflow-final / 人审时知悉。
+- 观察窗 2min < 规格 5min、两处 pane 原文未保存——已如实披露，由人判取舍。
+- O-1 fixture 字面偏差——留 orchestrator/人判确认。
