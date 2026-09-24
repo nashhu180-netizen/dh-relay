@@ -1,0 +1,5 @@
+{"seq":1,"ts":"2026-09-24T07:51:50.785165+08:00","node":"C1","event":"plan_loaded","agent":"orchestrator#1","by":"orchestrator","note":"skill=0.1.0 probe=rlt18-batch3 config_dir=/home/nash/work/dh-relay/.dh-worktrees/RLT_18/docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/fixture/h12/config plan=/home/nash/work/dh-relay/.dh-worktrees/RLT_18/docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/fixture/h12"}
+{"seq":2,"ts":"2026-09-24T07:51:50.967921+08:00","node":"C1","event":"stage_start","agent":"orchestrator#1","by":"orchestrator","note":"stage_id=RLT18X:C#1"}
+{"seq":3,"ts":"2026-09-24T07:51:51.149196+08:00","node":"C1","event":"monitor_launch","agent":"orchestrator#1","by":"orchestrator","note":"stage_id=RLT18X:C#1 herdr=rlt18-probe-lead-claude"}
+{"seq":4,"ts":"2026-09-24T07:51:51.330715+08:00","node":"C1","event":"node_start","agent":"monitor#1","by":"monitor","note":""}
+{"seq":5,"ts":"2026-09-24T07:51:51.513429+08:00","node":"C1","event":"agent_launch","agent":"coder#1","by":"monitor","note":"herdr=rlt18-probe-worker"}

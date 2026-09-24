@@ -1,0 +1,7 @@
+# 探针与 watch 收尾核验（08:16:14–08:16:23）
+
+- `herdr tab close` ×7（tG/tH/tF/tB/tC/tD/tE）全部 ok；tJ 已于 08:08:14 关闭。
+- `herdr tab list --workspace w4B` 剩余：t1(1)、t2(rlt18-monitor)、t3(rlt18-builder)、t4(rlt18-plan-reviewer)、t5(rlt18-decider)、tA(rlt18-b3-coder) —— 无 rlt18-probe-* 残留；rlt18-monitor 等非探针 pane 全程未触碰。
+- `pgrep -af 'relay_log\.py watch'` → 无。
+- `pgrep -af 'while :; do python3.*relay_log'` → 无（除本次 grep 自身行）。
+- fixture 三目录 relay_plan.md/relay_log.jsonl/config/ 未在实测中被写（watch 只读；探针均未写账）。

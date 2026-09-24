@@ -14,6 +14,7 @@
 |---|---|---|---|---|
 | 1 | coder#b1 | watch 核心落地：`relay_log.py watch --plan --notify [--level stage|plan] [--config-dir]`；每在场 agent 一线程 wait→prompt→30s get 轮询；终态退出 / working 重挂 / (agent,状态) 去重 / 1200s tick；启动读失败 2s×2 重试、运行期重读失败不退出；A101 静态+运行旁证只读 | docs/modules/relay-light/workspace/RLT_18/evidence/batch-1/ | 已验证 |
 | 2 | coder#b2 | 两层退出与编排级在场者落地：阶段级末节点 node_close / 编排级末 stage_close 退出 0 并 join；编排级在场者改由 `monitor_launch` 账本行推导（O-1 替换，monitor#\<n\>）；空 stage 不满足退出、amend 追加节点重算；退出码 {0,2,3,4} 合同钉住；两 adapter 改写为 watch 默认+前台 wait 1200000 回退+D13 重启循环+D12 存活检查（pgrep/Win32_Process 带 --notify --level stage）+herdr= 约定+stage-stalled；SKILL.md UD-2 三处（watcher 行/硬规则8/放弃项5） | docs/modules/relay-light/workspace/RLT_18/evidence/batch-2/ | 已验证 |
+| 3 | coder#b3 | 实测批（只取证不判）：H11 Claude/Codex 分别实测忙碌时 watch 通知去向（排队预览留存/转写按序留存）；H12-① kill watch python → 重启壳不变、≤7s 自动重拉、首通 `coder#1 -> done`；H12-② 关阶段级 pane（worker=working）→ T2 worker done 无层级观测 → T3 编排 tick 对账 → `stage-stalled RLT18X:C#1` → lead pgrep 存活核命中自匹配幻 PID 判「存活」未重拉；异常留痕：orch 输入框滞留 ghost tick、codex 会话模型切换 GPT-5.6-Sol→GPT-6-Luna、来源未定的短暂 h12-stage python 与输入草稿 | docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/ | 已取证待人判 |
 
 > 模板：`| <1|2|3> | <coder instance> | <简洁施工进展> | <repo-relative evidence paths> | <已验证|进行中|BLOCKED> |`
 
@@ -32,5 +33,10 @@
 | E-203 | 2 | Python 全量回归 281 tests OK（test_relay_log 262 + test_install_skill 19） | docs/modules/relay-light/workspace/RLT_18/evidence/batch-2/regression-python.txt | `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s . -p 'test_*.py'` → exit 0 |
 | E-204 | 2 | pwsh 全仓回归 RELAY ALL PASS（SKIPPED: 1，与基线一致的 psmux-real 豁免） | docs/modules/relay-light/workspace/RLT_18/evidence/batch-2/regression-pwsh.txt | `PYTHONDONTWRITEBYTECODE=1 pwsh -NoProfile -File tools/tests/run-relay-tests.ps1` → exit 0 |
 | E-205 | 2 | 路径审计：本批仅动 5 允许文件+本批证据；禁动路径 --stat 空；SKILL.md 恰 3 hunk（UD-2 三处逐条标注）；`__pycache__` 与 relay_plan/relay_log 工件审计均空 | docs/modules/relay-light/workspace/RLT_18/evidence/batch-2/path-audit.txt | §1.1 四条审计命令全绿 |
+| E-301 | 3 | H11-claude：worker done 转换触发 `[relay-light] coder#1 -> done`，于 lead 忙碌窗口（排队 TASK+后台完成事件）到达，输入框以 `❯` 排队形态滞留并被后续回合处理 | docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/H11-claude.md | raw/pane-lead-claude-*.txt + agent-status-poll.log |
+| E-302 | 3 | H11-codex：同转换通知于 lead「Waiting for background terminal」期间到达，按序留存转写（`› [relay-light] coder#1 -> done`） | docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/H11-codex.md | raw/pane-lead-codex-0809.txt；启动横幅 GPT-5.6-Sol 与状态栏 GPT-6-Luna 差异已记异常 |
+| E-303 | 3 | H12-①：kill 3774076（08:05:40.58）→ 循环壳 3773911 不变 → 新 python 3774542（≤7s）→ 首通 `coder#1 -> done` | docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/H12.md + raw/h12-1-kill-sequence.txt | 逐条命令输出原文 |
+| E-304 | 3 | H12-②：T1 08:08:14 关 pane（worker=working）→ T2 ~08:09 worker done → T3 ~08:14:03 tick → orch 对账三命令 → `stage-stalled RLT18X:C#1` → lead pgrep 判「存活（pid 3787534）」未重拉（自匹配幻 PID，08:15:23 复现） | docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/H12.md + raw/pane-orch-t3.txt + raw/pgrep-selfmatch.txt | pane 原文 + 复现记录 |
+| E-305 | 3 | 回归与审计：fixture lint×3 exit 0；python 262 tests OK；pwsh RELAY ALL PASS（SKIPPED: 1）；`__pycache__` 空；`git diff --check` 干净；探针 tab/watch 进程零残留 | docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/raw/regressions.txt + raw/cleanup-verify.txt | 命令与 exit 如文 |
 
 > 模板：`| E-<batch><nn> | <1|2|3> | <一句话> | <repo-relative path> | <命令摘要与 exit/OK> |`

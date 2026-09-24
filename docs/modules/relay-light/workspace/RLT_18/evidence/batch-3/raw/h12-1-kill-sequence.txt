@@ -1,0 +1,27 @@
+# H12-① 进程级自动恢复 — kill/restart 观测记录（命令输出原文）
+
+## 启动（rlt18-probe-watch-h12s, tab w4B:tJ, pane w4B:pJ）
+
+- 08:05:22 `herdr tab create --workspace w4B --label rlt18-probe-watch-h12s --no-focus` → pane w4B:pJ
+- pane run 内容（D13 重启循环原文）:
+  while :; do python3 $R/tools/relay-light/relay_log.py watch --plan $FH --notify rlt18-probe-lead-claude --level stage --config-dir $FH/config/; rc=$?; case $rc in 0|2|3|4) break;; esac; sleep 5; done
+  （$R=仓库 worktree；$FH=evidence/batch-3/fixture/h12）
+- 08:05:30 pgrep: python PID 3774076（--plan fixture/h12 --notify rlt18-probe-lead-claude --level stage）
+- 08:05:35 ps: python 3774076 的 PPID=3773911；3773911 为 pane 内 /bin/bash（重启循环壳）
+
+## kill 与重拉
+
+- 08:05:40.583 `kill 3774076`
+- t+1s (08:05:41): `ps -p 3773911` → /bin/bash 仍在（循环壳未变）；`pgrep relay_log.py watch.*h12.*lead` → 无（python 未重拉）
+- t+7s (08:05:47): `ps -p 3773911` → /bin/bash 仍在（同一壳 PID 未变）；`pgrep` → 新 python PID 3774542（同参数行）
+
+## 重拉后首个通知
+
+- ~08:05:5x–08:06:0x lead-claude pane 收到 `[relay-light] coder#1 -> done` 并回复
+  「Watch 存活（pid 3774542/3774688）。收到 coder#1 -> done 通知，worker 产出无判定方，仅做形式核，本次不写账。结束回合。」（done 8:05/8:06；pane 原文见 pane-lead-claude-t3.txt 之前滚动区与 08:06:10 pane read）
+- 观测窗口内（08:05:40–08:06:00）除该重拉首通外无其它发往探针的 prompt；H11 用 prompt 均在 08:06:22 之后发出。
+
+## pane 关闭（H12-② T1）
+
+- 08:08:14 `herdr tab close w4B:tJ` → ok
+- 08:08:15 `pgrep -af 'relay_log\.py watch.*fixture/h12 --notify rlt18-probe-lead'` → 无；`ps -p 3773911` → 无（循环壳一并死亡）

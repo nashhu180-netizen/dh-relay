@@ -1,0 +1,5 @@
+# 回归记录（batch 3 为纯实测批，无生产代码改动，无 RED 阶段）
+
+- fixture lint ×3（h11-claude / h11-codex / h12）：exit 0（各 5 行账本，实测期间未被写）
+- `cd tools/relay-light && PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_relay_log` → Ran 262 tests in 439.431s — OK
+- `PYTHONDONTWRITEBYTECODE=1 pwsh -NoProfile -File tools/tests/run-relay-tests.ps1` → RELAY ALL PASS (SKIPPED: 1)（内嵌 relay-light 262 tests OK + InstallSkill 19 tests OK）
