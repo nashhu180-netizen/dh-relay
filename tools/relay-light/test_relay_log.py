@@ -6422,15 +6422,22 @@ class SkillAdapterTests(unittest.TestCase):
         self.assertIn("--timeout 1200000", text, name)
         self.assertIn("herdr=", text, name)
         self.assertIn("stage-stalled", text, name)
-        # P2-C：stage-lead 存活检查带 --notify + --level stage——编排级
-        # watch 命中不算；Windows 用 Win32_Process CommandLine -like 等效。
+        # P2-C + C1-1：stage-lead 存活检查带 --notify + --level stage——编排级
+        # watch 命中不算；且必须排除调用壳自匹配：pgrep -af 丢含 pgrep 与
+        # $$/$PPID 的行（裸 pgrep -f 会命中包装壳自身出幻 PID，H12-② 实测）；
+        # Windows 用 Win32_Process + -notlike Get-CimInstance/-ne $PID 等效排除。
         self.assertIn(
-            "pgrep -f -- 'relay_log.py watch --plan <plan_dir> "
+            "pgrep -af -- 'relay_log.py watch --plan <plan_dir> "
             "--notify <自己的 Herdr 名> --level stage'",
             text,
             name,
         )
+        self.assertIn("grep -v 'pgrep'", text, name)
+        self.assertIn("^($$|$PPID)", text, name)
+        self.assertNotIn("pgrep -f -- 'relay_log.py watch", text, name)
         self.assertIn("Win32_Process", text, name)
+        self.assertIn("-notlike '*Get-CimInstance*'", text, name)
+        self.assertIn("$_.ProcessId -ne $PID", text, name)
         self.assertIn("依赖人工", text, name)
         self.assertIn("§7.3", text, name)
         # D13：watch 跑 pane 内 shell 重启循环，非直接进程
@@ -6479,6 +6486,54 @@ class SkillAdapterTests(unittest.TestCase):
                 baseline = self._baseline_or_fail(relpath)
                 with self.assertRaises(AssertionError):
                     self._assert_adapter_watch_contract(baseline, name)
+
+    @unittest.skipUnless(
+        sys.platform.startswith("linux") and shutil.which("pgrep") is not None,
+        "pgrep self-match mechanics need POSIX pgrep",
+    )
+    def test_c1_1_liveness_check_excludes_calling_shell(self) -> None:
+        """C1-1：自匹配机制实测（真 pgrep，非文本断言）——
+
+        无 watch 载体时裸 `pgrep -f` 命中执行壳自身（幻 PID，H12-② 实测缺陷），
+        adapter 新管道（pgrep -af 后丢含 pgrep 与 $$/$PPID 的行）输出为空；
+        有载体（cmdline 带 watch 调用行的循环壳进程）时新管道仍命中。"""
+        needle = (
+            "relay_log.py watch --plan /nonexistent-rlt18 "
+            "--notify self-test --level stage"
+        )
+        # `| cat` 让 bash -c 包装壳存活到 pgrep 扫描时（单命令形式会被 bash
+        # exec 优化掉、无壳可中）；机制同 H12-② agent 工具包装的命中路径。
+        legacy = subprocess.run(
+            ["bash", "-c", f"pgrep -f -- '{needle}' | cat"],
+            text=True, capture_output=True, check=False,
+        )
+        self.assertTrue(
+            legacy.stdout.strip(),
+            "bare `pgrep -f` must self-match the wrapper shell (phantom PID)",
+        )
+        fixed = (
+            f"pgrep -af -- '{needle}' | grep -v 'pgrep' "
+            f"| grep -Ev \"^($$|$PPID) \""
+        )
+        empty = subprocess.run(
+            ["bash", "-c", fixed], text=True, capture_output=True, check=False
+        )
+        self.assertEqual("", empty.stdout.strip())
+        # 载体 = 循环壳（cmdline 自带 watch 调用行；复合命令不会被 exec 优化
+        # 掉）——即 D13 重启循环壳的存活形态。
+        carrier = subprocess.Popen(
+            ["bash", "-c", f"while :; do sleep 5; done # {needle}"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        try:
+            hit = subprocess.run(
+                ["bash", "-c", fixed],
+                text=True, capture_output=True, check=False,
+            )
+            self.assertIn(str(carrier.pid), hit.stdout.split())
+        finally:
+            carrier.terminate()
+            carrier.wait(timeout=5)
 
     def test_a141_dispatch_wait_and_sandbox_fallback_discipline(self) -> None:
         """HC-RL-A141: 两 adapter 各含三段原文——
@@ -8231,9 +8286,11 @@ class FakeClock:
         with self._cv:
             if self._pending:
                 self._pending -= 1
-            self._sleepers.setdefault(
-                threading.get_ident(), FakeClock._Sleeper(-1, float("inf"))
-            ).blocked = False
+            # 必须换新记录：线程死亡后 ident 会被复用，setdefault 撞上旧
+            # gone 记录会让新线程对静止判定隐身（C1-2 重生路径实测竞态）。
+            record = FakeClock._Sleeper(-1, float("inf"))
+            record.blocked = False
+            self._sleepers[threading.get_ident()] = record
             self._cv.notify_all()
 
     def leave(self) -> None:
@@ -9570,6 +9627,50 @@ class WatchTests(RelayCliTestCase):
         self.assertEqual(
             before, sorted(path.name for path in self.plan_path.parent.iterdir())
         )
+
+    # --- C1-2 --------------------------------------------------------------
+
+    def test_c1_2_thread_respawn_inherits_dedup(self) -> None:
+        """C1-2：agent 线程异常死亡 → 主循环重生 → 新线程继承已通知状态，
+        settled agent 不被二次通知；死亡在 stderr 留一行可归因记录。"""
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0), ("idle", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        armed = {"tripped": False}
+        real_get = herdr.get
+
+        def flaky_get(name: str) -> str | None:
+            if not armed["tripped"]:
+                armed["tripped"] = True
+                raise RuntimeError("boom")
+            return real_get(name)
+
+        herdr.get = flaky_get  # type: ignore[method-assign]
+        with redirect_stderr(io.StringIO()) as err:
+            self._start_watch(clock, herdr)
+            for moment in (0, 30, 60, 90, 120):
+                clock.advance_to(moment)
+        # 重生落在主循环下一轮（线程死亡与其 is_alive 翻面的时刻不钉死）：
+        # 第二次 wait 必有、重生后 get 轮询继续；关键断言=prompt 仍恰一次。
+        self.assertEqual(2, len(self._calls(herdr, "wait", "coder-1")))
+        self.assertTrue(self._calls(herdr, "get", "coder-1"))
+        self.assertEqual(
+            [("[relay-light] coder#1 -> idle", True)],
+            [call["result"] for call in self._prompts(herdr)],
+        )
+        self.assertTrue(
+            any(
+                t.name == "watch:C1:coder#1" and t.is_alive()
+                for t in threading.enumerate()
+            )
+        )
+        self.assertIn("died", err.getvalue())
+        self.assertIn("RuntimeError", err.getvalue())
+        self.assertEqual(1, len(self.thread_errors))
+        self.assertIn("RuntimeError", self.thread_errors[0])
+        self.thread_errors.clear()
 
 
 if __name__ == "__main__":

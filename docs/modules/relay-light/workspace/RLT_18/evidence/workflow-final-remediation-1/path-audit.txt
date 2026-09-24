@@ -1,0 +1,124 @@
+=== git diff --check ===
+(clean)
+
+=== diff --name-only vs origin/master ===
+docs/modules/relay-light/dev_plan/P1-RelayLight-开发方案.md
+docs/modules/relay-light/workspace/RLT_18/BLOCKED.builder.plan-remediation-1.md
+docs/modules/relay-light/workspace/RLT_18/DONE.batch-1.coder.md
+docs/modules/relay-light/workspace/RLT_18/DONE.batch-1.coder.remediation-1.md
+docs/modules/relay-light/workspace/RLT_18/DONE.batch-1.review.md
+docs/modules/relay-light/workspace/RLT_18/DONE.batch-1.review.round-2.md
+docs/modules/relay-light/workspace/RLT_18/DONE.batch-2.coder.md
+docs/modules/relay-light/workspace/RLT_18/DONE.batch-2.review.md
+docs/modules/relay-light/workspace/RLT_18/DONE.batch-3.coder.md
+docs/modules/relay-light/workspace/RLT_18/DONE.batch-3.coder.remediation-1.md
+docs/modules/relay-light/workspace/RLT_18/DONE.batch-3.review.md
+docs/modules/relay-light/workspace/RLT_18/DONE.batch-3.review.round-2.md
+docs/modules/relay-light/workspace/RLT_18/DONE.builder.md
+docs/modules/relay-light/workspace/RLT_18/DONE.builder.plan-remediation-1.md
+docs/modules/relay-light/workspace/RLT_18/DONE.builder.plan-remediation-2.md
+docs/modules/relay-light/workspace/RLT_18/DONE.decision.f007-watch-death.md
+docs/modules/relay-light/workspace/RLT_18/DONE.plan-review.md
+docs/modules/relay-light/workspace/RLT_18/DONE.plan-review.round-2.md
+docs/modules/relay-light/workspace/RLT_18/DONE.plan-review.round-3.md
+docs/modules/relay-light/workspace/RLT_18/DONE.workflow-final.code-round1.review-round-1.md
+docs/modules/relay-light/workspace/RLT_18/brief.md
+docs/modules/relay-light/workspace/RLT_18/check.batch-1.md
+docs/modules/relay-light/workspace/RLT_18/check.batch-2.md
+docs/modules/relay-light/workspace/RLT_18/check.batch-3.md
+docs/modules/relay-light/workspace/RLT_18/decision.f007-watch-death.md
+docs/modules/relay-light/workspace/RLT_18/decisions.md
+docs/modules/relay-light/workspace/RLT_18/dispatch/README.md
+docs/modules/relay-light/workspace/RLT_18/dispatch/batch-coder.md
+docs/modules/relay-light/workspace/RLT_18/dispatch/batch-review.md
+docs/modules/relay-light/workspace/RLT_18/dispatch/decision.md
+docs/modules/relay-light/workspace/RLT_18/dispatch/monitor.md
+docs/modules/relay-light/workspace/RLT_18/dispatch/plan-builder.md
+docs/modules/relay-light/workspace/RLT_18/dispatch/plan-review.md
+docs/modules/relay-light/workspace/RLT_18/dispatch/workflow-final.md
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-1/green.txt
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-1/path-audit.txt
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-1/red.txt
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-1/regression-pwsh.txt
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-1/regression-python.txt
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-2/green.txt
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-2/path-audit.txt
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-2/red.txt
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-2/regression-pwsh.txt
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-2/regression-python.txt
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/H11-claude.md
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/H11-codex.md
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/H12.md
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/fixture/h11-claude/config/dh-mapping.toml
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/fixture/h11-claude/config/roles.toml
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/fixture/h11-claude/relay_log.jsonl
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/fixture/h11-claude/relay_plan.md
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/fixture/h11-codex/config/dh-mapping.toml
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/fixture/h11-codex/config/roles.toml
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/fixture/h11-codex/relay_log.jsonl
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/fixture/h11-codex/relay_plan.md
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/fixture/h12/config/dh-mapping.toml
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/fixture/h12/config/roles.toml
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/fixture/h12/relay_log.jsonl
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/fixture/h12/relay_plan.md
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/probe-briefs/lead-claude.md
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/probe-briefs/lead-codex.md
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/probe-briefs/orch.md
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/probe-briefs/worker.md
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/raw/agent-status-poll.log
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/raw/cleanup-verify.txt
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/raw/h12-1-kill-sequence.txt
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/raw/orch-ghost-tick.txt
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/raw/pane-lead-claude-0809.txt
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/raw/pane-lead-claude-t3.txt
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/raw/pane-lead-codex-0809.txt
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/raw/pane-orch-0809.txt
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/raw/pane-orch-t3.txt
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/raw/pane-worker-final.txt
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/raw/pgrep-selfmatch.txt
+docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/raw/regressions.txt
+docs/modules/relay-light/workspace/RLT_18/execution_strategy.md
+docs/modules/relay-light/workspace/RLT_18/findings.md
+docs/modules/relay-light/workspace/RLT_18/lesson_candidates.md
+docs/modules/relay-light/workspace/RLT_18/progress.md
+docs/modules/relay-light/workspace/RLT_18/review.md
+docs/modules/relay-light/workspace/RLT_18/review.plan.md
+docs/modules/relay-light/workspace/RLT_18/review.workflow-final.code-round1.review-round-1.md
+docs/modules/relay-light/workspace/RLT_18/task_plan.md
+tools/relay-light/relay_log.py
+tools/relay-light/skill/SKILL.md
+tools/relay-light/skill/references/adapter-claude-code.md
+tools/relay-light/skill/references/adapter-codex.md
+tools/relay-light/test_relay_log.py
+
+=== 禁动路径 --stat（期望空）===
+(end)
+
+=== SKILL.md hunk 数（期望 0）===
+5
+
+=== __pycache__ 审计（status --porcelain --ignored）===
+rc=1 (1=空)
+
+=== workspace 内 relay_plan/relay_log 工件审计（fixture 例外，期望空）===
+rc=1 (1=空)
+
+=== git status --porcelain ===
+ M tools/relay-light/relay_log.py
+ M tools/relay-light/skill/references/adapter-claude-code.md
+ M tools/relay-light/skill/references/adapter-codex.md
+ M tools/relay-light/test_relay_log.py
+?? docs/modules/relay-light/workspace/RLT_18/evidence/workflow-final-remediation-1/
+
+=== 补充核对（origin/master 漂移说明）===
+origin/master 已自 5ab3bba 漂移至 13d477b（#67 改 SKILL.md 触发条件两 hunk），
+故上方 SKILL.md hunk 计数 5 = 既有 UD-2 三处 + 上游 #67 两处，非本轮改动。
+对照钉死基线：
+$ git -c core.quotepath=false diff 5ab3bba -U0 -- tools/relay-light/skill/SKILL.md | grep -c '^@@'
+3   （= batch-2 UD-2 三处，本轮 SKILL.md 零改动，git status 无 SKILL.md 行）
+本轮工作树净改动（git status --porcelain）：
+ M tools/relay-light/relay_log.py
+ M tools/relay-light/skill/references/adapter-claude-code.md
+ M tools/relay-light/skill/references/adapter-codex.md
+ M tools/relay-light/test_relay_log.py
+?? docs/modules/relay-light/workspace/RLT_18/evidence/workflow-final-remediation-1/

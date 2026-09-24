@@ -3741,27 +3741,33 @@ def _watch_agent_loop(
     herdr,
     clock,
     stop: threading.Event,
+    notified_shared: dict[tuple[str, str], str],
     stage_id: str | None = None,
     stage_of: dict[str, str] | None = None,
 ) -> None:
     """One present agent: wait -> notify -> 30s get polling -> terminal exit.
 
     ``scope`` is the ledger node for node agents; stage-lead threads pass the
-    watched ``stage_id`` as both scope and terminal scope.
+    watched ``stage_id`` as both scope and terminal scope. ``notified_shared``
+    carries the dedup state across respawns: an unexpected thread death keeps
+    the last notified state for ``(scope, agent)`` so the replacement thread
+    does not re-send it; a terminal exit clears it.
     """
     clock.enter()
     ledger_path = Path(plan_dir) / "relay_log.jsonl"
+    key = (scope, agent)
     try:
-        notified: str | None = None
         polling = False
         while not stop.is_set():
             if _watch_agent_terminal(ledger_path, scope, agent, stage_id, stage_of):
+                notified_shared.pop(key, None)
                 return
             if polling:
                 clock.sleep(WATCH_POLL_SECONDS)
                 if stop.is_set():
                     return
                 if _watch_agent_terminal(ledger_path, scope, agent, stage_id, stage_of):
+                    notified_shared.pop(key, None)
                     return
                 state = herdr.get(name)
             else:
@@ -3774,11 +3780,24 @@ def _watch_agent_loop(
             if state is None:
                 continue
             if state == "working":
-                notified = None
+                notified_shared.pop(key, None)
                 polling = False
                 continue
-            notified = _watch_notify(herdr, notify, agent, state, notified)
+            notified = _watch_notify(
+                herdr, notify, agent, state, notified_shared.get(key)
+            )
+            if notified is None:
+                notified_shared.pop(key, None)
+            else:
+                notified_shared[key] = notified
             polling = True
+    except Exception as exc:
+        print(
+            f"watch: {scope}/{agent} thread died unexpectedly: {exc!r}; "
+            "notified state kept for respawn",
+            file=sys.stderr,
+        )
+        raise
     finally:
         clock.leave()
 
@@ -3859,6 +3878,7 @@ def run_watch(
             return _fail(exc)
         ledger_path = Path(plan_dir) / "relay_log.jsonl"
         threads: dict[tuple[str, str], threading.Thread] = {}
+        notified_shared: dict[tuple[str, str], str] = {}
         skipped: set[tuple[str, str]] = set()
         next_tick = clock.monotonic() + WATCH_TICK_SECONDS
         while not stop.is_set():
@@ -3913,7 +3933,7 @@ def run_watch(
                     target=_watch_agent_loop,
                     args=(
                         plan_dir, scope, agent, name, notify, herdr, clock,
-                        stop, stage_id, stage_of,
+                        stop, notified_shared, stage_id, stage_of,
                     ),
                     name=f"watch:{scope}:{agent}",
                     daemon=True,
