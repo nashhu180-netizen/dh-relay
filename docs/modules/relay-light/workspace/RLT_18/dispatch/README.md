@@ -29,6 +29,8 @@ tools/relay-light/skill/references/adapter-codex.md
 tools/relay-light/skill/SKILL.md               （UD-2：仅 watcher 表述与「watch 未实现」过时措辞）
 docs/modules/relay-light/workspace/RLT_18/**   （execution_strategy.md 除外，仅 orchestrator 写）
 ```
+UD-3（用户 2026-09-24 UD-5 选本卡同分支走 A-full RLT-A-14）追加：`tools/relay-light/skill/SKILL.md` 注记扩为「UD-2 两处 + UD-3 watch 兜底表述（第 40 行 watcher 行、放弃项第 5 条）」；下列路径**仅 RLT-A-14 事件节点**（派单明写）可写，U1/U2 coder 不碰：`docs/modules/relay-light/design/01-RelayLight-产品设计与验收.md`（仅 A-14 晋级改动）、`docs/modules/relay-light/design/drafts/A14/**`、`docs/modules/relay-light/design/evidence/14-交叉审核记录-RLT-A14-watch兜底watcher巡检.md`、DevPlan RLT_18 段 H12 口径行（B-adjust）。
+**路径审计基点**：一律 `5ab3bba`（本卡 merge-base），不用浮动的 `origin/master`（master 已前进到 #67）。
 仅 orchestrator 可写：`execution_strategy.md`、DevPlan 第 137 行 RLT_18 任务行。用户级 skill 副本（`~/.claude/skills/relay-light/**`、`~/.codex/skills/relay-light/**` 及 Windows 两处）**worker 一律不碰**，由 orchestrator 收口时展示目标、取得用户当次授权后同步。
 **不动**：design/、AGENTS.md、SKILL.md 中 UD-2 以外内容及 skill 其它文件、`install_skill.py`、`docs/modules/relay-light/relay/**`（字节不得变）、as-built、其它卡工作区。范围外发现只记 `findings.md`。
 
@@ -54,9 +56,16 @@ BLOCKED 另含 `reason=<snake_case>`；值无空白。文件名：
 | decider | `DONE.decision.<tag>.md` |
 | workflow-final 某路第 k 轮 | `DONE.workflow-final.<path>.review-round-<k>.md` |
 | E2 | `DONE.e2-code-review.attempt-<n>.md` |
+| UD-3 builder 计划 / 第 k 次整改 | `DONE.builder.ud3-plan.md` / `DONE.builder.ud3-plan-remediation-<k>.md` |
+| UD-3 plan-review 初审 / 第 k 轮复审 | `DONE.plan-review.ud3.md` / `DONE.plan-review.ud3.round-<k>.md` |
+| UD-3 coder U1 / U2（第 k 次整改加 `.remediation-<k>`） | `DONE.workflow-final.ud3.coder-u1.md` / `DONE.workflow-final.ud3.coder-u2.md` |
+| UD-3 workflow-final 某路第 k 轮 | `DONE.workflow-final.<path>.ud3.review-round-<k>.md` |
+| UD-3 E2 | `DONE.e2-code-review.ud3.attempt-<n>.md` |
 | 阻塞 | 同名把 `DONE` 换成 `BLOCKED` |
 
 verdict：builder/coder 用 `READY`；reviewer 用 `PASS|FAIL`；decider 用 `AUTO|CONSULT`。
+
+**UD-3 整改轮次约定（orchestrator 2026-09-24 登记）**：UD-3 是人验退回的用户定向整改，不是 reviewer FAIL，不占原各路返工额度。ud3 各复核的 `review_round` 在 ud3 范围内**从 1 起计**；ud3 范围内每路（含 plan-review.ud3）返工上限 2 轮，超限交 decider/用户。ud3 signal 行 `path=ud3`（coder）或 `path=<路名>`（复核），`batch=na`。
 
 ## RELAY_RECEIPT preflight
 
