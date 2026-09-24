@@ -1,11 +1,11 @@
 <!-- 01-RelayLight-产品设计与验收.md — relay-light 模块的正式设计输入；planning-event 与审核回链写在本文，不写在 README。 -->
 
-# RelayLight 产品设计与验收（**正式设计输入 · 更新至 2026-09-22**）
+# RelayLight 产品设计与验收（**正式设计输入 · 更新至 2026-09-24**）
 
 <!-- dh:topic tier=标准 review=RelayLight运行中改计划 -->
-<!-- dh:planning-event:v1 id=RLT-A-13 stage=A-full artifact=design/01-RelayLight-产品设计与验收.md review=evidence/13-交叉审核记录-single-task模式.md#review-rlt-a13 understanding=evidence/13-交叉审核记录-single-task模式.md#understanding-rlt-a13 -->
+<!-- dh:planning-event:v1 id=RLT-A-14 stage=A-full artifact=design/01-RelayLight-产品设计与验收.md review=evidence/14-交叉审核记录-RLT-A14-watch兜底watcher巡检.md#review-rlt-a14 understanding=evidence/14-交叉审核记录-RLT-A14-watch兜底watcher巡检.md#understanding-rlt-a14 -->
 
-> **历史规划事件索引（A-full；非活动声明，仅作追溯）**——旧事件的原始可解析 `planning-event` 声明注释已按 `RLT-A-06` 事件转为本索引；出处、含义与证据路径保持原值，未删除、未改写，Git 历史中仍可还原。**当前活动声明仅为上面的 `RLT-A-13`；`RLT-A-06`、`RLT-A-07`、`RLT-A-11` 已转下方历史索引，DevPlan 活动事件以正式开发方案头部声明为准。**
+> **历史规划事件索引（A-full；非活动声明，仅作追溯）**——旧事件的原始可解析 `planning-event` 声明注释已按 `RLT-A-06` 事件转为本索引；出处、含义与证据路径保持原值，未删除、未改写，Git 历史中仍可还原。**当前活动声明仅为上面的 `RLT-A-14`；`RLT-A-06`、`RLT-A-07`、`RLT-A-11` 已转下方历史索引，`RLT-A-13` 由 `RLT-A-14` 事件转入下表，DevPlan 活动事件以正式开发方案头部声明为准。**
 >
 > | 事件 | stage | 证据（交叉审核记录） | 处理 |
 > |---|---|---|---|
@@ -13,9 +13,12 @@
 > | `RLT-A-03` | A-full | `evidence/03-交叉审核记录-RelayLight仓内skill单源.md#review-rlt-a03` / `#understanding-rlt-a03` | 转历史索引 |
 > | `RLT-A-04` | A-full | `evidence/05-交叉审核记录-RLT03与RLT05验收边界.md#review-rlt-a04` / `#understanding-rlt-a04` | 转历史索引 |
 > | `RLT-A-05` | A-full | `evidence/06-交叉审核记录-RLT03阶段合同补充.md#review-rlt-a05` / `#understanding-rlt-a05` | 转历史索引 |
+> | `RLT-A-13` | A-full | `evidence/13-交叉审核记录-single-task模式.md#review-rlt-a13` / `#understanding-rlt-a13` | 转历史索引（`RLT-A-14`） |
 >
 > 八条 A/B 旧事件（含 DevPlan 侧 `RLT-B-01`~`RLT-B-04`）的完整字段、替换缘由与确认来源见 [`design/evidence/06-交叉审核记录-RLT03阶段合同补充.md`](evidence/06-交叉审核记录-RLT03阶段合同补充.md)与本轮 `evidence/07`。
 
+> **RLT-A-14 watch 兜底改由 watcher 巡检 2026-09-24（用户已整版确认）**——RLT_18 主会话人验 `HC-RL-H12` 时，用户不接受「编排收 20 分钟 tick 对账兜底 watch 死亡」，裁定「加个 watch 的 agent 10 分钟检查一次，编排不做这个事情」（`workspace/RLT_18/decisions.md` UD-3、UD-5）。据此：watch 进程被杀 / 崩溃由所在 pane 的 shell 重启循环自拉；watch 的 pane 被关由**每终端空间一个的旁路 watcher** 每 10 分钟只读巡检发现，向本空间派活方（监工 / 编排）发 `[relay-light] watch-down …` 去重拉；**编排不承担 watch 存活对账**；watch 程序、20 分钟 tick 与 §7.2 通用对账保持不变。§2 角色表增 watcher 行（十一→十二个角色），§2.1 / §3.6 / §7.1～§7.3 / §13 同步。**`HC-RL-H12` 保号、升为契约 v2，为本事件唯一改动的既有验收行**；v1 原文「watch 进程死亡后 20 分钟兜底是否接住｜杀掉 watch → 展示下一次例行查看的时刻与发现｜兜底是否兜得住，20 分钟是否可接受」经 Git 历史可还原。`HC-RL-A82` / `A83` / `A101` 一字不改；不新增、不退役、不改号，活动总账仍为 159。fresh 审核与用户确认见 [`evidence/14-交叉审核记录-RLT-A14-watch兜底watcher巡检.md`](evidence/14-交叉审核记录-RLT-A14-watch兜底watcher巡检.md)。GitHub Issue #65（正文扩界）；标准档、高危组件接线；本行不代表验收或 verify。
+>
 > **RLT-A-13 single-task 模式增补 2026-09-22（用户已整版确认）**——新增与完整 relay 并列、互斥的 `single-task` 模式：不创建 `relay_plan.md` / `relay_log.jsonl`，不用 W/C/R/X/F；一任务一 Herdr workspace、每角色实例一独立具名 tab/pane；生命周期为 workspace/task_plan → plan review → 分批开发与 batch review → 按 `task_type` 展开的开发后全量复核 → 主会话人验。monitor 对 repo 完全只读，只在 Herdr 终端 wait/get/read 并即时 prompt 通知 orchestrator；恢复依据为 durable signals、独立 review/decision 工件、`execution_strategy.md` 配置与 Herdr 实态。模型/推理档由用户启动时逐角色选择并由 orchestrator 维护到 `execution_strategy.md`；标头、重试上限、120 秒监控与 Enter 防误触、Recipe 完成判据及授权边界见 §7.5。续发 `HC-RL-A159`～`HC-RL-A168` 与 `HC-RL-H19`，旧 ID 不改号、不复用；活动总账 148→159。三轮 fresh 审核与四项用户裁决见 [`evidence/13-交叉审核记录-single-task模式.md`](evidence/13-交叉审核记录-single-task模式.md)。GitHub Issue #56；标准档、高危组件接线；本行不代表验收或 verify。
 >
 > **RLT-A-11 最小 A-adjust 2026-09-16（用户已逐条裁决开放项）**——§12 表尾补兜底类行：计划目录 / 任务工作区内未被前六类点名的持久化产物随所在目录同口径保留；新增「账本复现接力现场、workspace 文档 + git + Issue 复现施工现场」职责分层口径并回链 `HC-RL-H10`，账本 `note` 内 `commit=<sha>` 定位为顺手旁注、squash 后失效不构成契约破坏。续发 HC-RL-A151～A158 八条（RLT_23 承接 A151～A154、RLT_24 承接 A155～A158）；经 O-005 裁决本事件扩界：账本事件层新增第 20 个控制事件 `resource_close` 并冻结其 `note` wire format（§1.3 / §3.2～§3.4 同步，§12 两类终端空间「删失败怎么办」单元格给出取证路径），**修订既有行 A2（19→20 词，为本事件唯一改动的既有验收行）**；其余旧行**不退役、不改号、不复用**，退役清单不增。活动总账 140→148。复核结论、用户裁决与晋级范围见 [`evidence/11-交叉审核记录-RLT-A11-产物兜底与验收续发.md`](evidence/11-交叉审核记录-RLT-A11-产物兜底与验收续发.md)。**本行只记设计晋级，不代表 D-start、不代表验收、不代表 verify。**
@@ -118,7 +121,7 @@ relay-light 是本仓**独立模块**，slug `relay-light`；文档 `docs/module
 
 ## 2. 角色层
 
-十一个角色。**模型档全部写在 `roles.toml`**，本节只写职责与拉取关系，不写死模型。
+十二个角色（含旁路 watcher）。**模型档全部写在 `roles.toml`**，本节只写职责与拉取关系，不写死模型。
 
 | 角色 | 默认档 | 谁拉起 | 生命周期 | 只做这些事 |
 |---|---|---|---|---|
@@ -133,6 +136,7 @@ relay-light 是本仓**独立模块**，slug `relay-light`；文档 `docs/module
 | **decider** 决策 | 高档（可配） | 监工 | 按需 | 施工 `blocked` 时拉起，产出可落地方案；**可在 `decision.<n>.md` 里提出「需要改计划」并写明改动内容**（§4.5），自己不改任何文件 |
 | **reviewer** | 按档位 | 监工 | 单路 | R 阶段各路复核，路数由 Recipe 决定 |
 | **strategist** 全局决策 | 高档 | 监工 | 按需 | 复核返工到轮数上限仍不过时拉起；**可在方案文件里提出「需要改计划」并写明改动内容**（§4.5），自己不改任何文件 |
+| **watcher**（旁路） | 低档（`roles.toml` 无独立段，缺省沿用 `[monitor]` 档，由拉起方指定） | 编排或监工，各在**自己的终端空间**拉起 | **每终端空间一个**：阶段空间的随阶段终端空间关闭，编排空间的随编排收工关闭 | 每 **10 分钟**只读核本空间 `watch` 是否存活，缺席且本层未正常结束即报信本空间派活方（监工或编排）去重拉（§7.3）；**不派活、不写账本、不改文件、不入账本、不自己重拉 watch、不判内容**。`single-task` 模式的 monitor 角色见 §7.5，不受本行约束 |
 
 ### 2.1 编排只做三件事
 
@@ -155,7 +159,7 @@ relay-light 是本仓**独立模块**，slug `relay-light`；文档 `docs/module
 
 **编排不监听 `plan_amend`。** 改计划的信息**只经本阶段 `stage_result.note` 的 `amend=` 摘要到达编排**（§5.2.1），编排据此在**开下一阶段前**重读计划。编排照旧只等 `stage_result`，中途不因计划被改而动作。
 
-**编排不直接拉施工或复核 agent。** 拉取顺序固定：**编排拉监工，监工拉其余**。改计划实例也由**当班监工**拉起，不由编排拉（§4.5）。
+**编排不直接拉施工或复核 agent。** 拉取顺序固定：**编排拉监工，监工拉其余**。改计划实例也由**当班监工**拉起，不由编排拉（§4.5）。**唯一例外是旁路 watcher**（RLT-A-14）：编排在**自己的终端空间**拉起本空间 watcher，它不是节点 agent、不入账本、不派活，只巡检 watch 存活并报信（§2、§7.3），不算越级，也不增加上面的「三件事」——它属第 2 件「等监工」用 watch 的配套。
 
 ### 2.2 checker 与 decider 与 strategist 的分界
 
@@ -489,6 +493,8 @@ object_type=worktree object_id=%2Ftmp%2Frlt24 outcome=ok
 - **本阶段末节点 `node_close` 后自动退出**（编排层的 watch 则在末阶段 `stage_close` 后退出）。
 
 **`watch` 只通知、不写账**——写入者规则不变。
+
+**watch 自身的存活由谁兜**（RLT-A-14）：watch 所在 pane 不直接跑 watch，而跑 shell 重启循环——进程被杀或意外崩溃，循环几秒内重拉；正常结束与确定性的参数 / 计划 / 账本错误不重拉（退出码合同见两 adapter）。watch 所在的 pane 被关时，由**本终端空间的 watcher** 每 10 分钟只读巡检发现，报信本空间派活方重拉（§2、§7.3）。watch 程序本身不因此改变：上面的 20 分钟 tick 照旧由它维持、只驱动 §7.2 的通用对账，**不承担 watch 自身的存活判定**。
 
 ### 3.7 并发协议
 
@@ -885,17 +891,20 @@ launch = "claude opus"
 ```text
 人 → 规划（产出 relay_plan 后自关）
 人 → 编排（常驻，独占一个终端空间）
+编排 → 本空间 watcher（旁路，巡检编排级 watch）
 编排 → 每阶段实例：建终端空间 + 拉监工 + 等 + 读 stage_result 分路 + stage_close + 关终端空间
-监工 → 本阶段所有 agent
+监工 → 本阶段所有 agent + 本空间 watcher（旁路，巡检阶段级 watch）
 ```
 
-编排**不越级拉 agent**；监工**不跨阶段存活**；规划**不参与运行**。
+编排**不越级拉 agent**（本空间旁路 watcher 不属越级，§2.1）；监工**不跨阶段存活**；规划**不参与运行**。
 
 ### 7.2 等待与节奏
 
 **默认：等 `watch` 推送。** watch 既推状态变化，也每 20 分钟推一条 `[relay-light] tick`；收到 `tick` 就跑 `status` 与 `herdr agent list` 对账。**这种模式下监工与编排都允许结束回合**，靠 prompt 唤醒。
 
 **没有 `watch` 时**回退到前台 `wait` 循环（`--timeout 1200000` 自带 20 分钟节拍）。一句话：**有 `watch` 时允许结束回合、靠 prompt 唤醒；无 `watch` 时不得结束回合。**
+
+**tick 对账是通用对账，不含 watch 存活判定**（RLT-A-14）：收到 `tick` 跑的 `status` 与 `herdr agent list` 对账只核计划与在场 agent 的状态；**watch 自己是否还活着由本终端空间的 watcher 每 10 分钟只读巡检承担**（§2、§7.3），编排不做 watch 存活对账，也不据 tick 发任何停滞提示。三个节拍各有归属：30 秒轮询与 20 分钟 tick 归 watch 程序，10 分钟存活巡检归 watcher。
 
 前台循环写法：
 
@@ -917,6 +926,14 @@ herdr agent wait <agent> --timeout 1200000
 4. 已 `agent_launch` 但不在场、又无终态的 agent，逐个记 `agent_lost`。
 
 **编排挂掉**：账本停在某个 `stage_start` / `monitor_launch` 之后。人重拉编排，它读 `status --json` 定位当前阶段续跑；**不重复写 `stage_start`**（每阶段仅一次）。
+
+**watch 挂掉**（RLT-A-14，阶段级与编排级同一套）：
+
+1. **进程级**：进程被杀或崩溃 → 所在 pane 的 shell 重启循环几秒内自拉（§3.6），无人介入。
+2. **载体级**（watch 的 pane 被关）→ 本终端空间的 watcher 在下一次 10 分钟巡检时发现：先只读核本层是否已正常结束（已结束则静默），未结束则向本空间派活方发短 ASCII 单行 `[relay-light] watch-down stage <stage_id>`（阶段空间，发给监工）或 `[relay-light] watch-down plan plan`（编排空间，发给编排）；派活方核自己这一层 watch，不在就按重启循环重拉。同一缺席期 watcher 每轮至多报一次、有收声上限，检查命令、判结束口径与收声规则见两 adapter。
+3. **watcher 自身挂掉**：不设二级兜底；派活方在 tick 对账看 `herdr agent list` 时若见本空间 watcher 不在，顺带重拉。残余风险 = watch 载体与 watcher 同时失守，接受。
+
+watch 与 watcher 都不写账，以上恢复动作均不产生账本事件；**编排不承担 watch 存活对账**。
 
 **三套止损计数，各自独立，谁先到谁触发，不叠加**（RLT-A-09 由两套扩为三套）：
 
@@ -1236,7 +1253,7 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 
 > 分栏依据**验收二分**：机器能完整证明的进 AI 栏，只有需要用户凭业务判断「结果对不对 / 能不能用」的进人验栏。复合观察点已原子化，共享 E-ID 的两条分列两栏。
 >
-> **共 159 条：AI 自动验收 143 条 + 人类验收 16 条**（2026-09-11 RLT-A-06 退役 A91/A108、续发 A131～A136，AI 净增 4；退役 H2、续发 H18，人验净值 0；2026-09-14 RLT-A-08 续发 A137～A143，AI 净增 7；2026-09-15 RLT-A-09 续发 A144～A150，AI 净增 7，人验净值 0，退役清单不增；2026-09-16 RLT-A-11 续发 A151～A158，并修订既有行 A2——账本事件层白名单 19→20 词，保号不改号，为本事件唯一改动的既有验收行；AI 净增 8，人验净值 0；2026-09-22 RLT-A-13 续发 A159～A168 与 H19，AI 净增 10、人验净增 1，退役清单不增）。
+> **共 159 条：AI 自动验收 143 条 + 人类验收 16 条**（2026-09-11 RLT-A-06 退役 A91/A108、续发 A131～A136，AI 净增 4；退役 H2、续发 H18，人验净值 0；2026-09-14 RLT-A-08 续发 A137～A143，AI 净增 7；2026-09-15 RLT-A-09 续发 A144～A150，AI 净增 7，人验净值 0，退役清单不增；2026-09-16 RLT-A-11 续发 A151～A158，并修订既有行 A2——账本事件层白名单 19→20 词，保号不改号，为本事件唯一改动的既有验收行；AI 净增 8，人验净值 0；2026-09-22 RLT-A-13 续发 A159～A168 与 H19，AI 净增 10、人验净增 1，退役清单不增；2026-09-24 RLT-A-14 修订既有行 H12 为契约 v2——watch 死亡兜底由编排 20 分钟 tick 对账改为本终端空间 watcher 10 分钟巡检，保号不改号，为本事件唯一改动的既有验收行；AI、人验净值均 0，退役清单不增）。
 >
 > **已退役且不再复用的 ID**：HC-RL-A1、HC-RL-A3、HC-RL-A4、HC-RL-A6、HC-RL-A20、HC-RL-A22、HC-RL-A23、HC-RL-A25、HC-RL-A64、HC-RL-A86、HC-RL-A88、HC-RL-A90、HC-RL-A91、HC-RL-A108（原子化拆分）；HC-RL-A8、HC-RL-A76、HC-RL-A79、HC-RL-H2、HC-RL-H8、HC-RL-H9（语义或结构调整）。
 
@@ -1406,7 +1423,7 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 | HC-RL-H7 | 在受控 `--config-dir` fixture 中只改 `roles.toml` / `dh-mapping.toml` / 明确模板片段调整一次协作方式，不改核心或两个 adapter | fixture 从当时仓内五文件复制；展示差异白名单、核心/双 adapter 哈希不变及新计划 relay_plan | 「改协作 = 改配置」是否真的成立 |
 | HC-RL-H10 | **〔E-账本〕** 只给你账本，不给别的 | `relay_log.jsonl` 全文 | 你能否只凭它还原出当时发生了什么、卡在哪、谁救的场 |
 | HC-RL-H11 | **〔watch 实测〕** 监工正在 `working` 时 watch 发来的 prompt 是否被排队而非丢弃——Claude Code 与 Codex **分别验** | 两种监工各自：制造 working → 触发推送 → 展示收到时刻与内容 | 推送在忙时是否可靠，要不要退回前台循环 |
-| HC-RL-H12 | **〔watch 实测〕** watch 进程死亡后 20 分钟兜底是否接住 | 杀掉 watch → 展示下一次例行查看的时刻与发现 | 兜底是否兜得住，20 分钟是否可接受 |
+| HC-RL-H12 | **〔watch 实测 · 契约 v2，RLT-A-14〕** watch 死亡后，本终端空间 watcher 的 10 分钟巡检是否接住 | ① 杀掉 watch 进程 → 展示 shell 重启循环自动重拉；② 分别关闭阶段级与编排级 watch 的载体（pane）→ 展示 watcher 下一次巡检的时刻、`[relay-light] watch-down …` 通知原文与到达派活方的时刻、派活方（监工 / 编排）重拉 watch 的时刻 | 兜底是否兜得住，10 分钟是否可接受 |
 | HC-RL-H19 | **〔single-task 自举〕** 用真实 Herdr 运行一张 heavy 卡，从 plan review、三批 batch review 到五路 final Recipe 与主会话证据展示；启动前先向你展示全角色/实例模型与推理档表并询问，确认后才启动；可逐角色修改，恢复或变更遵守 A160 | 模型分配询问与用户明确确认记录、实际 Herdr tab/model/推理档和确认配置逐项一致的证据（缺项不算通过）、一任务一 workspace 的 tab/pane 清单、orchestrator 维护的 `execution_strategy.md`、monitor repo 零写入证据、batch coder 施工里程碑索引、各批与 final durable signal、两道独立复核闸、无 relay_plan/relay_log 的路径审计、关键失败/恢复或打桩证据 | single-task 是否比完整 relay 更适合单卡工作；运行恢复、120 秒监控、复核路由与最终人验是否清楚、可控、值得日常使用 |
 
 ## 12. 持久化产物与退场路径
@@ -1436,7 +1453,7 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 - **前四批不做 `watch`**：它排在开发方案第 5 批必做，前四批不依赖它、可先各自验收（设计已冻结见 §3.6）；落地后也只通知不写账。
 - 程序侧停滞检测、陈锁自动回收、文件锁。
 - **无 Herdr 的退路**：Herdr 是必备项，两个平台都是。
-- 实时监控：watch 推送 + 20 分钟兜底，不做秒级盯屏。
+- 实时监控：watch 推送 + 20 分钟 tick 对账 + watcher 10 分钟存活巡检，不做秒级盯屏。
 - Herdr tab 这一层：不使用。
 - **E11 / E12 / E13 不进接力**：用户确认、verify 代签、销户留给人和主 session。
 - 编排越级拉 agent、监工跨阶段存活、规划参与运行：三者都禁止。
@@ -1477,6 +1494,6 @@ stage_result monitor#1     note=stage_id=DHR_90:C#1 outcome=done 用户补齐验
 | 密钥红线 | §13 与 skill 核心引用宪章第 6 条，HC-RL-A27 以规则原文检查为主、grep 为 smoke。 |
 | 跨语言复用风险 | 账本是 Python、现役 Runner 是 PowerShell，只能借手法不能借代码；且只借纯追加、不借原子替换。 |
 | 验收二分与原子化 | 已按机器证/人判分栏，人验栏只留业务判断。AI 栏凡含两个以上可独立失败断言的均已拆分。共享 E-ID：E-链路（HC-RL-A30 / HC-RL-H1）、E-账本（HC-RL-A31 / HC-RL-H10）。 |
-| 验收 ID 稳定性 | 包内唯一，新条目一律续号；RLT-A-06 退役 A91/A108/H2，续发 A131～A136/H18，不复用旧号；RLT-A-08 续发 A137～A143、RLT-A-09 续发 A144～A150、RLT-A-11 续发 A151～A158、RLT-A-13 续发 A159～A168/H19，均只续号、不复用；RLT-A-11 另修订既有行 A2。完整退役清单见 §11。 |
+| 验收 ID 稳定性 | 包内唯一，新条目一律续号；RLT-A-06 退役 A91/A108/H2，续发 A131～A136/H18，不复用旧号；RLT-A-08 续发 A137～A143、RLT-A-09 续发 A144～A150、RLT-A-11 续发 A151～A158、RLT-A-13 续发 A159～A168/H19，均只续号、不复用；RLT-A-11 另修订既有行 A2；RLT-A-14 修订既有行 H12（契约 v2，保号）。完整退役清单见 §11。 |
 | 一致性对照 | 已列为 §14 第 4 条开发方案同步项。 |
 | 数据口径契约 | 本模块不涉及指标口径，N/A。 |

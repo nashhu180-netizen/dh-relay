@@ -1,0 +1,49 @@
+# RLT-A-14 promotion self-check — 2026-09-24T16:00:55+08:00 — worktree wt/RLT_18
+# target: docs/modules/relay-light/design/01-RelayLight-产品设计与验收.md
+
+## 1. dh:planning-event:v1 — count (expect 1) and id
+count=1
+6:<!-- dh:planning-event:v1 id=RLT-A-14 stage=A-full artifact=design/01-RelayLight-产品设计与验收.md review=evidence/14-交叉审核记录-RLT-A14-watch兜底watcher巡检.md#review-rlt-a14 understanding=evidence/14-交叉审核记录-RLT-A14-watch兜底watcher巡检.md#understanding-rlt-a14 -->
+
+## 2. acceptance ID rows '^\| HC-RL-[AH][0-9]+' — count (expect 159)
+count=159
+
+## 3. acceptance ID rows in git diff (expect only HC-RL-H12 -/+ pair)
+-| HC-RL-H12 | **〔watch 实测〕** watch 进程死亡后 20 分钟兜底是否接住 | 杀掉 watch → 展示下一次例行查看的时刻与发现 | 兜底是否兜得住，20 分钟是否可接受 |
++| HC-RL-H12 | **〔watch 实测 · 契约 v2，RLT-A-14〕** watch 死亡后，本终端空间 watcher 的 10 分钟巡检是否接住 | ① 杀掉 watch 进程 → 展示 shell 重启循环自动重拉；② 分别关闭阶段级与编排级 watch 的载体（pane）→ 展示 watcher 下一次巡检的时刻、`[relay-light] watch-down …` 通知原文与到达派活方的时刻、派活方（监工 / 编排）重拉 watch 的时刻 | 兜底是否兜得住，10 分钟是否可接受 |
+
+## 4. A82/A83/A101 acceptance rows in git diff (expect empty)
+(empty — A82/A83/A101 rows unchanged)
+
+## 5. 'stage-stalled' hits (expect 0)
+count=0
+
+## 6. 'pane / tab' phrase hits (expect 0 for the promoted text; variants recorded for transparency)
+pane / tab : 0
+tab / pane : 0
+pane/tab   : 0
+tab/pane   : 6
+22:> **RLT-A-13 single-task 模式增补 2026-09-22（用户已整版确认）**——新增与完整 relay 并列、互斥的 `single-task` 模式：不创建 `relay_plan.md` / `relay_log.jsonl`，不用 W/C/R/X/F；一任务一 Herdr workspace、每角色实例一独立具名 tab/pane；生命周期为 workspace/task_plan → plan review → 分批开发与 batch review → 按 `task_type` 展开的开发后全量复核 → 主会话人验。monitor 对 repo 完全只读，只在 Herdr 终端 wait/get/read 并即时 prompt 通知 orchestrator；恢复依据为 durable signals、独立 review/decision 工件、`execution_strategy.md` 配置与 Herdr 实态。模型/推理档由用户启动时逐角色选择并由 orchestrator 维护到 `execution_strategy.md`；标头、重试上限、120 秒监控与 Enter 防误触、Recipe 完成判据及授权边界见 §7.5。续发 `HC-RL-A159`～`HC-RL-A168` 与 `HC-RL-H19`，旧 ID 不改号、不复用；活动总账 148→159。三轮 fresh 审核与四项用户裁决见 [`evidence/13-交叉审核记录-single-task模式.md`](evidence/13-交叉审核记录-single-task模式.md)。GitHub Issue #56；标准档、高危组件接线；本行不代表验收或 verify。
+965:- 一张任务卡对应一个 Herdr workspace；每个角色实例使用一个独立、具名 agent tab/pane。orchestrator 只分发工作与依据 durable signal 路由，不代做施工、复核或结果判断。
+966:- **model-allocation gate**：single-task 启动前，orchestrator 必须展示全部拟启动角色/实例的模型与推理档表并明确询问用户确认；用户可逐角色修改，未确认不得启动任何 agent。推荐默认仅是提案，模型不写死。确认后先将确认来源、角色/实例、模型、推理档写入 `execution_strategy.md`；启动后补齐实际 Herdr workspace/tab/pane 与观察来源并逐项比对。恢复时可沿用已有明确确认且分配未变的快照；新增/更换角色或实例、换模型或推理档必须再次询问确认，不能由超时或最大工具权限推定确认。
+967:- `execution_strategy.md` 只保存用户确认的模型分配与实际启动配置，由 orchestrator 在启动或更换角色时机械维护；未启动的 tab/pane 标 pending。monitor 对该文件及全部 repo 只读。当前主会话负责询问，不为询问另启 agent。仓内 `roles.toml` 继续只是完整模式/缺省模板，不为满足本模式而强改。
+1398:| HC-RL-A160 | 一任务一 Herdr workspace、每角色实例一独立具名 tab/pane；orchestrator 启动前展示全部角色/实例的模型/推理档并询问确认，未确认不得启动任何 agent；允许逐角色修改，恢复沿用已确认且未变快照，新增/更换角色或实例、模型/推理档须重新确认；`execution_strategy.md` 保存确认来源及实际角色/模型/实例/tab 快照；最大工具权限不扩张 Git/发布/verify/人验授权 | 结构测试覆盖 skill/双 adapter 的先询问后启动、未确认阻断、逐角色修改、恢复复用与变更重问、默认仅提案及授权独立；真实证据必须串联分配表、询问、用户确认、Herdr 实际 tab/model/推理档与快照一致；不能只查字段存在 |
+1427:| HC-RL-H19 | **〔single-task 自举〕** 用真实 Herdr 运行一张 heavy 卡，从 plan review、三批 batch review 到五路 final Recipe 与主会话证据展示；启动前先向你展示全角色/实例模型与推理档表并询问，确认后才启动；可逐角色修改，恢复或变更遵守 A160 | 模型分配询问与用户明确确认记录、实际 Herdr tab/model/推理档和确认配置逐项一致的证据（缺项不算通过）、一任务一 workspace 的 tab/pane 清单、orchestrator 维护的 `execution_strategy.md`、monitor repo 零写入证据、batch coder 施工里程碑索引、各批与 final durable signal、两道独立复核闸、无 relay_plan/relay_log 的路径审计、关键失败/恢复或打桩证据 | single-task 是否比完整 relay 更适合单卡工作；运行恢复、120 秒监控、复核路由与最终人验是否清楚、可控、值得日常使用 |
+
+## 7. '十二个角色' location (line-start = §2 header sentence)
+124:十二个角色（含旁路 watcher）。**模型档全部写在 `roles.toml`**，本节只写职责与拉取关系，不写死模型。
+-- all occurrences --
+20:> **RLT-A-14 watch 兜底改由 watcher 巡检 2026-09-24（用户已整版确认）**——RLT_18 主会话人验 `HC-RL-H12` 时，用户不接受「编排收 20 分钟 tick 对账兜底 watch 死亡」，裁定「加个 watch 的 agent 10 分钟检查一次，编排不做这个事情」（`workspace/RLT_18/decisions.md` UD-3、UD-5）。据此：watch 进程被杀 / 崩溃由所在 pane 的 shell 重启循环自拉；watch 的 pane 被关由**每终端空间一个的旁路 watcher** 每 10 分钟只读巡检发现，向本空间派活方（监工 / 编排）发 `[relay-light] watch-down …` 去重拉；**编排不承担 watch 存活对账**；watch 程序、20 分钟 tick 与 §7.2 通用对账保持不变。§2 角色表增 watcher 行（十一→十二个角色），§2.1 / §3.6 / §7.1～§7.3 / §13 同步。**`HC-RL-H12` 保号、升为契约 v2，为本事件唯一改动的既有验收行**；v1 原文「watch 进程死亡后 20 分钟兜底是否接住｜杀掉 watch → 展示下一次例行查看的时刻与发现｜兜底是否兜得住，20 分钟是否可接受」经 Git 历史可还原。`HC-RL-A82` / `A83` / `A101` 一字不改；不新增、不退役、不改号，活动总账仍为 159。fresh 审核与用户确认见 [`evidence/14-交叉审核记录-RLT-A14-watch兜底watcher巡检.md`](evidence/14-交叉审核记录-RLT-A14-watch兜底watcher巡检.md)。GitHub Issue #65（正文扩界）；标准档、高危组件接线；本行不代表验收或 verify。
+124:十二个角色（含旁路 watcher）。**模型档全部写在 `roles.toml`**，本节只写职责与拉取关系，不写死模型。
+
+## 8. files touched (git status --porcelain; promotion must touch only design/01 + this check file)
+ M "docs/modules/relay-light/design/01-RelayLight-\344\272\247\345\223\201\350\256\276\350\256\241\344\270\216\351\252\214\346\224\266.md"
+?? docs/modules/relay-light/design/drafts/A14/promotion-check.txt
+?? docs/modules/relay-light/workspace/RLT_18/evidence/ud3-u1/README.md
+
+## notes
+- '十二个角色' §2 表头句实际位于第 124 行：派单核验点「121 行」为晋级前锚点行号；B-04(+1) 与 B-05(+2) 头部插入使 §2 表头句净下移 3 行，属预期移位。
+- 'tab/pane'（无空格）6 处全部为晋级前既有文本（RLT-A-13 增补行、§7.5、HC-RL-A160、HC-RL-H19），非本事件新增；派单核验点针对带空格短语 'pane / tab'，命中 0。
+- '?? workspace/RLT_18/evidence/ud3-u1/README.md' 为另一棒 pre-existing 未跟踪文件，非本棒触碰。
+- 改点应用计数：候选稿改点总表 16 行（A-01~A-07、B-01~B-07、C-01~C-02）全部逐字落入；diff hunk 数见下。
+hunks=18
