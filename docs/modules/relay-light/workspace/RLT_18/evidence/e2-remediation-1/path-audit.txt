@@ -1,0 +1,11 @@
+# E2 remediation 1 — 路径 / 工件审计
+
+- `git diff --check` → 干净（exit 0）
+- `git status --porcelain` → `M tools/relay-light/test_relay_log.py` +
+  `?? docs/modules/relay-light/workspace/RLT_18/evidence/e2-remediation-1/`
+  （另 progress.md / DONE signal 属本棒收口点名文件）
+- `git diff origin/master --stat -- docs/modules/relay-light/relay/` → 空
+- `find . -type d -name __pycache__ -o -type f -name '*.pyc'` → 空
+  （本棒全部 python 命令带 PYTHONDONTWRITEBYTECODE=1；/tmp 下的
+  old_test_relay_log.py / rlt18_relay_log.orig.py 为仓外临时件）
+- relay_log.py RED 变异已还原：`git status --porcelain relay_log.py` → 空

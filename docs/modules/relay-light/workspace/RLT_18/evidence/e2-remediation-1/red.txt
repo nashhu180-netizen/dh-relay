@@ -1,0 +1,45 @@
+# E2 remediation 1 — RED（mutation / oracle 逃逸实证）
+
+## RED-1（P2-1，monitor 更替覆盖）
+
+对 relay_log.py 做单点变异（工作区临时改动，跑完即还原，未提交）：
+
+    - return own.isdigit() and launches > int(own)
+    + return own.isdigit() and launches > int(own) + 99
+
+命令：
+    cd tools/relay-light && PYTHONDONTWRITEBYTECODE=1 python3 -m unittest \
+      test_relay_log.WatchTests.test_a83_14_monitor_relaunch_replaces_thread \
+      test_relay_log.WatchTests.test_a83_15_monitor_restart_after_relaunch
+
+结果（exit 1）：
+    FAIL: test_a83_14_monitor_relaunch_replaces_thread
+      AssertionError: 'watch:DHR_90:W#1:monitor#1' unexpectedly found in
+      {'watch:DHR_90:W#1:monitor#1', 'watch:main', 'watch:DHR_90:W#1:monitor#2'}
+    Ran 2 tests in 0.116s — FAILED (failures=1)
+
+结论：launch 计数比较被破坏时旧线程与 monitor#2 并存——正是 review P2-1 描述
+的失败面，新用例能抓住。同时 test_a83_15 在同一变异下仍 PASS（monitor#1 经
+monitor_restart 分支独立退出），证明 restart 分支被真实覆盖而非顺带同行。
+
+## RED-2（P2-2，A101 oracle 逃逸面）
+
+把以下五行注入 `_watch_agent_loop` 的 `polling = False` 前（AST 层面变异）：
+
+    Path("relay_log.jsonl").open("w")
+    Path("relay_plan.md").unlink()
+    os.remove("relay_log.jsonl")
+    tempfile.mkstemp()
+    subprocess.run(["tee", "relay_log.jsonl"], capture_output=True, check=False)
+
+- 旧 oracle（git show HEAD:tools/relay-light/test_relay_log.py 提取
+  _WATCH_* / _watch_source_violations / _watch_subprocess_violations 执行）：
+  violations = [] —— 五处全部逃逸（subprocess 字面量非 herdr 打头豁免 +
+  Path.open/unlink、os.remove、tempfile.* 不在禁则）。
+- 新 oracle（本棒改写后）：
+    _watch_agent_loop:3760 calls .open
+    _watch_agent_loop:3761 calls .unlink
+    _watch_agent_loop:3762 calls os.remove
+    _watch_agent_loop:3763 calls tempfile.mkstemp
+    line 3764: subprocess call outside HerdrClient
+  未变异实现 violations = [] —— 收紧后对当前实现仍全绿。

@@ -1,0 +1,11 @@
+# E2 remediation 1 — Python 全量回归
+
+命令：
+    cd tools/relay-light && PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_relay_log
+
+结果：
+    Ran 269 tests in 449.748s
+    OK
+    exit 0
+
+（基线 266 + 本棒新增 test_a83_14 / test_a83_15 / test_a101_4 = 269）

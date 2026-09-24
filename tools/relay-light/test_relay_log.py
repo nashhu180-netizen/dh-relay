@@ -8416,8 +8416,33 @@ _WATCH_ROOTS = ("run_watch", "HerdrClient", "WatchClock")
 _WATCH_BANNED_CALLS = frozenset(
     {"append_event", "_add_command", "_write_json_restricted", "_restricted_writer"}
 )
-_WATCH_BANNED_ATTRS = frozenset({"write_text", "write_bytes"})
-_WATCH_BANNED_OS_ATTRS = frozenset({"replace", "rename"})
+_WATCH_BANNED_ATTRS = frozenset(
+    {
+        "write_text",
+        "write_bytes",
+        "open",
+        "unlink",
+        "touch",
+        "mkdir",
+        "rename",
+        "symlink_to",
+    }
+)
+_WATCH_BANNED_OS_ATTRS = frozenset(
+    {
+        "replace",
+        "rename",
+        "remove",
+        "unlink",
+        "mkdir",
+        "makedirs",
+        "rmdir",
+        "chmod",
+        "write",
+        "open",
+    }
+)
+_WATCH_BANNED_MODULE_ATTRS = frozenset({"shutil", "tempfile"})
 _WATCH_WRITE_MODES = frozenset("awx+")
 
 
@@ -8426,9 +8451,9 @@ def _watch_source_violations(source: str) -> list[str]:
 
     The closure starts at every ``_watch*``/``run_watch``/``HerdrClient``/
     ``WatchClock`` module-level def and follows any module-level name it
-    references. Separately, every ``subprocess.run``/``Popen`` whose first
-    argument is a ``"herdr"``-led list literal or a non-literal must sit inside
-    the ``HerdrClient`` class body.
+    references. Separately, every ``subprocess.run``/``Popen`` inside that
+    closure must sit inside the ``HerdrClient`` class body — calls outside the
+    closure (e.g. ``_git_readonly``) are not watch code and are unconstrained.
     """
     tree = ast.parse(source)
     module_defs = {
@@ -8482,9 +8507,11 @@ def _watch_source_violations(source: str) -> list[str]:
                 elif isinstance(func.value, ast.Name):
                     if func.value.id == "os" and func.attr in _WATCH_BANNED_OS_ATTRS:
                         violations.append(f"{owner}:{sub.lineno} calls os.{func.attr}")
-                    elif func.value.id == "shutil":
-                        violations.append(f"{owner}:{sub.lineno} calls shutil.{func.attr}")
-    violations += _watch_subprocess_violations(tree)
+                    elif func.value.id in _WATCH_BANNED_MODULE_ATTRS:
+                        violations.append(
+                            f"{owner}:{sub.lineno} calls {func.value.id}.{func.attr}"
+                        )
+    violations += _watch_subprocess_violations(tree, closure)
     if not roots:
         violations.append("no watch roots found")
     for required in ("run_watch", "HerdrClient"):
@@ -8493,10 +8520,16 @@ def _watch_source_violations(source: str) -> list[str]:
     return violations
 
 
-def _watch_subprocess_violations(tree: ast.Module) -> list[str]:
+def _watch_subprocess_violations(
+    tree: ast.Module, closure: dict[str, ast.AST]
+) -> list[str]:
+    """Every ``subprocess.run``/``Popen`` in the watch closure must sit inside
+    ``HerdrClient`` — argv content is irrelevant, so a literal ``["tee", …]``
+    or ``["rm", …]`` injected into watch code is still a violation."""
     parents = {
         child: node for node in ast.walk(tree) for child in ast.iter_child_nodes(node)
     }
+    closure_ids = {id(node) for node in closure.values()}
     violations: list[str] = []
     for sub in ast.walk(tree):
         if not (
@@ -8505,25 +8538,19 @@ def _watch_subprocess_violations(tree: ast.Module) -> list[str]:
             and sub.func.attr in {"run", "Popen"}
             and isinstance(sub.func.value, ast.Name)
             and sub.func.value.id == "subprocess"
-            and sub.args
         ):
             continue
-        first = sub.args[0]
-        constrained = True
-        if isinstance(first, (ast.List, ast.Tuple)) and first.elts:
-            head = first.elts[0]
-            if isinstance(head, ast.Constant) and isinstance(head.value, str):
-                constrained = head.value == "herdr"
-        if not constrained:
-            continue
         node: ast.AST = sub
-        inside = False
+        in_closure = False
+        inside_herdr = False
         while node in parents:
             node = parents[node]
             if isinstance(node, ast.ClassDef) and node.name == "HerdrClient":
-                inside = True
+                inside_herdr = True
+            if id(node) in closure_ids:
+                in_closure = True
                 break
-        if not inside:
+        if in_closure and not inside_herdr:
             violations.append(f"line {sub.lineno}: subprocess call outside HerdrClient")
     return violations
 
@@ -9548,6 +9575,67 @@ class WatchTests(RelayCliTestCase):
                     "--notify", "lead-1", "--config-dir", str(SKILL_DIR),
                 ])
 
+    # --- R-A83-14/15 ---------------------------------------------------------
+
+    def _monitor_replacement(self, extra_rows: tuple[tuple[str, str, str], ...]) -> None:
+        """open stage 在位 monitor#1 线程；追加第二条 monitor_launch（+extra_rows
+        里的事件）→ 旧线程退出、monitor#2 线程 spawn 且 wait/get 打在新 herdr 名。"""
+        self.write_plan()
+        self.write_ledger_rows(self._open_w_stage_rows())
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["lead-w"] = [("idle", 0)]
+        herdr.get_default["lead-w"] = "idle"
+        herdr.wait_script["lead-w2"] = [("idle", 0)]
+        herdr.get_default["lead-w2"] = "idle"
+        self._start_watch(clock, herdr, level="plan", notify="orch-1")
+        clock.advance_to(0)
+        self.assertIn(
+            "watch:DHR_90:W#1:monitor#1",
+            {t.name for t in self._watch_threads()},
+        )
+        self._append_ledger_row(
+            "W1", "monitor_launch", "orchestrator#1",
+            "stage_id=DHR_90:W#1 herdr=lead-w2",
+        )
+        for event, agent, note in extra_rows:
+            self._append_ledger_row("W1", event, agent, note)
+        clock.advance_to(30)
+        names = {t.name for t in self._watch_threads()}
+        self.assertNotIn("watch:DHR_90:W#1:monitor#1", names)
+        self.assertIn("watch:DHR_90:W#1:monitor#2", names)
+        self.assertEqual(
+            [30.0],
+            [call["start"] for call in self._calls(herdr, "wait", "lead-w2")],
+        )
+        self.assertEqual(
+            "[relay-light] monitor#2 -> idle",
+            self._prompts(herdr, "orch-1")[-1]["result"][0],
+        )
+        clock.advance_to(60)
+        self.assertEqual(
+            [60.0],
+            [call["start"] for call in self._calls(herdr, "get", "lead-w2")],
+        )
+        # 更替后旧 herdr 名不再被 wait/get 命中：monitor#1 的 wait 只有 t=0 一笔。
+        self.assertEqual(
+            [0.0],
+            [call["start"] for call in self._calls(herdr, "wait", "lead-w")],
+        )
+        self.assertEqual([], self._calls(herdr, "get", "lead-w"))
+
+    def test_a83_14_monitor_relaunch_replaces_thread(self) -> None:
+        """§7.3 监工重拉：第二条 monitor_launch 使 monitor#1 线程退出（
+        launches > own 分支），monitor#2 线程 spawn 并 wait/get 打 lead-w2。"""
+        self._monitor_replacement(())
+
+    def test_a83_15_monitor_restart_after_relaunch(self) -> None:
+        """§7.3 完整序：第二条 monitor_launch + 新监工 monitor_restart →
+        monitor#1 线程经 monitor_restart 分支退出，monitor#2 照常接管。"""
+        self._monitor_replacement(
+            (("monitor_restart", "monitor#2", "盘点 builder-1 在场"),)
+        )
+
     # --- R-A101 ------------------------------------------------------------
 
     def test_a101_1_watch_closure_has_no_writes(self) -> None:
@@ -9591,6 +9679,28 @@ class WatchTests(RelayCliTestCase):
         self.assertEqual(
             ledger_bytes + (appended + "\n").encode("utf-8"), ledger_path.read_bytes()
         )
+
+    def test_a101_4_checker_flags_injected_bypass_writes(self) -> None:
+        """P2-2 oracle 自证：watch 闭包内注入 Path.open/unlink、os.remove、
+        tempfile.*、["tee",…] subprocess 字面量——全部判违规（旧 oracle 会
+        按「字面量非 herdr 打头」豁免 subprocess，且 Path.open 不在禁则）。"""
+        source = Path(__file__).with_name("relay_log.py").read_text(encoding="utf-8")
+        anchor = "        polling = False"
+        self.assertIn(anchor, source)
+        injected = (
+            '        Path("relay_log.jsonl").open("w")\n'
+            '        Path("relay_plan.md").unlink()\n'
+            '        os.remove("relay_log.jsonl")\n'
+            '        tempfile.mkstemp()\n'
+            '        subprocess.run(["tee", "relay_log.jsonl"], capture_output=True, check=False)\n'
+        )
+        mutated = source.replace(anchor, injected + anchor, 1)
+        violations = _watch_source_violations(mutated)
+        for needle in (".open", ".unlink", "os.remove", "tempfile", "subprocess"):
+            self.assertTrue(
+                any(needle in violation for violation in violations),
+                (needle, violations),
+            )
 
     # --- R-CLI-1 -----------------------------------------------------------
 
