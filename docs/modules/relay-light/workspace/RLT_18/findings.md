@@ -42,3 +42,10 @@ builder 观察（不是裁决）：A 和 D 不改 design 字面；B、C 属设�
 | F-010 | 信息（范围外） | AGENTS.md「relay-light 编排协议段」只定义 worker 派单标头 `[relay-light] worker · node=…`；UD-3 在完整 relay 重新引入常驻 watcher agent，其派单首行（task_plan D23 `[relay-light] watcher · space=… · notify=… · plan=…`）无宪章层判定条款。 | AGENTS.md relay-light 段；task_plan §5.2 D23 | AGENTS.md 不在允许路径，本卡不改；随 RLT-A-14 或后续宪章维护处理 | 已登记 |
 | F-011 | 信息（范围外，既有缺口） | design/01 §2 角色表 11 角色无 watcher，SKILL 角色表自 #62 起有 watcher 行（12 角色）；SKILL 第 25 行「模型档全部写在 `roles.toml`」而 roles.toml 无 `[watcher]` 段。UD-3 让 watcher 在完整 relay 常驻，缺口由潜在变为实际。 | design/01 约 121–135；SKILL.md:25、:40；roles.toml | design 侧并入 RLT-A-14（task_plan §5.3）；模型档交用户（§5.7 Q5） | 已登记 |
 | F-012 | 信息（范围外，基线漂移） | master 已合入 #67（`13d477b`，只改 SKILL.md 第 3、8–20 行）；本卡分支基线仍是 `5ab3bba`。以浮动 `origin/master` 为基的审计会机械误报（当前对 origin/master SKILL 已 5 hunk、对 `5ab3bba` 为 3）。#67 与本卡 SKILL 改动行（40/287/347）不重叠。 | `review.plan.ud3.md` #11 与范围外发现；`dispatch/README.md`「路径审计基点」 | U1/U2 审计基点钉 `5ab3bba`（task_plan §5.4(3)、§5.5）；收口 PR 前 rebase 与否由 orchestrator/用户决定，worker 不做 | 已登记 |
+
+## RLT-A-14 fresh A 审核回流（2026-09-24 builder#a14 整改 1）
+
+| ID | 级别 | 问题 | 证据 | 处理 | 状态 |
+|---|---|---|---|---|---|
+| F-013 | 信息（范围外，既有漂移） | 两 adapter 按本侧「一 agent 一 tab」约定给 watch 单开 tab（adapter-claude-code.md 第 89、112 行等），而 design/01 §7.4「空间内 agent 都是根 tab 里的 pane；tab 这一层不使用」与 §13「Herdr tab 这一层：不使用」；batch-3 与 U2 实测亦为关 tab。RLT-A-14 候选稿按 orchestrator 小决策 P2-1 (a) 把 watch 载体统一写「pane」（关 tab 必然关其中 pane，H12 v2 展示仍成立），不把 tab 写进设计正文。 | `design/evidence/14-交叉审核记录-RLT-A14-watch兜底watcher巡检.md` §二 P2-1；design/01:482、:936、:1440；adapter-claude-code.md:42、:89 | 本事件不修 adapter 与 design 的 tab 口径漂移；登记 backlog，另起事件裁定「adapter 用 tab」与「tab 这一层不使用」谁让步 | 已登记（backlog） |
+| F-014 | 信息（U1 adapter 核对项） | design §7.3「监工挂掉」重拉监工后，未写明阶段级 watch 的 `--notify` 与本空间 watcher 的报信目标是否改指新监工（watch 既有缺口，watcher 继承）。 | `evidence/14` §二 范围外观察 O-a；design/01:910–917 | U1 施工时在两 adapter 核对：监工重拉后 watch 与 watcher 的通知对象如何切换（重拉 watch / 重派 watcher，或名字不变无需切换），并在 adapter 写明；不改 design | 待 U1 核对 |
