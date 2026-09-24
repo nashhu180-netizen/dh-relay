@@ -37,7 +37,7 @@ relay-light 的 worker 不回头问用户，卡住只能写 `blocked` 交 decide
 | decider 决策 | stage-lead | 按需 | 施工 `blocked` 时产出可落地方案；不改任何文件，可在方案文件提出「需要改计划」并写明改动内容（改计划工作流见「planner-amend 改计划模板」） |
 | reviewer | stage-lead | 单路 | R 阶段各路复核，路数由 Recipe 决定 |
 | strategist 全局决策 | stage-lead | 按需 | 返工到轮数上限仍不过时产出全局方案；不改任何文件，可同样提出「需要改计划」（见「planner-amend 改计划模板」） |
-| watcher（旁路） | 编排或 stage-lead | 一个终端空间 | 只盯 agent 状态变化、只报信给本空间派活方；不派活、不写账本、不改文件。完整 relay 模式由 `relay_log.py watch` 程序承担、人肉实例退役；`single-task` 模式无账本不接 watch，`phase=monitor` 角色仍以 120 秒节拍人肉充当 |
+| watcher（旁路） | 编排或 stage-lead | 一个终端空间 | 只观察、只报信给本空间派活方；不派活、不写账本、不改文件。完整 relay 模式：盯 agent 状态变化与 20 分钟 tick 由 `relay_log.py watch` 程序承担，watcher agent 每终端空间一个、每 10 分钟只读核本空间 watch 存活，缺席即报信本空间派活方（stage-lead/编排）重拉；`single-task` 模式无账本不接 watch，`phase=monitor` 角色以 120 秒节拍盯 agent 状态变化 |
 
 拉取顺序固定：**编排拉 stage-lead，stage-lead 拉其余**。编排不越级拉 agent；stage-lead 不跨阶段存活；规划不参与运行。checker / decider / strategist 都不写账本、不做复核、不改文件。
 
@@ -344,5 +344,5 @@ relay_log.py lint --plan <plan_dir> --amend-check after  --repo <repo> --snapsho
 - `status` 不判产出是否合格，只判账本完整性。
 - 不设 `all_agents_done` 这类恒真枚举；节点关闭固定双条件合取。
 - 不做原子写、回滚、历史 manifest（安装器侧同此约定）。
-- 不设人肉盯屏 watcher agent：等完成由 `relay_log.py watch`（默认）或前台 `herdr agent wait --timeout 1200000` 承担；状态变化通知、30 秒 `get` 轮询、20 分钟 tick 由程序负责，stage-lead/编排位的停滞对账由其本层 watch tick 驱动。
+- 不做人肉盯屏：等完成由 `relay_log.py watch`（默认）或前台 `herdr agent wait --timeout 1200000` 承担；状态变化通知、30 秒 `get` 轮询、20 分钟 tick 由程序负责；watch 存活由 watcher 10 分钟只读巡检兜底，编排不做存活对账，程序不做停滞检测。
 - 不允许编排做判断题：`stage_result.outcome` 机械分路，不越级拉 agent，不缓存计划。
