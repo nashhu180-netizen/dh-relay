@@ -35,10 +35,11 @@
 | probe（batch 3 实测） | GPT-5.6 Sol | low | rlt18-probe-lead-codex（扮 stage-lead，H11 Codex 侧） | 同上 | 同上；指定 argv=`codex -m gpt-5.6-sol -c model_reasoning_effort=low --dangerously-bypass-approvals-and-sandbox` ；batch 3 由 coder#b3 按该 argv 拉起、实测后关闭（batch-3 reviewer 核验零残留） | confirmed-observed-closed |
 | probe（batch 3 实测） | Devin SWE-2 | medium | rlt18-probe-worker（扮在场 worker） | 同上 | 同上；指定 argv=`devin --model swe-2-medium --permission-mode dangerous` ；batch 3 由 coder#b3 按该 argv 拉起、实测后关闭（batch-3 reviewer 核验零残留） | confirmed-observed-closed |
 | probe（batch 3 实测） | Claude Sonnet 5 | low | rlt18-probe-orch（扮编排，H12-②） | 同上 | 同上；指定 argv=`claude --model claude-sonnet-5 --effort low --dangerously-skip-permissions` ；batch 3 由 coder#b3 按该 argv 拉起、实测后关闭（batch-3 reviewer 核验零残留） | confirmed-observed-closed |
-| probe（RQ-1 复演） | Devin SWE-2 | medium | rlt18-probe2-lead（扮 stage-lead，按 claude adapter 文本执行存活核） | 由复演 coder 拉起 | 2026-09-24 用户答复「按你的推荐走…全部用 devin swe-2」；指定 argv=`devin --model swe-2-medium --permission-mode dangerous` | confirmed-pending |
-| probe（RQ-1 复演） | Devin SWE-2 | medium | rlt18-probe2-worker（扮在场 worker） | 同上 | 同上 | confirmed-pending |
-| probe（RQ-1 复演） | Devin SWE-2 | medium | rlt18-probe2-orch（扮编排） | 同上 | 同上 | confirmed-pending |
-| coder | Devin SWE-2 | Max | rlt18-redemo-coder（coder#redemo，RQ-1 复演） | w4B:tX / w4B:pX | coder 角色既有确认；实际 argv=`devin --model swe-2-max --permission-mode dangerous`，Herdr 配置已核对；返工 `4c3eef5` 后与 consistency r2 并行派（只写 evidence/rq1-redemo） | confirmed-observed |
+| probe（RQ-1 复演） | Devin SWE-2 | medium | rlt18-probe2-lead（扮 stage-lead，按 claude adapter 文本执行存活核） | 由复演 coder 拉起 | 2026-09-24 用户答复「按你的推荐走…全部用 devin swe-2」；指定 argv=`devin --model swe-2-medium --permission-mode dangerous`；复演 coder 按该 argv 拉起（raw/agent-starts.txt 回执逐字），12:23 前全部关闭 | confirmed-observed-closed |
+| probe（RQ-1 复演） | Devin SWE-2 | medium | rlt18-probe2-worker（扮在场 worker） | 同上 | 同上；12:23 前关闭 | confirmed-observed-closed |
+| probe（RQ-1 复演） | Devin SWE-2 | medium | rlt18-probe2-orch（扮编排） | 同上 | 同上；12:23 前关闭 | confirmed-observed-closed |
+| coder | Devin SWE-2 | Max | rlt18-redemo-coder（coder#redemo，RQ-1 复演） | w4B:tX / w4B:pX | coder 角色既有确认；实际 argv=`devin --model swe-2-max --permission-mode dangerous`，Herdr 配置已核对；返工 `4c3eef5` 后与 consistency r2 并行派（只写 evidence/rq1-redemo）；DONE（`8942b27`，verdict=READY）后保留待复审结论，复审 PASS 后清理关闭 | confirmed-observed |
+| workflow-final reviewer | Devin SWE-2 | Max | rlt18-wf-requirement-r2（requirement，review round 2，fresh，审 RQ-1 复演证据） | w4B:t18 / w4B:p18 | workflow-final reviewer 角色既有确认；实际 argv=`devin --model swe-2-max --permission-mode dangerous`；复演 DONE 后派，Herdr 配置已核对 | confirmed-observed |
 | decider | Claude Fable 5.1 | medium | rlt18-decider（decider#1） | w4B:t5 / w4B:p5 | 2026-09-23 确认；实际 argv=`claude --model claude-fable-5-1 --effort medium --dangerously-skip-permissions`，Herdr 配置已核对；因 BLOCKED.builder.plan-remediation-1（F-007）拉起 | confirmed-observed |
 | workflow-final reviewer | Devin SWE-2 | Max | 每路每轮 fresh | 待 Herdr 返回 | 2026-09-23 确认；未启动 | confirmed-pending |
 | workflow-final reviewer | Devin SWE-2 | Max | rlt18-wf-code1-r1（code-round1，review round 1，fresh） | w4B:tM / w4B:pM | 同上确认；实际 argv=`devin --model swe-2-max --permission-mode dangerous`，Herdr 配置已核对；三批全部 PASS 后派；r1 FAIL 产出后关闭 tab（下一轮须 fresh） | confirmed-observed-closed |
@@ -55,6 +56,8 @@
 ## batch 3 fixture 路径豁免（plan-review round 1 P2-3 条件，orchestrator 登记）
 
 single-task「不创建/读写 relay_plan.md / relay_log.jsonl」的路径审计，对且仅对 glob `docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/fixture/**` 例外：那是被测对象 watch 的输入 fixture（完整 relay 最小计划 + 账本），不是本卡运行账本；不含凭据，须过完整 lint。2026-09-24 orchestrator 登记。
+
+同理追加 glob `docs/modules/relay-light/workspace/RLT_18/evidence/rq1-redemo/fixture/**`（RQ-1 复演 fixture h12/h12r，性质同上，coder 自报两者 lint exit 0）。2026-09-24 orchestrator 登记。
 
 ## 授权
 
