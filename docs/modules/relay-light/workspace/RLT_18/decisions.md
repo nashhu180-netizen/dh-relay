@@ -26,4 +26,10 @@
   3. 发现死后：**通知监工/编排去重拉**——watcher 保持只读、只报信；阶段级 watch 由 stage-lead、编排级 watch 由编排按 adapter 重拉。
 - 取代关系：本条推翻 UD-1 第 2 点（B′ 编排 tick 对账兜底）与第 3 点「完整 relay 模式不保留人肉 watcher agent」；UD-1 第 1 点（pane 内 shell 自动重启循环）保留。编排不再承担 watch 存活对账。
 - 待 builder 定稿的细节（小决策交 decider，方向问题回用户）：watcher 每层一个还是每终端空间一个；10 分钟节拍的实现（agent 自身定时 vs 程序给 watcher 发 tick）；watch 程序 20 分钟 tick 是否整体删除或仅不再驱动编排对账；设计文档改动走何流程与本卡允许路径扩展。
-- H11 人判：尚未给出（待用户）。
+- H11 人判：见 UD-4。
+
+## UD-4 · H11 人判：接受后台 watch（2026-09-24）
+
+- 用户原话：「H11 接受，后台 watch 可以」。
+- 含义：监工忙时 watch 推送排队不丢的实测结论接受，不退回前台循环；F-008（多发）与 codex 首通 pane 不可见作为知悉项保留登记，不阻塞。
+- 已逐字转录进 `evidence/batch-3/H11-claude.md`、`H11-codex.md`「人判结论」节。
