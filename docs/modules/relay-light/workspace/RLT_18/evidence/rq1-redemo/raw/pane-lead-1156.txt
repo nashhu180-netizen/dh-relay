@@ -1,0 +1,80 @@
+ ● Ran command
+ │ $ cat /home/nash/work/dh-relay/.dh-worktrees/RLT_18/docs/modules/relay-light/
+ │   workspace/RLT_18/evidence/rq1-redemo/probe-briefs/worker.md; herdr agent
+ │   get rlt18-probe2-worker | python3 -c "import
+ │   json,sys;a=json.load(sys.stdin)['result']
+ │   ['agent'];print(a['agent_status'],a['state_change_seq'])"
+ │ # 探针 brief — rlt18-probe2-worker（扮 fixture 的在场 worker / coder#1）
+ │ > 你是 RLT_18 RQ-1 复演实测探针，**不是**本仓任务的 worker。不要读仓库流程文
+ │ 档，不要写仓库任何文件；只按本文件行动。你
+│ 全部行为会被作为 HC-RL-H12 复演证据记录。
+ │ ## 身份与事实（照抄勿改）
+ │ - 你的 Herdr agent 名：`rlt18-probe2-worker`；扮演完整 relay fixture 中 node
+ │ `C1` 的在场 w
+ │ RLT18X:C#1`）。
+ │ - 阶段级 watch 会盯你的 Herdr 状态并向 stage-lead 推送 `[relay-light] coder#1
+ │ -> <state>`；
+ │ ## 探针行为约定
+ │ - 收到 `TASK:` 开头的 prompt：逐字执行其中的 shell 命令（例如 `sleep 45 &&
+ │ echo probe2-w1-done`
+ │ 后结束回合。
+ │ - 没有 `TASK:` 的 prompt 一律回复 `ack` 后结束回合。
+ │ - 不主动派活、不问用户、不读写任何仓库文件；每个任务做完即结束回合等下一条。
+ │ done 2175
+ └ Exited with code 0
+
+ Worker reached  done ; probe workers produce no files (formal check only).
+ Recording the terminal event and closing the node/stage per stage-lead routine.
+
+ ● Ran command
+ │ $ F=/home/nash/work/dh-relay/.dh-worktrees/RLT_18/docs/modules/relay-light/
+ │   workspace/RLT_18/evidence/rq1-redemo/fixture/h12 && R=/home/nash/work/dh-
+ │   relay/.dh-worktrees/RLT_18 && python3 "$R/tools/relay-light/relay_log.py"
+ │   add --plan "$F" --node C1 --event done --agent coder#1 --config-dir "$F/
+ │   config" --note "formal check: probe worker done, no artifact by design" &&
+ │   python3 "$R/tools/relay-light/relay_log.py" add --plan "$F" --node C1 --
+ │   event node_close --agent monitor#1 --config-dir "$F/config" && python3 "$R/
+ │   tools/relay-light/relay_log.py" add --plan "$F" --node C1 --event
+ │   stage_result --agent monitor#1 --config-dir "$F/config" --note
+ │   "stage_id=RLT18X:C#1 outcome=done sole node C1 closed"
+ └ Exited with code 0
+
+ ● Ran command
+ │ $ F=/home/nash/work/dh-relay/.dh-worktrees/RLT_18/docs/modules/relay-light/
+ │   workspace/RLT_18/evidence/rq1-redemo/fixture/h12; python3 /home/nash/work/
+ │   dh-relay/.dh-worktrees/RLT_18/tools/relay-light/relay_log.py status --plan
+ │   "$F" --config-dir "$F/config"; tail -3 "$F/relay_log.jsonl"
+ │ 计划：/home/nash/work/dh-relay/.dh-worktrees/RLT_18/docs/modules/relay-light/
+ │ wor
+ │ e/h12   skill=0.1.0   session=probe
+ │ 卡：RLT18X      decision_mode=auto
+ │ 当班写入者：monitor（RLT18X:C#1）
+ │ 阶段 RLT18X:C#1  open     result=done
+ │   节点 C1 construction   closed
+ │ {"seq":6,"ts":"2026-09-24T11:56:03.091562+08:00","node":"C1","event":"done","
+ │ mal check: probe worker done, no artifact by design"}
+ │ {"seq":7,"ts":"2026-09-24T11:56:03.281253+08:00","node":"C1","event":"node_cl
+ │ te":""}
+ │ {"seq":8,"ts":"2026-09-24T11:56:03.485893+08:00","node":"C1","event":"stage_r
+ │ note":"stage_id=RLT18X:C#1 outcome=done sole node C1 closed"}
+ └ Exited with code 0
+
+ Handled per  lead.md :
+
+   • Wake check: stage-level watch alive (PID 4140884, relaunched earlier) — no
+   relaunch needed.
+   •  coder#1 -> done : probe worker confirmed  done  (formal check; no artifact
+   by design).
+   • Ledger writes (monitor#1,  --config-dir  fixture config):  done  →  node_cl
+   ose  →  stage_result outcome=done . Node C1 closed, stage  RLT18X:C#1
+   result=done.
+
+ Watch remains running as wake receiver; ending turn.
+
+ ✱ Did you know
+   Press alt+m to switch between available models
+
+────────────────────────────────────────────────────── (bypass permissions on) ─
+❭ Ask Devin to build features, fix bugs, or work on your code
+────────────────────────────────────────────────────────────────────────────────
+SWE-2 Medium                                    Context: 59k / 262k tokens (22%)

@@ -1,0 +1,26 @@
+# cleanup — 2026-09-24 12:22:50 +0800
+## poll scripts stopped (pid 4138663/4173206 + pkill; earlier attempt self-matched own cmdline — recorded)
+## herdr tab close w4B:t0
+{"id":"cli:tab:close","result":{"type":"ok"}}
+## herdr tab close w4B:t11
+{"id":"cli:tab:close","result":{"type":"ok"}}
+## herdr tab close w4B:t12
+{"id":"cli:tab:close","result":{"type":"ok"}}
+## herdr tab close w4B:t14
+{"id":"cli:tab:close","result":{"type":"ok"}}
+## herdr tab close w4B:t15
+{"id":"cli:tab:close","result":{"type":"ok"}}
+## herdr tab close w4B:t17
+{"id":"cli:tab:close","result":{"type":"ok"}}
+## tab list w4B after close
+w4B:t1 1 idle
+w4B:t2 rlt18-monitor working
+w4B:t5 rlt18-decider done
+w4B:tX rlt18-redemo-coder working
+w4B:t13 rlt18-e2-review working
+## residual probe2 agents
+(none probe2)
+## residual watch procs / loop shells
+(none)
+## __pycache__ audit
+(empty)

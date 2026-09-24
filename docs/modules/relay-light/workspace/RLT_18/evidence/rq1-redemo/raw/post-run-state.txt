@@ -1,0 +1,54 @@
+# post-run state — 2026-09-24 12:22:20 +0800
+## h12r ledger (run-2, lead wrote seq 6-8 after stage-stalled)
+{"seq":1,"ts":"2026-09-24T11:58:43.208051+08:00","node":"D1","event":"plan_loaded","agent":"orchestrator#1","by":"orchestrator","note":"skill=0.1.0 probe=rlt18-rq1redemo-r2 config_dir=/home/nash/work/dh-relay/.dh-worktrees/RLT_18/docs/modules/relay-light/workspace/RLT_18/evidence/rq1-redemo/fixture/h12r/config plan=/home/nash/work/dh-relay/.dh-worktrees/RLT_18/docs/modules/relay-light/workspace/RLT_18/evidence/rq1-redemo/fixture/h12r"}
+{"seq":2,"ts":"2026-09-24T11:58:43.418483+08:00","node":"D1","event":"stage_start","agent":"orchestrator#1","by":"orchestrator","note":"stage_id=RLT18Y:C#1"}
+{"seq":3,"ts":"2026-09-24T11:58:43.609140+08:00","node":"D1","event":"monitor_launch","agent":"orchestrator#1","by":"orchestrator","note":"stage_id=RLT18Y:C#1 herdr=rlt18-probe2-lead"}
+{"seq":4,"ts":"2026-09-24T11:58:43.806040+08:00","node":"D1","event":"node_start","agent":"monitor#1","by":"monitor","note":""}
+{"seq":5,"ts":"2026-09-24T11:58:44.002861+08:00","node":"D1","event":"agent_launch","agent":"coder#1","by":"monitor","note":"herdr=rlt18-probe2-worker"}
+{"seq":6,"ts":"2026-09-24T12:20:29.681031+08:00","node":"D1","event":"done","agent":"coder#1","by":"monitor","note":"formal check after stage-stalled: probe worker done, no artifact by design"}
+{"seq":7,"ts":"2026-09-24T12:20:29.909795+08:00","node":"D1","event":"node_close","agent":"monitor#1","by":"monitor","note":""}
+{"seq":8,"ts":"2026-09-24T12:20:30.113084+08:00","node":"D1","event":"stage_result","agent":"monitor#1","by":"monitor","note":"stage_id=RLT18Y:C#1 outcome=done sole node D1 closed"}
+
+## h12 ledger (run-1, lead wrote seq 6-8 after early wake)
+{"seq":1,"ts":"2026-09-24T11:41:34.830004+08:00","node":"C1","event":"plan_loaded","agent":"orchestrator#1","by":"orchestrator","note":"skill=0.1.0 probe=rlt18-rq1redemo config_dir=/home/nash/work/dh-relay/.dh-worktrees/RLT_18/docs/modules/relay-light/workspace/RLT_18/evidence/rq1-redemo/fixture/h12/config plan=/home/nash/work/dh-relay/.dh-worktrees/RLT_18/docs/modules/relay-light/workspace/RLT_18/evidence/rq1-redemo/fixture/h12"}
+{"seq":2,"ts":"2026-09-24T11:41:35.041715+08:00","node":"C1","event":"stage_start","agent":"orchestrator#1","by":"orchestrator","note":"stage_id=RLT18X:C#1"}
+{"seq":3,"ts":"2026-09-24T11:41:35.226493+08:00","node":"C1","event":"monitor_launch","agent":"orchestrator#1","by":"orchestrator","note":"stage_id=RLT18X:C#1 herdr=rlt18-probe2-lead"}
+{"seq":4,"ts":"2026-09-24T11:41:35.420770+08:00","node":"C1","event":"node_start","agent":"monitor#1","by":"monitor","note":""}
+{"seq":5,"ts":"2026-09-24T11:41:35.600800+08:00","node":"C1","event":"agent_launch","agent":"coder#1","by":"monitor","note":"herdr=rlt18-probe2-worker"}
+{"seq":6,"ts":"2026-09-24T11:56:03.091562+08:00","node":"C1","event":"done","agent":"coder#1","by":"monitor","note":"formal check: probe worker done, no artifact by design"}
+{"seq":7,"ts":"2026-09-24T11:56:03.281253+08:00","node":"C1","event":"node_close","agent":"monitor#1","by":"monitor","note":""}
+{"seq":8,"ts":"2026-09-24T11:56:03.485893+08:00","node":"C1","event":"stage_result","agent":"monitor#1","by":"monitor","note":"stage_id=RLT18X:C#1 outcome=done sole node C1 closed"}
+
+## lint h12r / h12
+lint: ok
+h12r lint exit=0
+lint: ok
+h12 lint exit=0
+
+## watch procs now
+4170550 python3 /home/nash/work/dh-relay/.dh-worktrees/RLT_18/tools/relay-light/relay_log.py watch --plan /home/nash/work/dh-relay/.dh-worktrees/RLT_18/docs/modules/relay-light/workspace/RLT_18/evidence/rq1-redemo/fixture/h12r --notify rlt18-probe2-orch --level plan --config-dir /home/nash/work/dh-relay/.dh-worktrees/RLT_18/docs/modules/relay-light/workspace/RLT_18/evidence/rq1-redemo/fixture/h12r/config/
+## tab list w4B
+w4B:t1 1 done
+w4B:t2 rlt18-monitor working
+w4B:t5 rlt18-decider done
+w4B:tX rlt18-redemo-coder working
+w4B:t0 rlt18-probe2-lead done
+w4B:t11 rlt18-probe2-worker done
+w4B:t12 rlt18-probe2-orch done
+w4B:t13 rlt18-e2-review working
+w4B:t14 rlt18-probe2-watch-stage-re unknown
+w4B:t15 rlt18-probe2-watch-plan-r unknown
+w4B:t17 rlt18-probe2-watch-stage-re unknown
+## worker pane tail
+ │ Timeout: 2m
+ └ Session: 2cdd55
+
+ probe2-w2-done
+
+ ✱ Did you know
+   See usage and cost: /session-stats
+
+────────────────────────────────────────────────────── (bypass permissions on) ─
+❭ Ask Devin to build features, fix bugs, or work on your code
+────────────────────────────────────────────────────────────────────────────────
+SWE-2 Medium                                     Context: 24k / 262k tokens (9%)

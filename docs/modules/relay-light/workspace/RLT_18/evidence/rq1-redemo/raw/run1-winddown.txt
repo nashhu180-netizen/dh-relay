@@ -1,0 +1,5 @@
+# run-1 wind-down — 2026-09-24 11:58:33 +0800
+## close old plan-watch tab w4B:tY
+{"id":"cli:tab:close","result":{"type":"ok"}}
+## residual watch procs 11:58:34.106
+(none)
