@@ -36,7 +36,8 @@
 | probe（batch 3 实测） | Claude Sonnet 5 | low | rlt18-probe-orch（扮编排，H12-②） | 同上 | 同上；指定 argv=`claude --model claude-sonnet-5 --effort low --dangerously-skip-permissions` ；batch 3 由 coder#b3 按该 argv 拉起、实测后关闭（batch-3 reviewer 核验零残留） | confirmed-observed-closed |
 | decider | Claude Fable 5.1 | medium | rlt18-decider（decider#1） | w4B:t5 / w4B:p5 | 2026-09-23 确认；实际 argv=`claude --model claude-fable-5-1 --effort medium --dangerously-skip-permissions`，Herdr 配置已核对；因 BLOCKED.builder.plan-remediation-1（F-007）拉起 | confirmed-observed |
 | workflow-final reviewer | Devin SWE-2 | Max | 每路每轮 fresh | 待 Herdr 返回 | 2026-09-23 确认；未启动 | confirmed-pending |
-| workflow-final reviewer | Devin SWE-2 | Max | rlt18-wf-code1-r1（code-round1，review round 1，fresh） | w4B:tM / w4B:pM | 同上确认；实际 argv=`devin --model swe-2-max --permission-mode dangerous`，Herdr 配置已核对；三批全部 PASS 后派 | confirmed-observed |
+| workflow-final reviewer | Devin SWE-2 | Max | rlt18-wf-code1-r1（code-round1，review round 1，fresh） | w4B:tM / w4B:pM | 同上确认；实际 argv=`devin --model swe-2-max --permission-mode dangerous`，Herdr 配置已核对；三批全部 PASS 后派；r1 FAIL 产出后关闭 tab（下一轮须 fresh） | confirmed-observed-closed |
+| workflow-final reviewer | Devin SWE-2 | Max | rlt18-wf-code1-r2（code-round1，review round 2，fresh） | w4B:tP / w4B:pP | 同上确认；实际 argv=`devin --model swe-2-max --permission-mode dangerous`，Herdr 配置已核对；返工 1（`41c29ed`）后派 | confirmed-observed |
 | E2 code reviewer | Devin SWE-2 | Max | attempt 1 fresh | 待 Herdr 返回 | 2026-09-23 确认；未启动 | confirmed-pending |
 
 权限：用户指示全部最大（claude `--dangerously-skip-permissions`、devin `--permission-mode dangerous`）。最大工具权限不扩张 commit/push/PR/merge/verify/人验授权。
