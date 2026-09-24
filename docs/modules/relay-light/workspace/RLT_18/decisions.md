@@ -53,5 +53,5 @@
 
 ## UD-7 · RLT-A-14 用户整版确认（2026-09-24）
 
-- orchestrator 主会话白话讲解候选稿 6 点后，AskUserQuestion 用户点选「确认晋级」。确认对象 `design/drafts/A14/A14-候选.md` @ `e7c127d`。已记入 `design/evidence/14-…` understanding 节。
+- orchestrator 主会话白话讲解候选稿 6 点后，AskUserQuestion 用户点选「确认晒级」（orchestrator 选项笔误，指晋级）。确认对象 `design/drafts/A14/A14-候选.md` @ `e7c127d`。已记入 `design/evidence/14-…` understanding 节。
 - 后续：晋级 design/01（coder，照抄候选稿）→ 晋级复核（fresh）→ DevPlan RLT_18 H12 口径行 B-adjust（orchestrator）；U1 GREEN 前置已满足。
