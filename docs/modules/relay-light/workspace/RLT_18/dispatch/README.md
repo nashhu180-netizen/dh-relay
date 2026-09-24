@@ -61,6 +61,8 @@ BLOCKED 另含 `reason=<snake_case>`；值无空白。文件名：
 | UD-3 coder U1 / U2（第 k 次整改加 `.remediation-<k>`） | `DONE.workflow-final.ud3.coder-u1.md` / `DONE.workflow-final.ud3.coder-u2.md` |
 | UD-3 workflow-final 某路第 k 轮 | `DONE.workflow-final.<path>.ud3.review-round-<k>.md` |
 | UD-3 E2 | `DONE.e2-code-review.ud3.attempt-<n>.md` |
+| RLT-A-14 builder C1 / C1b / 第 k 次整改 | `DONE.builder.a14-c1.md` / `DONE.builder.a14-c1b.md` / `DONE.builder.a14-remediation-<k>.md` |
+| RLT-A-14 fresh A 审核第 k 轮 / 晋级 / 晋级复核 | `DONE.a14-review.fresh-0<k>.md` / `DONE.a14-promotion.md` / `DONE.a14-review.promotion.md` |
 | 阻塞 | 同名把 `DONE` 换成 `BLOCKED` |
 
 verdict：builder/coder 用 `READY`；reviewer 用 `PASS|FAIL`；decider 用 `AUTO|CONSULT`。
