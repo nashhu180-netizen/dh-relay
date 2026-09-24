@@ -5607,6 +5607,7 @@ class SkillCoreDocTests(unittest.TestCase):
         self.assertEqual([True, True, True], self._skill_ud2_checks(text))
         self.assertNotIn("watch 未实现", text)
         self.assertNotIn("不做 watch 推送的实现", text)
+        self.assertNotIn("空闲上报", text)
         baseline = fetch_baseline_text("tools/relay-light/skill/SKILL.md")
         if baseline is None:
             self.fail(
@@ -8548,7 +8549,7 @@ def fetch_baseline_text(relpath: str) -> str | None:
     if present.returncode != 0:
         fetched = subprocess.run(
             ["git", "fetch", "--depth=1", "origin", RLT18_BASELINE_SHA],
-            cwd=repo, text=True, capture_output=True, check=False,
+            cwd=repo, capture_output=True, check=False,
         )
         present = subprocess.run(
             ["git", "cat-file", "-e", spec],
@@ -8558,11 +8559,11 @@ def fetch_baseline_text(relpath: str) -> str | None:
             return None
     blob = subprocess.run(
         ["git", "show", spec],
-        cwd=repo, text=True, capture_output=True, check=False,
+        cwd=repo, capture_output=True, check=False,
     )
     if blob.returncode != 0:
         return None
-    return blob.stdout
+    return blob.stdout.decode("utf-8")
 
 
 class WatchTests(RelayCliTestCase):
@@ -9671,6 +9672,69 @@ class WatchTests(RelayCliTestCase):
         self.assertEqual(1, len(self.thread_errors))
         self.assertIn("RuntimeError", self.thread_errors[0])
         self.thread_errors.clear()
+
+    # --- C2-1 --------------------------------------------------------------
+
+    def test_c2_1_herdr_client_reads_bytes_decodes_utf8(self) -> None:
+        """C2-1：`HerdrClient._run` 按 `_git_readonly` 惯例字节级 capture +
+        显式 UTF-8 解码——stdout 不随 locale 走；非 UTF-8 字节经 replace 落
+        json 失败返回 None（失聪但线程不死），不抛 UnicodeDecodeError。"""
+        payload = json.dumps(
+            {"result": {"agent": {"agent_status": "忙碌"}}}, ensure_ascii=False
+        ).encode("utf-8")
+
+        def fake_run(argv, **_kwargs):
+            return subprocess.CompletedProcess(argv, 0, stdout=payload, stderr=b"")
+
+        with mock.patch.object(subprocess, "run", side_effect=fake_run) as run_mock:
+            status = relay_log.HerdrClient().get("coder-1")
+        self.assertEqual("忙碌", status)
+        self.assertTrue(run_mock.call_args_list)
+        for call in run_mock.call_args_list:
+            self.assertNotIn("text", call.kwargs)
+            self.assertNotIn("encoding", call.kwargs)
+
+        def fake_run_broken(argv, **_kwargs):
+            return subprocess.CompletedProcess(
+                argv, 0, stdout=b'{"result": "\xff\xfe"}', stderr=b""
+            )
+
+        with mock.patch.object(subprocess, "run", side_effect=fake_run_broken):
+            self.assertIsNone(relay_log.HerdrClient().get("coder-1"))
+
+    def test_c2_1_baseline_fetch_reads_bytes_decodes_utf8(self) -> None:
+        """C2-1 同族：`fetch_baseline_text` 的 `git show` 字节级 capture +
+        显式 UTF-8——损坏基线是显见 decode 报错，不是 mojibake 空洞通过。"""
+        blob = "# 基线\n含中文\n".encode("utf-8")
+
+        def fake_run(argv, **_kwargs):
+            if list(argv[:2]) == ["git", "show"]:
+                return subprocess.CompletedProcess(argv, 0, stdout=blob, stderr=b"")
+            return subprocess.CompletedProcess(argv, 0, stdout=b"", stderr=b"")
+
+        with mock.patch.object(subprocess, "run", side_effect=fake_run) as run_mock:
+            text = fetch_baseline_text("tools/relay-light/skill/SKILL.md")
+        self.assertEqual("# 基线\n含中文\n", text)
+        show_calls = [
+            call
+            for call in run_mock.call_args_list
+            if list(call.args[0][:2]) == ["git", "show"]
+        ]
+        self.assertTrue(show_calls)
+        for call in show_calls:
+            self.assertNotIn("text", call.kwargs)
+            self.assertNotIn("encoding", call.kwargs)
+
+        def fake_run_broken(argv, **_kwargs):
+            if list(argv[:2]) == ["git", "show"]:
+                return subprocess.CompletedProcess(
+                    argv, 0, stdout=b"\xff\xfe", stderr=b""
+                )
+            return subprocess.CompletedProcess(argv, 0, stdout=b"", stderr=b"")
+
+        with mock.patch.object(subprocess, "run", side_effect=fake_run_broken):
+            with self.assertRaises(UnicodeDecodeError):
+                fetch_baseline_text("tools/relay-light/skill/SKILL.md")
 
 
 if __name__ == "__main__":

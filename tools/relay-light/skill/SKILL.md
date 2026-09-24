@@ -344,5 +344,5 @@ relay_log.py lint --plan <plan_dir> --amend-check after  --repo <repo> --snapsho
 - `status` 不判产出是否合格，只判账本完整性。
 - 不设 `all_agents_done` 这类恒真枚举；节点关闭固定双条件合取。
 - 不做原子写、回滚、历史 manifest（安装器侧同此约定）。
-- 不设人肉盯屏 watcher agent：等完成由 `relay_log.py watch`（默认）或前台 `herdr agent wait --timeout 1200000` 承担；状态变化通知、20 分钟 tick、120 秒空闲上报由程序负责，stage-lead/编排位的停滞对账由其本层 watch tick 驱动。
+- 不设人肉盯屏 watcher agent：等完成由 `relay_log.py watch`（默认）或前台 `herdr agent wait --timeout 1200000` 承担；状态变化通知、30 秒 `get` 轮询、20 分钟 tick 由程序负责，stage-lead/编排位的停滞对账由其本层 watch tick 驱动。
 - 不允许编排做判断题：`stage_result.outcome` 机械分路，不越级拉 agent，不缓存计划。

@@ -3540,11 +3540,11 @@ class HerdrClient:
     def _run(*argv: str) -> tuple[int, str]:
         try:
             proc = subprocess.run(
-                ["herdr", *argv], text=True, capture_output=True, check=False
+                ["herdr", *argv], capture_output=True, check=False
             )
         except OSError:
             return 1, ""
-        return proc.returncode, proc.stdout
+        return proc.returncode, proc.stdout.decode("utf-8", errors="replace")
 
     @staticmethod
     def _agent_status(stdout: str) -> str | None:
