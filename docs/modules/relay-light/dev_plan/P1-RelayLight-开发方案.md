@@ -1,13 +1,15 @@
-# P1-RelayLight 开发方案（**正式开发方案 · 更新至 2026-09-22**）
+# P1-RelayLight 开发方案（**正式开发方案 · 更新至 2026-09-24**）
+
+> **2026-09-24 RLT-B-10 / Issue #65**：基于已整版确认并晋级的 RLT-A-14（`HC-RL-H12` 契约 v2），同步 RLT_18 验收口径 H12 行；不新增任务、不改批次、不改机器证、不解冻任何旧卡。
 
 > **2026-09-22 RLT-B-09 / Issue #56**：用户已整版确认 `single-task` 模式与单验收单元卡 RLT_29，并授权连续推进 B、D 与后续版本协作动作；E10 后人验仍须看证据确认。RLT_29 为当前新增执行目标；旧卡冻结状态不因本事件自动解冻。
 
 > **2026-09-20 执行覆盖说明 / Issue #52**：用户明确授权创建 Issue 并按 Linux Codex 最小闭环范围开工。RLT_13/#48、RLT_25/#49（含 A12 候选）、RLT_26/#50 已登记 on-hold；保留全部成果与原验收，不续派。其余旧未启动车暂缓，不改原合同。当前唯一新增执行目标 RLT_27；旧表“下一步”不构成续做授权。RLT_27 仅验证 Linux Codex light 路径，不替代 RLT_17 双主控完整验收。冻结记录在各原任务树 progress、A12 候选头部及三个 Issue；本工作树接力结果是新任务唯一运行权威，Windows 镜像不得与 ThinkPad 并发写同一工件。
 
 <!-- dh:plan-type: 开发 -->
-<!-- dh:planning-event:v1 id=RLT-B-09 stage=B-adjust artifact=dev_plan/P1-RelayLight-开发方案.md review=../design/evidence/13-交叉审核记录-single-task模式.md#review-rlt-b09 understanding=../design/evidence/13-交叉审核记录-single-task模式.md#understanding-rlt-b09 -->
+<!-- dh:planning-event:v1 id=RLT-B-10 stage=B-adjust artifact=dev_plan/P1-RelayLight-开发方案.md review=../design/evidence/14-交叉审核记录-RLT-A14-watch兜底watcher巡检.md#review-rlt-b10 understanding=../design/evidence/14-交叉审核记录-RLT-A14-watch兜底watcher巡检.md#understanding-rlt-b10 -->
 
-> **历史规划事件索引（B；非活动声明，仅作追溯）**——既有事件的原始可解析 `planning-event` 声明注释已转为本索引；出处、含义与证据路径保持原值，Git 历史中仍可还原。**本计划当前活动声明为上面的 `RLT-B-09`；RLT-B-08 保留为上一事件。RLT-B-09 只新增 RLT_29 与第 8 批，不自动解冻任何旧卡。**
+> **历史规划事件索引（B；非活动声明，仅作追溯）**——既有事件的原始可解析 `planning-event` 声明注释已转为本索引；出处、含义与证据路径保持原值，Git 历史中仍可还原。**本计划当前活动声明为上面的 `RLT-B-10`；RLT-B-09 保留为上一事件。RLT-B-10 只同步 RLT_18 的 H12 口径行，不新增任务、不改批次、不解冻任何旧卡。**
 >
 > | 事件 | stage | 证据（交叉审核记录） | 处理 |
 > |---|---|---|---|
@@ -20,6 +22,7 @@
 > | `RLT-B-06` | B-adjust | `../design/evidence/07-交叉审核记录-RLT05合同缺口候选.md#review-rlt-b06` / `#understanding-rlt-b06` | 转历史索引 |
 > | `RLT-B-07` | B-adjust | `../design/evidence/09-交叉审核记录-RLT-A08-Linux预演回流.md#review-rlt-b07` / `#understanding-rlt-b07` | 索引补登，非新事件 |
 > | `RLT-B-08` | B-adjust | `../design/evidence/12-RLT-B08-RLT25-RLT26-交叉审核.md#review-rlt-b08` / `#understanding-rlt-b08` | 当前事件追溯；该号曾于 A09 候选被提议用于 RLT_22 但未登记，本事件为首次正式使用 |
+> | `RLT-B-09` | B-adjust | `../design/evidence/13-交叉审核记录-single-task模式.md#review-rlt-b09` / `#understanding-rlt-b09` | 转历史索引 |
 >
 > 七条 A/B 旧事件（含 design 侧 `RLT-A-02`~`RLT-A-04`）的完整字段、替换缘由与本次确认来源见 [`../design/evidence/06-交叉审核记录-RLT03阶段合同补充.md`](../design/evidence/06-交叉审核记录-RLT03阶段合同补充.md)。
 <!-- dh:status
@@ -60,6 +63,8 @@
 - **RLT-B-08 调整**：2026-09-20 用户对六项推荐方案明文「确认」：采用 B-08 首次正式登记；normal 目标三路（代码轮1、需求方向、教训），RLT_25 等独立 A-adjust 整版确认并落盘；RLT_26 并入 RLT_22 F-010（trigger 四态、三套计数、stage_result 旧口径），授权 Issue #50 补范围备注；RLT_25 不作旧第 3 批硬前置，仅记风险；五处机械簿记问题修正；两卡正式落盘后由 Devin SWE-2 Max 在独立 worktree 启动 RLT_26。Issue #49/#50；审核 v2 PASS，证据见 [evidence/12](../design/evidence/12-RLT-B08-RLT25-RLT26-交叉审核.md#understanding-rlt-b08)。RLT_13 来源 findings 仍在未合入 `wt/RLT_13`，不代填其状态。实数校正：旧表已有 21 卡（旧统计漏 RLT_23/24），新增后为 23 卡，非候选沿用的 19→21。随后用户明文「做之前 代码先提交推送」授权本次规划 commit/push，先推送再施工；PR/合并/verify/用户级 skill 同步尚未授权。
 
 - **RLT-B-09 调整**：2026-09-22 基于已整版确认的 RLT-A-13，新增单验收单元卡 RLT_29 与第 8 批，承接 `HC-RL-A159`～`A168`、`HC-RL-H19`；标准档、高危组件接线、`task_type=heavy`。用户确认 batch review 与 final review 是两道独立闸、模式名 `single-task`，并给出 D-start 与后续版本协作批量授权；E10 后人验结论仍保留用户闸。三轮审核形成史与确认见 [evidence/13](../design/evidence/13-交叉审核记录-single-task模式.md#understanding-rlt-a13)。本事件不改变旧卡冻结状态。
+
+- **RLT-B-10 调整**：2026-09-24 基于已晋级的 RLT-A-14（用户整版确认见 evidence/14 §三），同步 RLT_18 验收口径 `HC-RL-H12` 行为契约 v2（watcher 10 分钟巡检）；不新增任务、不改批次、不改 A82/A83/A101、不解冻旧卡；活动总账仍 159。含 RLT_18 UD-2 允许路径追加行（`tools/relay-light/skill/SKILL.md`）的事件补登。fresh 窄审与用户确认见 [evidence/14 §四](../design/evidence/14-交叉审核记录-RLT-A14-watch兜底watcher巡检.md#understanding-rlt-b10)。
 
 ## 1. 概述
 
@@ -650,7 +655,7 @@ ThinkPad Linux Codex 最小闭环（Issue #52）。
   - **机器证**｜来源：design/01 + `HC-RL-A83`｜20 分钟 tick、无 watch 前台节拍与两层退出条件正确。
   - **机器证**｜来源：design/01 + `HC-RL-A101`｜watch 路径无任何写账调用。
   - **人判**｜来源：design/01 + `HC-RL-H11`｜用户判断 Claude/Codex 监工忙时 prompt 是否可靠。
-  - **人判**｜来源：design/01 + `HC-RL-H12`｜用户判断杀 watch 后 20 分钟兜底是否可接受。
+  - **人判**｜来源：design/01 + `HC-RL-H12`｜用户判断 watch 死亡后本终端空间 watcher 的 10 分钟巡检是否接住、10 分钟是否可接受（RLT-A-14 契约 v2：杀 watch 进程→展示 shell 重启循环自拉；关阶段级 / 编排级 watch 载体→展示 watcher 巡检时刻、`[relay-light] watch-down …` 通知与派活方重拉时刻；原 v1「杀 watch 后 20 分钟兜底」口径经 Git 历史可还原）。
 - **变更范围**：watch 子命令、打桩测试、仓内两个 adapter、两机四目标终局同步与本卡证据。
 - **允许路径**：<!-- dh:allowed-paths:v1 task=RLT_18 -->
   - `tools/relay-light/relay_log.py`

@@ -8,6 +8,7 @@
 - 档位：标准档 · 高危（组件接线）。
 - 候选稿：`design/drafts/A14/A14-候选.md`（C1b v2，358 行）；配套 `drafts/A14/brief.md`、`drafts/A14/issue-65-扩界.md`。候选稿与本记录留在 `drafts/` / `evidence/` 作形成史，不进 `designInputs[]`。
 - 方向来源（已由用户裁决，本审核不重评方向）：`workspace/RLT_18/decisions.md` UD-3、UD-5 Q1–Q6、UD-6 U-1/U-2；范围来源 `workspace/RLT_18/task_plan.md` §5.3。
+- RLT-B-10（B-adjust，目标 `dev_plan/P1-RelayLight-开发方案.md`）与本事件共用本记录，见 §四。
 - 本记录**不代表**用户整版确认、晋级、B-adjust、verify 或验收。
 
 <a id="review-rlt-a14"></a>
@@ -65,3 +66,35 @@ orchestrator（RLT_18 主会话）2026-09-24 在 fresh-01 PASS 且整改 1（`e7
 - 讲解要点（与候选稿对应）：①§2 角色表新增旁路 watcher，11→12 角色，每终端空间一个、10 分钟只读巡检、缺席报信本空间派活方重拉、不派活不写账不改文件不自拉，single-task monitor 不受影响（A-01/A-02）；②§7.3「watch 挂掉」三层——进程级循环自拉、载体级 watcher 发 `watch-down` 由派活方重拉、watcher 自身缺席由派活方对账顺带重拉，残余风险接受（A-03/A-05）；③编排不做 watch 存活对账，20 分钟 tick 只做通用对账，程序零改动，A82/A83/A101 不动（A-03/A-04）；④§2.1/§7.1 写明编排在自己空间拉 watcher 不算越级（C-01/C-02）；⑤H12 保号升契约 v2：判「watcher 10 分钟巡检是否接住、10 分钟是否可接受」，展示进程级自拉与阶段级/编排级 pane 被关后的发现、通知与重拉时刻（A-06）；⑥§13 不做清单措辞、头部声明换 RLT-A-14、历史索引与增补说明、验收总账仍 159（A-07、B 组）。
 - **用户整版确认**：2026-09-24 AskUserQuestion 问句原文「RLT-A-14 整版设计稿（上面 6 点）是否确认晒级进正式设计文档？」，用户点选选项「确认晒级」（问句与选项中「晒级」均为 orchestrator 笔误，指「晋级」；选项说明原文「按候选稿原样写进 design/01，然后 U1 改 adapter/SKILL（GREEN），再重演 H12 v2。」）。确认对象 = `drafts/A14/A14-候选.md` @ `e7c127d`。
 - 本节不代表 verify、验收或 RLT_18 完成；晋级、晋级复核与 DevPlan H12 口径行 B-adjust 仍按流程闸依次进行。
+
+## 四、RLT-B-10 · DevPlan RLT_18 H12 口径行同步（B-adjust）
+
+- 事件：`RLT-B-10`，stage = B-adjust；目标 `dev_plan/P1-RelayLight-开发方案.md`；依据 `workspace/RLT_18/decision.b10-devplan-h12.md`（decider#2，verdict=AUTO：dh check R29 与 Issue #65 流程闸共同决定须开最小 B 事件）。
+- 改动（仅 6 处簿记）：标题更新日期；头部 B-10 说明行；活动声明 B-09→B-10；说明句与历史索引补 B-09 行；RLT_18 验收口径 H12 行镜像 design/01 `HC-RL-H12` 契约 v2；§3.1 追加「RLT-B-10 调整」条目（含 UD-2 允许路径追加行事件补登）。不新增任务、不改批次、不改 A82/A83/A101、映射表与任务行不动。
+
+<a id="review-rlt-b10"></a>
+<!-- dh:planning-evidence:v1 event=RLT-B-10 artifact=dev_plan/P1-RelayLight-开发方案.md kind=review -->
+
+### fresh 窄审
+
+reviewer#b10（fresh，未参与 A-14 与 decision.b10）2026-09-24 按 `decision.b10-devplan-h12.md` §4 第 3 步清单窄审，只读核对工作树未提交草案（`git diff -- dev_plan/ evidence/14`），**verdict = PASS**，五条全过：
+
+| # | 检查项 | 结论 | 依据 |
+|---|---|---|---|
+| 1 | DevPlan H12 口径与 design/01 `HC-RL-H12` v2 三列语义一致 | PASS | DevPlan 新行（diff 后第 658 行）「用户判断 watch 死亡后本终端空间 watcher 的 10 分钟巡检是否接住、10 分钟是否可接受」镜像 design/01 第 1426 行判项列；演示列「杀 watch 进程→shell 重启循环自拉；关阶段级/编排级载体→watcher 巡检时刻、`[relay-light] watch-down …` 通知与派活方重拉时刻」对应 v2 演示①②；验收列「10 分钟是否可接受」一致；v1「20 分钟兜底」注明经 Git 历史可还原。 |
+| 2 | DevPlan 除 decision §4 第 1 步所列 6 处外零改动 | PASS | `git diff -U0` 恰 6 个 hunk：标题行日期（-1）、头部 B-10 说明行（+2 行）、活动声明 B-09→B-10（-8/+10）、说明句改写（-10/+12）、历史索引末追加 B-09 行（+25）、§3.1 追加「RLT-B-10 调整」（+67，2 行）、H12 行（-653/+658）；与清单 6 处一一对应，允许路径块（第 660 行）、映射表（第 827 行）、任务行（第 137 行）均无 hunk 触及。 |
+| 3 | 声明 / 证据 marker 的 event、artifact、锚点互指正确 | PASS | 声明 `id=RLT-B-10 stage=B-adjust artifact=dev_plan/P1-RelayLight-开发方案.md`，review/understanding 均指 `../design/evidence/14-…#review-rlt-b10` / `#understanding-rlt-b10`；evidence/14 §四两个 `<a id>` 锚点与两条 `dh:planning-evidence:v1` marker 的 event=RLT-B-10、artifact（精确等于声明值）、kind=review/understanding 逐项吻合；§一身份节已补「RLT-B-10 与本事件共用本记录，见 §四」。 |
+| 4 | 历史索引含 B-09 且 B-09 原证据路径未改 | PASS | 索引表末新增 `RLT-B-09` 行，证据列 `../design/evidence/13-交叉审核记录-single-task模式.md#review-rlt-b09` / `#understanding-rlt-b09`，与被替换的原活动声明路径逐字相同；evidence/13 第 37/47 行两锚点仍在。 |
+| 5 | `node dh-check.mjs relay-light` 无 R29 行且失败数 ≤77 | PASS | 实测输出 `合计: 77 失败, 37 警告`，全文 grep 无 `R29` / `EVENT_*` / `EVIDENCE_*` 行，回到 decision §2.1 所测基线。 |
+
+- findings：无 P0/P1/P2 发现。窄审范围仅为上表五条；DevPlan §3.1「RLT-B-10 调整」条目内「含 UD-2 允许路径追加行事件补登」一句与 decision §5 范围外观察一致，属登记性陈述，非本窄审判项。
+- 本窄审不代表用户确认（understanding 节待主会话问句回填）、不代表 verify 或验收。
+
+<a id="understanding-rlt-b10"></a>
+<!-- dh:planning-evidence:v1 event=RLT-B-10 artifact=dev_plan/P1-RelayLight-开发方案.md kind=understanding -->
+
+### 授权链与用户确认
+
+- 授权链：UD-5 Q1 选项文本（本卡同分支走 A-full，含 Issue #65 正文扩界）→ Issue #65「扩界记录」流程闸列明「原子晋级 design/01 → B-adjust DevPlan RLT_18 H12 口径行」→ UD-7 用户整版确认 A-14（确认说明含「再重演 H12 v2」）。
+- 用户当次确认（2026-09-24，orchestrator 主会话 AskUserQuestion）：问句原文「RLT-A-14 已晒级。现在按 Issue #65 流程闸最后一步开 RLT-B-10，只把 DevPlan RLT_18 的 H12 验收口径行从『杀 watch 后 20 分钟兜底』改成与 design/01 一致的『watcher 10 分钟巡检』契约 v2，不动任务、批次和机器证。是否确认落盘？」（「晒级」为 orchestrator 笔误，指「晋级」）；用户点选「确认落盘（推荐）」，选项说明原文「按 fresh 窄审通过的草案提交（共 6 处簿记改动，dh check 已验无报错）。」
+- 本节不代表 verify、验收或 RLT_18 完成。

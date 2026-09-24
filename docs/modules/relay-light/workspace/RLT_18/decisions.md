@@ -55,3 +55,8 @@
 
 - orchestrator 主会话白话讲解候选稿 6 点后，AskUserQuestion 用户点选「确认晒级」（orchestrator 选项笔误，指晋级）。确认对象 `design/drafts/A14/A14-候选.md` @ `e7c127d`。已记入 `design/evidence/14-…` understanding 节。
 - 后续：晋级 design/01（coder，照抄候选稿）→ 晋级复核（fresh）→ DevPlan RLT_18 H12 口径行 B-adjust（orchestrator）；U1 GREEN 前置已满足。
+
+## UD-8 · RLT-B-10 DevPlan H12 口径行同步（2026-09-24）
+
+- decider#2 `decision.b10-devplan-h12.md` verdict=AUTO：开最小 B-adjust 事件 RLT-B-10（只改 DevPlan 6 处簿记，证据挂 evidence/14 §四）。
+- 用户当次确认：AskUserQuestion 问句原文「RLT-A-14 已晒级。现在按 Issue #65 流程闸最后一步开 RLT-B-10，只把 DevPlan RLT_18 的 H12 验收口径行从『杀 watch 后 20 分钟兜底』改成与 design/01 一致的『watcher 10 分钟巡检』契约 v2，不动任务、批次和机器证。是否确认落盘？」（「晒级」为 orchestrator 笔误，指「晋级」），用户点选「确认落盘（推荐）」。
