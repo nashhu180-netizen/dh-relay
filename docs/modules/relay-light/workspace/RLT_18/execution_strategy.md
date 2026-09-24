@@ -20,6 +20,7 @@
 | orchestrator | 主会话（不在确认表） | — | rlt18-orch | w4B:t1 / w4B:p1 | — | observed |
 | monitor | Devin SWE-2 | medium | rlt18-monitor（monitor#1） | w4B:t2 / w4B:p3 | 2026-09-23 确认；实际 argv=`devin --model swe-2-medium --permission-mode dangerous`（gate 前已启动，见上节） | confirmed-observed |
 | builder | Claude Opus 5.5 | medium | rlt18-builder（builder#1） | w4B:t3 / w4B:p2 | 2026-09-23 确认；实际 argv=`claude --model claude-opus-5-5 --effort medium --dangerously-skip-permissions`（gate 前已启动，切换后 `/clear` 再派）；plan 阶段 DONE.builder.md 已交；plan-review round 3 PASS 后于 batch 全部 PASS 时关闭 tab | confirmed-observed-closed |
+| builder | Claude Opus 5.5 | medium | rlt18-ud3-builder（builder#ud3，UD-3 整改计划） | w4B:t1B / w4B:p1B | builder 角色既有确认；实际 argv=`claude --model claude-opus-5-5 --effort medium --dangerously-skip-permissions`，Herdr 配置已核对；UD-3（`a6773e7`）后派 | confirmed-observed |
 | plan-reviewer | Claude Opus 5.5 | medium | rlt18-plan-reviewer（plan-reviewer#1） | w4B:t4 / w4B:p4 | 2026-09-23 确认；实际 argv=`claude --model claude-opus-5-5 --effort medium --dangerously-skip-permissions`，Herdr 配置已核对；plan 阶段结束，batch 全部 PASS 时关闭 tab | confirmed-observed-closed |
 | batch reviewer | Devin SWE-2 | Max | 每批一个 | 待 Herdr 返回 | 2026-09-23 用户修改为 SWE-2 Max；未启动 | confirmed-pending |
 | batch reviewer | Devin SWE-2 | Max | rlt18-b1-reviewer（batch-reviewer#b1） | w4B:t7 / w4B:p7 | 同上确认；实际 argv=`devin --model swe-2-max --permission-mode dangerous`，Herdr 配置已核对；DONE.batch-1.coder（`4b4b95c`）后派审；durable PASS 后单次 `/clear` 并复验为新 session（revision=5），随后关闭 tab | confirmed-observed-cleared-closed |
