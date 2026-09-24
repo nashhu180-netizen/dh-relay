@@ -44,3 +44,42 @@ grep -rn stage-stalled tools/（除 adapter 与 test_relay_log.py）            
 
 - master 已合入 #67（`13d477b`，只改 SKILL.md 第 3、8–20 行）。本卡分支基线仍是 `5ab3bba`；收口 PR 前需决定 rebase 与否，同时 §1.1 系列以 `origin/master` 为基的审计命令都受这次漂移影响。只登记，不处理。
 - F-010（watcher 派单首行不在 AGENTS.md 宪章层）与 F-011（design 角色表缺 watcher / roles.toml 无 `[watcher]`）登记准确；F-011 的 design 侧应随 RLT-A-14 一并闭合，包括表头「十一个角色」。
+
+## 复审 round 2
+
+- 角色：plan-reviewer#ud3 · review_round=2 · remediation_count=1
+- 对象：整改提交 `25b3146`（task_plan §5 + findings F-012）、`DONE.builder.ud3-plan-remediation-1.md`、`decisions.md` UD-5、`dispatch/README.md`（`dc3e6a4` 登记）
+- RELAY_RECEIPT preflight = 0
+- §0–§4 字节未动：`25b3146` 的 task_plan hunk 全在第 205 行之后（§5 标题在第 204 行）
+
+### 结论 PASS
+
+round 1 的两条 P1 已闭合；8 条 P2 已落实；§5 与 UD-5 一致；没有新 P1。下面 3 条新 P2 建议 U1 施工时顺手处理，或由 code-round1 盯住，不阻塞。
+
+### round 1 项闭合核对
+
+| round 1 # | 级别 | 闭合 | 依据 |
+|---|---|---|---|
+| #9 R-U3-1 与编排位文案冲突 | P1 | 已闭合。否定项改为 `stage-stalled`/`pgrep`/`Win32_Process`，并正向断言含「不做 watch 存活判定」。RED 核对：a6773e7 版编排位 tick 句含 `stage-stalled`（adapter-claude-code.md:114）→ FAIL；按 §5.4(2)c 文案 → GREEN | task_plan §5.4(4) R-U3-1 |
+| #11 §1.1 审计以浮动 origin/master 为基 | P1 | 已闭合。U1/U2 审计与 SKILL hunk 判据全部钉 `5ab3bba`（实测当前对 `5ab3bba` = 3 hunk，§5.4(3) 期望 = 3，一致）；README 已登记审计基点；F-012 登记 #67 漂移与 rebase 归属 | §5.4(3)、§5.5-3/5/9；findings F-012 |
+| #2 D18「同源」措辞 | P2 | 已落实：改为「与 `_watch_should_exit` 一致，另加 stage 已 closed 即静默」 | D18 |
+| #3 D16 两侧写法 | P2 | 已落实：Claude 侧只保留 `run_in_background`，断言不含 `sleep 590`；Codex 侧显式 `timeout_ms=660000`，U2 前做 600 s 节拍实测，断拍即 BLOCKED | D16、§5.4(2) 验收、§5.6 节拍实测 |
+| #6 有意无 watch 时无限报信 | P2 | 已落实：选「连续 3 轮后 `WATCHER_GAVE_UP` 收声」，D18/D19 计数口径一致（第 4 次检查仍缺席即收声，约 30 分钟）。留有新缺口，见下 N-2 | D18、D19 |
+| #7 表头「十一个角色」、Issue 正文授权 | P2 | 已落实：§5.3 加表头改动，并注明 design/01:299 的 roles.toml 段数句不随表头改；Issue #65 正文扩界的授权来源写为 UD-5 Q1 选项文本，且只及这一项，不外推到 push/PR/合并 | §5.3 |
+| #8 SKILL 第 40 行前半句 | P2 | 已落实：职责列整列按模式分述，仍在第 40 行内、单 hunk；`watcher_row` 加「不含 `只盯 agent 状态变化、只报信`」。5ab3bba 上三项全假（已核：无「完整 relay 模式：」、含「不做 watch 推送的实现」、无「有 watch 时允许结束回合」），「至少两条为假」成立 | §5.4(3)、§5.4(4) |
+| #10 R-U3-5 非 RED；`line_with` 劫持 | P2 | 已落实：R-U3-5 改为「adapter 片段含键名（RED）+ status 真实键（守卫）」，已核 a6773e7 两份 adapter 的 `open_stages\|pending_nodes` 命中数均为 0 → RED 成立；新片段禁用「完全只读」与「`RELAY_RECEIPT` fail closed 分流」两个短语，并写进 R-U3-2 | §5.4(2)a、§5.4(4) |
+| #12 signal 名 / 轮次 | P2 | 已落实（orchestrator 在 README 登记，§5.5 引用） | §5.5 处理口径 |
+| #13 H12 最坏情况与 kind | P2 | 已落实：H12-A 在检查后 ≤30 秒关（接近 10 分钟上界），H12-B 在检查前 1–2 分钟关（对照）；watcher-s 用 Claude、watcher-o 用 Codex，未实测的组合如实登记 | §5.6 |
+| #14 遗漏的待用户项 | P2 | 已落实：Issue 授权、两侧覆盖、收声规则分别落位；收声作为小决策，没有上交用户 | §5.7 末段 |
+
+### 与 UD-5 一致性
+
+Q1–Q6 逐条落进 D15/D17/D22/D23/§5.3/§5.6，§5.7 改为裁决索引，没有残留「推荐/待定」措辞与裁决冲突；§5.6 的探针模型档是交 orchestrator 走 model-allocation gate 的**提案**，写明「未确认不得启动」，不构成代拍。一致。
+
+### 新发现（均 P2，不阻塞）
+
+| # | 问题 | 级别 | 依据 | 建议 |
+|---|---|---|---|---|
+| N-1 | R-U3-1 以「至首个 `。`」截句，而 §5.4(2)c 规定的编排位文案在同一句内用「；」接上「收到 `watch-down plan plan` 时核自己这一层 watch（…同 C1-1 写法）」。如果 coder 在该分句里内联写出 plan 级 `pgrep` 命令（D18 要求两式命令都完整出现，coder 很可能就近写），R-U3-1 会误报 FAIL | P2 | §5.4(2)c 编排位条、§5.4(4) R-U3-1 | 截句改为「至首个 `；` 或 `。`」；或在 §5.4(2)c 注明编排位分句只写「同 C1-1 写法」、不内联命令 |
+| N-2 | `WATCHER_GAVE_UP` 后 watcher **永久停巡**。派活方随后重新起 watch（例如结束前台 wait 回退、修好确定性错误）时，本空间已没有巡检；而 D22「见 watcher 缺席才重拉」不覆盖这种情况，因为收声的 watcher 仍在 `herdr agent list` 里。载体级兜底会就此悄悄失效 | P2 | D18 收声条、D19、D22 | 二选一：①收声只停报信、不停巡检，watch 重新出现即计数清零、恢复正常巡检（推荐：对 D19「恢复则计数清零」是自然延伸，派活方无新增动作）；②adapter 写明派活方重起 watch 时若本空间 watcher 已打印 `WATCHER_GAVE_UP`，则重拉 watcher。选定后同步 R-U3-2 断言 |
+| N-3 | U1 路径审计第 3 条（`git log a6773e7..HEAD -- design/ dev_plan/ \| grep -v "RLT-A-14\|A14\|B-adjust"` 期望空）会把 orchestrator 合法的 DevPlan 任务行提交（README 允许 orchestrator 写第 137 行状态列）当成违规。当前 `a6773e7..HEAD` 无此类提交，所以现在是空，但收口/状态变更时会机械误报 | P2 | §5.5-3 路径审计第 3 条；dispatch/README.md「仅 orchestrator 可写」 | grep 放行 orchestrator 的任务行提交（例如约定其提交主题含 `task-row`），或该条只审 design/ 与 DevPlan 中 RLT_18 段 H12 口径行以外的 hunk |
