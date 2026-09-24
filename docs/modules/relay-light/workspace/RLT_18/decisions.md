@@ -33,3 +33,11 @@
 - 用户原话：「H11 接受，后台 watch 可以」。
 - 含义：监工忙时 watch 推送排队不丢的实测结论接受，不退回前台循环；F-008（多发）与 codex 首通 pane 不可见作为知悉项保留登记，不阻塞。
 - 已逐字转录进 `evidence/batch-3/H11-claude.md`、`H11-codex.md`「人判结论」节。
+
+## UD-5 · UD-3 整改计划待用户项裁决（2026-09-24）
+
+用户对 `task_plan.md` §5.7 AskUserQuestion 点选：
+- Q1 设计改动流程：**本卡同分支走 A-full（RLT-A-14）**——Issue #65 正文扩界、`design/drafts/A14/` 候选稿、fresh A 审核、用户整版确认后晋级 design/01，与代码同一 PR 收口。
+- Q3 20 分钟 tick：**只取消存活检查**——程序 tick 与 §7.2 通用对账保留，程序零改动，A83 不改。
+- Q2 watcher 粒度：**每终端空间一个**。
+- Q4/Q5/Q6：**全部按推荐**——watcher 自身缺席由派活方对账时顺带重拉、不设二级兜底；watcher 低档、缺省沿用 roles.toml `[monitor]` 档、roles.toml 不改；H12 重演 = H12-A（阶段级载体被关）+ H12-B（编排级载体被关）并行，不缩短 10 分钟节拍，H12-① 引用 batch-3 既有证据，H12-C 不做。
