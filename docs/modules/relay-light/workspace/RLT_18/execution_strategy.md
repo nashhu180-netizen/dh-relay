@@ -35,6 +35,10 @@
 | probe（batch 3 实测） | GPT-5.6 Sol | low | rlt18-probe-lead-codex（扮 stage-lead，H11 Codex 侧） | 同上 | 同上；指定 argv=`codex -m gpt-5.6-sol -c model_reasoning_effort=low --dangerously-bypass-approvals-and-sandbox` ；batch 3 由 coder#b3 按该 argv 拉起、实测后关闭（batch-3 reviewer 核验零残留） | confirmed-observed-closed |
 | probe（batch 3 实测） | Devin SWE-2 | medium | rlt18-probe-worker（扮在场 worker） | 同上 | 同上；指定 argv=`devin --model swe-2-medium --permission-mode dangerous` ；batch 3 由 coder#b3 按该 argv 拉起、实测后关闭（batch-3 reviewer 核验零残留） | confirmed-observed-closed |
 | probe（batch 3 实测） | Claude Sonnet 5 | low | rlt18-probe-orch（扮编排，H12-②） | 同上 | 同上；指定 argv=`claude --model claude-sonnet-5 --effort low --dangerously-skip-permissions` ；batch 3 由 coder#b3 按该 argv 拉起、实测后关闭（batch-3 reviewer 核验零残留） | confirmed-observed-closed |
+| probe（RQ-1 复演） | Devin SWE-2 | medium | rlt18-probe2-lead（扮 stage-lead，按 claude adapter 文本执行存活核） | 由复演 coder 拉起 | 2026-09-24 用户答复「按你的推荐走…全部用 devin swe-2」；指定 argv=`devin --model swe-2-medium --permission-mode dangerous` | confirmed-pending |
+| probe（RQ-1 复演） | Devin SWE-2 | medium | rlt18-probe2-worker（扮在场 worker） | 同上 | 同上 | confirmed-pending |
+| probe（RQ-1 复演） | Devin SWE-2 | medium | rlt18-probe2-orch（扮编排） | 同上 | 同上 | confirmed-pending |
+| coder | Devin SWE-2 | Max | RQ-1 复演 coder（待 consistency 返工闭合后拉起） | 待 Herdr 返回 | coder 角色既有确认 | confirmed-pending |
 | decider | Claude Fable 5.1 | medium | rlt18-decider（decider#1） | w4B:t5 / w4B:p5 | 2026-09-23 确认；实际 argv=`claude --model claude-fable-5-1 --effort medium --dangerously-skip-permissions`，Herdr 配置已核对；因 BLOCKED.builder.plan-remediation-1（F-007）拉起 | confirmed-observed |
 | workflow-final reviewer | Devin SWE-2 | Max | 每路每轮 fresh | 待 Herdr 返回 | 2026-09-23 确认；未启动 | confirmed-pending |
 | workflow-final reviewer | Devin SWE-2 | Max | rlt18-wf-code1-r1（code-round1，review round 1，fresh） | w4B:tM / w4B:pM | 同上确认；实际 argv=`devin --model swe-2-max --permission-mode dangerous`，Herdr 配置已核对；三批全部 PASS 后派；r1 FAIL 产出后关闭 tab（下一轮须 fresh） | confirmed-observed-closed |
