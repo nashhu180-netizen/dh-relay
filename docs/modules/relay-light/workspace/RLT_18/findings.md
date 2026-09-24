@@ -34,3 +34,10 @@ task_plan §2 D1～D11 为本计划对 design §3.6 未冻结机制的解读，�
 builder 观察（不是裁决）：A 和 D 不改 design 字面；B、C 属设计语义变更，需走 A-adjust 或用户确认。无论选哪项，task_plan 的 H12 探针（kill 后零提示原样观察）都不变。
 
 > 2026-09-24 追记：上方「F-007 裁决选项」表为裁决前的候选留痕，不回写；实际裁决为 UD-1 选项 F（自动重启 + B′），不在原 A–D 之列。
+
+## UD-3 整改计划新增（2026-09-24 builder#ud3）
+
+| ID | 级别 | 问题 | 证据 | 处理 | 状态 |
+|---|---|---|---|---|---|
+| F-010 | 信息（范围外） | AGENTS.md「relay-light 编排协议段」只定义 worker 派单标头 `[relay-light] worker · node=…`；UD-3 在完整 relay 重新引入常驻 watcher agent，其派单首行（task_plan D23 `[relay-light] watcher · space=… · notify=… · plan=…`）无宪章层判定条款。 | AGENTS.md relay-light 段；task_plan §5.2 D23 | AGENTS.md 不在允许路径，本卡不改；随 RLT-A-14 或后续宪章维护处理 | 已登记 |
+| F-011 | 信息（范围外，既有缺口） | design/01 §2 角色表 11 角色无 watcher，SKILL 角色表自 #62 起有 watcher 行（12 角色）；SKILL 第 25 行「模型档全部写在 `roles.toml`」而 roles.toml 无 `[watcher]` 段。UD-3 让 watcher 在完整 relay 常驻，缺口由潜在变为实际。 | design/01 约 121–135；SKILL.md:25、:40；roles.toml | design 侧并入 RLT-A-14（task_plan §5.3）；模型档交用户（§5.7 Q5） | 已登记 |
