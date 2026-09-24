@@ -5,15 +5,15 @@
 
 ## 布置
 
-- 07:57:5x 阶段级 watch 启动；启动即向 lead-codex 推送 `[relay-light] coder#1 -> done`（worker 当时 done）。
+- 07:57:5x 阶段级 watch 启动；启动即向 lead-codex 推送 `[relay-light] coder#1 -> done`（worker 当时 done）。**该首通在已存 pane 快照（pane-lead-codex-0809.txt，自 banner 起完整）的转写中不可见**——ack（7:53 AM，第 28 行）与第一条 sleep prompt（第 31 行）之间无通知行；其送达/处理情况无 pane 原文可核。
 - 08:06:22 向 worker 发 `TASK: sleep 150 && echo WORKER_WAKE`；向 lead-codex 发 `Run this exact shell command once: sleep 240 && echo LEAD_CODEX_WAKE2. Then reply with just the command output.`（此前 07:58:49 已发过一条同形 sleep 240）。
-- 轮询记录（raw/agent-status-poll.log）：worker `working` 08:06:28→08:08:50，`done` 自 08:09:10；lead-codex `working` 08:06:28→08:12:14 前后。
+- 轮询记录（raw/agent-status-poll.log）：worker `working` 08:06:28→08:08:50，`done` 自 08:09:10；lead-codex `working` 08:06:28→08:10:12，`done` 自 08:10:32。
 
 ## 关键观测（时刻 → 内容）
 
 - ~08:08:5x–08:09:0x：worker done → h11-codex watch 的 wait 返回 → 向 lead-codex 发 `[relay-light] coder#1 -> done`。
-- 08:09:5x pane 读（raw/pane-lead-codex-0809.txt）：lead-codex 正显示 `Waiting for background terminal (3m 14s • esc to interrupt)`（其 sleep 240 前台等待中），转写内顺序为 `› Run this exact shell command once: sleep 240 …` → `› [relay-light] coder#1 -> done` → `• Ran sleep 240 && echo LEAD_CODEX_WAKE2`（8:10 完成）——通知在忙碌等待期间到达并留存在转写中，未被丢弃。
-- 08:15:59 pane 读（raw/pane-lead-codex-0809.txt 同段后文）：第二条 `› [relay-light] coder#1 -> done` 位于两条 sleep 任务条目之间；codex 侧忙碌期收到的消息按序呈现。
+- 08:09:58 pane 快照（raw/pane-lead-codex-0809.txt）：lead-codex 正显示 `Waiting for background terminal (3m 35s • esc to interrupt)`（第 49 行，其 sleep 240 等待中），转写内顺序为 `› Run this exact shell command once: sleep 240 …`（第 42 行）→ `› [relay-light] coder#1 -> done`（第 46 行）→ `• Waiting for background terminal`（第 49 行）——通知在忙碌等待期间到达并留存在转写中，未被丢弃。快照时刻该 sleep 仍在等待；其完成与 `• Ran … LEAD_CODEX_WAKE2` 行未见于本快照（poll 08:10:32 起 codex=done，完成时刻据 poll 介于 08:10:12–08:10:32，pane 原文未保存）。
+- 08:15:59 另一次 pane 读曾见第二条 `› [relay-light] coder#1 -> done` 位于两条 sleep 条目之间；**该次 pane 原文未保存**，现存快照内 `› [relay-light]` 仅此一条（第 46 行）。「第二条通知」的来源（h11-codex 重发 / 去重缺口 / 其它）同样未定，与 H12.md 中间观测及 findings 待复核项同源。
 
 ## 附带观测（不作判定）
 
