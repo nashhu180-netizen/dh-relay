@@ -1,6 +1,8 @@
 <!-- dh:v1 · RLT-A-14 · Issue #65 正文扩界拟文（未生效；由 orchestrator 编辑 Issue，builder 不碰 gh） -->
 # Issue #65 正文扩界拟文（RLT-A-14）
 
+> **已由 orchestrator 于 2026-09-24 落进 Issue #65 正文（C 组采纳、U-2 定 v2）**——见 `workspace/RLT_18/decisions.md` UD-6；下文为当时拟文，保留作形成史。
+
 **使用说明（给 orchestrator）**：
 
 1. 授权：UD-5 Q1 用户点选的选项文本含「Issue #65 正文扩界」——只授权**编辑 Issue #65 正文**这一项远端动作，不外推到 push / PR / 合并。
