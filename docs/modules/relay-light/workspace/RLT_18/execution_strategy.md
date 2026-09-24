@@ -47,8 +47,8 @@
 | workflow-final reviewer | Devin SWE-2 | Max | rlt18-wf-requirement-r1（requirement，review round 1，fresh） | w4B:tR / w4B:pR | 同上确认；实际 argv=`devin --model swe-2-max --permission-mode dangerous`，Herdr 配置已核对；code-round1 闭合后四路并发派（派单停在输入框，orchestrator 单次补 enter 后确认 working）；r1 产出后关闭 tab | confirmed-observed-closed |
 | workflow-final reviewer | Devin SWE-2 | Max | rlt18-wf-consistency-r1（consistency，review round 1，fresh） | w4B:tQ / w4B:pQ | 同上确认；实际 argv=`devin --model swe-2-max --permission-mode dangerous`，Herdr 配置已核对；code-round1 闭合后四路并发派（派单停在输入框，orchestrator 单次补 enter 后确认 working）；r1 产出后关闭 tab | confirmed-observed-closed |
 | workflow-final reviewer | Devin SWE-2 | Max | rlt18-wf-lesson-r1（lesson，review round 1，fresh） | w4B:tS / w4B:pS | 同上确认；实际 argv=`devin --model swe-2-max --permission-mode dangerous`，Herdr 配置已核对；code-round1 闭合后四路并发派（派单停在输入框，orchestrator 单次补 enter 后确认 working）；r1 产出后关闭 tab | confirmed-observed-closed |
-| workflow-final reviewer | Devin SWE-2 | Max | rlt18-wf-consistency-r2（consistency，review round 2，fresh） | w4B:tW / w4B:pW | 同上确认；实际 argv=`devin --model swe-2-max --permission-mode dangerous`，Herdr 配置已核对；返工 `4c3eef5` 后派 | confirmed-observed |
-| E2 code reviewer | Devin SWE-2 | Max | attempt 1 fresh | 待 Herdr 返回 | 2026-09-23 确认；未启动 | confirmed-pending |
+| workflow-final reviewer | Devin SWE-2 | Max | rlt18-wf-consistency-r2（consistency，review round 2，fresh） | w4B:tW / w4B:pW | 同上确认；实际 argv=`devin --model swe-2-max --permission-mode dangerous`，Herdr 配置已核对；返工 `4c3eef5` 后派；r2 PASS（`6d9f98f`）后关闭 tab | confirmed-observed-closed |
+| E2 code reviewer | Devin SWE-2 | Max | rlt18-e2-review（e2-reviewer#1，attempt 1 fresh；仅 open P0/P1 时同 session targeted attempt 2） | w4B:t13 / w4B:p13 | 2026-09-23 确认；实际 argv=`devin --model swe-2-max --permission-mode dangerous`，Herdr 配置已核对；workflow-final 五路全 PASS 后派 | confirmed-observed |
 
 权限：用户指示全部最大（claude `--dangerously-skip-permissions`、devin `--permission-mode dangerous`）。最大工具权限不扩张 commit/push/PR/merge/verify/人验授权。
 
