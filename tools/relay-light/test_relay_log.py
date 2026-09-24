@@ -5592,22 +5592,30 @@ class SkillCoreDocTests(unittest.TestCase):
 
     @staticmethod
     def _skill_ud2_checks(text: str) -> list[bool]:
-        """三条 UD-2 断言的布尔化：当版全真，5ab3bba 基线至少两条为假。"""
+        """三条 UD-2/UD-3 断言的布尔化：当版全真，5ab3bba 基线至少两条为假。"""
         watcher_row = all(
-            frag in text for frag in ("完整 relay 模式由", "single-task", "120 秒")
-        )
+            frag in text
+            for frag in ("完整 relay 模式：", "10 分钟", "single-task", "120 秒")
+        ) and "只盯 agent 状态变化、只报信" not in text
         rule8 = "有 watch 时允许结束回合" in text
-        abandon5 = "盯屏" in text and "不做 watch 推送的实现" not in text
+        abandon5 = (
+            "盯屏" in text
+            and "不做 watch 推送的实现" not in text
+            and "停滞对账由其本层 watch tick 驱动" not in text
+        )
         return [watcher_row, rule8, abandon5]
 
     def test_a83_13_skill_ud2_wording(self) -> None:
         """UD-2：watcher 行改写、硬规则 8、放弃项 5——三处收口措辞在文档层钉住；
-        同套断言在 5ab3bba 版 SKILL.md 上至少两条 FAIL（RED 有效）。"""
+        UD-3 起 watcher 行改为分模式表述并含 10 分钟巡检、放弃项不再把
+        停滞对账挂在 watch tick 上；同套断言在 5ab3bba 版 SKILL.md 上至少
+        两条 FAIL（RED 有效）。"""
         text = self.skill_text()
         self.assertEqual([True, True, True], self._skill_ud2_checks(text))
         self.assertNotIn("watch 未实现", text)
         self.assertNotIn("不做 watch 推送的实现", text)
         self.assertNotIn("空闲上报", text)
+        self.assertNotIn("人肉实例退役", text)
         baseline = fetch_baseline_text("tools/relay-light/skill/SKILL.md")
         if baseline is None:
             self.fail(
@@ -5619,6 +5627,15 @@ class SkillCoreDocTests(unittest.TestCase):
         self.assertGreaterEqual(
             self._skill_ud2_checks(baseline).count(False), 2
         )
+
+    def test_r_u3_4_skill_ud3_watcher_wording(self) -> None:
+        """R-U3-4（UD-3）：SKILL 两处定稿措辞——watcher 行分模式表述含
+        10 分钟巡检与 single-task 120 秒原职责；放弃项改「不做人肉盯屏」，
+        watch 存活由 watcher 巡检兜底、编排不做存活对账。旧措辞整词退场。"""
+        text = self.skill_text()
+        self.assertEqual([True, True, True], self._skill_ud2_checks(text))
+        self.assertNotIn("人肉实例退役", text)
+        self.assertNotIn("停滞对账由其本层 watch tick 驱动", text)
 
 
 class SkillTemplateTests(RelayCliTestCase):
@@ -6280,7 +6297,7 @@ class SkillTemplateTests(RelayCliTestCase):
         self.add_ok("cancelled", node="X1", agent="coder#1", note="引用 user_decision 停卡")
 
 
-class SkillAdapterTests(unittest.TestCase):
+class SkillAdapterTests(RelayCliTestCase):
     """RLT_07 Batch 3 — HC-RL-A21/A26/A27/A136/A12 adapter 合同。"""
 
     ADAPTER_SIDES = {
@@ -6294,6 +6311,28 @@ class SkillAdapterTests(unittest.TestCase):
             name: (SKILL_DIR / "references" / name).read_text(encoding="utf-8")
             for name in cls.ADAPTER_SIDES
         }
+
+    @staticmethod
+    def _section(text: str, heading_substr: str, name: str) -> str:
+        """Return the section whose heading contains ``heading_substr`` — from the
+        heading line to the next heading of the same or higher level (loud fail
+        when absent, so a missing section is a RED/FAIL not a silent pass)."""
+        lines = text.splitlines()
+        for i, line in enumerate(lines):
+            stripped = line.lstrip()
+            if stripped.startswith("#") and heading_substr in line:
+                level = len(stripped) - len(stripped.lstrip("#"))
+                end = len(lines)
+                for j in range(i + 1, len(lines)):
+                    head = lines[j].lstrip()
+                    if (
+                        head.startswith("#")
+                        and len(head) - len(head.lstrip("#")) <= level
+                    ):
+                        end = j
+                        break
+                return "\n".join(lines[i:end])
+        raise AssertionError(f"{name}: no section headed by {heading_substr!r}")
 
     # pgrep/Get-CimInstance 的 -like 模式行只是匹配模板、不是真实调用——
     # 不纳入 --config-dir 检查面（P2-C：存活检查行允许不含 --config-dir）。
@@ -6422,7 +6461,20 @@ class SkillAdapterTests(unittest.TestCase):
         self.assertIn("[relay-light] tick", text, name)
         self.assertIn("--timeout 1200000", text, name)
         self.assertIn("herdr=", text, name)
-        self.assertIn("stage-stalled", text, name)
+        # UD-3：编排不再承担 watch 存活对账——stage-stalled 规则与「依赖人工」
+        # 整词退场（§7.3 只出现在被删句，随之消失，不另加否定断言）。
+        self.assertNotIn("stage-stalled", text, name)
+        self.assertNotIn("依赖人工", text, name)
+        self.assertIn("编排不承担 watch 存活对账", text, name)
+        # watcher 兜底（D15/D16/D18/D19）：watch-down 两式通知、10 分钟节拍、
+        # sleep 600 定时、缺席期 3 轮收声的两个终止记号、queued 补 Enter 条件。
+        self.assertIn("[relay-light] watch-down stage <stage_id>", text, name)
+        self.assertIn("[relay-light] watch-down plan plan", text, name)
+        self.assertIn("10 分钟", text, name)
+        self.assertIn("sleep 600", text, name)
+        self.assertIn("WATCHER_STOPPED", text, name)
+        self.assertIn("WATCHER_GAVE_UP", text, name)
+        self.assertIn("queued", text, name)
         # P2-C + C1-1：stage-lead 存活检查带 --notify + --level stage——编排级
         # watch 命中不算；且必须排除调用壳自匹配：pgrep -af 丢含 pgrep 与
         # $$/$PPID 的行（裸 pgrep -f 会命中包装壳自身出幻 PID，H12-② 实测）；
@@ -6433,14 +6485,29 @@ class SkillAdapterTests(unittest.TestCase):
             text,
             name,
         )
+        # UD-3 起同法要求 --level plan 式（watcher 巡检编排级 watch 与编排位
+        # 自查用）；新增检查命令行仍带 _PATTERN_LINE_MARKERS 标记，不进
+        # _relay_log_calls 的 --config-dir 检查面。
+        self.assertRegex(
+            text,
+            r"pgrep -af -- 'relay_log\.py watch --plan <plan_dir> "
+            r"--notify <[^'\n]+> --level plan'",
+            name,
+        )
         self.assertIn("grep -v 'pgrep'", text, name)
         self.assertIn("^($$|$PPID)", text, name)
         self.assertNotIn("pgrep -f -- 'relay_log.py watch", text, name)
         self.assertIn("Win32_Process", text, name)
         self.assertIn("-notlike '*Get-CimInstance*'", text, name)
         self.assertIn("$_.ProcessId -ne $PID", text, name)
-        self.assertIn("依赖人工", text, name)
-        self.assertIn("§7.3", text, name)
+        # Win32_Process 两式：stage 式在上，plan 式以 -like 模式 `--level plan*` 落笔。
+        self.assertIn("--level plan*'", text, name)
+        # D16 两侧写法分叉：Claude 后台 run_in_background 挂 sleep 600；
+        # Codex 前台 sleep 600 + 显式工具超时 timeout_ms=660000。
+        if name == "adapter-claude-code.md":
+            self.assertIn("run_in_background", text, name)
+        else:
+            self.assertIn("timeout_ms=660000", text, name)
         # D13：watch 跑 pane 内 shell 重启循环，非直接进程
         self.assertIn("while :; do", text, name)
         self.assertIn("0|2|3|4) break", text, name)
@@ -6535,6 +6602,134 @@ class SkillAdapterTests(unittest.TestCase):
         finally:
             carrier.terminate()
             carrier.wait(timeout=5)
+
+    def test_r_u3_1_orchestrator_slot_no_watch_liveness_reconcile(self) -> None:
+        """R-U3-1（UD-3/D14③/D17）：编排位「收到 `[relay-light] tick`」所在句
+        （至首个 `。`）只做 §7.2 通用对账——不含 stage-stalled / pgrep /
+        Win32_Process 任何存活判定，且正向写明 `不做 watch 存活判定`。"""
+        for name in self.ADAPTER_SIDES:
+            text = self._adapter_texts()[name]
+            with self.subTest(adapter=name):
+                marker = "**编排位**"
+                self.assertIn(marker, text, name)
+                chunk = text[text.index(marker):]
+                tick = "收到 `[relay-light] tick`"
+                self.assertIn(tick, chunk, name)
+                start = chunk.index(tick)
+                end = chunk.find("。", start)
+                self.assertNotEqual(-1, end, name)
+                sentence = chunk[start:end]
+                for banned in ("stage-stalled", "pgrep", "Win32_Process"):
+                    self.assertNotIn(banned, sentence, f"{name}: {sentence}")
+                self.assertIn(
+                    "不做 watch 存活判定", sentence, f"{name}: {sentence}"
+                )
+
+    def test_r_u3_2_watcher_dispatch_fragment_complete(self) -> None:
+        """R-U3-2（UD-3）：「拉起 watcher 的 prompt 片段」逐件齐备——D23 首行
+        模板、D18 两级 C1-1 检查命令与判死读法、D19 两种通知原文与 queued
+        补 Enter 条件、不重拉/不写账边界、D16 本侧节拍写法；片段内不出现会
+        劫持 single-task 结构断言的措辞（完全只读 / fail closed 分流）。"""
+        for name in self.ADAPTER_SIDES:
+            text = self._adapter_texts()[name]
+            with self.subTest(adapter=name):
+                frag = self._section(text, "拉起 watcher", name)
+                # D23 派单首行（非 worker 标头）
+                self.assertIn("[relay-light] watcher · space=", frag, name)
+                self.assertIn("notify=<派活方 Herdr 名>", frag, name)
+                self.assertIn("plan=<plan_dir>", frag, name)
+                # D18 两级存活检查命令（阶段级 / 编排级各一式）
+                for level in ("stage", "plan"):
+                    self.assertRegex(
+                        frag,
+                        r"pgrep -af -- 'relay_log\.py watch --plan <plan_dir> "
+                        rf"--notify <[^'\n]+> --level {level}'",
+                        f"{name}: --level {level} check missing",
+                    )
+                # D18 判死口径读 status --json
+                self.assertIn("status --plan <plan_dir> --json", frag, name)
+                self.assertIn("WATCHER_STOPPED", frag, name)
+                self.assertIn("WATCHER_GAVE_UP", frag, name)
+                self.assertIn("连续 3 轮", frag, name)
+                # D19 两种通知原文与 queued 补 Enter 条件
+                self.assertIn(
+                    "[relay-light] watch-down stage <stage_id>", frag, name
+                )
+                self.assertIn("[relay-light] watch-down plan plan", frag, name)
+                self.assertIn("queued", frag, name)
+                self.assertIn("Press Enter to send", frag, name)
+                # watcher 边界：只读报信
+                self.assertIn("不重拉", frag, name)
+                self.assertIn("不写账", frag, name)
+                # D16 本侧写法
+                if name == "adapter-claude-code.md":
+                    self.assertIn("run_in_background", frag, name)
+                    self.assertNotIn("sleep 590", frag, name)
+                else:
+                    self.assertIn("timeout_ms=660000", frag, name)
+                # 措辞禁区：不得劫持 test_install_skill 的首个命中行
+                self.assertNotIn("完全只读", frag, name)
+                self.assertNotIn("fail closed 分流", frag, name)
+
+    def test_r_u3_3_watch_down_notifications_ascii_single_line(self) -> None:
+        """R-U3-3（UD-3/D19）：两份 adapter 全部 `"[relay-light] watch-down …"`
+        字面量 ASCII 且无换行（同 D7 通知约束）。"""
+        for name in self.ADAPTER_SIDES:
+            text = self._adapter_texts()[name]
+            with self.subTest(adapter=name):
+                literals = re.findall(
+                    r'"(\[relay-light\] watch-down [^"]*)"', text
+                )
+                self.assertTrue(
+                    literals, f"{name}: no quoted watch-down literal found"
+                )
+                for lit in literals:
+                    self.assertTrue(lit.isascii(), f"{name}: {lit!r}")
+                    self.assertNotIn("\n", lit, f"{name}: {lit!r}")
+
+    def test_r_u3_5_death_verdict_keys_documented_and_real(self) -> None:
+        """R-U3-5（UD-3/D18）：① watcher 片段的判死口径引用键名
+        open_stages / pending_nodes / stages / nodes / state=closed；
+        ② 这些键是 status --json 真实输出键（最小 fixture 守卫，防文档
+        引用不存在字段）。"""
+        for name in self.ADAPTER_SIDES:
+            text = self._adapter_texts()[name]
+            with self.subTest(adapter=name):
+                frag = self._section(text, "拉起 watcher", name)
+                for key in (
+                    "open_stages",
+                    "pending_nodes",
+                    "stages",
+                    "nodes",
+                    "state=closed",
+                ):
+                    self.assertIn(key, frag, f"{name}: {key}")
+        # ② 最小 fixture：一个节点走到 closed 的计划，status --json 键集为真
+        self.write_single_node_plan(["| coder | W1 | coder | | code.md | | |"])
+        self.start_ledger()
+        for event, agent in (
+            ("node_start", "monitor#1"),
+            ("agent_launch", "coder#1"),
+            ("done", "coder#1"),
+            ("node_close", "monitor#1"),
+        ):
+            self.assertEqual(0, self.run_add(event, agent=agent).returncode)
+        result = self.run_cli(
+            "status", "--plan", str(self.plan_path.parent), "--json"
+        )
+        self.assertEqual(0, result.returncode, result.stderr)
+        doc = json.loads(result.stdout)
+        for key in ("open_stages", "pending_nodes", "stages", "nodes"):
+            self.assertIn(key, doc)
+        self.assertTrue(doc["stages"])
+        self.assertTrue(doc["nodes"])
+        for key in ("state", "nodes"):
+            self.assertIn(key, doc["stages"][0])
+        self.assertIn("state", doc["nodes"][0])
+        states = {n["state"] for n in doc["nodes"]} | {
+            s["state"] for s in doc["stages"]
+        }
+        self.assertIn("closed", states)
 
     def test_a141_dispatch_wait_and_sandbox_fallback_discipline(self) -> None:
         """HC-RL-A141: 两 adapter 各含三段原文——
