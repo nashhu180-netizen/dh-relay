@@ -662,7 +662,7 @@ ThinkPad Linux Codex 最小闭环（Issue #52）。
   - `tools/relay-light/test_relay_log.py`
   - `tools/relay-light/skill/references/adapter-claude-code.md`
   - `tools/relay-light/skill/references/adapter-codex.md`
-  - `tools/relay-light/skill/SKILL.md`（2026-09-24 用户裁决 UD-2 追加，relay-light 白名单；限 watcher 表述与「watch 未实现」过时措辞，见 workspace/RLT_18/decisions.md）
+  - `tools/relay-light/skill/SKILL.md`（2026-09-24 用户裁决 UD-2 追加、UD-3 扩界，relay-light 白名单；限 UD-2 两处 watcher 表述与「watch 未实现」过时措辞 + UD-3 watch 兜底表述（第 40 行 watcher 行、放弃项第 5 条），见 workspace/RLT_18/decisions.md、dispatch/README.md）
   - `%USERPROFILE%/.claude/skills/relay-light/**`
   - `%USERPROFILE%/.codex/skills/relay-light/**`
   - `/home/nash/.claude/skills/relay-light/**`
