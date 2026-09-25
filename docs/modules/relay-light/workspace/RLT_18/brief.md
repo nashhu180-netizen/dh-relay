@@ -41,7 +41,7 @@ DevPlan 依赖 RLT_05、RLT_07、RLT_13、RLT_17；其中 **RLT_13 / RLT_17 由�
 | 2 | 每 20 分钟 `[relay-light] tick`；无 watch 时节拍由前台 `wait --timeout 1200000` 维持（adapter 写明归属）；阶段级末节点 `node_close` / 编排级末阶段 `stage_close` 两层退出 | AI（打桩时钟 + 结构检查） | `HC-RL-A83` | batch 2 |
 | 3 | watch 代码路径无任何写账调用 | AI（静态检查 + 运行期账本字节不变） | `HC-RL-A101` | batch 1 |
 | 4 | Claude / Codex 监工忙（working）时 watch prompt 是否被排队而非丢弃——分别验 | 人 | `HC-RL-H11` | batch 3 取证，用户判 |
-| 5 | 杀掉 watch 后 20 分钟兜底是否接住 | 人 | `HC-RL-H12` | batch 3 取证，用户判 |
+| 5 | watch 死亡后，本终端空间 watcher 的 10 分钟巡检是否接住（契约 v2，RLT-A-14 / RLT-B-10；v1「20 分钟兜底」经 UD-3 否决） | 人 | `HC-RL-H12` | UD-3 U2 取证（`evidence/ud3-h12/`），用户判 |
 | 6 | heavy 五路 workflow-final + E2 无 open P0/P1；`verify(relay-light):`（可能被钩子拦，见 F-003） | AI + 人 | AGENTS 宪章 #2/#5 | review.md |
 
 ## 流程

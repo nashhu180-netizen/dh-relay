@@ -10,7 +10,7 @@
 | 2 | `HC-RL-A83` | 机器证 | batch 2 | 待 batch 2 | 待定 |
 | 3 | `HC-RL-A101` | 机器证 | batch 1 | 待 batch 1 | 待定 |
 | 4 | `HC-RL-H11` | 人判 | batch 3 取证 | 待 batch 3 | 用户判 |
-| 5 | `HC-RL-H12` | 人判 | batch 3 取证 | 待 batch 3 | 用户判 |
+| 5 | `HC-RL-H12`（契约 v2，RLT-A-14 / RLT-B-10） | 人判 | UD-3 U2 取证（v1 取证见 batch 3） | `evidence/ud3-h12/H12.md` | 用户判 |
 | — | `HC-RL-A125` | 终局回归（不承接） | 挂起（F-002） | — | 挂起 |
 
 ## plan / batch review 登记
@@ -56,12 +56,12 @@
 |---|---|---|---|
 | H11 Claude 监工忙时 prompt | 待 batch 3 | 待定 | 用户判 |
 | H11 Codex 监工忙时 prompt | 待 batch 3 | 待定 | 用户判 |
-| H12 杀 watch 后 20 分钟兜底 | 待 batch 3 | 待定 | 用户判 |
+| H12 watch 死亡后本终端空间 watcher 10 分钟巡检是否接住（契约 v2，RLT-A-14 / RLT-B-10） | 关阶段级 / 编排级 watch pane → watcher 巡检发现 → `watch-down` 报派活方 → 重拉；进程级见 batch 3 | `evidence/ud3-h12/H12.md` | 用户判 |
 
 ## 人类签名区（仅用户在对话中明确确认后由主会话填写；AI 不代签，文档勾选不算）
 
 - [ ] **H11**（Claude / Codex 监工忙时 prompt 是否被排队而非丢弃）：结论 ____ ｜ 用户 ____ ｜ 日期 ____
-- [ ] **H12**（杀 watch 后 20 分钟兜底是否接住、是否可接受）：结论 ____ ｜ 用户 ____ ｜ 日期 ____
+- [ ] **H12**（契约 v2，RLT-A-14 / RLT-B-10：watch 死亡后本终端空间 watcher 的 10 分钟巡检是否兜得住，10 分钟是否可接受）：结论 ____ ｜ 用户 ____ ｜ 日期 ____
 - [ ] **需求境证据**确认：____ ｜ 用户 ____ ｜ 日期 ____
 - [ ] **verify**（`verify(relay-light):` 提交 SHA，可能被模块级钩子拦，见 findings F-003）：____ ｜ 日期 ____
 - [ ] **最终验收**：____ ｜ 用户 ____ ｜ 日期 ____
