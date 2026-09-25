@@ -1,0 +1,80 @@
+
+
+❯ [relay-light] monitor#1 -> idle
+
+● monitor#1 已回到 idle 状态。暂无待办任务——需要我给它派新活吗？
+
+✻ Brewed for 3s · done 17:02
+
+❯ Read /home/nash/work/dh-relay/.dh-worktrees/RLT_18/docs/modules/relay-light/w
+  orkspace/RLT_18/evidence/ud3-h12/probe-briefs/orch.md
+
+  Read 1 file
+
+● 已读取。要点确认:
+
+  - 我扮演 fixture h12v2 的编排（rlt18-probe-u3-orch），只按此 brief
+    行动，不碰仓库其它文件/流程文档。
+  - 只有收到 [relay-light] tick 才跑 status --json + herdr agent list 对账；其它
+    [relay-light] ... 状态推送（如刚才的 monitor#1 -> idle）只记录不动作。
+  - 收到 [relay-light] watch-down plan plan 时按 brief 里的 pgrep 命令核实本层
+    watch 存活，缺席则在 workspace w4B 新开 tab 重拉 watch 循环。
+  - 每次唤醒做完该做的事就结束回合，不主动派活、不问用户、拿不准就不动作。
+
+  刚才 monitor#1 -> idle 按规则属于"只记录不动作"，已按此处理，未做对账。
+
+✻ Cooked for 8s · done 17:03
+
+❯ [relay-light] monitor#1 -> done
+
+● 按 brief 规则，非 tick 的状态推送只记录不动作。已记录 monitor#1 ->
+  done，本回合结束，不做对账。
+
+✻ Crunched for 1s · done 17:03
+
+❯ [relay-light] watch-down plan plan
+
+  Ran 1 shell command
+
+● 本层 watch 缺席，按规则重拉：在 workspace w4B 新开 tab 并跑重启循环。
+
+  Ran 7 shell commands
+
+❯ [relay-light] monitor#1 -> done
+
+● watch 已重拉成功（PID 560184 在 tab w4B:p1W 跑起）。刚收到的 monitor#1 -> done
+  是非 tick 状态推送，按规则只记录不动作。本回合结束。
+
+✻ Churned for 29s · done 17:17
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+❯
+────────────────────────────────────────────────────────────────────────────────
+  nash@nash-ThinkPad-E470c:/home/nash/work/dh-relay/.dh-worktrees/RLT_18 | So…
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← 1 agent

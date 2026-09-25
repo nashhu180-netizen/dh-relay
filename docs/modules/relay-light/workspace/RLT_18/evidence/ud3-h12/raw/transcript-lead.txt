@@ -1,0 +1,80 @@
+
+❯ [relay-light] coder#1 -> idle
+
+● coder#1 现在 idle 了,需要我做什么安排吗?
+
+✻ Brewed for 3s · done 17:02
+
+❯ Read /home/nash/work/dh-relay/.dh-worktrees/RLT_18/docs/modules/relay-light/w
+  orkspace/RLT_18/evidence/ud3-h12/probe-briefs/lead.md
+
+  Read 1 file, ran 1 shell command
+
+● watch 存活核验命令与输出：
+
+  $ pgrep -af -- 'relay_log.py watch --plan .../fixture/h12v2 --notify
+  rlt18-probe-u3-lead --level stage' | grep -v pgrep | grep -Ev "^($$|$PPID) "
+  535991 python3 .../relay_log.py watch --plan .../fixture/h12v2 --notify
+  rlt18-probe-u3-lead --level stage --config-dir .../fixture/h12v2/config/
+
+  判存活，不重拉。coder#1 → idle 属 worker
+  产出通知，无判定方需求，仅形式核，回合结束。
+
+✻ Churned for 11s · done 17:03
+
+❯ [relay-light] coder#1 -> done
+
+  Ran 1 shell command
+
+● watch 存活核验：
+
+  $ pgrep -af -- 'relay_log.py watch --plan .../fixture/h12v2 --notify
+  rlt18-probe-u3-lead --level stage' | grep -v pgrep | grep -Ev "^($$|$PPID) "
+  535991 python3 .../relay_log.py watch --plan .../fixture/h12v2 --notify
+  rlt18-probe-u3-lead --level stage --config-dir .../fixture/h12v2/config/
+
+  判存活，不重拉。coder#1 → done 为 worker
+  产出通知，无判定方要求，仅形式核，回合结束。
+
+✻ Crunched for 5s · done 17:03
+
+❯ [relay-light] watch-down stage RLT18U:C#1
+
+  Ran 1 shell command
+
+● watch 核验为空,判死。按规则重拉:在 herdr workspace w4B 新开 tab 跑重启循环。
+
+  Ran 2 shell commands
+
+● watch 核验：
+
+  $ pgrep -af -- 'relay_log.py watch --plan .../fixture/h12v2 --notify
+  rlt18-probe-u3-lead --level stage' | grep -v pgrep | grep -Ev "^($$|$PPID) "
+  (无输出)
+
+  判死。已在 workspace w4B 新开 tab rlt18-probe-u3-watch-stage-re（pane
+  w4B:p1X）并起重启循环重拉该 stage 级 watch。回合结束。
+
+✻ Sautéed for 13s · done 17:18
+
+❯ [relay-light] coder#1 -> done
+
+  Ran 1 shell command
+
+● watch 存活核验：
+
+  $ pgrep -af -- 'relay_log.py watch --plan .../fixture/h12v2 --notify
+  rlt18-probe-u3-lead --level stage' | grep -v pgrep | grep -Ev "^($$|$PPID) "
+  561980 python3 .../relay_log.py watch --plan .../fixture/h12v2 --notify
+  rlt18-probe-u3-lead --level stage --config-dir .../fixture/h12v2/config/
+
+  判存活（重拉后的新进程），不再重拉。coder#1 → done 为 worker
+  产出通知，无判定方要求，仅形式核，回合结束。
+
+✻ Cooked for 5s · done 17:18
+
+────────────────────────────────────────────────────────────────────────────────
+❯ check watch-down pane w4B:p1X still running
+────────────────────────────────────────────────────────────────────────────────
+  nash@nash-ThinkPad-E470c:/home/nash/work/dh-relay/.dh-worktrees/RLT_18 | So…
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← 1 agent

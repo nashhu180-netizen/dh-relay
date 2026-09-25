@@ -1,0 +1,7 @@
+# T1 close stage watch tab — 2026-09-24 17:09:08.550 +0800
+## pre-close: worker status
+worker working seq 2511
+## herdr tab close w4B:t1N at 17:09:08.584
+{"id":"cli:tab:close","result":{"type":"ok"}}
+## post-close watch procs at 17:09:08.609
+535995 python3 /home/nash/work/dh-relay/.dh-worktrees/RLT_18/tools/relay-light/relay_log.py watch --plan /home/nash/work/dh-relay/.dh-worktrees/RLT_18/docs/modules/relay-light/workspace/RLT_18/evidence/ud3-h12/fixture/h12v2 --notify rlt18-probe-u3-orch --level plan --config-dir /home/nash/work/dh-relay/.dh-worktrees/RLT_18/docs/modules/relay-light/workspace/RLT_18/evidence/ud3-h12/fixture/h12v2/config/

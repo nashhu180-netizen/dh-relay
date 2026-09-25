@@ -1,0 +1,17 @@
+# cleanup close probe tabs — 2026-09-24 17:31:57.002 +0800
+## herdr tab close w4B:t1Q
+{"id":"cli:tab:close","result":{"type":"ok"}}
+## herdr tab close w4B:t1R
+{"id":"cli:tab:close","result":{"type":"ok"}}
+## herdr tab close w4B:t1S
+{"id":"cli:tab:close","result":{"type":"ok"}}
+## herdr tab close w4B:t1T
+{"id":"cli:tab:close","result":{"type":"ok"}}
+## herdr tab close w4B:t1V
+{"id":"cli:tab:close","result":{"type":"ok"}}
+## herdr tab close w4B:t1W
+{"id":"cli:tab:close","result":{"type":"ok"}}
+## herdr tab close w4B:t1X
+{"id":"cli:tab:close","result":{"type":"ok"}}
+## post-close watch procs (C1-1 filtered)
+(empty — no watch procs)

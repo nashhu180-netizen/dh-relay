@@ -1,0 +1,80 @@
+
+
+❯ Read /home/nash/work/dh-relay/.dh-worktrees/RLT_18/docs/modules/relay-light/w
+  orkspace/RLT_18/evidence/ud3-h12/probe-briefs/watcher-s.md
+
+  Read 1 file
+
+● Read. This is the RLT_18 probe brief for the fixture-space watcher role
+  (rlt18-probe-u3-watcher-s, space RLT18U:C#1): read-only stage-space liveness
+  watcher, notifying rlt18-probe-u3-lead on watch-down, silent when closed,
+  giving up after 3 consecutive report rounds. Let me know if you want me to act
+  on it (e.g. actually run it as this probe) or just confirm the read.
+
+✻ Worked for 9s · done 17:03 · 1 shell still running
+
+❯ act as this probe now
+
+  Ran 1 shell command
+
+● watch alive (pid 535991) — non-empty match. Per brief: silent this round, no
+  report, no writes. Now arming the 10-minute cadence via background sleep.
+
+  Ran 1 shell command
+
+● Round 1 done: stage watch (pid 535991) alive → silent, no report, no writes.
+  Background sleep 600 armed (id beoheexee) as the next cadence tick; I'll
+  re-check when it wakes me.
+
+✻ Baked for 11s · done 17:07 · 1 shell still running
+
+● Background command "Sleep 600s as pacing for next watcher round" completed
+(exit code 0)
+
+  Ran 2 shell commands
+
+● Watch process is gone, and status shows stage RLT18U:C#1 still open (node U1
+  open, not closed) — not a normal end. Per brief, this is watch-down: report
+  once to rlt18-probe-u3-lead.
+
+  Ran 2 shell commands
+
+● No queued/Press Enter to send shown — no supplemental Enter needed. Reported
+  watch-down once this absence period; arming next 10-minute tick.
+
+  Ran 1 shell command
+
+● Round 2: watch process absent, stage not closed → reported watch-down stage
+  RLT18U:C#1 to rlt18-probe-u3-lead (1st absence-count report). No pane Enter
+  needed. Next tick armed (id brpiruoa4).
+
+✻ Sautéed for 24s · done 17:18 · 1 shell still running
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+❯ keep watching, next round
+────────────────────────────────────────────────────────────────────────────────
+  nash@nash-ThinkPad-E470c:/home/nash/work/dh-relay/.dh-worktrees/RLT_18 | So…
+  ⏵⏵ bypass permissions on · 1 shell · ← 1 agent

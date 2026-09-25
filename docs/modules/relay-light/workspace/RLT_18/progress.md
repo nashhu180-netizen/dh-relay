@@ -67,5 +67,6 @@
 | E-703 | ud3 | Python 全量回归 293 tests OK（468.052s） | docs/modules/relay-light/workspace/RLT_18/evidence/ud3-u1/regression-python.txt | `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s . -p 'test_*.py'` → OK |
 | E-704 | ud3 | pwsh 全仓回归 RELAY ALL PASS（SKIPPED: 1，与基线一致的 psmux-real 豁免） | docs/modules/relay-light/workspace/RLT_18/evidence/ud3-u1/regression-pwsh.txt | `PYTHONDONTWRITEBYTECODE=1 pwsh -NoProfile -File tools/tests/run-relay-tests.ps1` → exit 0 |
 | E-705 | ud3 | 路径审计（基点 5ab3bba）：禁动路径 stat 空；design/DevPlan 改动只来自 A-14 事件提交；`__pycache__` 审计空 | docs/modules/relay-light/workspace/RLT_18/evidence/ud3-u1/path-audit.txt | §5.5 四条审计命令全绿 |
+| E-706 | ud3 | H12 v2 重演实测：H12-A 阶段级 watch pane 关→watcher-s 10min 拍报 watch-down→lead 核死重拉（新 PID 561980）→重拉通知到达；H12-B 编排级 pane 关→watcher-o 报 watch-down plan plan→orch 重拉（PID 560184）；编排侧无 stall；H12-① 引 batch-3、H12-C 未做；探针全清 | docs/modules/relay-light/workspace/RLT_18/evidence/ud3-h12/H12.md | fixture lint exit 0；unittest 274 OK；pwsh RELAY ALL PASS |
 
 > 模板：`| E-<batch><nn> | <1|2|3> | <一句话> | <repo-relative path> | <命令摘要与 exit/OK> |`

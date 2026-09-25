@@ -1,0 +1,5 @@
+# T1' close plan watch tab — 2026-09-24 17:15:39.039 +0800
+## herdr tab close w4B:t1P at 17:15:39.040
+{"id":"cli:tab:close","result":{"type":"ok"}}
+## post-close watch procs at 17:15:39.066
+(no watch procs except watcher-call wrappers)

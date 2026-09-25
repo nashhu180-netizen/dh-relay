@@ -1,0 +1,49 @@
+nash@nash-ThinkPad-E470c:~/work/dh-relay/.dh-worktrees/RLT_18$ devin --model swe
+-2-medium --permission-mode dangerous
+
+⠀⣴⣾⣶⡄⠀⠀⠀⠀
+⠀⠛⠿⠟⠻⣶⣾⣶⡄  Devin CLI
+⠀⣤⣶⣦⣴⠿⢿⠿⠃  v3000.11.3
+⠀⠻⢿⠿⠃⠀⠀⠀⠀
+
+ Pro · 69% remaining (resets in 2d 22h)
+
+❭ Read /home/nash/work/dh-relay/.dh-worktrees/RLT_18/docs/modules/relay-light/
+  workspace/RLT_18/evidence/ud3-h12/probe-briefs/worker.md
+
+ ● Read ./docs/modules/relay-light/workspace/RLT_18/evidence/ud3-h12/probe-
+ briefs/worker.md
+ └ 14 lines
+
+ ack
+
+❭ TASK: sleep 900 && echo u3-w-done
+
+ ● Ran command
+ │ $ sleep 900 && echo u3-w-done
+ │ Timeout: 0ms
+ │ Started background shell
+ └ Running in shell b7e69a
+
+ ● Read shell b7e69a
+ │ Timeout: 4m 40s
+ └ Session: b7e69a
+
+ ● Read shell b7e69a
+ │ Timeout: 4m 40s
+ └ Session: b7e69a
+
+ ● Read shell b7e69a
+ │ Timeout: 4m 40s
+ └ Session: b7e69a
+
+ ● Read shell b7e69a
+ │ Timeout: 2m
+ └ Session: b7e69a
+
+ u3-w-done
+
+────────────────────────────────────────────────────── (bypass permissions on) ─
+❭ Ask Devin to build features, fix bugs, or work on your code
+────────────────────────────────────────────────────────────────────────────────
+SWE-2 Medium                                     Context: 24k / 262k tokens (9%)
