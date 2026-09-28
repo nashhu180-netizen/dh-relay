@@ -13,6 +13,7 @@
 | 2026-09-28 | S5 | 有效单测两处变异施加→断言失败→还原→绿 |
 | 2026-09-28 | S6 | 三路 fresh 复核：code_review approved、需求 PASS、教训 LES-1 纠正后闭合；P3 登记 F-004～F-009；dh gate label-marker-mismatch 修卡格式（F-010） |
 | 2026-09-28 | E10 | CI run 36378500616 三硬门 success；用户点选「已查看证据，认可收口」与 R30「认定为规划事件，不算越界」 |
+| 2026-09-28 | E11–E13 | PR #71 squash 合入 = verify `3872367`；两机四份 skill 副本同步并核哈希（E-010）；worktree 收树 |
 
 ## 证据账本 (Evidence Ledger)
 
@@ -27,3 +28,4 @@
 | E-007 | review | 需求方向复核 PASS：临时 HOME 安装副本 grep、fixture 实跑 status 文本 / `--json` 新旧 cmp、4 条写者错误、旧 `[monitor]` config 兼容 | docs/modules/relay-light/workspace/RLT_30/review.requirement.md | fresh subagent rlt30-requirement-1 |
 | E-008 | review | E2 code_review attempt 1 approved（P0/P1=0，另加变异 M3 转红；全量 294 OK 复跑） | docs/modules/relay-light/workspace/RLT_30/review.code_review.attempt-1.md | fresh subagent rlt30-e2-review-1 |
 | E-009 | review | 教训复核：LES-1 基线误记已纠正，新候选 L-01～L-03 | docs/modules/relay-light/workspace/RLT_30/review.lesson.md | fresh subagent rlt30-lesson-1 |
+| E-010 | check | 两机同步：ThinkPad 自 `git archive 3872367` 导出源跑 `install_skill.py --all`；thinkbook 主检出 master 快进到 `3872367` 后跑 `install_skill.py --all`；五文件 LF 归一化 sha256 前 12 位六处一致（SKILL D5A9FAF35052、adapter-claude-code DDF3A25C1117、adapter-codex FF136D762BB0、roles 3E5CE75D4CDE、dh-mapping 8F64945EF275）；thinkbook 检出 CLEAN | 本行（原始输出在会话） | `python install_skill.py --all` ×2 机 + 哈希脚本 |
