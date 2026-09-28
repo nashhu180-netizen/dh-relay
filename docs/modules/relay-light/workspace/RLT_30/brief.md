@@ -9,7 +9,7 @@
 | RLT_30 | P1-RelayLight | DevPlan §3.2 `RLT_30`（RLT-B-11）；design/01 RLT-A-15 声明、§6.3、§7.5、§10.3；`HC-RL-A131`、A163～A165、A167、A43、A44、A69、A85、A93、A119、A62 |
 
 - GitHub：Issue #70（`Relates to #70`，收口前不自动关闭）；PR #71（与 RLT-A-15 设计、RLT-B-11 规划同一 PR 合入）。
-- 工作树：`/home/nash/work/dh-relay/.dh-worktrees/RLT_A_15`；分支：`plan/RLT_A_15`；基线：`master@7147bca`。
+- 工作树：`/home/nash/work/dh-relay/.dh-worktrees/RLT_A_15`；分支：`plan/RLT_A_15`；基线：`master@724506c`（`git merge-base HEAD origin/master` 取得；原误记 `7147bca`，见 findings F-002）。
 - 档位：标准；非高危五类；`task_type=normal`；review-policy `single-full-targeted max_attempts=2`。
 - 操作者：主会话直做（用户 2026-09-28 点选）；复核派 fresh subagent，施工者不复核自己。
 

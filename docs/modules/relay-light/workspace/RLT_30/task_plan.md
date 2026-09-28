@@ -14,7 +14,7 @@
 | S1 | RED：改测试断言到新口径——A131 12 角色；§10.3 样张 `当班写入者：stage-lead（DHR_90:C#1）`（`last_writer` 仍断言 `monitor`）；A85 errors 字面；新增 A69/A119/resource_close A85 字面断言；`NINE_PHASE_SET` 含 `watcher`；RELAY_RECEIPT 正则与零写入测试改 watcher；新增「九值集不含 `/ \`monitor\` /`」断言 | 跑测试见 RED，存 `evidence/red.txt` |
 | S2 | `relay_log.py` 显示层：新增显示映射，只在 status 文本与报错字面把 `monitor` 显示为 stage-lead；不改 `derive_last_writer`、`WRITER_BY_EVENT`、`CONTROL_AGENT_NAMES`、JSON 键/枚举、事件名 | §4 字面表逐条落地 |
 | S3 | skill 五件 + AGENTS 两段 + as-built 现役行改名（§5 清单） | `evidence/grep_check.py` PASS |
-| S4 | GREEN：全量 Python 单测 + pwsh 全仓回归 | 存 `evidence/green.txt`、`regression-*.txt` |
+| S4 | GREEN：全量 Python 单测 + pwsh 全仓回归 | 存 `evidence/regression-python.txt`、`regression-pwsh.txt`（施工后注：GREEN 与全量回归合为一份，未单存 green.txt） |
 | S5 | 有效单测两处变异（§6）施加→断言失败→还原 | 存 `evidence/mutation.txt` |
 | S6 | 复核三路（code_review / 需求 / 教训）fresh subagent；整改；review.md 回填；DevPlan 状态回填 | review.md 登记齐 |
 
@@ -28,6 +28,8 @@
 | W2 | 「监督 / 监控 / monitor」别名句 | `监督 / 监控 / monitor` | SKILL.md 模式选择节别名句；§ watcher 节拍节别名句 |
 | W3 | `[monitor]` 旧名兼容句 | `` `[monitor]` `` + `兼容` | 两 adapter「角色 → launch」查表句；roles.toml 注释 |
 | W4 | AGENTS 更名说明句 | `原名 monitor` + `更名` | AGENTS.md relay-light 段引言句（F-001：删「监工」二字） |
+
+> 施工后注（F-003）：W3 所在行的 `` `[monitor]` `` 被冻结词正则整体删去，这些行不进入白名单判定，W3 实际命中 0 属预期。
 
 ## 4. 报错 / 显示字面表（完成条件 3、4；三条规矩：主语 stage-lead、括号带账本原值、错误码与退出码不变）
 
@@ -57,7 +59,7 @@
 
 ## 6. 有效单测变异点
 
-1. `render_status_text` 显示映射行：把 `stage-lead` 映射退回原值 → `test_status_text_matches_10_3_sample`（§10.3 逐字）与 A43 测试必须断言失败。
+1. `render_status_text` 显示映射行：把 `stage-lead` 映射退回原值 → `test_design_10_3_text_snapshot_is_reproduced_line_by_line`（§10.3 逐字）与 `test_status_reports_the_last_writer_and_silence_without_driving_actions`（A43）必须断言失败。
 2. `_writer_label`：`monitor` 映射退回 `monitor` → A85 字面测试必须断言失败。
 
 ## 7. 关键决策

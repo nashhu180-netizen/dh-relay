@@ -230,7 +230,8 @@
   - `docs/modules/relay-light/dev_plan/P1-RelayLight-开发方案.md`
   - `docs/modules/relay-light/workspace/RLT_30/**`
 - **档位**：标准（非高危五类；含 `relay_log.py` 显示层代码改动，不按纯文档卡处理）。
-- **任务类型**：常规 `normal`——代码轮 1、需求方向、教训三路 + 有效单测「改坏必红」（变异点建议：①`status` 文本渲染把 `by=monitor` 映射为 stage-lead 的那一行；②A85 写者报错字面退回 monitor 必须变红）。
+- **任务类型**：常规
+- **复核配方**：`normal`——代码轮 1、需求方向、教训三路 + 有效单测「改坏必红」（变异点建议：①`status` 文本渲染把 `by=monitor` 映射为 stage-lead 的那一行；②A85 写者报错字面退回 monitor 必须变红）。
 - **依赖 / 批次**：RLT-A-15 已晋级；第 9 批，单验收单元，无跨卡依赖。
 - **实施提示**：施工在 worktree `.dh-worktrees/RLT_A_15`、分支 `plan/RLT_A_15`（用户 2026-09-28 点选；该 worktree 只承载 RLT_30 一张卡，A-15/B-11 为规划事件；与 A-15/B-11 同一 PR #71 合入，避免设计已改名而 SKILL 仍旧名的窗口）；`workspace/RLT_30/progress.md` 首条记 worktree、branch、D-start 确认时点与首个施工提交 SHA。主会话直做（用户 2026-09-28 点选），复核派 fresh subagent；施工者不复核自己。两机用户级副本不在 git diff 内，不进允许路径，合入后按验收同步。
 - **D-start 与 GitHub 授权**：GitHub 动作已由用户 2026-09-28 对本工作项全部授权（Issue / commit / push / PR / 服务端合并）；D-start 须用户对本卡单独确认。
