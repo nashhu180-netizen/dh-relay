@@ -11,5 +11,15 @@
 - 步骤：登记 → 改入口规则 → 文档场景走读与独立一致性/教训复核 → commit/push/PR，读取 CI 结果。
 - 停止边界：不改变 worker 节点权限、不替代平台必要审批、不调整 CI、不发布、不部署。
 - 方案审核：独立 fresh-context 实例 /root/approval_alignment_review，建议对齐四类入口冲突；主会话采纳，结果复核另记 review.md。
-- 状态：文档修改与独立一致性/教训复核 PASS；git diff --check 通过，进入 PR 交付。
+- 状态：实现规则已合入；有限收口候选待合入，随后回读并执行精确清理。最终交付状态以关联Issue及合并记录为准，不递归回填本候选快照。
 - 阶段汇报@Issue84-文档复核：确认普通新卡不重复索权，保留 CI/人判/角色/环境边界，原审核实例定向复核通过。
+
+## 实际合入与同步
+
+- 用户补充授权（2026-09-28）：在明确询问“两项服务端合并，并完成同步、回填和本任务清理”后回复“授权”。
+- 实现 PR：https://github.com/nashhu180-netizen/dh-relay/pull/85；实际 squash SHA `efa58061f9e5216cafc5262c321da802546176ab`。
+- 必需 CI：relay-light Python、relay-tests Ubuntu、relay-tests Windows 全部 SUCCESS；relay-core FAILURE，按既有 AGENTS 与 workflow 的 continue-on-error 仅为观测，不作为本卡通过证据。
+- 合入态复验：fetch 后确认实际 merge 可达；AGENTS 与已复核源提交 `1474e0167d8e43a6f63a7b47c6b6b7c09211dec7` 无差异；git diff --check通过。
+- ThinkPad 与 ThinkBook 主树均 fast-forward 到上述实际合入 SHA，工作区干净；无 skill 本体变更，不触发安装副本同步。
+- 阶段汇报@Issue84-远端合入：必要 CI、实际合入态与双机同步均有证据，继续有限记录 PR；不递归生成收口的收口。
+- 收口条件：本记录合入后回读状态，关闭 Issue #84，删除本任务两个交付分支及 worktree；不预写未来合并 SHA 或清理结果。
