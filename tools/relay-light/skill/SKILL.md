@@ -319,6 +319,24 @@ relay_log.py lint --plan <plan_dir> --amend-check after  --repo <repo> --snapsho
 
 `single-task` 与上方完整 relay 模式并列、互斥：用于一张已落户任务卡的规划、施工、复核与人验接力，**对完整模式执行计划，不创建或读写 `relay_plan.md` / `relay_log.jsonl`，不使用 W/C/R/X/F 阶段词**；本节不改写上方任何完整模式合同，五阶段模板与账本行为不回归。卡级总表由登记的维护会话按「卡级总表维护与交棒核对」读写，产出型 worker 与 watcher 的原边界不变。
 
+### 编排职责与执行边界
+
+- orchestrator 只负责已授权的派发、通信、运行状态核对、既定信号路由及指定协调工件维护；不自行运行测试、回归、复现、基线对照或业务证据复算，也不为这些工作自行建立临时测试目录/worktree、装配环境。不得以“只读”“临时”“交用户前自核”为例外。
+- 测试和基线取证交当前获派的 coder；独立核验交发现问题的当前复核路径 reviewer（批次内为 batch-reviewer，workflow-final/E2 按下节对应路径），必要时复跑。编排发现缺证或矛盾，退回对应产出方补证，不代产证据、不代判 PASS；补证沿用现有 phase、signal、轮次与写者规则，不新增角色或绕过 model-allocation gate。
+- 编排可读 signal、报告、Git 状态/SHA/diff，核对路径、身份、字段与既有结论是否一致；可解析 JSON 读取已有 verdict/证据引用。重新计算业务结果、判断验收或失败归因属于执行/复核：例如从 ops profile 计算 capability 增删、digest 差异或 manifest hash，或从测试输出推导“既有失败、可放行”，均应派给 coder/reviewer。是否越界按用途判断，不按命令名称或是否写文件判断。
+- 用户对进行中动作提出原则性纠正时，不自动解释为立即终止或删除现场；停止发起新的同类动作，按明确指令处理在途工作。语义不清由主会话澄清并保留现场；明确要求立即停止或命中既有停止条件时立即执行。终止进程与删除现场分别判断，不以纠正分工为由一并清理证据。
+
+### 范围外既有失败
+
+- **取证与写者**：coder 在首批或首次发现失败的复核路径取证，由对应 reviewer 独立审核。`findings.md` 仅 coder 写，reviewer 只写自己的 review/check 工件；reviewer 发现的基线问题由编排路由 coder 登记，编排不自行登记归因。测试明细放派单指定的证据文件，`progress.md` 仍只由当前 batch coder 在批末写一条里程碑和证据引用。
+- **最小证据**：记录基线用途（整卡或批次）、完整 SHA 与选择依据、候选 SHA 及未提交差异标识、精确 cwd/解释器/完整命令、必要环境与依赖条件、实际收集范围和 passed/failed/error/skipped/deselected 数量、退出码、逐项测试标识与失败阶段/原因、证据路径。批次前基线不能冒充整卡开工基线；同一解释器不等于环境可比，缺少资源或导入了候选代码的对照不作有效基线。
+- **临时现场**：由执行者按派单指定位置及权限准备隔离对照环境，优先考虑 `git archive <SHA>`，保留所需文档/配置/资源并核实实际导入路径；依赖 Git 元数据的测试不能强制使用 archive，替代方法须在派单允许范围内。不得修改共享依赖或借临时现场扩张权限。正式验证期间冻结影响被测现场的写入；可能互相污染的测试严格串行，每次取得退出码再继续。先保存白名单过滤后的有效证据，再按派单清理自己建立的临时现场。
+- **归因与放行分开**：证据完整且独立审核通过，才可将归因记为 `closed-as-baseline`；它只表示归因闭合，不表示缺陷修复、验收豁免或 CI 通过。证据缺失/未审核保持待核，不先关闭后补。允许失败集合必须引用明确清单和审核证据，并符合既有验收合同；从“全绿”变为“无新增失败”若改变验收标准，交用户确认，不由编排/coder/reviewer 自行放宽。基线归因不自动降级 P0/P1，不覆盖必需 CI、独立复核、verify 或人验门。
+- **批次内闭合时序**：首次送审时 coder 可在 findings 保留待核状态并提交完整证据。若 reviewer 确认基线归因、但 findings 尚待回写审核引用/关闭状态，须在自己的 review/check 记录归因结论及待补登记项，以本批 FAIL 按既有整改路径回同一 coder（计入原整改计数，不清上下文、不新增或重置轮次）。coder 仅按审核证据更新 findings/允许集合引用并重新送审，由原 reviewer 核对后才发 batch PASS；归因成立不等于整批 PASS。不得先 PASS/clear 再找编排代写；本批剩余整改额度不足时按既有超限路径处理。
+- **最终复核/E2 首次发现**：留在发现问题的原 `phase/path`，不重开已 PASS/clear 的批次，也不借 batch-reviewer 替代当前路径 reviewer。缺证或归因未闭合由该 reviewer 在自己的工件与 signal 记录阻断项；编排按本路径现有整改合同派 coder 补证/回写 findings（派单沿用 `phase=workflow-final` 或 `phase=e2-code-review`、原 path，`batch=na`，精确产出和 signal 路径由派单指定）。coder 仅施工/补证并送审，不自审。workflow-final 每轮复审换 fresh reviewer、每 path 最多返工 2 轮；E2 仅初审有 open P0/P1 才进入同一 `reviewer_session_id` 的 targeted attempt 2，不发第三派。归因确认但 findings 待回写时同样作为未闭合项返回 coder，不能提前 PASS；下一次审核遵守该路径的换人/计数规则，不套用批次内“原 reviewer”规则。额度不足或不满足 E2 定向复查条件即按既有决策/用户路径停报，不新开 batch、重置计数或绕过未闭合项。补证结束由该路径 reviewer 的独立结论及 signal 恢复路由，不能用 coder DONE 代替。
+- **逐项判定**：完整执行约定测试后，当前失败须属于有效允许集合，且同名失败阶段/原因无实质变化；本卡必需通过项全部通过。核对收集范围及跳过/排除原因，不能用漏收集、删测、skip、弱化断言制造子集。已按合同修复转绿的项由 coder 登记、reviewer 核验后移出允许集合，再失败不得沿用旧豁免。不得强求允许项继续失败来凑齐数量。
+- **停止条件**：基线无法复现、环境不可比、测试中断、证据缺失或集合外失败，执行者写本角色 BLOCKED signal，由编排按既有规则路由；不自动补入基线、不顺手修范围外问题。审核未通过不得放行，coder 的 DONE 只表示送审就绪；最终路由仍依据 reviewer 自写的独立结论和 durable signal。
+
 ### 标头与 phase 闭集
 
 - worker 派单 prompt 首行固定为 `[relay-light:single-task] worker · phase=<phase> · agent=<role>#<instance> · batch=<n|na> · round=<n> · workspace=<repo-relative-path>`；与完整 relay 的 `[relay-light] worker · node=...` 标头互斥，两套流水不交叉执行。
