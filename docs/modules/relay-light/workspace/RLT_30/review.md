@@ -12,7 +12,7 @@
 | 4 | `HC-RL-A69`、`A85`、`A93`、`A119` + `A62` | 机器证 | task_plan §4；新增/改动字面断言；需求复核 `--json` 新旧 cmp 相同；A93 报错不含角色名，无需改 | 通过（机器证） |
 | 5 | grep 三项 | 机器证 | E-003 `evidence/grep-after.txt` | 通过（机器证） |
 | 6 | 全量回归 + CI | 机器证 | E-004、E-005；PR #71 CI run 36378500616（`878502c`） | 通过（机器证） |
-| 7 | 两机四份副本同步 | 机器证 | 合入后执行 | 待合入 |
+| 7 | 两机四份副本同步 | 机器证 | E-010 | 通过（机器证） |
 
 ## 独立复核区（执行者 ≠ 复核者；normal 三路）
 
@@ -73,14 +73,14 @@
 | 4 | 错误/告警（含汇入 `status --json` `errors` 的字符串）遵守三条规矩（用户 2026-09-28「卡里写规矩，字面施工定」）：①主语写 stage-lead；②括号带出账本原值（`by=monitor` 或 `monitor#<n>`）；③错误码 HC-RL-Axx 与退出码不变。具体字面由 `task_plan` 定，复核按三条规矩逐条核；含事件名 `monitor_launch` 的报错不改。 | AI | E-004、E-006 M2、E-007、E-008 | 是 |
 | 5 | 对 skill 五件（SKILL.md、两 adapter、`roles.toml`、`dh-mapping.toml`）与 AGENTS.md relay-light 两段跑 grep：①「监工」= 0；②`monitor` 按 promotion-check 同一正则删去冻结词后，剩余命中只允许落在 `task_plan` 预先登记的**内容锚定白名单行**（stage-lead 账本标识说明句、「监督 / 监控 / monitor」别名句、反引号内 `[monitor]` 旧名兼容句、AGENTS 中「原『监工 monitor』」更名说明句），其余 = 0；③`roles.toml` 无以 `[monitor]` 开头的段头。 | AI | E-003 | 是 |
 | 6 | 全量回归：`PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_relay_log test_install_skill`（`tools/relay-light/`）与 `pwsh -NoProfile -File tools/tests/run-relay-tests.ps1` 全绿；PR CI 三硬门 success。 | AI | E-004、E-005；CI run 36378500616 三硬门 success | 是 |
-| 7 | 两机同步：合入后 ThinkPad `/home/nash/.claude/skills/relay-light`、`/home/nash/.codex/skills/relay-light` 与 thinkbook `C:\Users\nash\.claude\skills\relay-light`、`C:\Users\nash\.codex\skills\relay-light` 四份副本经 `install_skill.py --all` 同步（用户 2026-09-28 已授权），五文件与 master 源 LF 归一化哈希一致；thinkbook 不可达时如实挂起并报告。 | AI | 合入后执行 | 否（合入后执行） |
+| 7 | 两机同步：合入后 ThinkPad `/home/nash/.claude/skills/relay-light`、`/home/nash/.codex/skills/relay-light` 与 thinkbook `C:\Users\nash\.claude\skills\relay-light`、`C:\Users\nash\.codex\skills\relay-light` 四份副本经 `install_skill.py --all` 同步（用户 2026-09-28 已授权），五文件与 master 源 LF 归一化哈希一致；thinkbook 不可达时如实挂起并报告。 | AI | E-010 | 是 |
 
 **风险放行账表**：无（范围/影响/期限/恢复/去处 —）。
 
 **材料齐没齐**：[x] brief / task_plan / progress / 三路复核 / review
 **as-built 更新了没**：[x] `as-built/single-task-实现快照.md`（现役行改 watcher，历史行加注）
 
-→ 当前状态：**E10 已确认，执行合入收口**（verify SHA 合入后回填）
+→ 当前状态：**已完成；PR #71 squash verify=`3872367`，全验收通过**
 
 ---
 
@@ -92,7 +92,7 @@
 - 验收证据：E-001～E-009；PR #71 CI run 36378500616
 - 展示版本：`878502c`
 - 放行结论：全验收通过（H=0；第 7 条两机同步为合入后机械动作）
-- verify 提交 SHA：合入后回填
+- verify 提交 SHA：`3872367`（PR #71 squash；完整 SHA 见 `git log`）
 
 ## 人类签名区
 
