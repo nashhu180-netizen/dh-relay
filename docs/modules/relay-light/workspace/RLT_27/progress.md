@@ -1,5 +1,29 @@
 # progress — RLT_27
 
+## 2026-09-28 用户终止：需求已取消
+
+用户原话：“因为 delay-lite 修改了。这个任务不需要了，想办法收口”。本处 delay-lite 指本会话的 relay-light。
+
+- 结论：**已终止（需求取消），归档保留**。退出执行/待验收队列，不复跑旧协议，不再补本卡 verify，也不修检查器 F-001；这不是验收通过或风险放行。
+- 原试跑曾通过、verify 曾被阻断，两者均按历史事实保留。此次终止没有产生 verify SHA，不将 PR 合入、Issue 已关闭或删除工作树当作 verify。
+- Issue #52 保持已关闭；此次只归档同一任务的终止决定，不创建新任务，不影响 RLT_17 或其它卡的验收。
+- 55 个未跟踪文件已与 master 核对：48 个完全相同、7 个为旧版外层工件；全部都已在 master 有对应归档。原始首次阻塞与 retry02 账本不修改，旧版差异和唯一 tracked DevPlan 补丁另外完整备份。
+- 本机专用 Herdr session `rlt27-linux-codex-01` 已停止（17 个 Codex 会话）；119 个遗留任务专用 MCP 进程收到 SIGTERM 后，旧工作树 CWD 引用已核为 0。
+- 原 dirty 工作树已在备份验证后移除；同一路径临时用于终止记录 PR，合入并同步后删除临时树及本机 `wt/RLT_27`。此次不宣称已清理历史 Windows 镜像。
+- 以下旧状态与授权保留为历史记录，以本节终止决定为准；将来如需验证新协议，另立新任务。
+
+### 本机恢复备份
+
+- 目录：`/home/nash/.local/share/dh-relay/branch-archives/rlt27-terminated-20260928-e5o3jr4u`（仓外私有目录）。
+- `worktree.tar.gz` 包含 2,227 个普通文件，逐文件读取校验一致；`branch.bundle` 保存旧分支历史，`tracked.patch` 保存未提交 tracked 差异。
+- 校验：
+
+```text
+8de7f027d4c1c5043f6f7710b062e110c1746a87050a506dca5d3e6d3760d2a6  worktree.tar.gz
+e071120bf59942720082f0f7fd58a45cc6df51b867a9ffef73553aae5026d1e1  branch.bundle
+bf9a2f1556119c53de43acdb6200691b21a3cfb6aec92bab4a34f4d74955c6ac  tracked.patch
+```
+
 ## 2026-09-20 最新用户决定：记录问题，暂停优化
 
 用户明确“问题记录下，但先不继续优化了”。检查器问题已记 findings.md 的 F-001，状态为用户确认暂缓；不启动 dev-harness 改造，也不继续 verify/销户/清理。Linux Codex 最小链路已验证，检查器优化不作为受控实战前置。下方收口尝试及诊断保留为历史事实，不构成继续优化授权。

@@ -6,6 +6,8 @@
 
 > **2026-09-22 RLT-B-09 / Issue #56**：用户已整版确认 `single-task` 模式与单验收单元卡 RLT_29，并授权连续推进 B、D 与后续版本协作动作；E10 后人验仍须看证据确认。RLT_29 为当前新增执行目标；旧卡冻结状态不因本事件自动解冻。
 
+> **2026-09-28 RLT_27 终止覆盖 / Issue #52**：用户因 relay-light 已修改，明确此任务不再需要并要求收口。RLT_27 已终止（需求取消），退出待验收与执行队列；不补做 verify、不修 F-001、不复跑旧协议。下述 2026-09-20 执行覆盖及原卡目标仅为历史合同，不能作为续做授权。
+
 > **2026-09-20 执行覆盖说明 / Issue #52**：用户明确授权创建 Issue 并按 Linux Codex 最小闭环范围开工。RLT_13/#48、RLT_25/#49（含 A12 候选）、RLT_26/#50 已登记 on-hold；保留全部成果与原验收，不续派。其余旧未启动车暂缓，不改原合同。当前唯一新增执行目标 RLT_27；旧表“下一步”不构成续做授权。RLT_27 仅验证 Linux Codex light 路径，不替代 RLT_17 双主控完整验收。冻结记录在各原任务树 progress、A12 候选头部及三个 Issue；本工作树接力结果是新任务唯一运行权威，Windows 镜像不得与 ThinkPad 并发写同一工件。
 
 <!-- dh:plan-type: 开发 -->
@@ -145,7 +147,7 @@
 | RLT_18 | 实现并实测 watch 通知与兜底 | 标准 | 已完成 | 5 | RLT_05、RLT_07、RLT_13、RLT_17（RLT_13/17 由用户 2026-09-23 对话豁免） | [workspace/RLT_18](../workspace/RLT_18/) | 2026-09-28 / **verify `335b86640766bd133a59e4bf27a22f59404fad46`** · `release_mode=risk-accepted`（RISK-RLT18-F002） | heavy；PR #68 squash 合入；H11/H12 v2 用户人判接受，2026-09-28 认可带风险放行（Windows 两副本同步与 A125 终局回归仍挂起待 Windows 机，F-002）；Issue #65；用户 2026-09-23 D-start 并豁免 RLT_13/RLT_17 前置，已知影响：RLT_17 将在带 watch 的 adapter 上跑、Windows 两副本与 A125 终局回归挂起待 Windows 机、verify 可能被模块级钩子拦（同 RLT_27 F-001）；最终 adapter 后两机重同步 |
 | RLT_25 | 统一 normal Recipe 权威与闸门登记 | 标准 | 未开始 | 7 | 目标三路已裁决；前置 A-adjust 整版确认并落盘 | — | — | Issue #49；不作旧第 3 批硬前置；与 RLT_26 共用 skill 路径，后续施工须错开或合入后重新核基线 |
 | RLT_26 | resource_close 现役文档同步与旧口径清理 | 标准 | 进行中 | 7 | RLT_24（已满足） | [workspace/RLT_26](../workspace/RLT_26/) | — | Issue #50；并入 RLT_22 F-010；2026-09-20 已另行授权 Devin SWE-2 Max 独立 worktree D-start |
-| RLT_27 | ThinkPad Linux Codex 主控最小闭环 | 标准 | 待验收 | 独立试跑 | retry02 W/C/R/F 全闭合；2026-09-20 用户确认且授权版本收口；待集成 verify | [workspace/RLT_27](../workspace/RLT_27/) | — | Issue #52 已关闭；仅本卡 light 子范围；首次阻塞保留、协调修正一次；不替代 RLT_17 全矩阵 |
+| RLT_27 | ThinkPad Linux Codex 主控最小闭环 | 标准 | 已终止 | 独立试跑 | 2026-09-28 用户因 relay-light 变更取消需求，不再等待 verify | [workspace/RLT_27](../workspace/RLT_27/) | 不适用：用户终止，非验收通过 | Issue #52 保持关闭；原试跑与阻塞证据保留；见 progress 的终止归档记录 |
 | RLT_29 | 新增与完整 relay 并列的 single-task 单卡接力模式 | 标准 | 已完成 | 8 | RLT-A-13/RLT-B-09 已确认；Issue #56 | [workspace/RLT_29](../workspace/RLT_29/) | 2026-09-23 / **verify `7ff0132e6b720109c9737abf5a1d95595b5f726b`** · `release_mode=full` | heavy；高危组件接线；2026-09-23 用户「认可收口」并检查同意 PR #57/#58/#59；七条 P2 进验收池；PR #57 squash `319d2b0`、PR #58 squash `a575ce4`、PR #59 合格 verify `7ff0132`；E13 收树后销户 |
 | RLT_30 | 角色名统一：monitor → stage-lead / watcher（账本字段冻结，relay_log 只改显示层） | 标准 | 已完成 | 9 | RLT-A-15/RLT-B-11 已确认；Issue #70 | [workspace/RLT_30](../workspace/RLT_30/) | — | normal；relay_log.py 显示层代码改动；2026-09-28 用户确认 D-start，施工于 `plan/RLT_A_15`（PR #71） |
 
@@ -241,7 +243,7 @@
 
 ThinkPad Linux Codex 最小闭环（Issue #52）。
 
-- 状态：待验收（用户已确认最小试跑结果，版本收口执行中；尚待集成 verify）；工作区：[workspace/RLT_27](../workspace/RLT_27/)。
+- 状态：已终止（2026-09-28 用户取消需求，终止归档；非验收通过，不补 verify）；工作区：[workspace/RLT_27](../workspace/RLT_27/)。
 - 档位：标准运行验证；任务类型：轻量 `light`（仅文档载荷，不改生产代码）。<!-- dh:task-type:v1 task=RLT_27 type=light -->
 - 目标：在 ThinkPad 真正运行 Codex 编排→阶段监工→独立执行者，完成 W/C/R/F；产出 Linux Codex 使用说明和证据包。
 - 来源：design/01 §1.1、§1.4、HC-RL-A15/H4 的 Linux Codex 子范围；不宣称双主控完整命题等价覆盖。用户 2026-09-20 转向及精确开工授权、Issue #52。
