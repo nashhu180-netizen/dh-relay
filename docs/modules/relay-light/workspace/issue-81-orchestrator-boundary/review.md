@@ -40,3 +40,11 @@
 - 定向检查未发现新增 P1：写者边界、coder/reviewer 顺序、现有 FAIL 整改回路、PASS 后清理闸和 model-allocation gate 均相容。
 
 整改后，两条 light 必做复核路径为 PASS。本复核不构成 CI、验收、verify 或合并结论。
+
+## 整改复核 2：PASS
+
+- 复核对象：`SKILL.md` 的「最终复核/E2 首次发现」条款，以及两份 adapter 对“当前路径 reviewer”的一致引用。
+- workflow-final/E2 首次发现范围外失败现在有合法责任链：发现问题的原路径 reviewer 在自己的工件和 durable signal 记录阻断项；编排只按该路径既有合同派 coder；coder 沿用原 `phase/path` 与 `batch=na` 补证、回写 `findings.md` 后送审。没有把取证、归因或 PASS 判断交给编排，也没有让 coder 自审。
+- 路由可执行且不扩 schema：`workflow-final` 与 `e2-code-review` 都在既有 phase 闭集，`batch=na` 已在既有 signal schema；精确产物和 signal 路径仍由派单指定。条款明确禁止重开已 PASS/clear 批次、把 batch-reviewer 挪作最终复核/E2 reviewer、重置计数或借 coder DONE 放行。
+- 复核独立性未降级：workflow-final 的每轮复审仍换 fresh reviewer、每 path 最多两轮；E2 仍只在初审有 open P0/P1 时由同一 `reviewer_session_id` 进行 targeted attempt 2，且不发第三派。额度不足或不满足 E2 定向复查条件时按既有决策/用户路径停报，未把未闭合归因伪装为 PASS。
+- 未发现新增 P1；初审 P1 R81-C-01 与本轮 GitHub 指出的最终复核/E2 actor/phase/round 缺口均已闭合。

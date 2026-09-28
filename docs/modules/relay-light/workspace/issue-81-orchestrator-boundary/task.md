@@ -34,3 +34,5 @@
 - 两份 adapter 新增边界和派单字段逐字一致（脚本断言通过）。
 
 - 补充授权（2026-09-28）：用户点选“授权 commit + push，继续创建 PR”，对象为本卡已复核的 5 文件、`docs/issue-81-orchestrator-boundary` → origin/master；不合并。
+
+- 合并前复核补充（2026-09-28）：PR 自动审核 P1 指出 workflow-final/E2 首次发现失败无合法路径；补齐原 phase/path 下 coder 补证与对应 reviewer 审核，保留 workflow-final fresh 与 E2 同实例 attempt 2 条件，不回开已 PASS 批次。独立原 reviewer 定向复核 PASS，19 项安装契约测试通过；新 HEAD CI 以 PR 记录为准。
