@@ -668,6 +668,7 @@ ThinkPad Linux Codex 最小闭环（Issue #52）。
   - `/home/nash/.claude/skills/relay-light/**`
   - `/home/nash/.codex/skills/relay-light/**`
   - `docs/modules/relay-light/workspace/RLT_18/**`
+  - `docs/modules/relay-light/as-built/RLT_18-实现快照.md`（2026-09-28 用户收口时点选「补一份快照」追加，E7 as-built）
 - **档位**：标准 · 高危（第 5 批 watch 与组件接线）。
 - **任务类型**：重核 <!-- dh:task-type:v1 task=RLT_18 type=heavy -->
 - **实施提示**：本卡直接依赖 RLT_17。最终 adapter 改完后，Windows 与 ThinkPad 各执行一次 `--all`，回归四目标最终哈希一致；这是 A125 的终局回归，不重复承接该 ID。开工前展示四个绝对目标并取得用户明确授权，收口前须有 `verify(relay-light):`。不得提前插队，因为 adapter 的无 watch 前台回退要先在前四批被证明过。
