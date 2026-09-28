@@ -1,0 +1,45 @@
+{
+  "task": "issue-86",
+  "phase": "workflow-final",
+  "batch": "na",
+  "path": "consistency",
+  "review_round": 1,
+  "remediation_count": 0,
+  "role": "original reviewer confirm — reviewer#consistency (same round transcription mapping check, not a new audit)",
+  "source_evidence": "evidence/final-consistency-1.json",
+  "document_signal": "DONE.workflow-final.document-final-summary.md (document#docs, path=document-final-summary, verdict=SYNCED; evidence cites final-consistency-1.json + final-lesson-1.json; SYNCED correctly not routed as PASS)",
+  "candidate_sha256_recheck": "UNCHANGED — AGENTS.md ab1e2b0…, SKILL.md 70b87ca…, adapter-claude-code.md 91bdcc1…, adapter-codex.md d8915f1…; identical to batch-1-codex-revision.json",
+  "mapping_check": [
+    {
+      "item": "consistency verdict",
+      "result": "FAITHFUL — review.md L27 records READY_FOR_DOCUMENT explicitly marked 非正式 PASS pending original-reviewer confirm; artifact links correct"
+    },
+    {
+      "item": "consistency findings",
+      "result": "FAITHFUL — F-C1 transcribed as P2, adapter-codex.md pane/tab unit inconsistency, status '主会话决定本轮保留为非阻断建议、未修'; findings.md F-012 same level/status; not disguised as fixed"
+    },
+    {
+      "item": "verified-facts summary",
+      "result": "FAITHFUL — hash match, 19-test rerun, writer gating/SYNCED≠PASS/RELAY_RECEIPT/watcher zero-write/model gate/recovery authorities consistency, docs-only scope all correctly summarized; omission of my secondary notes is compression, not distortion"
+    },
+    {
+      "item": "lesson path transcription",
+      "result": "FAITHFUL — review.md L25 READY_FOR_DOCUMENT non-PASS; F-L1(P2)/F-L2(P3)/F-L3(P3) levels match final-lesson-1.json; findings.md F-013/F-014 registered accordingly"
+    },
+    {
+      "item": "F-L1 adjacent correction in plan draft",
+      "result": "CONFIRMED — dev_plan/drafts/issue-86-document-agent.md tail note now carries '更正（2026-09-29，教训复核 F-L1）': scheme attributed to Codex main session, original line preserved, pointer to review.md 确认记录; matches F-013 registration"
+    },
+    {
+      "item": "L-01 lesson candidate",
+      "result": "FAITHFUL — lesson_candidates.md L-01 records transcription-role error shape (source-attribution misrecord + unsupported expansion + same-assertion copy miss F-L1), landing note cites F-014 consistently"
+    },
+    {
+      "item": "human-acceptance boundary",
+      "result": "HELD — no user-judgment proxy signing found; DA-08 remains 人判待判"
+    }
+  ],
+  "blocking_discrepancy": "none",
+  "verdict": "PASS",
+  "verdict_basis": "Document transcription of consistency (and referenced lesson) conclusions, levels, sources, versions is faithful; F-C1 correctly retained as open non-blocking P2; candidate hashes unchanged; signal ordering and SYNCED≠PASS honored."
+}

@@ -91,3 +91,14 @@
 本卡后续实施只依赖 single-task 的现役可用基线，不把已放弃的全自动化实跑任务设为前置。若需要扩大到业务仓、修改其它项目 AGENTS、改变人验或独立复核责任、增加新基础设施，先提出具体影响，不顺手扩大范围。
 
 规划 PR 使用 `Relates to #86`，只交付开发任务，不关闭开发 Issue。PR 合并、正式设计确认、实现开工及实际验收是不同事实，不互相冒充。
+
+---
+
+## 本轮范围调整注记（2026-09-28 追加，保留上文历史不改）
+
+- 用户授权本轮按 relay-light **single-task 单卡接力**开发，不再等另行正式设计：「全部用 Devin SWE-2 high，按单卡流程执行」（文档、独立计划/批次/最终复核、watcher）；skill 实施与协调归 Codex 主会话。
+- 档位收窄为**轻档一批、task_type=light**：目标改为「把 document 分工写入协议 + 本卡试跑过程文档委托」。试跑边界=产品文档由实际执行者写、过程文档由文档 agent 写；**不宣称 DA-01 全类别通过**，DA-01～DA-08 覆盖/未覆盖在收口如实登记。
+- 实施方案精简（用户 2026-09-28）：`document` 为 opt-in **新角色**而非新 phase——九值 phase 闭集由 `test_install_skill.py` 冻结、本卡不改测试代码；document 沿用文档所属现有 phase（初建=plan、施工记录=batch、复核记录=batch-review/workflow-final、收口=human-acceptance），派单 `path=document-<请求id>`，自有 verdict=`SYNCED`，READY/SYNCED 不得当 PASS 消费。
+  - **更正（2026-09-29，教训复核 F-L1）**：上条来源归因有误——document 为角色/path/verdict 方案系 **Codex 主会话提出**，非用户原话；用户该轮冻结的是分工与模型。原文保留不删；权威区分见 [workspace/issue-86-document-agent/review.md](../../workspace/issue-86-document-agent/review.md) 确认记录。
+- PR #87 规划草案未合并、未实现是历史边界；本轮开发为用户另行授权，实际交付/合入按 AGENTS 单卡授权由主会话核对。
+- 本卡任务工作区：[workspace/issue-86-document-agent/](../../workspace/issue-86-document-agent/)（task/task_plan/execution_strategy/progress/findings/review/lesson_candidates 七件由文档 agent `builder#docs` 维护——用户本卡明确例外）。

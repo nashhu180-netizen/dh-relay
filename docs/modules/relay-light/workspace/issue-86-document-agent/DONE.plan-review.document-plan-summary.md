@@ -1,0 +1,1 @@
+DONE task=issue-86 phase=plan-review agent=document#docs batch=na path=document-plan-summary review_round=1 remediation_count=0 verdict=SYNCED evidence=docs/modules/relay-light/workspace/issue-86-document-agent/DONE.plan-review.reviewer-1.md,docs/modules/relay-light/workspace/issue-86-document-agent/evidence/plan-review-1.json

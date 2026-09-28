@@ -1,0 +1,1 @@
+BLOCKED task=issue-86 phase=batch agent=document#docs batch=1 path=document-missing-source review_round=1 remediation_count=0 verdict=BLOCKED reason=missing_evidence evidence=docs/modules/relay-light/workspace/issue-86-document-agent/task.md

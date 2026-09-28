@@ -1,0 +1,19 @@
+{
+  "producer": "Codex main",
+  "phase": "batch",
+  "batch": 1,
+  "time": "2026-09-29T00:11:53.448890+08:00",
+  "head": "e92b5356df0026be28abd84176a621870fb562c7",
+  "candidate_sha256": {
+    "AGENTS.md": "ab1e2b0bbf164633fe77950ba6dc89bef827a75919fed48d4317e50df09336f8",
+    "tools/relay-light/skill/SKILL.md": "7eb472f0eb86102eb37d202ffb85ab6dc92dd99faceeca91dcdf09ee3d01f730",
+    "tools/relay-light/skill/references/adapter-claude-code.md": "91bdcc10fe86ca2202db0036c8e305c4e2fc5d7716f0ad18c35ebf46da3e3614",
+    "tools/relay-light/skill/references/adapter-codex.md": "d8915f1c98b75bdd4c08819544dc39cf60ca9852174a5421c8fecc5a8994b509"
+  },
+  "command": "python3 -m unittest discover -s tools/relay-light -p test_install_skill.py",
+  "exit_code": 0,
+  "stdout": "installed: /tmp/tmpjf2ut6s3/home/.claude/skills/relay-light\ninstalled: /tmp/tmpjf2ut6s3/home/.codex/skills/relay-light\ninstalled: /tmp/tmp8mjcjge3/home/.claude/skills/relay-light\ninstalled: /tmp/tmp8mjcjge3/home/.codex/skills/relay-light\ninstalled: /tmp/tmp863ofjtd/home/.claude/skills/relay-light\ninstalled: /tmp/tmp863ofjtd/home/.codex/skills/relay-light\ninstalled: /tmp/tmp863ofjtd/home/.claude/skills/relay-light\ninstalled: /tmp/tmp863ofjtd/home/.codex/skills/relay-light\ninstalled: /tmp/tmptxhxwlwh/home/.claude/skills/relay-light\ninstalled: /tmp/tmptxhxwlwh/home/.codex/skills/relay-light\ninstalled: /tmp/tmptxhxwlwh/home/.claude/skills/relay-light\ninstalled: /tmp/tmptxhxwlwh/home/.codex/skills/relay-light\ninstalled: /tmp/tmpxd_3v1cy/home/.claude/skills/relay-light\ninstalled: /tmp/tmpxd_3v1cy/home/.codex/skills/relay-light\n",
+  "stderr": ".usage: install_skill.py [-h] --all\ninstall_skill.py: error: the following arguments are required: --all\nusage: install_skill.py [-h] --all\ninstall_skill.py: error: the following arguments are required: --all\nusage: install_skill.py [-h] --all\ninstall_skill.py: error: the following arguments are required: --all\nusage: install_skill.py [-h] --all\ninstall_skill.py: error: unrecognized arguments: extra\n...error: injected mid-copy failure\n...error: skill source incomplete, missing: dh-mapping.toml\n............\n----------------------------------------------------------------------\nRan 19 tests in 0.425s\n\nOK\n",
+  "summary": "四个产品文档新增opt-in document分工，九phase不变；无代码/配置/测试代码改动。",
+  "limits": "结构测试不证明文档来源或写入边界有程序硬门；真实分工仍在本卡试跑中。"
+}

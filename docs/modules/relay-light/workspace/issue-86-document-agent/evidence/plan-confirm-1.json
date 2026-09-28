@@ -1,0 +1,32 @@
+{
+  "task": "issue-86",
+  "phase": "plan-review",
+  "review_round": 1,
+  "remediation_count": 0,
+  "type": "transcription_confirmation",
+  "reviewer_session": "plan-reviewer#1 (rlt86-plan-review, w4K:t4/p4, swe-2-high, session=kpi-agg)",
+  "objects_checked": {
+    "evidence/plan-review-1.json": "sha256:b73ce2a199e5dba01978cd81c239ef030ea57075de8c4b7bf537692b5a652fca (unchanged since round-1 write)",
+    "review.md": "sha256:6204d3688042602a313b16ae36b92ef97ffb82c392203abab4f120c325f75eaf",
+    "task.md": "sha256:db6c051fb6aba2d6645d523a0b47d49adda687a3fdb91976cdacb499588a82d5",
+    "DONE.plan-review.document-plan-summary.md": "sha256:0d694fed4e519c54ef1ab33d346a7be87d62345680c8f433568f60e468108cfd (verdict=SYNCED, path=document-plan-summary, correctly not consumed as PASS)"
+  },
+  "mapping_check": {
+    "verdict_transcription": "review.md plan-review line records READY_FOR_DOCUMENT, P0/P1=0, explicitly marked 非正式 PASS — faithful to plan-review-1.json verdict",
+    "findings_transcription": "F-R1(P2)/F-R2(P3)/F-R3(P3) levels and substance faithfully transcribed into review.md and findings.md F-005/F-006/F-007",
+    "evidence_links": "review.md references evidence/plan-review-1.json + DONE.plan-review.reviewer-1.md correctly"
+  },
+  "scope_tightening_check": {
+    "roles_toml_conditional": "REMOVED — task.md line 54 now 'roles.toml 不动；本卡不改任何配置或测试代码' (was: conditional allowance). Pure tightening, resolves F-R1.",
+    "no_new_goals": "CONFIRMED — 目标(3)/协议要点/验收候选(6)/范围边界 otherwise unchanged; no scope expansion."
+  },
+  "source_attribution_check": "review.md 确认记录 now distinguishes user-frozen items (分工+模型) from Codex main-session implementation proposals (document-as-role/path/verdict) — as required",
+  "residual_observations": [
+    {
+      "severity": "P3",
+      "note": "progress.md log line '实施方案精简|用户修正' still attributes the implementation simplification to the user, while review.md now attributes it to the Codex main session. Historical log entry; authoritative distinction exists in review.md. No action required."
+    }
+  ],
+  "verdict": "PASS",
+  "verdict_basis": "Transcription of plan-review-1.json into review.md/findings.md is faithful in conclusion, severity levels and evidence mapping; roles.toml conditional removed as pure tightening with no new goals; source attribution distinguished; no new P1. PASS is routable for plan phase."
+}
