@@ -4,6 +4,7 @@
 > 落点：本计划、账本与 `config/`（roles.toml + dh-mapping.toml）都在 dh-relay 仓 `docs/relay/wf-analytics-platform/task-runtime/p21-normal/`；施工对象是 wf-analytics-platform 仓（下文 `wf-analytics-platform:` 前缀为该仓相对路径）。所有 relay_log 调用 `--config-dir` 指向本目录 `config/`。
 > 卡：[P21 §TRT_22](wf-analytics-platform:poc_core_kpi_web/poc_core_kpi_web_v2/docs/modules/task-runtime/dev_plan/P21-任务运行可靠性收敛-开发方案.md)（normal）与 [P21 §TRT_20](wf-analytics-platform:poc_core_kpi_web/poc_core_kpi_web_v2/docs/modules/task-runtime/dev_plan/P21-任务运行可靠性收敛-开发方案.md)（normal）；同计划 TRT_21 为 heavy，另开 `relay/p21-heavy` 计划，不进本计划。工作区已预建：`workspace/71-TRT_22-cleanup-connection-restore/`、`workspace/69-TRT_20-task-polling-reliability/`（七件套与分批 task_plan 均已有，W 阶段只补齐实施基线与精确路径核对，不重写）。
 > 基线：master `39a24a8fc`（relay=ThinkBook=GitLab+MR!93）。worktree：`/home/nash/work/wf-analytics-platform/.dh-worktrees/TRT_22`（分支 `wt/TRT_22`）与 `.dh-worktrees/TRT_20`（`wt/TRT_20`），开工前由主控按 [worker 建树三软链约定](wf-analytics-platform:poc_core_kpi_web/poc_core_kpi_web_v2/README.md) 建好（`.venv`、`frontend/node_modules`、`backend/data/datasets`）。本机 `dh.role=worker`：只在 wt 分支施工、push 到本机 relay 裸仓；MR/合入/deploy/test/verify 由主控与用户另行授权，不进本计划。
+> **TRT_20 测试通道（2026-09-21 用户裁决：本机不装 node_modules，直接在 test 环境跑）**：单测与组件测试在 integrator 机跑——coder 每批 `git push origin wt/TRT_20`（本机 relay）后执行 `ssh -n -S none thinkbook 'cmd /c "chcp 65001 >nul & %TEMP%\trt20_test.cmd <相对 frontend 的测试文件…>"'`（脚本副本在本计划目录 `tb_trt20_test.cmd`，它在 integrator 机 `C:\t\TRT_20` 检出 relay 的 wt/TRT_20 并用主仓 node_modules 跑 vitest，末行 `VITEST_EXIT=<code>`），输出原样记入 progress.md；`npm run build`（vue-tsc）同法可跑。编排的建树前置对 TRT_20 树免查 `frontend/node_modules`。T4（真实浏览器演示）改为：F2 后由主控把 wt/TRT_20 与 master 同步进 GitLab `deploy/test`，用户在发布系统构建并重启，再在 test 前端演示，证据回填 69 工作区。
 > decision_mode=auto：施工 blocked 时 decider 按合同内裁决直接 resume（越界、改计划、需 test/服务器、需新装包的一律 `escalate` 到 strategist → 用户，不得自决）。TRT_20 B0 的「查询等待预算」与「隐藏页策略」两项 P21 要求开工前冻结：decider 可按正式设计 §STB-A01 现有口径冻结并写入 decision 文件，不得扩展允许路径。
 
 ## 节点表
@@ -16,13 +17,13 @@
 | R1 | TRT_22 | TRT_22:R#1 | review | agent:scribe | C2 | normal：requirement + lesson 并行；scribe 跑 `dh task-runtime` 体检、B3 回归命令并汇总 review.md |
 | X1 | TRT_22 | TRT_22:X#1 | rework | agent:requirement | R1 | 仅当 R1 stage_result 带 rework_required 才进入；coder 新实例修 requirement 打回项（STB-A03 commit 失败场景补真实测试证据），requirement 再审；轮数上限 2 |
 | F1 | TRT_22 | TRT_22:F#1 | handoff | agent:scribe | X1 | R1 无返工时 X1 由编排按 outcome 直接跳过（账本不开 X1 节点，F1 视 R1 为前置）；备料：as-built 段落、AI 提交区、交付汇报、STB-A03 证据清单；不 push GitLab、不建 MR、不 verify |
-| W2 | TRT_20 | TRT_20:W#1 | build | agent:plan-reviewer | F1 | builder 核对 69 工作区与 task_plan 对基线成立，补齐 B0 冻结项模板（等待预算来源、隐藏页策略）；plan-reviewer 按 normal 审 |
+| W2 | TRT_20 | TRT_20:W#1 | build | agent:plan-reviewer | F1 | builder 核对 69 工作区与 task_plan 对基线成立，补齐 B0 冻结项模板（等待预算来源、隐藏页策略）；**把 task_plan 的验证命令改为「远程测试通道」**（见前言「TRT_20 测试通道」），T4 真实浏览器演示改为 test 环境部署后由主控与用户做；plan-reviewer 按 normal 审 |
 | C3 | TRT_20 | TRT_20:C#1 | construction | agent:checker | W2 | task_plan B0+B1：冻结交互合同与复现基线；真实查询有界等待与协议分类（含真实 fetch 中止/清理） |
 | C4 | TRT_20 | TRT_20:C#2 | construction | agent:checker | C3 | task_plan B2：单飞轮询与状态保留（同页两条 GET 链全部经轮询 composable，审核 P1 项） |
-| C5 | TRT_20 | TRT_20:C#3 | construction | agent:checker | C4 | task_plan B3：页面接线与真实场景演示（本地 vitest + 组件测试；无 test 环境） |
+| C5 | TRT_20 | TRT_20:C#3 | construction | agent:checker | C4 | task_plan B3：页面接线 + T3 组件测试（远程通道）；T4 真实浏览器演示不在本节点，留 F2 备料后在 test 环境做 |
 | R2 | TRT_20 | TRT_20:R#1 | review | agent:scribe | C5 | normal：requirement + lesson；scribe 跑前端定向测试与 `dh task-runtime` 体检，汇总 review.md |
 | X2 | TRT_20 | TRT_20:X#1 | rework | agent:requirement | R2 | 同 X1 语义 |
-| F2 | TRT_20 | TRT_20:F#1 | handoff | agent:scribe | X2 | 备料同 F1；另列 test 人验（STB-H 项）步骤清单交主控 |
+| F2 | TRT_20 | TRT_20:F#1 | handoff | agent:scribe | X2 | 备料同 F1；另备 deploy/test 同步与发布步骤清单（integrator 机操作 + 用户在发布系统构建/重启）与 T4 浏览器演示清单；另列 test 人验（STB-H 项）步骤清单交主控 |
 
 ## agent 表
 
