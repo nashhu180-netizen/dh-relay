@@ -6,13 +6,15 @@
 
 关联原工作项：WFP P1 GitLab #58、OBD P5 GitLab #59（链接见原计划）。本表是已有计划的衔接索引，不是新增 dh-relay 设计、DevPlan 或任务卡。本次仅本地文档编辑，未创建 Issue、commit、push 或 PR。
 
-最近核对：2026-09-28 16:32:57 +08:00。状态为此次只读快照，恢复时重新核实。
+最近核对：2026-09-28 17:26:52 +08:00（WFP_02 行，维护会话核对）。其余行沿用 16:32:57 只读快照，恢复时重新核实。
+
+**维护会话（唯一写入者）**：WFP_02 单卡 orchestrator `wfp02-orch`（Herdr session `kpi-agg` · `w4D:t1`/`w4D:p1`，Claude Code 会话 `ae153b69-c9a3-43e8-a1d8-0c5c0da03b77`）；用户 2026-09-28 指定。恢复入口：WFP_02 工作区 `execution_strategy.md`「卡级总表关联」。其它卡的 orchestrator/worker/reviewer/watcher 不直接写本表，在各自既有交接工件提供行更新与证据指针，由维护会话顺序汇总；更换维护人须先交接并同步两处关联记录。
 
 ## 权威来源与恢复入口
 
 - **WFP P1**：`wf-analytics-platform:poc_core_kpi_web/poc_core_kpi_web_v2/docs/modules/workflow-platform/dev_plan/P1-Prefect双轨平台-开发方案.md`；§2.3/§2.4 交接合同、§3.1 依赖及各原卡。
 - **OBD P5**：`wf-analytics-platform:poc_core_kpi_web/poc_core_kpi_web_v2/docs/modules/base-data/dev_plan/P5-注册登录合并表-Prefect接入-开发方案.md`；§2 职责、§3.1 依赖及各原卡。
-- WFP 本次当前输入取自 `/home/nash/work/wf-analytics-platform/.dh-worktrees/WFP_02`，分支 `wt/WFP_02`，HEAD `63ace8baa9455a9526a23ae4470f7923e474dacb`；有在途 WIP，未改动。
+- WFP 本次当前输入取自 `/home/nash/work/wf-analytics-platform/.dh-worktrees/WFP_02`，分支 `wt/WFP_02`，16:32 快照 HEAD `63ace8baa9455a9526a23ae4470f7923e474dacb`；17:26 维护会话复核 HEAD `945e6fba0`（B0 `8134ea567`、B1 `945e6fba0` 已按批提交），B2 未提交 WIP 在途、未改动。
 - OBD P5 本次读取于 WFP_01 checkout，HEAD `46eade4a0fad173c5816463f7deabf1cba3a25a7`。OBD_41 verify `1133cf3dd` 与 WFP_01 verify `0c5c2a44b` 本地均存在；完成状态引用原卡登记，不代表本次重做环境验收。
 - **WFP_02 工作区**：`wf-analytics-platform:poc_core_kpi_web/poc_core_kpi_web_v2/docs/modules/workflow-platform/workspace/02-WFP_02-产品请求事实与幂等提交/`。恢复读 `execution_strategy.md`、worker 自写 signals、独立 review/decision 与 Herdr 实态。本次只核文件，未探测 agent 存活，不把文档角色状态当作实时进程事实。
 - WFP_01 checkout 中 WFP_02「未开始」是旧副本；此表采用 WFP_02 checkout 的进行中登记及用户本轮说明。OBD P5 顶部「全部未开始」同样滞后，本次依据其 §3.1 的 OBD_41 已完成登记。
@@ -27,7 +29,7 @@
 |---|---|---|---|
 | **WFP_01** 环境与归属基线；WFP P1 原卡及 workspace | 目标环境、版本、归属及底座验收 | 已交棒：原卡已完成，verify `0c5c2a44b` | WFP_02；下游继续引用原环境/归属证据 |
 | **OBD_41** 大奉 SQL 与源对数；OBD P5 原卡及 workspace | SQL 写前/写后用户确认及源对数 | 已交棒：原卡已完成，verify `1133cf3dd` | OBD_42 消费已审 SQL/表合同及对数证据 |
-| **WFP_02** 请求事实、幂等提交与最小 CLI；WFP P1 原卡，恢复入口见上 | WFP_01 验收及本卡既有开工授权 | 进行中：沿用现有 single-task；execution_strategy 记 B0 施工中，未宣称批次通过 | 原编排继续；验收后交 WFP_03，并为 OBD_42 提供接口/测试/SHA |
+| **WFP_02** 请求事实、幂等提交与最小 CLI；WFP P1 原卡，恢复入口见上 | WFP_01 验收及本卡既有开工授权 | 进行中：沿用现有 single-task（B0～B6）。B0 batch-review PASS（`dispatches/check-B0-1.md`，提交 `8134ea567`）；B1 PASS（`dispatches/check-B1-1.md`，提交 `945e6fba0`）；B2 施工中。batch PASS 不等于卡验收：workflow-final、MR、合入、verify 均未发生 | 原编排继续；验收后交 WFP_03，并为 OBD_42 提供接口/测试/SHA |
 | **WFP_03** 委托权限、开跑核验与发布准入；WFP P1 原卡 | WFP_02 验收 | 等待：WFP_02 | 验收接口/测试/SHA 交 OBD_42；权限/准入交 WFP_04/05/06/10 |
 | **OBD_42** 查询与暂存业务部件；OBD P5 原卡 | OBD_41；WFP_02、WFP_03 已验收接口/测试/SHA | 等待：WFP_02、WFP_03 | 查询/暂存/安全清理及源能力证据交 WFP_04；业务部件交 OBD_43/44 |
 | **WFP_04** 查询与暂存的平台接线；WFP P1 原卡 | WFP_03、OBD_42；已确认表合同及源能力证据 | 等待：WFP_03、OBD_42 | 已校验暂存、外部请求/query ID/unknown/owner 事实交 WFP_05/06 |
