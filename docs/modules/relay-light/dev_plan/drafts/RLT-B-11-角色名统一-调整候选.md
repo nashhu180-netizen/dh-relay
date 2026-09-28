@@ -1,6 +1,6 @@
-<!-- dh:v1 · RLT-B-11 B-adjust 候选稿 v2 · 未生效。不得作为 D 开工输入；用户确认后才落 dev_plan/P1-RelayLight-开发方案.md。 -->
+<!-- dh:v1 · RLT-B-11 B-adjust 候选稿 v2 · 已于 2026-09-28 落盘（形成史）。不得作为 D 开工输入；用户确认后才落 dev_plan/P1-RelayLight-开发方案.md。 -->
 
-# ⚠️ 未生效候选稿 ⚠️ — RLT-B-11：新增 RLT_30「角色名统一施工」
+# RLT-B-11（已落盘，形成史）：新增 RLT_30「角色名统一施工」
 
 - **规划输入**：只读已晋级的 `design/01`（RLT-A-15，用户 2026-09-28 整版确认，`7e05f34`）；不读候选稿/evidence 作为规划依据。
 - **GitHub**：Issue **#70**；分支 `plan/RLT_A_15`（PR #71，A-15 设计与本卡同一 PR 收口）。
