@@ -2,6 +2,8 @@
 <!-- dh:workspace-contract:v2 -->
 # RLT_27 / Issue #52
 
+> **已终止 · 2026-09-28**：用户因 relay-light 已修改取消本任务。下述合同仅留历史，不再执行、不补 verify；证据与清理记录见 progress.md 的终止归档节。
+
 ## 覆盖任务
 
 RLT_27；下述原开工合同保留。2026-09-20 用户随后明确授权本卡 commit、push、PR、CI 后 GitHub 合并、两端同步、verify 与任务树/分支清理；旧任务不续做。此授权只解除版本收口限制，不扩大试跑验收命题。
