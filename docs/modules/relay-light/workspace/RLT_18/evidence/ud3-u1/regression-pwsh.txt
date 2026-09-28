@@ -1,0 +1,8 @@
+# regression-pwsh — RLT_18 UD-3 U1 (coder#ud3, 2026-09-24T08:17:46Z)
+# cwd: repo root
+$ PYTHONDONTWRITEBYTECODE=1 pwsh -NoProfile -File tools/tests/run-relay-tests.ps1 2>&1 | tail -5
+installed: /tmp/tmp37p7xt9x/home/.claude/skills/relay-light
+installed: /tmp/tmp37p7xt9x/home/.codex/skills/relay-light
+installed: /tmp/tmphi20m38y/home/.claude/skills/relay-light
+installed: /tmp/tmphi20m38y/home/.codex/skills/relay-light
+RELAY ALL PASS (SKIPPED: 1)

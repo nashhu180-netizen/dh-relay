@@ -1,0 +1,30 @@
+# GREEN evidence — RLT_18 UD-3 U1 (coder#ud3, 2026-09-24T08:09:05Z)
+# cwd: tools/relay-light
+$ PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_relay_log.SkillAdapterTests test_relay_log.SkillCoreDocTests test_relay_log.WatchTests -v 2>&1 | tail -3
+Ran 76 tests in 6.232s
+
+OK
+
+$ grep -c 'stage-stalled\|依赖人工' skill/references/adapter-*.md   # 均 0
+skill/references/adapter-claude-code.md:0
+skill/references/adapter-codex.md:0
+
+$ grep -c 'watch-down' skill/references/adapter-*.md   # 均 ≥2
+skill/references/adapter-claude-code.md:3
+skill/references/adapter-codex.md:3
+
+$ grep -c 'sleep 600' skill/references/adapter-*.md   # 均 ≥1
+skill/references/adapter-claude-code.md:1
+skill/references/adapter-codex.md:1
+$ git diff 5ab3bba --stat -- tools/relay-light/relay_log.py
+ tools/relay-light/relay_log.py | 463 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 463 insertions(+)
+
+$ git diff a6773e7 --stat -- tools/relay-light/relay_log.py   # 期望空（本整改零改动）
+(empty)
+
+$ git -c core.quotepath=false diff 5ab3bba -U0 -- tools/relay-light/skill/SKILL.md | grep -c '^@@'   # 期望 3
+3
+
+$ git -c core.quotepath=false diff a6773e7 -U0 -- tools/relay-light/skill/SKILL.md | grep -c '^@@'   # 期望 2
+2

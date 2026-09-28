@@ -1,0 +1,8 @@
+# regression-pwsh — RLT_18 batch 1
+# command: PYTHONDONTWRITEBYTECODE=1 pwsh -NoProfile -File tools/tests/run-relay-tests.ps1
+# date: 2026-09-23T18:04:46Z
+
+## remediation-1 复跑（check.batch-1 P1-1，代码未变）
+All suites PASS including relay-light-log.ps1 (245 python tests) and install tests (19)
+RELAY ALL PASS (SKIPPED: 1)
+exit_code=0

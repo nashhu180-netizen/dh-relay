@@ -1,0 +1,14 @@
+# cleanup verify — 2026-09-24 17:32:06.664 +0800
+## __pycache__ audit (git status untracked)
+(no __pycache__ in git status)
+## fixture lint
+lint: ok
+lint exit=0
+## regressions — observed 2026-09-24 17:50:14 +0800
+cmd1: cd tools/relay-light && PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_relay_log
+result: Ran 274 tests in 468.760s / OK / exit=0
+cmd2: PYTHONDONTWRITEBYTECODE=1 pwsh -NoProfile -File tools/tests/run-relay-tests.ps1
+result tail:
+installed: /tmp/tmp8zygfg_c/home/.claude/skills/relay-light
+installed: /tmp/tmp8zygfg_c/home/.codex/skills/relay-light
+RELAY ALL PASS (SKIPPED: 1)

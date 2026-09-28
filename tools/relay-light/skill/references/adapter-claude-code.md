@@ -71,7 +71,25 @@ bash -lc "python3 <RELAY_LOG> status --plan <plan_dir> --json --config-dir <plan
 编排拉起 stage-lead、人拉起编排时，派单文案必须原样含等待硬规则：
 
 ```text
-硬规则：`wait` 返回时必须有接收者（watch 推送 / 前台阻塞循环 / 后台退出唤醒三选一）；watch 未实现时不得结束回合空等。
+硬规则：`wait` 返回时必须有接收者（watch 推送 / 前台阻塞循环 / 后台退出唤醒三选一）；无 watch 时不得结束回合空等。
+```
+
+## 拉起 watcher 的 prompt 片段
+
+派活方**先起 watch 后起 watcher**——stage-lead 拉本阶段终端空间的一个、编排拉编排终端空间的一个（每终端空间一个）。watcher 拉起后立即检查一次（看不到即报），随后进入 10 分钟节拍。watcher 用低档，缺省沿用 `roles.toml` `[monitor]` 档，由派活方拉起时指定。派单片段：
+
+```text
+[relay-light] watcher · space=<stage_id|orchestrator> · notify=<派活方 Herdr 名> · plan=<plan_dir>
+你是本终端空间的 watcher：只读巡检本空间 watch 是否存活，每 10 分钟一轮；拉起后立即检查一次，随后用 run_in_background 跑 sleep 600 作节拍（进程退出唤醒本 session；不写前台长 sleep）。
+每轮先核 watch 存活，按本空间层级取一式：
+- 阶段空间：`pgrep -af -- 'relay_log.py watch --plan <plan_dir> --notify <stage-lead 的 Herdr 名> --level stage' | grep -v 'pgrep' | grep -Ev "^($$|$PPID) "`
+- 编排空间：`pgrep -af -- 'relay_log.py watch --plan <plan_dir> --notify <编排的 Herdr 名> --level plan' | grep -v 'pgrep' | grep -Ev "^($$|$PPID) "`
+Windows 同式：
+- 阶段空间：`Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*relay_log.py watch --plan <plan_dir> --notify <stage-lead 的 Herdr 名> --level stage*' -and $_.CommandLine -notlike '*Get-CimInstance*' -and $_.ProcessId -ne $PID }`
+- 编排空间：`Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*relay_log.py watch --plan <plan_dir> --notify <编排的 Herdr 名> --level plan*' -and $_.CommandLine -notlike '*Get-CimInstance*' -and $_.ProcessId -ne $PID }`
+非空即存活（循环壳或 python 任一命中，勿缩窄）。
+为空再只读判本层是否已正常结束：`python3 <RELAY_LOG> status --plan <plan_dir> --json --config-dir <plan_dir>/config/`——阶段级：stages[] 中本 stage_id 的 nodes 在 nodes[] 里全部 state=closed，或该 stage state=closed；编排级：open_stages 与 pending_nodes 均空且 stages[-1] state=closed。已结束 → 静默，打印 WATCHER_STOPPED 结束巡检。未结束或 status 读失败 → 报信：`herdr agent prompt <派活方> "[relay-light] watch-down stage <stage_id>"`（编排空间：`"[relay-light] watch-down plan plan"`），发完读派活方 pane 末行，只在出现 `queued` / `Press Enter to send` 时补一次 Enter，其它输入框残留一律不碰。同一缺席期每轮至多一条、连续 3 轮报信后 watch 仍缺席 → 打印 WATCHER_GAVE_UP 收声，不再发任何 prompt；期间 watch 恢复则计数清零、静默。
+硬规则：只读；不重拉 watch、不写账、不改文件、不派活、不判内容。
 ```
 
 ## 派活提交纪律
@@ -84,13 +102,38 @@ bash -lc "python3 <RELAY_LOG> status --plan <plan_dir> --json --config-dir <plan
 
 ## 等待与接收者（硬规则）
 
-`herdr agent wait` 是阻塞式 CLI、不是推送——**返回那一刻必须有接收者**，没人听信号就丢。三种满足方式：
+`herdr agent wait` 是阻塞式 CLI、不是推送——**`wait` 返回时必须有接收者**，没人听信号就丢。三种满足方式：
 
-1. **watch 推送**（设计已冻结、尚未实现；实现后由它唤醒监听者，收到 `[relay-light] tick` 对账）
-2. **前台阻塞循环**：`herdr agent wait <agent> --timeout 1200000`（自带 20 分钟节拍）；返回后按状态分路——`blocked` → 账本记 `blocked` 走升级链；`done`/`idle` → **有判定方的节点读判定方结论**（stage-lead 不自己判内容）、无判定方的只做形式核（产出存在、非空、在允许路径内），过了才写账本的 `done`
+1. **watch 推送（默认）**：沿用本侧「一 agent 一 tab」约定，在当前阶段终端空间单独开一个 tab，跑 shell 重启循环包住 watch：
+
+   ```bash
+   while :; do python3 <RELAY_LOG> watch --plan <plan_dir> --notify <自己的 Herdr 名> --level <stage|plan> --config-dir <plan_dir>/config/; rc=$?; case $rc in 0|2|3|4) break;; esac; sleep 5; done
+   ```
+
+   Windows（`python`）：
+
+   ```powershell
+   while ($true) { python <RELAY_LOG> watch --plan <plan_dir> --notify <自己的 Herdr 名> --level <stage|plan> --config-dir <plan_dir>/config/; if ($LASTEXITCODE -in 0,2,3,4) { break }; Start-Sleep 5 }
+   ```
+
+   stage-lead 位 `--level stage`、编排位 `--level plan`；watch 只通知不写账、每 20 分钟发 `[relay-light] tick`，收到 tick 跑 `status --json` 与 `herdr agent list` 对账。调用行参数顺序固定（`--plan … --notify …` 是 watch 后首两位），存活检查按它定位层级。进程崩溃/被杀几秒内由循环重拉；退出码 {0,2,3,4} 是正常结束或确定性错误、不重拉；重启后去重与 tick 计时从零开始，已 settled 的在场 agent 可能各再收一次通知，按对账处理。watch 起来后在本空间拉起 watcher（见「拉起 watcher 的 prompt 片段」）。
+
+2. **前台阻塞循环（无 watch 回退）**：`herdr agent wait <agent> --timeout 1200000`（自带 20 分钟节拍）；返回后按状态分路——`blocked` → 账本记 `blocked` 走升级链；`done`/`idle` → **有判定方的节点读判定方结论**（stage-lead 不自己判内容）、无判定方的只做形式核（产出存在、非空、在允许路径内），过了才写账本的 `done`
 3. **Claude 侧后台**：`run_in_background` 挂 wait，进程退出会唤醒本 session
 
-watch 未实现前**一律走方式 2 或 3**，不得结束回合空等。`agent wait --until blocked` 只作可选模式，不是默认。
+节拍归属：有 watch → 20 分钟节拍由 watch 维持（`[relay-light] tick`）；无 watch → 由前台 `wait --timeout 1200000` 维持。watch 存活巡检 10 分钟节拍由 watcher 维持。watch 未启动或不可用时回退方式 2（Claude 侧可 3）；**无 watch 时不得结束回合空等**，有 watch 时允许结束回合、靠 prompt 唤醒。`agent wait --until blocked` 只作可选模式，不是默认。
+
+stage-lead 记 `agent_launch`、编排记 `monitor_launch` 时在 note 写 `herdr=<Herdr 名>`（watch 用它找要挂的 Herdr agent）；未写时 watch 按 `<名字>-<attempt>` 猜。
+
+### watch 死亡处置
+
+- **进程级**：watch 不直接在 tab 里跑，跑的是上面那条重启循环——崩溃/被杀几秒内自动重拉；0/2/3/4 退出是正常结束或确定性错误，循环停下不空转。
+- **watcher 巡检**（阶段级与编排级同一套）：watch 的 pane 被关时，由本空间 watcher 每 10 分钟只读巡检发现——阶段空间 watcher 报信 stage-lead、编排空间 watcher 报信编排去重拉；拉起时机、检查命令与判死口径见「拉起 watcher 的 prompt 片段」。
+- **stage-lead 位**：整个 watch pane 被关时由本空间 watcher 每 10 分钟巡检发现。收到 `[relay-light] watch-down stage <stage_id>` 或任何唤醒时，先核自己这一层 watch 是否还活着：`pgrep -af -- 'relay_log.py watch --plan <plan_dir> --notify <自己的 Herdr 名> --level stage' | grep -v 'pgrep' | grep -Ev "^($$|$PPID) "`；Windows：`Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*relay_log.py watch --plan <plan_dir> --notify <自己的 Herdr 名> --level stage*' -and $_.CommandLine -notlike '*Get-CimInstance*' -and $_.ProcessId -ne $PID }`。过滤不能省——在 `bash -c`/`pwsh -Command` 包装里执行时，包装壳 cmdline 自带本检查全文（必含 `pgrep`/`Get-CimInstance` 字样）且进程即 `$$`/`$PID`（其父即 `$PPID`），裸 `pgrep -f`/`-like` 会命中包装壳自身报出幻 PID。`--notify` 配 `--level stage` 才只认自己这一层，编排级 watch 命中不算（同 plan 下两个共用同一 `--notify` 名的 stage 级 watch 则互相不能区分，按名定位的固有边界）；循环壳或 python 任一命中即算存活——勿缩窄成只认 `python`，重启循环 `sleep 5` 窗口期 python 暂死会把活 watch 误判死，人工重拉与自动重拉撞出双 watch。不在则按重启循环重拉，或改前台 `herdr agent wait <agent> --timeout 1200000`。
+- **编排位**：收到 `[relay-light] tick` 就跑 `status --json` 与 `herdr agent list` 做 §7.2 通用对账，不做 watch 存活判定、不发任何 stall 提示。收到 `[relay-light] watch-down plan plan` 时核自己这一层 watch（`--notify <自己的 Herdr 名> --level plan`，同 C1-1 写法），不在则按重启循环重拉。
+- **watcher 自身缺席**：派活方在 tick 对账见 `herdr agent list` 无本空间 watcher 时顺带重拉，不另设巡检节拍。
+- **报信目标随派活方重拉**（stage-lead / 编排被重拉时）：Herdr 名不变则本层 watch 的 `--notify` 与 watcher 的 `notify=` 报信目标无需切换；换了新名，派活方按重启循环重拉本层 watch（`--notify` 改指新名）并按派单片段重派本空间 watcher（`notify=` 新名）。
+- 完整 relay 每终端空间一个 watcher agent，10 分钟只读巡检本空间 watch、只报信本空间派活方；watch 只通知不写账、不做停滞检测；编排不承担 watch 存活对账。
 
 **编排等待纪律**：编排侧等 stage-lead 时优先用账本文件事件监听（盯 `relay_log.jsonl` 新行到达），不用后台 `wait`/轮询进程（会被系统回收丢唤醒）；并配「stage-lead 连续空闲 ≥2 分钟且无新账本行」告警——命中即巡检该 stage-lead pane 末行与 Herdr 状态，按 stalled/ledger_silent 口径处置，不空等。
 

@@ -1,0 +1,1 @@
+DONE task=RLT_18 phase=plan agent=builder#a14 batch=na path=a14 review_round=0 remediation_count=0 verdict=READY evidence=docs/modules/relay-light/design/drafts/A14/A14-候选.md,docs/modules/relay-light/design/drafts/A14/brief.md,docs/modules/relay-light/design/drafts/A14/issue-65-扩界.md

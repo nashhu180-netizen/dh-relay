@@ -1,0 +1,6 @@
+# watch loops start — 2026-09-24 17:01:49 +0800
+## pane run w4B:p1N stage watch at 17:01:49.772
+## pane run w4B:p1P plan watch at 17:01:49.777
+## watch pythons at 17:01:55.785
+535991 python3 /home/nash/work/dh-relay/.dh-worktrees/RLT_18/tools/relay-light/relay_log.py watch --plan /home/nash/work/dh-relay/.dh-worktrees/RLT_18/docs/modules/relay-light/workspace/RLT_18/evidence/ud3-h12/fixture/h12v2 --notify rlt18-probe-u3-lead --level stage --config-dir /home/nash/work/dh-relay/.dh-worktrees/RLT_18/docs/modules/relay-light/workspace/RLT_18/evidence/ud3-h12/fixture/h12v2/config/
+535995 python3 /home/nash/work/dh-relay/.dh-worktrees/RLT_18/tools/relay-light/relay_log.py watch --plan /home/nash/work/dh-relay/.dh-worktrees/RLT_18/docs/modules/relay-light/workspace/RLT_18/evidence/ud3-h12/fixture/h12v2 --notify rlt18-probe-u3-orch --level plan --config-dir /home/nash/work/dh-relay/.dh-worktrees/RLT_18/docs/modules/relay-light/workspace/RLT_18/evidence/ud3-h12/fixture/h12v2/config/

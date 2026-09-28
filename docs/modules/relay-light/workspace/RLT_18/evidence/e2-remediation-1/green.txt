@@ -1,0 +1,19 @@
+# E2 remediation 1 — GREEN（新用例 + 受影响 A101 用例）
+
+命令：
+    cd tools/relay-light && PYTHONDONTWRITEBYTECODE=1 python3 -m unittest \
+      test_relay_log.WatchTests.test_a83_14_monitor_relaunch_replaces_thread \
+      test_relay_log.WatchTests.test_a83_15_monitor_restart_after_relaunch \
+      test_relay_log.WatchTests.test_a101_1_watch_closure_has_no_writes \
+      test_relay_log.WatchTests.test_a101_2_checker_flags_injected_write \
+      test_relay_log.WatchTests.test_a101_3_watch_run_leaves_plan_and_ledger_bytes \
+      test_relay_log.WatchTests.test_a101_4_checker_flags_injected_bypass_writes -v
+
+结果：Ran 6 tests in 0.781s — OK（exit 0，无真 sleep）
+
+- test_a83_14：第二条 monitor_launch → monitor#1 线程退出、
+  watch:DHR_90:W#1:monitor#2 spawn、wait@30/get@60 打在 lead-w2、
+  lead-w 上零新调用、[relay-light] monitor#2 -> idle 通知到 orch-1。
+- test_a83_15：同序列 + monitor_restart(monitor#2) → 同断言全过。
+- test_a101_4：注入 Path.open/unlink、os.remove、tempfile.*、["tee",…]
+  全部被新 oracle 判违规；test_a101_1 对未变异实现仍 []。

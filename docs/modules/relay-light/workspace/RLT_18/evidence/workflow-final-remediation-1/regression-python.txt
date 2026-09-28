@@ -1,0 +1,31 @@
+.usage: install_skill.py [-h] --all
+install_skill.py: error: the following arguments are required: --all
+usage: install_skill.py [-h] --all
+install_skill.py: error: the following arguments are required: --all
+usage: install_skill.py [-h] --all
+install_skill.py: error: the following arguments are required: --all
+usage: install_skill.py [-h] --all
+install_skill.py: error: unrecognized arguments: extra
+...error: injected mid-copy failure
+...error: skill source incomplete, missing: dh-mapping.toml
+.................................................................................installed: /tmp/tmpy_txhmwc/home/.claude/skills/relay-light
+installed: /tmp/tmpy_txhmwc/home/.codex/skills/relay-light
+installed: /tmp/tmpm277mdht/home/.claude/skills/relay-light
+installed: /tmp/tmpm277mdht/home/.codex/skills/relay-light
+installed: /tmp/tmp1h2v0hz3/home/.claude/skills/relay-light
+installed: /tmp/tmp1h2v0hz3/home/.codex/skills/relay-light
+installed: /tmp/tmp1h2v0hz3/home/.claude/skills/relay-light
+installed: /tmp/tmp1h2v0hz3/home/.codex/skills/relay-light
+installed: /tmp/tmpxthz3yam/home/.claude/skills/relay-light
+installed: /tmp/tmpxthz3yam/home/.codex/skills/relay-light
+installed: /tmp/tmpxthz3yam/home/.claude/skills/relay-light
+installed: /tmp/tmpxthz3yam/home/.codex/skills/relay-light
+installed: /tmp/tmp5jqjztp4/home/.claude/skills/relay-light
+installed: /tmp/tmp5jqjztp4/home/.codex/skills/relay-light
+......lint: amend-check before ok (1 proposed path(s))
+........................................................................................................................................................watch: herdr prompt to lead-1 failed for '[relay-light] coder#1 -> idle'
+.....................................
+----------------------------------------------------------------------
+Ran 283 tests in 454.151s
+
+OK

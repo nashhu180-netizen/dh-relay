@@ -1,0 +1,11 @@
+# T1' (run-2) — close stage-level watch pane tab w4B:t16
+## pre-close 12:00:38.531
+4170554 python3 /home/nash/work/dh-relay/.dh-worktrees/RLT_18/tools/relay-light/relay_log.py watch --plan /home/nash/work/dh-relay/.dh-worktrees/RLT_18/docs/modules/relay-light/workspace/RLT_18/evidence/rq1-redemo/fixture/h12r --notify rlt18-probe2-lead --level stage --config-dir /home/nash/work/dh-relay/.dh-worktrees/RLT_18/docs/modules/relay-light/workspace/RLT_18/evidence/rq1-redemo/fixture/h12r/config/
+rlt18-probe2-lead done seq=2193
+rlt18-probe2-worker working seq=2187
+rlt18-probe2-orch done seq=2192
+## 12:00:38.723 herdr tab close w4B:t16
+{"id":"cli:tab:close","result":{"type":"ok"}}
+## post-close 12:00:40.755 residual:
+4170550 python3 /home/nash/work/dh-relay/.dh-worktrees/RLT_18/tools/relay-light/relay_log.py watch --plan /home/nash/work/dh-relay/.dh-worktrees/RLT_18/docs/modules/relay-light/workspace/RLT_18/evidence/rq1-redemo/fixture/h12r --notify rlt18-probe2-orch --level plan --config-dir /home/nash/work/dh-relay/.dh-worktrees/RLT_18/docs/modules/relay-light/workspace/RLT_18/evidence/rq1-redemo/fixture/h12r/config/
+(stage-level watch gone)

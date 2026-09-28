@@ -1,0 +1,15 @@
+# 异常记录 — orch pane 输入框中滞留的未提交 `[relay-light] tick`
+
+## 观测
+
+- ~07:54:2x 起（plan watch 启动后仅数十秒，其首个 1200s tick 尚不可能发出），rlt18-probe-orch 的输入框显示 `❯ [relay-light] tick`，未提交。
+- `herdr agent explain rlt18-probe-orch`（~07:57）:
+  state: idle；rule: live_prompt_box (region=prompt_box_body priority=950)；evidence: "❯ [relay-light] tick\n"
+- relay_log.py 中 `[relay-light] tick` 唯一发射点为 `_watch_prompt`（relay_log.py:3924，受 next_tick=启动+1200s 约束）；当时本批唯一 watch（plan, PID 3756944, lstart 07:54:03）不可能已 tick。
+- send-keys backspace×25 / esc 均不能清除该文本；`pane send-text 'ZZZ'` 后输入框显示 `❯ ZZZ`，再 3×backspace 后底层重新显示 `❯ [relay-light] tick` —— 表现为输入框上层的「排队消息预览」，非可编辑草稿。
+- 08:14 真实 tick 到达并被 orch 处理后，输入框恢复空 `❯`。
+
+## 同期其它滞留输入（同为未提交自然语言文本，源未确定）
+
+- lead-claude pane 先后出现 `check the output when it's done`、`Fine, run it in the background then`、`check on PYDONE`（均未提交；后续 agent prompt 到达时被覆盖/消失）。
+- 解释候选：操作者在 pane 直接键入的草稿，或某 send-text/queued prompt；均无提交动作，未驱动 agent 行为；不作判定，仅记录。

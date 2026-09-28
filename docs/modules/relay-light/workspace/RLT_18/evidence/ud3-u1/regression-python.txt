@@ -1,0 +1,8 @@
+# regression-python — RLT_18 UD-3 U1 (coder#ud3, 2026-09-24T08:09:31Z)
+# cwd: tools/relay-light
+$ PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s . -p 'test_*.py' 2>&1 | tail -5
+.........................................
+----------------------------------------------------------------------
+Ran 293 tests in 468.052s
+
+OK

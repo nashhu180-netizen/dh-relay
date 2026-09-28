@@ -1,0 +1,26 @@
+== §1.1 路径审计 · RLT_18 batch 2 (2026-09-25) ==
+
+--- 审计1: diff origin/master --name-only (worker 本批实际改动的文件) ---
+tools/relay-light/relay_log.py
+tools/relay-light/skill/SKILL.md
+tools/relay-light/skill/references/adapter-claude-code.md
+tools/relay-light/skill/references/adapter-codex.md
+tools/relay-light/test_relay_log.py
+
+(全量 name-only 含既有批工件: workspace/RLT_18/**, dev_plan 任务行, execution_strategy.md —— 均为 orchestrator/前批合法路径; 本批 coder 只动上述 5 个允许文件 + workspace/RLT_18/evidence/batch-2/ + progress.md + DONE 信号)
+
+--- 审计2: 禁动路径 --stat (期望空) ---
+(empty)
+
+--- 审计3: SKILL.md UD-2 hunk 数 (期望 ≤3) ---
+3
+hunk 标注:
+  @@ -40  : watcher 行          → UD-2 项① watcher/角色表行
+  @@ -287 : 硬规则 8            → UD-2 项② 「有 watch 时允许结束回合」
+  @@ -347 : 放弃项第 5 条        → UD-2 项③ 「盯屏」措辞更新, 去「watch 未实现」
+
+--- 审计4: __pycache__ (期望空) ---
+(grep exit 1 — 无输出=空)
+
+--- 附: relay_plan/relay_log 工件审计 (期望空, single-task 不建运行账本) ---
+(empty)

@@ -1,0 +1,7 @@
+# pgrep -f 自匹配复现记录
+
+- 08:15:23 本 driver 在 bash -c 包装内执行与 lead-claude brief 相同的存活检查：
+  bash -c "pgrep -f -- 'relay_log.py watch --plan /home/nash/work/dh-relay/.dh-worktrees/RLT_18/docs/modules/relay-light/workspace/RLT_18/evidence/batch-3/fixture/h12 --notify rlt18-probe-lead-claude --level stage'"
+  输出: 3789309（rc=0）—— 此时 fixture/h12 的阶段级 watch 已于 08:08:14 随 pane 关闭死亡（pgrep 全库无该 watch）。
+  3789309 = 本次 bash -c 包装壳自身 PID（其 cmdline 含被搜模式全文），随后即退出。
+- 同机制解释 lead-claude 08:14 的回答「Watch 存活（pid 3787534）」：其 Bash 工具以 shell 包装执行 pgrep，包装 cmdline 自带模式全文 → pgrep -f 命中包装自身 → 幻 PID。

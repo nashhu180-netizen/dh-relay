@@ -1,0 +1,20 @@
+=== git diff --check ===
+=== git status --porcelain ===
+ M docs/modules/relay-light/workspace/RLT_18/lesson_candidates.md
+ M tools/relay-light/relay_log.py
+ M tools/relay-light/skill/SKILL.md
+ M tools/relay-light/test_relay_log.py
+?? docs/modules/relay-light/workspace/RLT_18/evidence/workflow-final-remediation-2/
+=== diff name-only vs HEAD ===
+docs/modules/relay-light/workspace/RLT_18/lesson_candidates.md
+tools/relay-light/relay_log.py
+tools/relay-light/skill/SKILL.md
+tools/relay-light/test_relay_log.py
+=== forbidden-path stat (design + relay docs + execution_strategy) ===
+(empty = untouched)
+=== SKILL.md diff vs HEAD (hunks) ===
+1
+@@ -347 +347 @@ relay_log.py lint --plan <plan_dir> --amend-check after  --repo <repo> --snapsho
+=== __pycache__ / pyc audit ===
+ignored-scan: none
+find-scan done

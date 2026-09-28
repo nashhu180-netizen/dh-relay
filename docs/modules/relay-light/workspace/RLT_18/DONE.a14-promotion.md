@@ -1,0 +1,1 @@
+DONE task=RLT_18 phase=workflow-final agent=coder#a14promo batch=na path=a14 review_round=0 remediation_count=0 verdict=READY evidence=docs/modules/relay-light/design/01-RelayLight-产品设计与验收.md,docs/modules/relay-light/design/drafts/A14/promotion-check.txt

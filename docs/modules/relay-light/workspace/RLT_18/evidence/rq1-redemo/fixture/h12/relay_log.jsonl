@@ -1,0 +1,8 @@
+{"seq":1,"ts":"2026-09-24T11:41:34.830004+08:00","node":"C1","event":"plan_loaded","agent":"orchestrator#1","by":"orchestrator","note":"skill=0.1.0 probe=rlt18-rq1redemo config_dir=/home/nash/work/dh-relay/.dh-worktrees/RLT_18/docs/modules/relay-light/workspace/RLT_18/evidence/rq1-redemo/fixture/h12/config plan=/home/nash/work/dh-relay/.dh-worktrees/RLT_18/docs/modules/relay-light/workspace/RLT_18/evidence/rq1-redemo/fixture/h12"}
+{"seq":2,"ts":"2026-09-24T11:41:35.041715+08:00","node":"C1","event":"stage_start","agent":"orchestrator#1","by":"orchestrator","note":"stage_id=RLT18X:C#1"}
+{"seq":3,"ts":"2026-09-24T11:41:35.226493+08:00","node":"C1","event":"monitor_launch","agent":"orchestrator#1","by":"orchestrator","note":"stage_id=RLT18X:C#1 herdr=rlt18-probe2-lead"}
+{"seq":4,"ts":"2026-09-24T11:41:35.420770+08:00","node":"C1","event":"node_start","agent":"monitor#1","by":"monitor","note":""}
+{"seq":5,"ts":"2026-09-24T11:41:35.600800+08:00","node":"C1","event":"agent_launch","agent":"coder#1","by":"monitor","note":"herdr=rlt18-probe2-worker"}
+{"seq":6,"ts":"2026-09-24T11:56:03.091562+08:00","node":"C1","event":"done","agent":"coder#1","by":"monitor","note":"formal check: probe worker done, no artifact by design"}
+{"seq":7,"ts":"2026-09-24T11:56:03.281253+08:00","node":"C1","event":"node_close","agent":"monitor#1","by":"monitor","note":""}
+{"seq":8,"ts":"2026-09-24T11:56:03.485893+08:00","node":"C1","event":"stage_result","agent":"monitor#1","by":"monitor","note":"stage_id=RLT18X:C#1 outcome=done sole node C1 closed"}

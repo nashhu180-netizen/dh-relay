@@ -1,0 +1,15 @@
+# regression-python — RLT_18 batch 1
+# command: cd tools/relay-light && PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_relay_log
+# date: 2026-09-23T18:04:45Z
+
+Ran 245 tests in 483.076s
+
+OK
+exit_code=0
+
+## remediation-1 复跑（check.batch-1 P1-1，代码未变，§1.6 口径 discover）
+# command: PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s . -p "test_*.py"
+# date: 2026-09-23T18:04:46Z
+Ran 264 tests in 482.278s (245 test_relay_log + 19 test_install_skill)
+OK
+exit_code=0

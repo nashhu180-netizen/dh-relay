@@ -13,7 +13,10 @@ import stat
 import sys
 import subprocess
 import tempfile
+import threading
+import time
 import tomllib
+import traceback
 import unittest
 from contextlib import redirect_stderr
 from datetime import datetime, timedelta, timezone
@@ -953,10 +956,10 @@ class RelayPlanLintTests(RelayCliTestCase):
             foreign, f"non-stdlib top-level imports in relay_log.py: {foreign}"
         )
 
-    def test_help_lists_exactly_the_three_frozen_subcommands(self) -> None:
+    def test_help_lists_exactly_the_frozen_subcommands(self) -> None:
         result = self.run_cli("--help")
         self.assertEqual(0, result.returncode)
-        self.assertRegex(result.stdout, r"\{add,status,lint\}")
+        self.assertRegex(result.stdout, r"\{add,status,lint,watch\}")
 
     def test_add_is_append_only_with_twenty_fixed_schema_events(self) -> None:
         self.write_plan()
@@ -2799,7 +2802,7 @@ class RelayConfigTests(RelayCliTestCase):
         self.assertRegex(lint.stderr, r"^lint: HC-RL-A89 ")
 
     def test_each_subcommand_help_exposes_config_dir(self) -> None:
-        """HC-RL-A135: add/status/lint each advertise --config-dir; the command set stays three."""
+        """HC-RL-A135: add/status/lint each advertise --config-dir; the command set stays frozen."""
         for subcommand in SUBCOMMANDS:
             with self.subTest(subcommand=subcommand):
                 result = self.run_cli(subcommand, "--help")
@@ -2807,7 +2810,7 @@ class RelayConfigTests(RelayCliTestCase):
                 self.assertIn("--config-dir", result.stdout)
         top_level = self.run_cli("--help")
         self.assertEqual(0, top_level.returncode)
-        self.assertRegex(top_level.stdout, r"\{add,status,lint\}")
+        self.assertRegex(top_level.stdout, r"\{add,status,lint,watch\}")
 
     def test_explicit_config_dir_is_normalized_and_percent_encoded(self) -> None:
         """HC-RL-A135: `~/...` expands, normalizes to an absolute path and is recorded encoded."""
@@ -4518,10 +4521,10 @@ class RelayLimitsTests(RelayCliTestCase):
             str(limit_three), Path(self.tempdir.name) / "missing-home"
         )
         self.assertEqual(3, len(planner("DHR_90", relay_log.load_config(resolved))))
-        # The public CLI is still exactly the three frozen subcommands.
+        # The public CLI is still exactly the frozen subcommands.
         top_level = self.run_cli("--help")
         self.assertEqual(0, top_level.returncode)
-        self.assertRegex(top_level.stdout, r"\{add,status,lint\}")
+        self.assertRegex(top_level.stdout, r"\{add,status,lint,watch\}")
 
     def test_attempt_and_x_loss_stops_trigger_independently(self) -> None:
         """HC-RL-A107: each counter hits its own limit and opens the strategist exit alone."""
@@ -5587,6 +5590,53 @@ class SkillCoreDocTests(unittest.TestCase):
         self.assertRegex(text, r"不写.{0,12}`?blocked`?.{0,12}`?escalate`?|禁.{0,4}blocked")
         self.assertIn("七件套", text)
 
+    @staticmethod
+    def _skill_ud2_checks(text: str) -> list[bool]:
+        """三条 UD-2/UD-3 断言的布尔化：当版全真，5ab3bba 基线至少两条为假。"""
+        watcher_row = all(
+            frag in text
+            for frag in ("完整 relay 模式：", "10 分钟", "single-task", "120 秒")
+        ) and "只盯 agent 状态变化、只报信" not in text
+        rule8 = "有 watch 时允许结束回合" in text
+        abandon5 = (
+            "盯屏" in text
+            and "不做 watch 推送的实现" not in text
+            and "停滞对账由其本层 watch tick 驱动" not in text
+        )
+        return [watcher_row, rule8, abandon5]
+
+    def test_a83_13_skill_ud2_wording(self) -> None:
+        """UD-2：watcher 行改写、硬规则 8、放弃项 5——三处收口措辞在文档层钉住；
+        UD-3 起 watcher 行改为分模式表述并含 10 分钟巡检、放弃项不再把
+        停滞对账挂在 watch tick 上；同套断言在 5ab3bba 版 SKILL.md 上至少
+        两条 FAIL（RED 有效）。"""
+        text = self.skill_text()
+        self.assertEqual([True, True, True], self._skill_ud2_checks(text))
+        self.assertNotIn("watch 未实现", text)
+        self.assertNotIn("不做 watch 推送的实现", text)
+        self.assertNotIn("空闲上报", text)
+        self.assertNotIn("人肉实例退役", text)
+        baseline = fetch_baseline_text("tools/relay-light/skill/SKILL.md")
+        if baseline is None:
+            self.fail(
+                "RLT_18 baseline unavailable: `git cat-file -e "
+                f"{RLT18_BASELINE_SHA}:tools/relay-light/skill/SKILL.md` "
+                "failed and fetch did not supply it; refusing to silently "
+                "skip the RED-validity check."
+            )
+        self.assertGreaterEqual(
+            self._skill_ud2_checks(baseline).count(False), 2
+        )
+
+    def test_r_u3_4_skill_ud3_watcher_wording(self) -> None:
+        """R-U3-4（UD-3）：SKILL 两处定稿措辞——watcher 行分模式表述含
+        10 分钟巡检与 single-task 120 秒原职责；放弃项改「不做人肉盯屏」，
+        watch 存活由 watcher 巡检兜底、编排不做存活对账。旧措辞整词退场。"""
+        text = self.skill_text()
+        self.assertEqual([True, True, True], self._skill_ud2_checks(text))
+        self.assertNotIn("人肉实例退役", text)
+        self.assertNotIn("停滞对账由其本层 watch tick 驱动", text)
+
 
 class SkillTemplateTests(RelayCliTestCase):
     """RLT_07 Batch 2 — HC-RL-A95/A133/A127/A102/A113/A103/A114/A96 模板与运行时合同。"""
@@ -6247,7 +6297,7 @@ class SkillTemplateTests(RelayCliTestCase):
         self.add_ok("cancelled", node="X1", agent="coder#1", note="引用 user_decision 停卡")
 
 
-class SkillAdapterTests(unittest.TestCase):
+class SkillAdapterTests(RelayCliTestCase):
     """RLT_07 Batch 3 — HC-RL-A21/A26/A27/A136/A12 adapter 合同。"""
 
     ADAPTER_SIDES = {
@@ -6262,17 +6312,51 @@ class SkillAdapterTests(unittest.TestCase):
             for name in cls.ADAPTER_SIDES
         }
 
+    @staticmethod
+    def _section(text: str, heading_substr: str, name: str) -> str:
+        """Return the section whose heading contains ``heading_substr`` — from the
+        heading line to the next heading of the same or higher level (loud fail
+        when absent, so a missing section is a RED/FAIL not a silent pass)."""
+        lines = text.splitlines()
+        for i, line in enumerate(lines):
+            stripped = line.lstrip()
+            if stripped.startswith("#") and heading_substr in line:
+                level = len(stripped) - len(stripped.lstrip("#"))
+                end = len(lines)
+                for j in range(i + 1, len(lines)):
+                    head = lines[j].lstrip()
+                    if (
+                        head.startswith("#")
+                        and len(head) - len(head.lstrip("#")) <= level
+                    ):
+                        end = j
+                        break
+                return "\n".join(lines[i:end])
+        raise AssertionError(f"{name}: no section headed by {heading_substr!r}")
+
+    # pgrep/Get-CimInstance 的 -like 模式行只是匹配模板、不是真实调用——
+    # 不纳入 --config-dir 检查面（P2-C：存活检查行允许不含 --config-dir）。
+    _PATTERN_LINE_MARKERS = ("pgrep", "Win32_Process", "CommandLine", "-like")
+
+    @classmethod
+    def _relay_log_calls(cls, text: str, subcommands: str) -> list[str]:
+        return [
+            ln
+            for ln in text.splitlines()
+            if re.search(
+                rf"(?:<RELAY_LOG>|relay_log\.py)\s+(?:{subcommands})\b", ln
+            )
+            and not any(m in ln for m in cls._PATTERN_LINE_MARKERS)
+        ]
+
     def test_a136_every_call_carries_side_config_dir(self) -> None:
         """枚举两 adapter 全部 relay_log.py 调用（命令模板写作 <RELAY_LOG> 占位）：
-        每处显式带本侧 --config-dir；add/status/lint 三子命令各至少一次。"""
+        每处显式带本侧 --config-dir；add/status/lint 三子命令各至少一次，
+        watch 调用至少一次且同样携带 --config-dir（A83 watch 默认后收口）。"""
         for name, side_dir in self.ADAPTER_SIDES.items():
             text = self._adapter_texts()[name]
-            # 枚举面 = 全部 add/status/lint 调用行（不认 --plan 是否存在——不带 --plan 的调用也要过 --config-dir 检查）
-            calls = [
-                ln
-                for ln in text.splitlines()
-                if re.search(r"(?:<RELAY_LOG>|relay_log\.py)\s+(?:add|status|lint)\b", ln)
-            ]
+            # 枚举面 = 全部 add/status/lint/watch 调用行（不认 --plan 是否存在——不带 --plan 的调用也要过 --config-dir 检查）
+            calls = self._relay_log_calls(text, "add|status|lint|watch")
             with self.subTest(adapter=name):
                 self.assertTrue(calls, f"{name} has no relay_log.py invocations")
                 for line in calls:
@@ -6286,6 +6370,10 @@ class SkillAdapterTests(unittest.TestCase):
                         ),
                         f"{name} missing a {sub} invocation",
                     )
+                self.assertTrue(
+                    self._relay_log_calls(text, "watch"),
+                    f"{name} missing a watch invocation",
+                )
                 # Windows python / Linux python3 双写法
                 self.assertIn("python3 <RELAY_LOG>", text)
                 self.assertIn("python <RELAY_LOG>", text)
@@ -6299,8 +6387,9 @@ class SkillAdapterTests(unittest.TestCase):
                 self.assertIn("前台", text)
                 self.assertIn("后台", text)
                 self.assertIn("--timeout", text)
-                # watch 未实现 → 前台 wait 回退必须写明
-                self.assertIn("未实现", text)
+                # watch 已实现且默认 → 「无 watch」回退句必须写明；空等禁令不变
+                self.assertIn("无 watch", text)
+                self.assertIn("回退", text)
                 self.assertIn("空等", text)
                 # A21 分句2：面向 stage-lead/编排的 prompt 片段必须含硬规则原文
                 self.assertIn("`wait` 返回时必须有接收者", text)
@@ -6353,12 +6442,294 @@ class SkillAdapterTests(unittest.TestCase):
                 self.assertNotIn("骨架占位", text, rel)
                 self.assertNotIn("由 RLT_07 交付", text, rel)
 
-    def test_no_watch_subcommand_invoked(self) -> None:
+    def _baseline_or_fail(self, relpath: str) -> str:
+        text = fetch_baseline_text(relpath)
+        if text is None:
+            self.fail(
+                f"RLT_18 baseline unavailable: `git cat-file -e "
+                f"{RLT18_BASELINE_SHA}:{relpath}` failed and `git fetch "
+                f"--depth=1 origin {RLT18_BASELINE_SHA}` did not supply it; "
+                "refusing to silently skip the RED-validity check."
+            )
+        return text
+
+    # R-A83-8/9 复用断言体：在当版 adapter 上全真、在 5ab3bba 基线上必假。
+    def _assert_adapter_watch_contract(self, text: str, name: str) -> None:
+        self.assertIn("watch --plan", text, name)
+        self.assertIn("--notify <自己的 Herdr 名>", text, name)
+        self.assertIn("--level <stage|plan>", text, name)
+        self.assertIn("[relay-light] tick", text, name)
+        self.assertIn("--timeout 1200000", text, name)
+        self.assertIn("herdr=", text, name)
+        # UD-3：编排不再承担 watch 存活对账——stage-stalled 规则与「依赖人工」
+        # 整词退场（§7.3 只出现在被删句，随之消失，不另加否定断言）。
+        self.assertNotIn("stage-stalled", text, name)
+        self.assertNotIn("依赖人工", text, name)
+        self.assertIn("编排不承担 watch 存活对账", text, name)
+        # watcher 兜底（D15/D16/D18/D19）：watch-down 两式通知、10 分钟节拍、
+        # sleep 600 定时、缺席期 3 轮收声的两个终止记号、queued 补 Enter 条件。
+        self.assertIn("[relay-light] watch-down stage <stage_id>", text, name)
+        self.assertIn("[relay-light] watch-down plan plan", text, name)
+        self.assertIn("10 分钟", text, name)
+        self.assertIn("sleep 600", text, name)
+        self.assertIn("WATCHER_STOPPED", text, name)
+        self.assertIn("WATCHER_GAVE_UP", text, name)
+        self.assertIn("queued", text, name)
+        # P2-C + C1-1：stage-lead 存活检查带 --notify + --level stage——编排级
+        # watch 命中不算；且必须排除调用壳自匹配：pgrep -af 丢含 pgrep 与
+        # $$/$PPID 的行（裸 pgrep -f 会命中包装壳自身出幻 PID，H12-② 实测）；
+        # Windows 用 Win32_Process + -notlike Get-CimInstance/-ne $PID 等效排除。
+        self.assertIn(
+            "pgrep -af -- 'relay_log.py watch --plan <plan_dir> "
+            "--notify <自己的 Herdr 名> --level stage'",
+            text,
+            name,
+        )
+        # UD-3 起同法要求 --level plan 式（watcher 巡检编排级 watch 与编排位
+        # 自查用）；新增检查命令行仍带 _PATTERN_LINE_MARKERS 标记，不进
+        # _relay_log_calls 的 --config-dir 检查面。
+        self.assertRegex(
+            text,
+            r"pgrep -af -- 'relay_log\.py watch --plan <plan_dir> "
+            r"--notify <[^'\n]+> --level plan'",
+            name,
+        )
+        self.assertIn("grep -v 'pgrep'", text, name)
+        self.assertIn("^($$|$PPID)", text, name)
+        self.assertNotIn("pgrep -f -- 'relay_log.py watch", text, name)
+        self.assertIn("Win32_Process", text, name)
+        self.assertIn("-notlike '*Get-CimInstance*'", text, name)
+        self.assertIn("$_.ProcessId -ne $PID", text, name)
+        # Win32_Process 两式：stage 式在上，plan 式以 -like 模式 `--level plan*` 落笔。
+        self.assertIn("--level plan*'", text, name)
+        # D16 两侧写法分叉：Claude 后台 run_in_background 挂 sleep 600；
+        # Codex 前台 sleep 600 + 显式工具超时 timeout_ms=660000。
+        if name == "adapter-claude-code.md":
+            self.assertIn("run_in_background", text, name)
+        else:
+            self.assertIn("timeout_ms=660000", text, name)
+        # D13：watch 跑 pane 内 shell 重启循环，非直接进程
+        self.assertIn("while :; do", text, name)
+        self.assertIn("0|2|3|4) break", text, name)
+        self.assertIn("sleep 5", text, name)
+        self.assertIn("$LASTEXITCODE -in 0,2,3,4", text, name)
+        self.assertIn("Start-Sleep 5", text, name)
+        self.assertIn("`wait` 返回时必须有接收者", text, name)
+        self.assertNotIn("watch 未实现", text)
+        self.assertNotIn("尚未实现", text)
+        # 每条 watch 调用行：--plan/--notify 顺序固定 + 本侧 --config-dir
+        for line in self._relay_log_calls(text, "watch"):
+            self.assertRegex(
+                line, r"watch --plan \S+ --notify \S+", f"{name}: {line}"
+            )
+            self.assertIn(
+                "--config-dir <plan_dir>/config/", line, f"{name}: {line}"
+            )
+
+    def test_watch_subcommand_documented(self) -> None:
+        """R-A83-8：两份 adapter 的 watch 合同——默认 watch + 无 watch 回退 +
+        死亡处置 + 重启循环关键字逐项在文档层钉住；载体约定各侧一词。"""
         for name in self.ADAPTER_SIDES:
             text = self._adapter_texts()[name]
             with self.subTest(adapter=name):
-                self.assertIsNone(re.search(r"relay_log\.py\s+watch", text))
-                self.assertIsNone(re.search(r"<RELAY_LOG>\s+watch", text))
+                self._assert_adapter_watch_contract(text, name)
+        carriers = {"adapter-claude-code.md": "tab", "adapter-codex.md": "pane"}
+        for name, carrier in carriers.items():
+            with self.subTest(adapter=name, carrier=carrier):
+                self.assertIn(carrier, self._adapter_texts()[name])
+
+    def test_a83_adapter_contract_red_baseline(self) -> None:
+        """R-A83-9：同一套 watch 合同断言在 5ab3bba 版 adapter 上必须 FAIL——
+        证明 R-A83-8 的 RED 有效（否则断言可能永真）。"""
+        rels = {
+            "adapter-claude-code.md": (
+                "tools/relay-light/skill/references/adapter-claude-code.md"
+            ),
+            "adapter-codex.md": (
+                "tools/relay-light/skill/references/adapter-codex.md"
+            ),
+        }
+        for name, relpath in rels.items():
+            with self.subTest(adapter=name):
+                baseline = self._baseline_or_fail(relpath)
+                with self.assertRaises(AssertionError):
+                    self._assert_adapter_watch_contract(baseline, name)
+
+    @unittest.skipUnless(
+        sys.platform.startswith("linux") and shutil.which("pgrep") is not None,
+        "pgrep self-match mechanics need POSIX pgrep",
+    )
+    def test_c1_1_liveness_check_excludes_calling_shell(self) -> None:
+        """C1-1：自匹配机制实测（真 pgrep，非文本断言）——
+
+        无 watch 载体时裸 `pgrep -f` 命中执行壳自身（幻 PID，H12-② 实测缺陷），
+        adapter 新管道（pgrep -af 后丢含 pgrep 与 $$/$PPID 的行）输出为空；
+        有载体（cmdline 带 watch 调用行的循环壳进程）时新管道仍命中。"""
+        needle = (
+            "relay_log.py watch --plan /nonexistent-rlt18 "
+            "--notify self-test --level stage"
+        )
+        # `| cat` 让 bash -c 包装壳存活到 pgrep 扫描时（单命令形式会被 bash
+        # exec 优化掉、无壳可中）；机制同 H12-② agent 工具包装的命中路径。
+        legacy = subprocess.run(
+            ["bash", "-c", f"pgrep -f -- '{needle}' | cat"],
+            text=True, capture_output=True, check=False,
+        )
+        self.assertTrue(
+            legacy.stdout.strip(),
+            "bare `pgrep -f` must self-match the wrapper shell (phantom PID)",
+        )
+        fixed = (
+            f"pgrep -af -- '{needle}' | grep -v 'pgrep' "
+            f"| grep -Ev \"^($$|$PPID) \""
+        )
+        empty = subprocess.run(
+            ["bash", "-c", fixed], text=True, capture_output=True, check=False
+        )
+        self.assertEqual("", empty.stdout.strip())
+        # 载体 = 循环壳（cmdline 自带 watch 调用行；复合命令不会被 exec 优化
+        # 掉）——即 D13 重启循环壳的存活形态。
+        carrier = subprocess.Popen(
+            ["bash", "-c", f"while :; do sleep 5; done # {needle}"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        try:
+            hit = subprocess.run(
+                ["bash", "-c", fixed],
+                text=True, capture_output=True, check=False,
+            )
+            self.assertIn(str(carrier.pid), hit.stdout.split())
+        finally:
+            carrier.terminate()
+            carrier.wait(timeout=5)
+
+    def test_r_u3_1_orchestrator_slot_no_watch_liveness_reconcile(self) -> None:
+        """R-U3-1（UD-3/D14③/D17）：编排位「收到 `[relay-light] tick`」所在句
+        （至首个 `。`）只做 §7.2 通用对账——不含 stage-stalled / pgrep /
+        Win32_Process 任何存活判定，且正向写明 `不做 watch 存活判定`。"""
+        for name in self.ADAPTER_SIDES:
+            text = self._adapter_texts()[name]
+            with self.subTest(adapter=name):
+                marker = "**编排位**"
+                self.assertIn(marker, text, name)
+                chunk = text[text.index(marker):]
+                tick = "收到 `[relay-light] tick`"
+                self.assertIn(tick, chunk, name)
+                start = chunk.index(tick)
+                end = chunk.find("。", start)
+                self.assertNotEqual(-1, end, name)
+                sentence = chunk[start:end]
+                for banned in ("stage-stalled", "pgrep", "Win32_Process"):
+                    self.assertNotIn(banned, sentence, f"{name}: {sentence}")
+                self.assertIn(
+                    "不做 watch 存活判定", sentence, f"{name}: {sentence}"
+                )
+
+    def test_r_u3_2_watcher_dispatch_fragment_complete(self) -> None:
+        """R-U3-2（UD-3）：「拉起 watcher 的 prompt 片段」逐件齐备——D23 首行
+        模板、D18 两级 C1-1 检查命令与判死读法、D19 两种通知原文与 queued
+        补 Enter 条件、不重拉/不写账边界、D16 本侧节拍写法；片段内不出现会
+        劫持 single-task 结构断言的措辞（完全只读 / fail closed 分流）。"""
+        for name in self.ADAPTER_SIDES:
+            text = self._adapter_texts()[name]
+            with self.subTest(adapter=name):
+                frag = self._section(text, "拉起 watcher", name)
+                # D23 派单首行（非 worker 标头）
+                self.assertIn("[relay-light] watcher · space=", frag, name)
+                self.assertIn("notify=<派活方 Herdr 名>", frag, name)
+                self.assertIn("plan=<plan_dir>", frag, name)
+                # D18 两级存活检查命令（阶段级 / 编排级各一式）
+                for level in ("stage", "plan"):
+                    self.assertRegex(
+                        frag,
+                        r"pgrep -af -- 'relay_log\.py watch --plan <plan_dir> "
+                        rf"--notify <[^'\n]+> --level {level}'",
+                        f"{name}: --level {level} check missing",
+                    )
+                # D18 判死口径读 status --json
+                self.assertIn("status --plan <plan_dir> --json", frag, name)
+                self.assertIn("WATCHER_STOPPED", frag, name)
+                self.assertIn("WATCHER_GAVE_UP", frag, name)
+                self.assertIn("连续 3 轮", frag, name)
+                # D19 两种通知原文与 queued 补 Enter 条件
+                self.assertIn(
+                    "[relay-light] watch-down stage <stage_id>", frag, name
+                )
+                self.assertIn("[relay-light] watch-down plan plan", frag, name)
+                self.assertIn("queued", frag, name)
+                self.assertIn("Press Enter to send", frag, name)
+                # watcher 边界：只读报信
+                self.assertIn("不重拉", frag, name)
+                self.assertIn("不写账", frag, name)
+                # D16 本侧写法
+                if name == "adapter-claude-code.md":
+                    self.assertIn("run_in_background", frag, name)
+                    self.assertNotIn("sleep 590", frag, name)
+                else:
+                    self.assertIn("timeout_ms=660000", frag, name)
+                # 措辞禁区：不得劫持 test_install_skill 的首个命中行
+                self.assertNotIn("完全只读", frag, name)
+                self.assertNotIn("fail closed 分流", frag, name)
+
+    def test_r_u3_3_watch_down_notifications_ascii_single_line(self) -> None:
+        """R-U3-3（UD-3/D19）：两份 adapter 全部 `"[relay-light] watch-down …"`
+        字面量 ASCII 且无换行（同 D7 通知约束）。"""
+        for name in self.ADAPTER_SIDES:
+            text = self._adapter_texts()[name]
+            with self.subTest(adapter=name):
+                literals = re.findall(
+                    r'"(\[relay-light\] watch-down [^"]*)"', text
+                )
+                self.assertTrue(
+                    literals, f"{name}: no quoted watch-down literal found"
+                )
+                for lit in literals:
+                    self.assertTrue(lit.isascii(), f"{name}: {lit!r}")
+                    self.assertNotIn("\n", lit, f"{name}: {lit!r}")
+
+    def test_r_u3_5_death_verdict_keys_documented_and_real(self) -> None:
+        """R-U3-5（UD-3/D18）：① watcher 片段的判死口径引用键名
+        open_stages / pending_nodes / stages / nodes / state=closed；
+        ② 这些键是 status --json 真实输出键（最小 fixture 守卫，防文档
+        引用不存在字段）。"""
+        for name in self.ADAPTER_SIDES:
+            text = self._adapter_texts()[name]
+            with self.subTest(adapter=name):
+                frag = self._section(text, "拉起 watcher", name)
+                for key in (
+                    "open_stages",
+                    "pending_nodes",
+                    "stages",
+                    "nodes",
+                    "state=closed",
+                ):
+                    self.assertIn(key, frag, f"{name}: {key}")
+        # ② 最小 fixture：一个节点走到 closed 的计划，status --json 键集为真
+        self.write_single_node_plan(["| coder | W1 | coder | | code.md | | |"])
+        self.start_ledger()
+        for event, agent in (
+            ("node_start", "monitor#1"),
+            ("agent_launch", "coder#1"),
+            ("done", "coder#1"),
+            ("node_close", "monitor#1"),
+        ):
+            self.assertEqual(0, self.run_add(event, agent=agent).returncode)
+        result = self.run_cli(
+            "status", "--plan", str(self.plan_path.parent), "--json"
+        )
+        self.assertEqual(0, result.returncode, result.stderr)
+        doc = json.loads(result.stdout)
+        for key in ("open_stages", "pending_nodes", "stages", "nodes"):
+            self.assertIn(key, doc)
+        self.assertTrue(doc["stages"])
+        self.assertTrue(doc["nodes"])
+        for key in ("state", "nodes"):
+            self.assertIn(key, doc["stages"][0])
+        self.assertIn("state", doc["nodes"][0])
+        states = {n["state"] for n in doc["nodes"]} | {
+            s["state"] for s in doc["stages"]
+        }
+        self.assertIn("closed", states)
 
     def test_a141_dispatch_wait_and_sandbox_fallback_discipline(self) -> None:
         """HC-RL-A141: 两 adapter 各含三段原文——
@@ -8063,6 +8434,1612 @@ class RelayCliEncodingTests(RelayCliTestCase):
                 self.assertEqual(2, result.returncode)
                 document = json.loads(result.stdout.decode("utf-8"))
                 self.assertIn("卡X", json.dumps(document, ensure_ascii=False))
+
+
+# ---------------------------------------------------------------------------
+# RLT_18 batch 1 — HC-RL-A82/A101 watch: herdr and clock are always stubbed.
+# ---------------------------------------------------------------------------
+
+
+class FakeClock:
+    """Discrete-event virtual clock shared by every watch thread in a test.
+
+    ``sleep`` registers a wake point then blocks the caller; ``advance_to`` is
+    the only place virtual time moves, releasing due sleepers one at a time in
+    (wake_at, registration) order and waiting for each released thread to block
+    again or leave before releasing the next — so sleeps in different threads
+    never stack onto each other. ``expect_thread``/``enter``/``leave`` close the
+    spawn gap: a thread counts from the moment it is expected, not from its
+    first sleep.
+    """
+
+    class _Sleeper:
+        __slots__ = ("seq", "wake_at", "event", "blocked", "gone")
+
+        def __init__(self, seq: int, wake_at: float) -> None:
+            self.seq = seq
+            self.wake_at = wake_at
+            self.event = threading.Event()
+            self.blocked = True
+            self.gone = False
+
+    def __init__(self) -> None:
+        self.stop_event = threading.Event()
+        self._now = 0.0
+        self._seq = 0
+        self._pending = 0
+        self._sleepers: dict[int, FakeClock._Sleeper] = {}
+        self._cv = threading.Condition()
+
+    def monotonic(self) -> float:
+        return self._now
+
+    def expect_thread(self) -> None:
+        with self._cv:
+            self._pending += 1
+
+    def enter(self) -> None:
+        with self._cv:
+            if self._pending:
+                self._pending -= 1
+            # 必须换新记录：线程死亡后 ident 会被复用，setdefault 撞上旧
+            # gone 记录会让新线程对静止判定隐身（C1-2 重生路径实测竞态）。
+            record = FakeClock._Sleeper(-1, float("inf"))
+            record.blocked = False
+            self._sleepers[threading.get_ident()] = record
+            self._cv.notify_all()
+
+    def leave(self) -> None:
+        with self._cv:
+            ident = threading.get_ident()
+            record = self._sleepers.get(ident)
+            if record is None:
+                record = FakeClock._Sleeper(-1, float("inf"))
+                self._sleepers[ident] = record
+            record.blocked = False
+            record.gone = True
+            self._cv.notify_all()
+
+    def sleep(self, seconds: float) -> None:
+        if seconds <= 0:
+            return
+        with self._cv:
+            record = FakeClock._Sleeper(self._seq, self._now + seconds)
+            self._seq += 1
+            self._sleepers[threading.get_ident()] = record
+            self._cv.notify_all()
+        while not record.event.wait(0.05):
+            if self.stop_event.is_set():
+                with self._cv:
+                    record.blocked = False
+                    self._cv.notify_all()
+                return
+
+    def advance_to(self, moment: float) -> None:
+        if moment < self._now:
+            raise AssertionError(f"FakeClock cannot go back from {self._now} to {moment}")
+        deadline = time.monotonic() + 5
+        self._now = moment
+        while True:
+            self._wait_quiescent(deadline)
+            with self._cv:
+                due = [
+                    record
+                    for record in self._sleepers.values()
+                    if record.blocked and not record.gone and record.wake_at <= moment
+                ]
+                if not due:
+                    return
+                record = min(due, key=lambda item: (item.wake_at, item.seq))
+                record.blocked = False
+                record.event.set()
+
+    def _wait_quiescent(self, deadline: float) -> None:
+        with self._cv:
+            while True:
+                if self._pending == 0 and all(
+                    record.blocked or record.gone for record in self._sleepers.values()
+                ):
+                    return
+                if time.monotonic() > deadline:
+                    raise AssertionError(
+                        "FakeClock threads did not settle within 5s\n" + self._thread_stacks()
+                    )
+                self._cv.wait(0.01)
+
+    @staticmethod
+    def _thread_stacks() -> str:
+        return "\n".join(
+            f"--- thread {ident}\n" + "".join(traceback.format_stack(frame))
+            for ident, frame in sys._current_frames().items()
+        )
+
+
+class FakeHerdr:
+    """Scripted ``herdr`` adapter: every call is logged with virtual start/end."""
+
+    def __init__(self, clock: FakeClock) -> None:
+        self.clock = clock
+        self.calls: list[dict[str, object]] = []
+        self.wait_script: dict[str, list[tuple[str | None, float]]] = {}
+        self.wait_default: dict[str, tuple[str | None, float]] = {}
+        self.get_script: dict[str, list[str | None]] = {}
+        self.get_default: dict[str, str | None] = {}
+        self.prompt_failures: dict[str, int] = {}
+        self._lock = threading.Lock()
+
+    def _record(self, kind: str, name: str, start: float, result: object) -> None:
+        with self._lock:
+            self.calls.append(
+                {
+                    "kind": kind,
+                    "name": name,
+                    "start": start,
+                    "end": self.clock.monotonic(),
+                    "result": result,
+                }
+            )
+
+    def wait(self, name: str, timeout_ms: int = 30000) -> str | None:
+        start = self.clock.monotonic()
+        queue = self.wait_script.setdefault(name, [])
+        result, duration = (
+            queue.pop(0) if queue else self.wait_default.get(name, (None, timeout_ms / 1000))
+        )
+        if duration:
+            self.clock.sleep(duration)
+        self._record("wait", name, start, result)
+        return result
+
+    def get(self, name: str) -> str | None:
+        start = self.clock.monotonic()
+        queue = self.get_script.setdefault(name, [])
+        result = queue.pop(0) if queue else self.get_default.get(name)
+        self._record("get", name, start, result)
+        return result
+
+    def prompt(self, name: str, text: str) -> bool:
+        start = self.clock.monotonic()
+        remaining = self.prompt_failures.get(name, 0)
+        if remaining:
+            self.prompt_failures[name] = remaining - 1
+        self._record("prompt", name, start, (text, not remaining))
+        return not remaining
+
+
+_WATCH_ROOTS = ("run_watch", "HerdrClient", "WatchClock")
+_WATCH_BANNED_CALLS = frozenset(
+    {"append_event", "_add_command", "_write_json_restricted", "_restricted_writer"}
+)
+_WATCH_BANNED_ATTRS = frozenset(
+    {
+        "write_text",
+        "write_bytes",
+        "open",
+        "unlink",
+        "touch",
+        "mkdir",
+        "rename",
+        "symlink_to",
+    }
+)
+_WATCH_BANNED_OS_ATTRS = frozenset(
+    {
+        "replace",
+        "rename",
+        "remove",
+        "unlink",
+        "mkdir",
+        "makedirs",
+        "rmdir",
+        "chmod",
+        "write",
+        "open",
+    }
+)
+_WATCH_BANNED_MODULE_ATTRS = frozenset({"shutil", "tempfile"})
+_WATCH_WRITE_MODES = frozenset("awx+")
+
+
+def _watch_source_violations(source: str) -> list[str]:
+    """HC-RL-A101 oracle: no ledger/file write call inside the watch call closure.
+
+    The closure starts at every ``_watch*``/``run_watch``/``HerdrClient``/
+    ``WatchClock`` module-level def and follows any module-level name it
+    references. Separately, every ``subprocess.run``/``Popen`` inside that
+    closure must sit inside the ``HerdrClient`` class body — calls outside the
+    closure (e.g. ``_git_readonly``) are not watch code and are unconstrained.
+    """
+    tree = ast.parse(source)
+    module_defs = {
+        node.name: node
+        for node in tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+    }
+    roots = {
+        name
+        for name in module_defs
+        if name.startswith("_watch") or name in _WATCH_ROOTS
+    }
+    closure: dict[str, ast.AST] = {}
+    worklist = sorted(roots)
+    while worklist:
+        name = worklist.pop()
+        if name in closure or name not in module_defs:
+            continue
+        node = module_defs[name]
+        closure[name] = node
+        for sub in ast.walk(node):
+            if (
+                isinstance(sub, ast.Name)
+                and sub.id in module_defs
+                and sub.id not in closure
+            ):
+                worklist.append(sub.id)
+    violations: list[str] = []
+    for owner, node in closure.items():
+        for sub in ast.walk(node):
+            if not isinstance(sub, ast.Call):
+                continue
+            func = sub.func
+            if isinstance(func, ast.Name):
+                if func.id in _WATCH_BANNED_CALLS:
+                    violations.append(f"{owner}:{sub.lineno} calls {func.id}")
+                elif func.id == "open":
+                    mode = sub.args[1] if len(sub.args) > 1 else None
+                    for keyword in sub.keywords:
+                        if keyword.arg == "mode":
+                            mode = keyword.value
+                    if mode is None:
+                        continue
+                    if not (isinstance(mode, ast.Constant) and isinstance(mode.value, str)):
+                        violations.append(f"{owner}:{sub.lineno} open() with unresolved mode")
+                    elif set(mode.value) & _WATCH_WRITE_MODES:
+                        violations.append(f"{owner}:{sub.lineno} open() in write mode")
+            elif isinstance(func, ast.Attribute):
+                if func.attr in _WATCH_BANNED_ATTRS:
+                    violations.append(f"{owner}:{sub.lineno} calls .{func.attr}")
+                elif isinstance(func.value, ast.Name):
+                    if func.value.id == "os" and func.attr in _WATCH_BANNED_OS_ATTRS:
+                        violations.append(f"{owner}:{sub.lineno} calls os.{func.attr}")
+                    elif func.value.id in _WATCH_BANNED_MODULE_ATTRS:
+                        violations.append(
+                            f"{owner}:{sub.lineno} calls {func.value.id}.{func.attr}"
+                        )
+    violations += _watch_subprocess_violations(tree, closure)
+    if not roots:
+        violations.append("no watch roots found")
+    for required in ("run_watch", "HerdrClient"):
+        if required not in closure:
+            violations.append(f"watch closure missing {required}")
+    return violations
+
+
+def _watch_subprocess_violations(
+    tree: ast.Module, closure: dict[str, ast.AST]
+) -> list[str]:
+    """Every ``subprocess.run``/``Popen`` in the watch closure must sit inside
+    ``HerdrClient`` — argv content is irrelevant, so a literal ``["tee", …]``
+    or ``["rm", …]`` injected into watch code is still a violation."""
+    parents = {
+        child: node for node in ast.walk(tree) for child in ast.iter_child_nodes(node)
+    }
+    closure_ids = {id(node) for node in closure.values()}
+    violations: list[str] = []
+    for sub in ast.walk(tree):
+        if not (
+            isinstance(sub, ast.Call)
+            and isinstance(sub.func, ast.Attribute)
+            and sub.func.attr in {"run", "Popen"}
+            and isinstance(sub.func.value, ast.Name)
+            and sub.func.value.id == "subprocess"
+        ):
+            continue
+        node: ast.AST = sub
+        in_closure = False
+        inside_herdr = False
+        while node in parents:
+            node = parents[node]
+            if isinstance(node, ast.ClassDef) and node.name == "HerdrClient":
+                inside_herdr = True
+            if id(node) in closure_ids:
+                in_closure = True
+                break
+        if in_closure and not inside_herdr:
+            violations.append(f"line {sub.lineno}: subprocess call outside HerdrClient")
+    return violations
+
+
+# RLT_18 batch 2 — RED 有效性对照用 pinned 基线（任务卡开工时的 master）。
+# 与 RLT_24 同款纪律：CI 浅克隆可能缺该对象，取不到时调用方必须 fail，
+# 不得静默 skip——基线对照是 RED 断言的证据力所在。
+RLT18_BASELINE_SHA = "5ab3bbab42f1cce78862f2c08185648debe5a2dc"  # full SHA: `git fetch origin <sha>` rejects abbreviations
+
+
+def fetch_baseline_text(relpath: str) -> str | None:
+    """Return ``relpath``'s content at ``RLT18_BASELINE_SHA``.
+
+    ``None`` when the pinned object is missing even after a fetch attempt;
+    callers must fail loudly rather than silently skip the comparison.
+    """
+    repo = Path(__file__).resolve().parents[2]
+    spec = f"{RLT18_BASELINE_SHA}:{relpath}"
+    present = subprocess.run(
+        ["git", "cat-file", "-e", spec],
+        cwd=repo, capture_output=True, check=False,
+    )
+    if present.returncode != 0:
+        fetched = subprocess.run(
+            ["git", "fetch", "--depth=1", "origin", RLT18_BASELINE_SHA],
+            cwd=repo, capture_output=True, check=False,
+        )
+        present = subprocess.run(
+            ["git", "cat-file", "-e", spec],
+            cwd=repo, capture_output=True, check=False,
+        )
+        if fetched.returncode != 0 or present.returncode != 0:
+            return None
+    blob = subprocess.run(
+        ["git", "show", spec],
+        cwd=repo, capture_output=True, check=False,
+    )
+    if blob.returncode != 0:
+        return None
+    return blob.stdout.decode("utf-8")
+
+
+class WatchTests(RelayCliTestCase):
+    """RLT_18 batch 1 — HC-RL-A82/A101: notify-only watch, always stubbed."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.thread_errors: list[str] = []
+        previous_hook = threading.excepthook
+
+        def capture(args) -> None:
+            self.thread_errors.append(
+                f"{getattr(args.thread, 'name', '?')}: {args.exc_value!r}"
+            )
+
+        threading.excepthook = capture
+        self.addCleanup(setattr, threading, "excepthook", previous_hook)
+        self.addCleanup(self.assertEqual, [], self.thread_errors)
+
+    def _stage_fixture(
+        self,
+        agents: tuple[tuple[str, str], ...] = (("coder#1", ""),),
+        stage_id: str = "DHR_90:C#1",
+        node: str = "C1",
+    ) -> None:
+        self.write_plan(
+            node_rows=[f"| {node} | DHR_90 | {stage_id} | construction | agent:coder | | |"],
+            agent_rows=[
+                f"| coder | {node} | coder | | code.md | | |",
+                f"| checker | {node} | checker | | check.md | | |",
+            ],
+        )
+        rows = [
+            ("2026-09-24T08:00:00+00:00", node, "plan_loaded", "orchestrator#1", "skill=0.1.0"),
+            ("2026-09-24T08:00:01+00:00", node, "stage_start", "orchestrator#1", f"stage_id={stage_id}"),
+            ("2026-09-24T08:00:02+00:00", node, "monitor_launch", "monitor#1", f"stage_id={stage_id}"),
+            ("2026-09-24T08:00:03+00:00", node, "node_start", "monitor#1", ""),
+        ]
+        rows += [
+            ("2026-09-24T08:00:04+00:00", node, "agent_launch", agent, note)
+            for agent, note in agents
+        ]
+        self.write_ledger_rows(tuple(rows))
+
+    def _start_watch(
+        self,
+        clock: FakeClock,
+        herdr: FakeHerdr,
+        *,
+        level: str = "stage",
+        notify: str = "lead-1",
+        results: list[int] | None = None,
+    ) -> threading.Thread:
+        clock.expect_thread()
+
+        def target() -> None:
+            rc = relay_log.run_watch(
+                str(self.plan_path.parent),
+                notify,
+                level,
+                repo_config(),
+                herdr,
+                clock,
+                clock.stop_event,
+            )
+            if results is not None:
+                results.append(rc)
+
+        thread = threading.Thread(
+            target=target,
+            name="watch:main",
+            daemon=True,
+        )
+        thread.start()
+        self.addCleanup(self._stop_watch, clock, thread)
+        return thread
+
+    @staticmethod
+    def _stop_watch(clock: FakeClock, thread: threading.Thread) -> None:
+        clock.stop_event.set()
+        thread.join(timeout=10)
+
+    @staticmethod
+    def _ledger_row_line(seq: int, node: str, event: str, agent: str, note: str = "") -> str:
+        return json.dumps(
+            {
+                "seq": seq,
+                "ts": "2026-09-24T09:00:00+00:00",
+                "node": node,
+                "event": event,
+                "agent": agent,
+                "by": "orchestrator" if agent.startswith("orchestrator#") else "monitor",
+                "note": note,
+            },
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
+
+    def _append_ledger_row(self, node: str, event: str, agent: str, note: str = "") -> str:
+        """Append one raw JSONL row (seq continues); never via append_event."""
+        ledger_path = self.plan_path.parent / "relay_log.jsonl"
+        seq = len(ledger_path.read_text(encoding="utf-8").splitlines()) + 1
+        line = self._ledger_row_line(seq, node, event, agent, note)
+        with open(ledger_path, "a", encoding="utf-8", newline="") as handle:
+            handle.write(line + "\n")
+        return line
+
+    @staticmethod
+    def _calls(herdr: FakeHerdr, kind: str, name: str | None = None) -> list[dict[str, object]]:
+        return [
+            call
+            for call in herdr.calls
+            if call["kind"] == kind and (name is None or call["name"] == name)
+        ]
+
+    def _prompts(self, herdr: FakeHerdr, name: str = "lead-1") -> list[dict[str, object]]:
+        return self._calls(herdr, "prompt", name)
+
+    @staticmethod
+    def _watch_threads() -> list[threading.Thread]:
+        return [t for t in threading.enumerate() if t.name.startswith("watch:")]
+
+    # --- R-A82-1 -----------------------------------------------------------
+
+    def test_a82_1_wait_return_sends_prompt(self) -> None:
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        self._start_watch(clock, herdr)
+        clock.advance_to(0)
+        prompts = self._prompts(herdr)
+        self.assertEqual(1, len(prompts))
+        self.assertEqual(("[relay-light] coder#1 -> idle", True), prompts[0]["result"])
+        text = prompts[0]["result"][0]
+        self.assertTrue(text.isascii())
+        self.assertNotIn("\n", text)
+
+    # --- R-A82-2 -----------------------------------------------------------
+
+    def test_a82_2_no_immediate_reattach_after_notify(self) -> None:
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        self._start_watch(clock, herdr)
+        clock.advance_to(0)
+        clock.advance_to(29)
+        self.assertEqual(1, len(self._calls(herdr, "wait", "coder-1")))
+        self.assertEqual([], self._calls(herdr, "get", "coder-1"))
+        clock.advance_to(30)
+        gets = self._calls(herdr, "get", "coder-1")
+        self.assertEqual([30.0], [call["start"] for call in gets])
+        self.assertEqual(1, len(self._calls(herdr, "wait", "coder-1")))
+
+    # --- R-A82-3 -----------------------------------------------------------
+
+    def test_a82_3_get_polling_every_30_seconds(self) -> None:
+        self._stage_fixture(agents=(("coder#1", ""), ("checker#1", "")))
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        for name in ("coder-1", "checker-1"):
+            herdr.wait_script[name] = [("idle", 0)]
+            herdr.get_default[name] = "idle"
+        self._start_watch(clock, herdr)
+        clock.advance_to(0)
+        for moment in (30, 60, 90):
+            clock.advance_to(moment)
+        for name in ("coder-1", "checker-1"):
+            starts = [call["start"] for call in self._calls(herdr, "get", name)]
+            self.assertEqual([30.0, 60.0, 90.0], starts[:3], name)
+
+    # --- R-A82-4 -----------------------------------------------------------
+
+    def _terminal_exit(self, event: str) -> None:
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        self._start_watch(clock, herdr)
+        clock.advance_to(0)
+        clock.advance_to(15)
+        self._append_ledger_row("C1", event, "coder#1")
+        clock.advance_to(30)
+        clock.advance_to(60)
+        self.assertEqual(
+            [],
+            [c for c in self._calls(herdr, "get", "coder-1") if c["start"] >= 30],
+        )
+        self.assertFalse(
+            any(
+                t.name == "watch:C1:coder#1" and t.is_alive()
+                for t in threading.enumerate()
+            )
+        )
+
+    def test_a82_4a_done_exits_thread(self) -> None:
+        self._terminal_exit("done")
+
+    def test_a82_4b_agent_lost_exits_thread(self) -> None:
+        self._terminal_exit("agent_lost")
+
+    def test_a82_4c_cancelled_exits_thread(self) -> None:
+        self._terminal_exit("cancelled")
+
+    # --- R-A82-5 -----------------------------------------------------------
+
+    def test_a82_5_working_reattaches_and_renotifies(self) -> None:
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0), ("idle", 0)]
+        herdr.get_script["coder-1"] = ["working"]
+        herdr.get_default["coder-1"] = "idle"
+        self._start_watch(clock, herdr)
+        clock.advance_to(0)
+        clock.advance_to(30)
+        names = [call["kind"] for call in herdr.calls]
+        self.assertEqual(["wait", "prompt", "get", "wait", "prompt"], names)
+        prompts = self._prompts(herdr)
+        self.assertEqual(2, len(prompts))
+        self.assertEqual(
+            "[relay-light] coder#1 -> idle", prompts[1]["result"][0]
+        )
+        clock.advance_to(60)
+        self.assertEqual(2, len(self._prompts(herdr)))
+
+    # --- R-A82-6 -----------------------------------------------------------
+
+    def test_a82_6_same_transition_notified_once(self) -> None:
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        self._start_watch(clock, herdr)
+        clock.advance_to(0)
+        for moment in (30, 60, 90):
+            clock.advance_to(moment)
+        self.assertEqual(1, len(self._prompts(herdr)))
+        self.assertEqual(1, len(self._calls(herdr, "wait", "coder-1")))
+
+    # --- R-A82-7 -----------------------------------------------------------
+
+    def test_a82_7_each_agent_own_thread_and_join(self) -> None:
+        self._stage_fixture(agents=(("coder#1", ""), ("checker#1", "")))
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.wait_script["checker-1"] = [("blocked", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        herdr.get_default["checker-1"] = "blocked"
+        self._start_watch(clock, herdr)
+        clock.advance_to(0)
+        self.assertEqual(
+            {"[relay-light] coder#1 -> idle", "[relay-light] checker#1 -> blocked"},
+            {call["result"][0] for call in self._prompts(herdr)},
+        )
+        names = {t.name for t in self._watch_threads()}
+        self.assertIn("watch:C1:coder#1", names)
+        self.assertIn("watch:C1:checker#1", names)
+        clock.stop_event.set()
+        deadline = time.monotonic() + 5
+        for thread in self._watch_threads():
+            thread.join(timeout=max(0, deadline - time.monotonic()))
+        self.assertFalse(any(t.is_alive() for t in self._watch_threads()))
+
+    # --- R-A82-8 -----------------------------------------------------------
+
+    def test_a82_8_new_present_agent_gets_thread(self) -> None:
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.wait_script["checker-1"] = [("blocked", 0)]
+        self._start_watch(clock, herdr)
+        clock.advance_to(0)
+        self.assertEqual(1, len(self._prompts(herdr)))
+        clock.advance_to(15)
+        self._append_ledger_row("C1", "agent_launch", "checker#1")
+        clock.advance_to(30)
+        self.assertIn(
+            "watch:C1:checker#1", {t.name for t in self._watch_threads()}
+        )
+        self.assertIn(
+            "[relay-light] checker#1 -> blocked",
+            {call["result"][0] for call in self._prompts(herdr)},
+        )
+
+    # --- R-A82-9 -----------------------------------------------------------
+
+    def test_a82_9_herdr_name_resolution(self) -> None:
+        self._stage_fixture(
+            agents=(("coder#1", "herdr=probe-x"), ("checker#1", ""), ("codér#1", ""))
+        )
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["probe-x"] = [("idle", 0)]
+        herdr.wait_script["checker-1"] = [("idle", 0)]
+        with redirect_stderr(io.StringIO()) as err:
+            self._start_watch(clock, herdr)
+            clock.advance_to(0)
+        self.assertEqual(1, len(self._calls(herdr, "wait", "probe-x")))
+        self.assertEqual(1, len(self._calls(herdr, "wait", "checker-1")))
+        self.assertEqual([], self._calls(herdr, "wait", "codér-1"))
+        self.assertEqual(1, err.getvalue().count("\n"))
+        self.assertIn("codér#1", err.getvalue())
+        self.assertEqual(
+            {"[relay-light] coder#1 -> idle", "[relay-light] checker#1 -> idle"},
+            {call["result"][0] for call in self._prompts(herdr)},
+        )
+
+    # --- R-A82-10 ----------------------------------------------------------
+
+    def test_a82_10_failed_prompt_retries_next_observation(self) -> None:
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        herdr.prompt_failures["lead-1"] = 1
+        self._start_watch(clock, herdr)
+        clock.advance_to(0)
+        self.assertEqual(
+            [("[relay-light] coder#1 -> idle", False)],
+            [call["result"] for call in self._prompts(herdr)],
+        )
+        clock.advance_to(30)
+        self.assertEqual(
+            [
+                ("[relay-light] coder#1 -> idle", False),
+                ("[relay-light] coder#1 -> idle", True),
+            ],
+            [call["result"] for call in self._prompts(herdr)],
+        )
+        clock.advance_to(60)
+        self.assertEqual(2, len(self._prompts(herdr)))
+
+    # --- R-A82-11 ----------------------------------------------------------
+
+    def test_a82_11a_early_wait_failure_backs_off(self) -> None:
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_default["coder-1"] = (None, 0)
+        self._start_watch(clock, herdr)
+        for moment in (0, 30, 60, 90):
+            clock.advance_to(moment)
+        calls = [
+            call
+            for call in herdr.calls
+            if call["name"] == "coder-1" and call["kind"] in {"wait", "get"}
+        ]
+        self.assertLessEqual(len(calls), 4)
+        self.assertEqual([0.0, 30.0, 60.0, 90.0], [call["start"] for call in calls])
+        self.assertEqual([], self._prompts(herdr))
+
+    def test_a82_11b_wait_timeout_reattaches_immediately(self) -> None:
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_default["coder-1"] = (None, 30)
+        self._start_watch(clock, herdr)
+        for moment in (0, 30, 60, 90, 120):
+            clock.advance_to(moment)
+        waits = self._calls(herdr, "wait", "coder-1")
+        self.assertEqual([0.0, 30.0, 60.0, 90.0], [call["start"] for call in waits])
+        for earlier, later in zip(waits, waits[1:]):
+            self.assertEqual(0.0, later["start"] - earlier["end"])
+        self.assertEqual([], self._prompts(herdr))
+
+    # --- R-A82-12 ----------------------------------------------------------
+
+    def test_a82_12_thread_beats_do_not_stack(self) -> None:
+        self._stage_fixture(agents=(("coder#1", ""), ("checker#1", "")))
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.wait_script["checker-1"] = [("idle", 10)]
+        herdr.get_default["coder-1"] = "idle"
+        herdr.get_default["checker-1"] = "idle"
+        self._start_watch(clock, herdr)
+        for moment in (0, 10, 30, 40, 60, 70, 90, 100):
+            clock.advance_to(moment)
+        self.assertEqual(
+            [30.0, 60.0, 90.0],
+            [call["start"] for call in self._calls(herdr, "get", "coder-1")][:3],
+        )
+        self.assertEqual(
+            [40.0, 70.0, 100.0],
+            [call["start"] for call in self._calls(herdr, "get", "checker-1")][:3],
+        )
+        clock.advance_to(1200)
+        ticks = [
+            call
+            for call in self._prompts(herdr)
+            if call["result"][0] == "[relay-light] tick"
+        ]
+        self.assertEqual([1200.0], [call["start"] for call in ticks])
+
+    # --- R-A82-13 ----------------------------------------------------------
+
+    def _bad_state_not_sent(self, state: str) -> None:
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [(state, 0)]
+        herdr.get_default["coder-1"] = state
+        with redirect_stderr(io.StringIO()) as err:
+            self._start_watch(clock, herdr)
+            for moment in (0, 30, 60):
+                clock.advance_to(moment)
+        self.assertEqual([], self._prompts(herdr))
+        self.assertEqual(1, err.getvalue().count("\n"))
+        self.assertTrue(
+            any(
+                t.name == "watch:C1:coder#1" and t.is_alive()
+                for t in threading.enumerate()
+            )
+        )
+
+    def test_a82_13a_non_ascii_state_not_sent(self) -> None:
+        self._bad_state_not_sent("idlé")
+
+    def test_a82_13b_newline_state_not_sent(self) -> None:
+        self._bad_state_not_sent("idle\nx")
+
+    def test_a82_13c_bad_agent_name_skipped(self) -> None:
+        self._stage_fixture(agents=(("codér#1", ""),))
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        with redirect_stderr(io.StringIO()) as err:
+            self._start_watch(clock, herdr)
+            for moment in (0, 30, 60):
+                clock.advance_to(moment)
+        self.assertEqual([], herdr.calls)
+        self.assertEqual(1, err.getvalue().count("\n"))
+        self.assertIn("codér#1", err.getvalue())
+
+    # --- R-A82-14 ----------------------------------------------------------
+
+    def test_a82_14_runtime_ledger_half_line_tolerated(self) -> None:
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        ledger_path = self.plan_path.parent / "relay_log.jsonl"
+        intact = ledger_path.read_bytes()
+        with redirect_stderr(io.StringIO()) as err:
+            self._start_watch(clock, herdr)
+            clock.advance_to(0)
+            clock.advance_to(30)
+            ledger_path.write_bytes(intact + b'{"seq": 6, "ts')
+            for moment in (60, 90):
+                clock.advance_to(moment)
+            self.assertEqual(1, len(self._prompts(herdr)))
+            self.assertTrue(any(t.name == "watch:main" and t.is_alive() for t in threading.enumerate()))
+            self.assertTrue(
+                any(
+                    t.name == "watch:C1:coder#1" and t.is_alive()
+                    for t in threading.enumerate()
+                )
+            )
+            self.assertEqual(
+                [60.0, 90.0],
+                [call["start"] for call in self._calls(herdr, "get", "coder-1")][1:],
+            )
+            ledger_path.write_bytes(
+                intact
+                + (self._ledger_row_line(6, "C1", "done", "coder#1") + "\n").encode("utf-8")
+            )
+            clock.advance_to(120)
+        self.assertGreaterEqual(err.getvalue().count("\n"), 2)
+        self.assertFalse(
+            any(
+                t.name == "watch:C1:coder#1" and t.is_alive()
+                for t in threading.enumerate()
+            )
+        )
+        self.assertEqual(
+            [], [c for c in self._calls(herdr, "get", "coder-1") if c["start"] >= 120]
+        )
+
+    # --- R-A82-15 ----------------------------------------------------------
+
+    def test_a82_15_runtime_plan_lint_failure_tolerated(self) -> None:
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        good_plan = self.plan_path.read_bytes()
+        with redirect_stderr(io.StringIO()) as err:
+            self._start_watch(clock, herdr)
+            clock.advance_to(0)
+            clock.advance_to(30)
+            self.plan_path.write_text("garbage\n", encoding="utf-8")
+            for moment in (60, 90, 120):
+                clock.advance_to(moment)
+            self.assertEqual(1, len(self._prompts(herdr)))
+            self.assertTrue(
+                any(
+                    t.name == "watch:C1:coder#1" and t.is_alive()
+                    for t in threading.enumerate()
+                )
+            )
+            self.assertEqual(
+                [30.0, 60.0, 90.0, 120.0],
+                [call["start"] for call in self._calls(herdr, "get", "coder-1")],
+            )
+            self.plan_path.write_bytes(good_plan)
+            clock.advance_to(150)
+        self.assertGreaterEqual(err.getvalue().count("\n"), 3)
+        self.assertTrue(any(t.name == "watch:main" and t.is_alive() for t in threading.enumerate()))
+
+    # --- R-A83-1 -----------------------------------------------------------
+
+    def test_a83_1_tick_cadence(self) -> None:
+        """主循环每 1200 虚拟秒发一次 [relay-light] tick——1200/2400/3600 恰三次。"""
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        self._start_watch(clock, herdr)
+        # advance_to(0) 先等主循环首轮阻塞——把 next_tick 锚定在 now=0，
+        # 否则首轮 advance 与 next_tick 初始化竞争会让锚点漂移。
+        clock.advance_to(0)
+        for moment in list(range(150, 3601, 150)) + [3601]:
+            clock.advance_to(moment)
+        ticks = [
+            call for call in self._prompts(herdr)
+            if call["result"][0] == "[relay-light] tick"
+        ]
+        self.assertEqual([1200.0, 2400.0, 3600.0], [c["start"] for c in ticks])
+
+    # --- R-A83-2 -----------------------------------------------------------
+
+    def test_a83_2_tick_independent_of_state_prompts(self) -> None:
+        """tick 与状态通知相互独立：状态提示照常按去重规则发，tick 到点发。"""
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        self._start_watch(clock, herdr)
+        clock.advance_to(0)
+        for moment in range(150, 1201, 150):
+            clock.advance_to(moment)
+        texts = [c["result"][0] for c in self._prompts(herdr)]
+        self.assertEqual(
+            ["[relay-light] coder#1 -> idle", "[relay-light] tick"],
+            [t for t in texts if t.startswith("[relay-light]")],
+        )
+        clock.advance_to(2400)
+        texts = [c["result"][0] for c in self._prompts(herdr)]
+        self.assertEqual(1, texts.count("[relay-light] coder#1 -> idle"))
+        self.assertEqual(2, texts.count("[relay-light] tick"))
+
+    # --- R-A83-3 -----------------------------------------------------------
+
+    def test_a83_3_stage_exit_on_final_node_close(self) -> None:
+        """绑定 stage 末节点 node_close → 退出 0 并 join 线程；无关/非末节点不退出。"""
+        self.write_plan(
+            node_rows=[
+                "| C1 | DHR_90 | DHR_90:C#1 | construction | agent:coder | | |",
+                "| C2 | DHR_90 | DHR_90:C#1 | construction | agent:coder | | |",
+                "| X1 | DHR_90 | DHR_90:X#1 | rework | | C2 | |",
+            ],
+            agent_rows=[
+                "| coder | C1 | coder | | code.md | | |",
+                "| coder | C2 | coder | | code.md | | |",
+                "| coder | X1 | coder | | x.md | | |",
+            ],
+        )
+        self.write_ledger_rows((
+            ("2026-09-24T08:00:00+00:00", "C1", "plan_loaded", "orchestrator#1", "skill=0.1.0"),
+            ("2026-09-24T08:00:01+00:00", "C1", "stage_start", "orchestrator#1", "stage_id=DHR_90:C#1"),
+            ("2026-09-24T08:00:02+00:00", "C1", "monitor_launch", "orchestrator#1", "stage_id=DHR_90:C#1"),
+            ("2026-09-24T08:00:03+00:00", "C1", "node_start", "monitor#1", ""),
+            ("2026-09-24T08:00:04+00:00", "C1", "agent_launch", "coder#1", ""),
+        ))
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        results: list[int] = []
+        thread = self._start_watch(clock, herdr, results=results)
+        clock.advance_to(0)
+        # 无关 stage 的 node_close：不退出
+        self._append_ledger_row("X1", "node_close", "monitor#1")
+        clock.advance_to(30)
+        self.assertTrue(thread.is_alive())
+        # 绑定 stage 非末节点 close：不退出
+        self._append_ledger_row("C1", "node_close", "monitor#1")
+        clock.advance_to(60)
+        self.assertTrue(thread.is_alive())
+        # 末节点 close：退出 0，线程全部 join
+        self._append_ledger_row("C2", "node_close", "monitor#1")
+        clock.advance_to(90)
+        thread.join(timeout=5)
+        self.assertFalse(thread.is_alive())
+        self.assertEqual([0], results)
+        self.assertEqual([], self._watch_threads())
+
+    # --- R-A83-4 -----------------------------------------------------------
+
+    def test_a83_4_plan_amend_extends_bound_stage(self) -> None:
+        """plan_amend 给绑定 stage 加节点 → 原「末节点」close 不再触发退出；
+        真正末节点 close 后才退出。"""
+        self.write_plan(
+            node_rows=["| C1 | DHR_90 | DHR_90:C#1 | construction | agent:coder | | |"],
+            agent_rows=["| coder | C1 | coder | | code.md | | |"],
+        )
+        self.write_ledger_rows((
+            ("2026-09-24T08:00:00+00:00", "C1", "plan_loaded", "orchestrator#1", "skill=0.1.0"),
+            ("2026-09-24T08:00:01+00:00", "C1", "stage_start", "orchestrator#1", "stage_id=DHR_90:C#1"),
+            ("2026-09-24T08:00:02+00:00", "C1", "monitor_launch", "orchestrator#1", "stage_id=DHR_90:C#1"),
+            ("2026-09-24T08:00:03+00:00", "C1", "node_start", "monitor#1", ""),
+            ("2026-09-24T08:00:04+00:00", "C1", "agent_launch", "coder#1", ""),
+        ))
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        results: list[int] = []
+        thread = self._start_watch(clock, herdr, results=results)
+        clock.advance_to(0)
+        self.write_plan(
+            node_rows=[
+                "| C1 | DHR_90 | DHR_90:C#1 | construction | agent:coder | | |",
+                "| C2 | DHR_90 | DHR_90:C#1 | construction | agent:coder | | |",
+            ],
+            agent_rows=[
+                "| coder | C1 | coder | | code.md | | |",
+                "| coder | C2 | coder | | code.md | | |",
+            ],
+        )
+        self._append_ledger_row("C1", "plan_amend", "monitor#1", "decision.1.md nodes=C2")
+        self._append_ledger_row("C1", "node_close", "monitor#1")
+        clock.advance_to(30)
+        self.assertTrue(thread.is_alive())
+        self._append_ledger_row("C2", "node_close", "monitor#1")
+        clock.advance_to(60)
+        thread.join(timeout=5)
+        self.assertFalse(thread.is_alive())
+        self.assertEqual([0], results)
+
+    # --- R-A83-5 -----------------------------------------------------------
+
+    def _open_w_stage_rows(self) -> tuple[tuple[str, str, str, str, str], ...]:
+        """W#1 已开、monitor#1 在位、builder#1 已 launch 的两阶段 fixture 账本行。"""
+        return (
+            ("2026-09-24T08:00:00+00:00", "W1", "plan_loaded", "orchestrator#1", "skill=0.1.0"),
+            ("2026-09-24T08:00:01+00:00", "W1", "stage_start", "orchestrator#1", "stage_id=DHR_90:W#1"),
+            ("2026-09-24T08:00:02+00:00", "W1", "monitor_launch", "orchestrator#1", "stage_id=DHR_90:W#1 herdr=lead-w"),
+            ("2026-09-24T08:00:03+00:00", "W1", "node_start", "monitor#1", ""),
+            ("2026-09-24T08:00:04+00:00", "W1", "agent_launch", "builder#1", "herdr=builder-1"),
+        )
+
+    def test_a83_5_plan_level_exits_on_last_stage_close(self) -> None:
+        """编排级：前一 stage_close 不退出、末 stage_close 退出 0。"""
+        self.write_plan()
+        self.write_ledger_rows(self._open_w_stage_rows())
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["lead-w"] = [("idle", 0)]
+        herdr.get_default["lead-w"] = "idle"
+        herdr.wait_script["lead-c"] = [("idle", 0)]
+        herdr.get_default["lead-c"] = "idle"
+        results: list[int] = []
+        thread = self._start_watch(
+            clock, herdr, level="plan", notify="orch-1", results=results
+        )
+        clock.advance_to(0)
+        self.assertIn(
+            "watch:DHR_90:W#1:monitor#1",
+            {t.name for t in self._watch_threads()},
+        )
+        for event, agent, note in (
+            ("done", "builder#1", ""),
+            ("node_close", "monitor#1", ""),
+            ("stage_result", "monitor#1", "stage_id=DHR_90:W#1 outcome=done 节点收口"),
+            ("stage_close", "orchestrator#1", "stage_id=DHR_90:W#1"),
+        ):
+            self._append_ledger_row("W1", event, agent, note)
+        clock.advance_to(30)
+        self.assertTrue(thread.is_alive())
+        self.assertNotIn(
+            "watch:DHR_90:W#1:monitor#1",
+            {t.name for t in self._watch_threads()},
+        )
+        for event, agent, note in (
+            ("stage_start", "orchestrator#1", "stage_id=DHR_90:C#1"),
+            ("monitor_launch", "orchestrator#1", "stage_id=DHR_90:C#1 herdr=lead-c"),
+            ("node_start", "monitor#1", ""),
+        ):
+            self._append_ledger_row("C1", event, agent, note)
+        clock.advance_to(60)
+        self.assertTrue(thread.is_alive())
+        for event, agent, note in (
+            ("node_close", "monitor#1", ""),
+            ("stage_result", "monitor#1", "stage_id=DHR_90:C#1 outcome=done 收口"),
+            ("stage_close", "orchestrator#1", "stage_id=DHR_90:C#1"),
+        ):
+            self._append_ledger_row("C1", event, agent, note)
+        clock.advance_to(90)
+        thread.join(timeout=5)
+        self.assertFalse(thread.is_alive())
+        self.assertEqual([0], results)
+        self.assertEqual([], self._watch_threads())
+
+    # --- R-A83-6 -----------------------------------------------------------
+
+    def test_a83_6_plan_level_watches_stage_lead(self) -> None:
+        """编排级存在 monitor#1 线程、idle 变化 prompt 发给 --notify 方；
+        其 stage_close 后线程自行退出。"""
+        self.write_plan()
+        self.write_ledger_rows(self._open_w_stage_rows())
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["lead-w"] = [("idle", 0)]
+        herdr.get_default["lead-w"] = "idle"
+        self._start_watch(clock, herdr, level="plan", notify="orch-1")
+        clock.advance_to(0)
+        self.assertIn(
+            "watch:DHR_90:W#1:monitor#1",
+            {t.name for t in self._watch_threads()},
+        )
+        prompts = self._prompts(herdr, "orch-1")
+        self.assertEqual(1, len(prompts))
+        self.assertEqual("[relay-light] monitor#1 -> idle", prompts[0]["result"][0])
+        for event, agent, note in (
+            ("done", "builder#1", ""),
+            ("node_close", "monitor#1", ""),
+            ("stage_result", "monitor#1", "stage_id=DHR_90:W#1 outcome=done 节点收口"),
+            ("stage_close", "orchestrator#1", "stage_id=DHR_90:W#1"),
+        ):
+            self._append_ledger_row("W1", event, agent, note)
+        clock.advance_to(30)
+        self.assertNotIn(
+            "watch:DHR_90:W#1:monitor#1",
+            {t.name for t in self._watch_threads()},
+        )
+        self.assertTrue(
+            any(
+                t.name == "watch:main" and t.is_alive()
+                for t in threading.enumerate()
+            )
+        )
+
+    # --- R-A83-7 -----------------------------------------------------------
+
+    def test_a83_7_no_prompts_after_exit(self) -> None:
+        """退出后跨 tick 点不再产生任何通知——tick 与状态通知都不发。"""
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        results: list[int] = []
+        thread = self._start_watch(clock, herdr, results=results)
+        clock.advance_to(0)
+        self._append_ledger_row("C1", "node_close", "monitor#1")
+        clock.advance_to(30)
+        thread.join(timeout=5)
+        self.assertEqual([0], results)
+        sent = len(self._prompts(herdr))
+        for moment in (600, 1200, 2400):
+            clock.advance_to(moment)
+        self.assertEqual(sent, len(self._prompts(herdr)))
+
+    # --- R-A83-10 ----------------------------------------------------------
+
+    def test_a83_10_plan_level_never_prompts_workers(self) -> None:
+        """编排级只对 stage-lead 挂 wait/get，对 worker agent 零 Herdr 调用。"""
+        self.write_plan()
+        self.write_ledger_rows(self._open_w_stage_rows())
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["lead-w"] = [("idle", 0)]
+        herdr.get_default["lead-w"] = "idle"
+        herdr.wait_script["builder-1"] = [("idle", 0)]
+        herdr.get_default["builder-1"] = "idle"
+        self._start_watch(clock, herdr, level="plan", notify="orch-1")
+        clock.advance_to(0)
+        clock.advance_to(30)
+        observed = {
+            call["name"] for call in herdr.calls
+            if call["kind"] in {"wait", "get"}
+        }
+        self.assertEqual({"lead-w"}, observed)
+        prompt_texts = [c["result"][0] for c in self._prompts(herdr, "orch-1")]
+        self.assertTrue(prompt_texts)
+        for text in prompt_texts:
+            self.assertTrue(
+                text == "[relay-light] tick" or "monitor#" in text, text
+            )
+
+    # --- R-A83-11 ----------------------------------------------------------
+
+    def test_a83_11_empty_stage_never_exits(self) -> None:
+        """绑定 stage 节点未启动/全部 superseded → 永不退出（绑定对象不在）；
+        amend 补进第一个有效节点 + 其 node_close → 才退出。"""
+        self.write_plan(
+            node_rows=[
+                "| C1 | DHR_90 | DHR_90:C#1 | construction | agent:coder | | |",
+                "| X1 | DHR_90 | DHR_90:X#1 | rework | | | |",
+            ],
+            agent_rows=[
+                "| coder | C1 | coder | | code.md | | |",
+                "| coder | X1 | coder | | x.md | | |",
+            ],
+        )
+        self.write_ledger_rows((
+            ("2026-09-24T08:00:00+00:00", "X1", "plan_loaded", "orchestrator#1", "skill=0.1.0"),
+            ("2026-09-24T08:00:01+00:00", "X1", "stage_start", "orchestrator#1", "stage_id=DHR_90:X#1"),
+            ("2026-09-24T08:00:02+00:00", "X1", "monitor_launch", "orchestrator#1", "stage_id=DHR_90:X#1"),
+        ))
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        results: list[int] = []
+        thread = self._start_watch(clock, herdr, results=results)
+        for moment in (0, 30, 60, 90):
+            clock.advance_to(moment)
+        self.assertTrue(thread.is_alive())
+        # 绑定 stage 全部节点 superseded（替代节点在另一 stage）→ 仍不退出。
+        self.write_plan(
+            node_rows=[
+                "| C1 | DHR_90 | DHR_90:C#1 | construction | agent:coder | | |",
+                "| X1 | DHR_90 | DHR_90:X#1 | rework | | | superseded-by:C1 |",
+            ],
+            agent_rows=[
+                "| coder | C1 | coder | | code.md | | |",
+                "| coder | X1 | coder | | x.md | | |",
+            ],
+        )
+        self._append_ledger_row("X1", "plan_amend", "monitor#1", "decision.1.md nodes=C1")
+        for moment in (120, 150, 180):
+            clock.advance_to(moment)
+        self.assertTrue(thread.is_alive())
+        # amend 给绑定 stage 补进第一个有效节点 → close 后退出。
+        self.write_plan(
+            node_rows=[
+                "| C1 | DHR_90 | DHR_90:C#1 | construction | agent:coder | | |",
+                "| X1 | DHR_90 | DHR_90:X#1 | rework | | | superseded-by:C1 |",
+                "| X3 | DHR_90 | DHR_90:X#1 | rework | | C1 | |",
+            ],
+            agent_rows=[
+                "| coder | C1 | coder | | code.md | | |",
+                "| coder | X1 | coder | | x.md | | |",
+                "| coder | X3 | coder | | x3.md | | |",
+            ],
+        )
+        self._append_ledger_row("X1", "plan_amend", "monitor#1", "decision.2.md nodes=X3")
+        clock.advance_to(210)
+        self.assertTrue(thread.is_alive())
+        self._append_ledger_row("X3", "node_close", "monitor#1")
+        clock.advance_to(240)
+        thread.join(timeout=5)
+        self.assertFalse(thread.is_alive())
+        self.assertEqual([0], results)
+
+    # --- R-A83-12 ----------------------------------------------------------
+
+    def test_a83_12a_completion_exit_zero(self) -> None:
+        """绑定 stage 已全 close：main() 返回 0（逐字同完成路径）。"""
+        self.write_plan(
+            node_rows=["| C1 | DHR_90 | DHR_90:C#1 | construction | agent:coder | | |"],
+            agent_rows=["| coder | C1 | coder | | code.md | | |"],
+        )
+        self.write_ledger_rows((
+            ("2026-09-24T08:00:00+00:00", "C1", "plan_loaded", "orchestrator#1", "skill=0.1.0"),
+            ("2026-09-24T08:00:01+00:00", "C1", "stage_start", "orchestrator#1", "stage_id=DHR_90:C#1"),
+            ("2026-09-24T08:00:02+00:00", "C1", "monitor_launch", "orchestrator#1", "stage_id=DHR_90:C#1"),
+            ("2026-09-24T08:00:03+00:00", "C1", "node_start", "monitor#1", ""),
+            ("2026-09-24T08:00:04+00:00", "C1", "agent_launch", "coder#1", ""),
+            ("2026-09-24T08:00:05+00:00", "C1", "done", "coder#1", ""),
+            ("2026-09-24T08:00:06+00:00", "C1", "node_close", "monitor#1", ""),
+        ))
+        self.assertEqual(
+            0,
+            relay_log.main([
+                "watch", "--plan", str(self.plan_path.parent),
+                "--notify", "lead-1", "--config-dir", str(SKILL_DIR),
+            ]),
+        )
+
+    def test_a83_12b_args_and_no_open_stage_exit_two(self) -> None:
+        """参数错误/无 open stage → 2。"""
+        self.write_plan()
+        with redirect_stderr(io.StringIO()):
+            rc = relay_log.main([
+                "watch", "--plan", str(self.plan_path.parent),
+                "--config-dir", str(SKILL_DIR),
+            ])
+        self.assertEqual(2, rc)
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        results: list[int] = []
+        with redirect_stderr(io.StringIO()):
+            thread = self._start_watch(clock, herdr, results=results)
+            clock.advance_to(0)
+            thread.join(timeout=5)
+        self.assertEqual([2], results)
+
+    def test_a83_12c_plan_and_config_exit_three(self) -> None:
+        """plan lint 失败 → 3（启动期重试两次后退出）；配置目录无效 → 3。"""
+        self.plan_path.write_text("garbage\n", encoding="utf-8")
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        results: list[int] = []
+        with redirect_stderr(io.StringIO()):
+            thread = self._start_watch(clock, herdr, results=results)
+            clock.advance_to(1)
+            self.assertTrue(thread.is_alive())
+            clock.advance_to(5)
+            self.assertTrue(thread.is_alive())
+            clock.advance_to(7)
+            thread.join(timeout=5)
+        self.assertEqual([3], results)
+        self.write_plan()
+        with redirect_stderr(io.StringIO()):
+            rc = relay_log.main([
+                "watch", "--plan", str(self.plan_path.parent),
+                "--notify", "lead-1",
+                "--config-dir", str(self.plan_path.parent / "no-such"),
+            ])
+        self.assertEqual(3, rc)
+
+    def test_a83_12d_ledger_failure_retries_then_exit_four(self) -> None:
+        """启动期账本半行：两次 2 秒重试（无真 sleep）后退出 4。"""
+        self._stage_fixture()
+        ledger_path = self.plan_path.parent / "relay_log.jsonl"
+        ledger_path.write_bytes(ledger_path.read_bytes() + b'{"seq": 6, "ts')
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        results: list[int] = []
+        with redirect_stderr(io.StringIO()) as err:
+            thread = self._start_watch(clock, herdr, results=results)
+            clock.advance_to(1)
+            self.assertTrue(thread.is_alive())
+            clock.advance_to(5)
+            self.assertTrue(thread.is_alive())
+            clock.advance_to(7)
+            thread.join(timeout=5)
+        self.assertFalse(thread.is_alive())
+        self.assertEqual([4], results)
+        self.assertEqual(2, err.getvalue().count("retrying"))
+
+    def test_a83_12e_startup_half_line_recovers(self) -> None:
+        """启动期半行修复后正常进入——不退出，agent 线程按原有行为工作。"""
+        self._stage_fixture()
+        ledger_path = self.plan_path.parent / "relay_log.jsonl"
+        intact = ledger_path.read_bytes()
+        ledger_path.write_bytes(intact + b'{"seq": 6, "ts')
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        with redirect_stderr(io.StringIO()):
+            thread = self._start_watch(clock, herdr)
+            clock.advance_to(1)
+            ledger_path.write_bytes(intact)
+            clock.advance_to(3)
+        self.assertTrue(thread.is_alive())
+        self.assertEqual(1, len(self._prompts(herdr)))
+
+    def test_a83_12f_uncaught_exception_not_in_stop_set(self) -> None:
+        """run_watch 抛未捕获异常 → 不由 stop-set 收口（异常外抛，非 0/2/3/4）。"""
+        self.write_plan()
+        with mock.patch.object(
+            relay_log, "run_watch", side_effect=RuntimeError("boom")
+        ):
+            with self.assertRaises(RuntimeError):
+                relay_log.main([
+                    "watch", "--plan", str(self.plan_path.parent),
+                    "--notify", "lead-1", "--config-dir", str(SKILL_DIR),
+                ])
+
+    # --- R-A83-14/15 ---------------------------------------------------------
+
+    def _monitor_replacement(self, extra_rows: tuple[tuple[str, str, str], ...]) -> None:
+        """open stage 在位 monitor#1 线程；追加第二条 monitor_launch（+extra_rows
+        里的事件）→ 旧线程退出、monitor#2 线程 spawn 且 wait/get 打在新 herdr 名。"""
+        self.write_plan()
+        self.write_ledger_rows(self._open_w_stage_rows())
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["lead-w"] = [("idle", 0)]
+        herdr.get_default["lead-w"] = "idle"
+        herdr.wait_script["lead-w2"] = [("idle", 0)]
+        herdr.get_default["lead-w2"] = "idle"
+        self._start_watch(clock, herdr, level="plan", notify="orch-1")
+        clock.advance_to(0)
+        self.assertIn(
+            "watch:DHR_90:W#1:monitor#1",
+            {t.name for t in self._watch_threads()},
+        )
+        self._append_ledger_row(
+            "W1", "monitor_launch", "orchestrator#1",
+            "stage_id=DHR_90:W#1 herdr=lead-w2",
+        )
+        for event, agent, note in extra_rows:
+            self._append_ledger_row("W1", event, agent, note)
+        clock.advance_to(30)
+        names = {t.name for t in self._watch_threads()}
+        self.assertNotIn("watch:DHR_90:W#1:monitor#1", names)
+        self.assertIn("watch:DHR_90:W#1:monitor#2", names)
+        self.assertEqual(
+            [30.0],
+            [call["start"] for call in self._calls(herdr, "wait", "lead-w2")],
+        )
+        self.assertEqual(
+            "[relay-light] monitor#2 -> idle",
+            self._prompts(herdr, "orch-1")[-1]["result"][0],
+        )
+        clock.advance_to(60)
+        self.assertEqual(
+            [60.0],
+            [call["start"] for call in self._calls(herdr, "get", "lead-w2")],
+        )
+        # 更替后旧 herdr 名不再被 wait/get 命中：monitor#1 的 wait 只有 t=0 一笔。
+        self.assertEqual(
+            [0.0],
+            [call["start"] for call in self._calls(herdr, "wait", "lead-w")],
+        )
+        self.assertEqual([], self._calls(herdr, "get", "lead-w"))
+
+    def test_a83_14_monitor_relaunch_replaces_thread(self) -> None:
+        """§7.3 监工重拉：第二条 monitor_launch 使 monitor#1 线程退出（
+        launches > own 分支），monitor#2 线程 spawn 并 wait/get 打 lead-w2。"""
+        self._monitor_replacement(())
+
+    def test_a83_15_monitor_restart_after_relaunch(self) -> None:
+        """§7.3 完整序：第二条 monitor_launch + 新监工 monitor_restart →
+        monitor#1 线程经 monitor_restart 分支退出，monitor#2 照常接管。"""
+        self._monitor_replacement(
+            (("monitor_restart", "monitor#2", "盘点 builder-1 在场"),)
+        )
+
+    # --- R-A101 ------------------------------------------------------------
+
+    def test_a101_1_watch_closure_has_no_writes(self) -> None:
+        source = Path(__file__).with_name("relay_log.py").read_text(encoding="utf-8")
+        self.assertEqual([], _watch_source_violations(source))
+
+    def test_a101_2_checker_flags_injected_write(self) -> None:
+        source = Path(__file__).with_name("relay_log.py").read_text(encoding="utf-8")
+        anchor = "        polling = False"
+        self.assertIn(anchor, source)
+        mutated = source.replace(
+            anchor,
+            '        append_event(plan_dir, "n", "done", "a#1", "", config)\n' + anchor,
+            1,
+        )
+        violations = _watch_source_violations(mutated)
+        self.assertTrue(
+            any("append_event" in violation for violation in violations),
+            violations,
+        )
+
+    def test_a101_3_watch_run_leaves_plan_and_ledger_bytes(self) -> None:
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        plan_bytes = self.plan_path.read_bytes()
+        ledger_path = self.plan_path.parent / "relay_log.jsonl"
+        ledger_bytes = ledger_path.read_bytes()
+        appended = ""
+        with mock.patch.object(relay_log, "append_event") as mocked_append:
+            self._start_watch(clock, herdr)
+            clock.advance_to(0)
+            clock.advance_to(15)
+            appended = self._append_ledger_row("C1", "done", "coder#1")
+            clock.advance_to(30)
+            clock.advance_to(60)
+            mocked_append.assert_not_called()
+        self.assertEqual(plan_bytes, self.plan_path.read_bytes())
+        self.assertEqual(
+            ledger_bytes + (appended + "\n").encode("utf-8"), ledger_path.read_bytes()
+        )
+
+    def test_a101_4_checker_flags_injected_bypass_writes(self) -> None:
+        """P2-2 oracle 自证：watch 闭包内注入 Path.open/unlink、os.remove、
+        tempfile.*、["tee",…] subprocess 字面量——全部判违规（旧 oracle 会
+        按「字面量非 herdr 打头」豁免 subprocess，且 Path.open 不在禁则）。"""
+        source = Path(__file__).with_name("relay_log.py").read_text(encoding="utf-8")
+        anchor = "        polling = False"
+        self.assertIn(anchor, source)
+        injected = (
+            '        Path("relay_log.jsonl").open("w")\n'
+            '        Path("relay_plan.md").unlink()\n'
+            '        os.remove("relay_log.jsonl")\n'
+            '        tempfile.mkstemp()\n'
+            '        subprocess.run(["tee", "relay_log.jsonl"], capture_output=True, check=False)\n'
+        )
+        mutated = source.replace(anchor, injected + anchor, 1)
+        violations = _watch_source_violations(mutated)
+        for needle in (".open", ".unlink", "os.remove", "tempfile", "subprocess"):
+            self.assertTrue(
+                any(needle in violation for violation in violations),
+                (needle, violations),
+            )
+
+    # --- R-CLI-1 -----------------------------------------------------------
+
+    def test_cli_watch_argument_contract(self) -> None:
+        self.write_plan()
+        plan_dir = str(self.plan_path.parent)
+        cases = (
+            ("missing --plan", ("watch", "--notify", "x", "--config-dir", str(SKILL_DIR))),
+            ("missing --notify", ("watch", "--plan", plan_dir, "--config-dir", str(SKILL_DIR))),
+            (
+                "whitespace --notify",
+                ("watch", "--plan", plan_dir, "--notify", "bad name", "--config-dir", str(SKILL_DIR)),
+            ),
+            (
+                "non-ascii --notify",
+                ("watch", "--plan", plan_dir, "--notify", "codér", "--config-dir", str(SKILL_DIR)),
+            ),
+        )
+        for desc, argv in cases:
+            with self.subTest(case=desc):
+                result = self.run_cli(*argv, config_dir=None)
+                self.assertEqual(2, result.returncode)
+                self.assertEqual("", result.stdout)
+        help_result = self.run_cli("watch", "--help")
+        self.assertEqual(0, help_result.returncode)
+        self.assertIn("--notify", help_result.stdout)
+        self.assertIn("--config-dir", help_result.stdout)
+        before = sorted(path.name for path in self.plan_path.parent.iterdir())
+        result = self.run_cli(
+            "watch", "--plan", plan_dir, "--notify", "lead-1",
+            "--config-dir", str(SKILL_DIR), config_dir=None,
+        )
+        self.assertEqual(2, result.returncode)
+        self.assertIn("watch_no_open_stage", result.stderr)
+        self.assertEqual(
+            before, sorted(path.name for path in self.plan_path.parent.iterdir())
+        )
+
+    # --- C1-2 --------------------------------------------------------------
+
+    def test_c1_2_thread_respawn_inherits_dedup(self) -> None:
+        """C1-2：agent 线程异常死亡 → 主循环重生 → 新线程继承已通知状态，
+        settled agent 不被二次通知；死亡在 stderr 留一行可归因记录。"""
+        self._stage_fixture()
+        clock = FakeClock()
+        herdr = FakeHerdr(clock)
+        herdr.wait_script["coder-1"] = [("idle", 0), ("idle", 0)]
+        herdr.get_default["coder-1"] = "idle"
+        armed = {"tripped": False}
+        real_get = herdr.get
+
+        def flaky_get(name: str) -> str | None:
+            if not armed["tripped"]:
+                armed["tripped"] = True
+                raise RuntimeError("boom")
+            return real_get(name)
+
+        herdr.get = flaky_get  # type: ignore[method-assign]
+        with redirect_stderr(io.StringIO()) as err:
+            self._start_watch(clock, herdr)
+            for moment in (0, 30, 60, 90, 120):
+                clock.advance_to(moment)
+        # 重生落在主循环下一轮（线程死亡与其 is_alive 翻面的时刻不钉死）：
+        # 第二次 wait 必有、重生后 get 轮询继续；关键断言=prompt 仍恰一次。
+        self.assertEqual(2, len(self._calls(herdr, "wait", "coder-1")))
+        self.assertTrue(self._calls(herdr, "get", "coder-1"))
+        self.assertEqual(
+            [("[relay-light] coder#1 -> idle", True)],
+            [call["result"] for call in self._prompts(herdr)],
+        )
+        self.assertTrue(
+            any(
+                t.name == "watch:C1:coder#1" and t.is_alive()
+                for t in threading.enumerate()
+            )
+        )
+        self.assertIn("died", err.getvalue())
+        self.assertIn("RuntimeError", err.getvalue())
+        self.assertEqual(1, len(self.thread_errors))
+        self.assertIn("RuntimeError", self.thread_errors[0])
+        self.thread_errors.clear()
+
+    # --- C2-1 --------------------------------------------------------------
+
+    def test_c2_1_herdr_client_reads_bytes_decodes_utf8(self) -> None:
+        """C2-1：`HerdrClient._run` 按 `_git_readonly` 惯例字节级 capture +
+        显式 UTF-8 解码——stdout 不随 locale 走；非 UTF-8 字节经 replace 落
+        json 失败返回 None（失聪但线程不死），不抛 UnicodeDecodeError。"""
+        payload = json.dumps(
+            {"result": {"agent": {"agent_status": "忙碌"}}}, ensure_ascii=False
+        ).encode("utf-8")
+
+        def fake_run(argv, **_kwargs):
+            return subprocess.CompletedProcess(argv, 0, stdout=payload, stderr=b"")
+
+        with mock.patch.object(subprocess, "run", side_effect=fake_run) as run_mock:
+            status = relay_log.HerdrClient().get("coder-1")
+        self.assertEqual("忙碌", status)
+        self.assertTrue(run_mock.call_args_list)
+        for call in run_mock.call_args_list:
+            self.assertNotIn("text", call.kwargs)
+            self.assertNotIn("encoding", call.kwargs)
+
+        def fake_run_broken(argv, **_kwargs):
+            return subprocess.CompletedProcess(
+                argv, 0, stdout=b'{"result": "\xff\xfe"}', stderr=b""
+            )
+
+        with mock.patch.object(subprocess, "run", side_effect=fake_run_broken):
+            self.assertIsNone(relay_log.HerdrClient().get("coder-1"))
+
+    def test_c2_1_baseline_fetch_reads_bytes_decodes_utf8(self) -> None:
+        """C2-1 同族：`fetch_baseline_text` 的 `git show` 字节级 capture +
+        显式 UTF-8——损坏基线是显见 decode 报错，不是 mojibake 空洞通过。"""
+        blob = "# 基线\n含中文\n".encode("utf-8")
+
+        def fake_run(argv, **_kwargs):
+            if list(argv[:2]) == ["git", "show"]:
+                return subprocess.CompletedProcess(argv, 0, stdout=blob, stderr=b"")
+            return subprocess.CompletedProcess(argv, 0, stdout=b"", stderr=b"")
+
+        with mock.patch.object(subprocess, "run", side_effect=fake_run) as run_mock:
+            text = fetch_baseline_text("tools/relay-light/skill/SKILL.md")
+        self.assertEqual("# 基线\n含中文\n", text)
+        show_calls = [
+            call
+            for call in run_mock.call_args_list
+            if list(call.args[0][:2]) == ["git", "show"]
+        ]
+        self.assertTrue(show_calls)
+        for call in show_calls:
+            self.assertNotIn("text", call.kwargs)
+            self.assertNotIn("encoding", call.kwargs)
+
+        def fake_run_broken(argv, **_kwargs):
+            if list(argv[:2]) == ["git", "show"]:
+                return subprocess.CompletedProcess(
+                    argv, 0, stdout=b"\xff\xfe", stderr=b""
+                )
+            return subprocess.CompletedProcess(argv, 0, stdout=b"", stderr=b"")
+
+        with mock.patch.object(subprocess, "run", side_effect=fake_run_broken):
+            with self.assertRaises(UnicodeDecodeError):
+                fetch_baseline_text("tools/relay-light/skill/SKILL.md")
 
 
 if __name__ == "__main__":

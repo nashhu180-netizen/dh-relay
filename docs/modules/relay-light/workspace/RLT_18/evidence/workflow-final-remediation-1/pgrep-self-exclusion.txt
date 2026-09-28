@@ -1,0 +1,16 @@
+# C1-1 复现证据：裸 pgrep -f 自匹配 vs adapter 新管道（真实进程，2026-09-25）
+
+== A. 无任何 watch 载体 ==
+$ bash -c "pgrep -f -- '<needle>' | cat"   # 旧写法（复合命令保住包装壳，同 agent 工具调用形态）
+stdout: 3952139
+3952158  rc: 0  <- 非空幻 PID = 包装壳自身（自匹配）
+$ bash -c "pgrep -af -- '<needle>' | grep -v 'pgrep' | grep -Ev \"^($$|$PPID) \""   # 新写法
+stdout: <empty>  <- 空：调用壳已被排除
+
+== B. 有循环壳载体（模拟 D13 重启循环 shell 存活形态）==
+carrier pid: 3952165  cmdline: bash -c 'while :; do sleep 5; done # <needle>'
+$ 新写法 stdout: ['3952165 bash -c while :; do sleep 5; done # relay_log.py watch --plan /nonexistent-rlt18 --notify self-test --level stage']
+命中载体 -> True （循环壳存活即算在；python 暂死窗口不误判）
+
+== C. 载体终止后再核 ==
+$ 新写法 stdout: <empty>

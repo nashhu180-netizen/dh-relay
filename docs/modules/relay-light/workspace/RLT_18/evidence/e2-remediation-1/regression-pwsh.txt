@@ -1,0 +1,13 @@
+# E2 remediation 1 — pwsh 全仓回归
+
+命令：
+    PYTHONDONTWRITEBYTECODE=1 pwsh -NoProfile -File tools/tests/run-relay-tests.ps1
+
+结果：
+    内含 test_relay_log Ran 269 tests in 449.473s — OK
+    内含 test_install_skill Ran 19 tests in 0.238s — OK
+    RELAY ALL PASS (SKIPPED: 1)
+    exit 0
+
+skip 为 relay-psmux-real（需 RELAY_REAL_TERMINAL=1 真终端），与基线一致的
+既有豁免口径。
