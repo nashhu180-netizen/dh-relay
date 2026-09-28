@@ -55,3 +55,9 @@ builder 观察（不是裁决）：A 和 D 不改 design 字面；B、C 属设�
 | ID | 级别 | 问题 | 证据 | 处理 | 状态 |
 |---|---|---|---|---|---|
 | F-015 | 信息（记录面同步，超出 B-10 §4 字面） | DevPlan RLT_18 允许路径块 SKILL.md 注记仍为 UD-2 口径，未随 UD-3 扩界（dispatch/README.md 已登记扩为「UD-2 两处 + UD-3 watch 兜底表述」）；decision.b10 §4 写明「第 660 行允许路径块不动」、§7 顺手清单未收此行，故无执行载体。 | `review.workflow-final.consistency.ud3.review-round-1.md` CS-U3-2；DevPlan 第 665 行；`dispatch/README.md` UD-3 追加段 | 2026-09-25 用户选 A「现在改」：orchestrator 只改该注记文字、路径条目不变，与 README 登记对齐；超出 B-10 §4 字面如实登记于此，不补开 B 事件 | 已处理 |
+
+## H12 v2 人判回流（2026-09-28 主会话）
+
+| ID | 级别 | 问题 | 证据 | 处理 | 状态 |
+|---|---|---|---|---|---|
+| F-016 | P3（后续项，不阻塞 H12） | U2 实测中两 watcher（claude/codex）读 brief 后均未自启 10 分钟节拍，各需 driver 轻推一次；codex 侧因此首个检查间隔 ≈14 min（17:03→17:17），越过 10 分钟上界（启动伪影，非稳态）。 | `evidence/ud3-h12/H12.md`「操作者介入」与 H12-B；raw/nudge-1.txt | 用户 2026-09-28 人判 H12 接受并列为知悉项；后续改 watcher brief / adapter 派单，使 watcher 无需确认即自启节拍。本卡不改 | 已登记（backlog） |
