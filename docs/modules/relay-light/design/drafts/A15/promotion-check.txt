@@ -1,0 +1,54 @@
+RLT-A-15 promotion-check · base master 724506c → plan/RLT_A_15 working tree · 2026-09-28T11:08:28+08:00
+
+[1] 监工 outside '> **RLT-A-' declaration lines:
+0
+[2] 主控 outside declaration lines (allowed: 冻结来源 line, §15 A-full 顺序 line):
+45:> 冻结来源：2026-09-08 至 09-09 用户与主控的�
+1490:| A-full 顺序 | 初版、RLT-A-03～A05 的形成史�
+[3] monitor residual after regex+anchors:
+0
+[3b] §6.3 lines starting with [monitor]:
+0
+
+[4] §7 acceptance rows: changed? (diff vs master) — 判据列比对
+HC-RL-A21: 改（措辞）
+HC-RL-A34: 改（措辞）
+HC-RL-A43: 不改（只含冻结词或无角色措辞）
+HC-RL-A59: 不改（只含冻结词或无角色措辞）
+HC-RL-A62: 不改（只含冻结词或无角色措辞）
+HC-RL-A68: 不改（只含冻结词或无角色措辞）
+HC-RL-A69: 不改（只含冻结词或无角色措辞）
+HC-RL-A85: 改（措辞）
+HC-RL-A89: 不改（只含冻结词或无角色措辞）
+HC-RL-A93: 改（措辞）
+HC-RL-A106: 不改（只含冻结词或无角色措辞）
+HC-RL-A119: 不改（只含冻结词或无角色措辞）
+HC-RL-A122: 改（措辞）
+HC-RL-A126: 改（措辞）
+HC-RL-A127: 改（措辞）
+HC-RL-A131: 改（判据：角色键 11 → 12，唯一改判据条目，S-04）
+HC-RL-A138: 改（措辞）
+HC-RL-A140: 改（措辞）
+HC-RL-A141: 改（措辞）
+HC-RL-A147: 改（措辞）
+HC-RL-A149: 改（措辞）
+HC-RL-A151: 改（措辞）
+HC-RL-A152: 改（措辞）
+HC-RL-A153: 改（措辞）
+HC-RL-A163: 改（措辞）
+HC-RL-A164: 改（措辞）
+HC-RL-A165: 改（措辞）
+HC-RL-A167: 改（措辞）
+HC-RL-H1: 改（措辞）
+HC-RL-H3: 改（措辞）
+HC-RL-H4: 改（措辞）
+HC-RL-H11: 改（措辞）
+HC-RL-H12: 改（措辞）
+HC-RL-H13: 改（措辞）
+HC-RL-H16: 改（措辞）
+HC-RL-H17: 改（措辞）
+HC-RL-H18: 改（措辞）
+HC-RL-H19: 改（措辞）
+
+注：其余「改（措辞）」行均由 R1/R3/R6/S-08 固定映射产生（监工→stage-lead、single-task monitor→watcher、主控→编排加载的 adapter 侧），编号与判据不变；「不改」行只含冻结词（monitor#<n>、monitor_launch、relaunch_monitor 等）或本就无角色措辞。
+结论：[1][2][3][3b] 全部通过。
