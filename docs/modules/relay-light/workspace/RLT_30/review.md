@@ -11,7 +11,7 @@
 | 3 | `HC-RL-A43`、`A44`（§10.3 样张逐字；`last_writer` 仍 `monitor`） | 机器证 | `test_design_10_3_text_snapshot_is_reproduced_line_by_line`、`test_status_reports_the_last_writer_…`；需求复核实跑 | 通过（机器证） |
 | 4 | `HC-RL-A69`、`A85`、`A93`、`A119` + `A62` | 机器证 | task_plan §4；新增/改动字面断言；需求复核 `--json` 新旧 cmp 相同；A93 报错不含角色名，无需改 | 通过（机器证） |
 | 5 | grep 三项 | 机器证 | E-003 `evidence/grep-after.txt` | 通过（机器证） |
-| 6 | 全量回归 + CI | 机器证 | E-004、E-005；CI 见 PR #71 | 本地通过；CI 待最终提交结果 |
+| 6 | 全量回归 + CI | 机器证 | E-004、E-005；PR #71 CI run 36378500616（`878502c`） | 通过（机器证） |
 | 7 | 两机四份副本同步 | 机器证 | 合入后执行 | 待合入 |
 
 ## 独立复核区（执行者 ≠ 复核者；normal 三路）
@@ -72,7 +72,7 @@
 | 3 | `status` 文本与 §10.3 样张**逐字一致**：「当班写入者：stage-lead（DHR_90:C#1）」——括号内为 stage_id，status 文本不另带出 `monitor#<n>`（用户 2026-09-28）；`derive_last_writer` 仍返回账本原值 `monitor`。 | AI | E-004、E-006 M1、E-007 | 是 |
 | 4 | 错误/告警（含汇入 `status --json` `errors` 的字符串）遵守三条规矩（用户 2026-09-28「卡里写规矩，字面施工定」）：①主语写 stage-lead；②括号带出账本原值（`by=monitor` 或 `monitor#<n>`）；③错误码 HC-RL-Axx 与退出码不变。具体字面由 `task_plan` 定，复核按三条规矩逐条核；含事件名 `monitor_launch` 的报错不改。 | AI | E-004、E-006 M2、E-007、E-008 | 是 |
 | 5 | 对 skill 五件（SKILL.md、两 adapter、`roles.toml`、`dh-mapping.toml`）与 AGENTS.md relay-light 两段跑 grep：①「监工」= 0；②`monitor` 按 promotion-check 同一正则删去冻结词后，剩余命中只允许落在 `task_plan` 预先登记的**内容锚定白名单行**（stage-lead 账本标识说明句、「监督 / 监控 / monitor」别名句、反引号内 `[monitor]` 旧名兼容句、AGENTS 中「原『监工 monitor』」更名说明句），其余 = 0；③`roles.toml` 无以 `[monitor]` 开头的段头。 | AI | E-003 | 是 |
-| 6 | 全量回归：`PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_relay_log test_install_skill`（`tools/relay-light/`）与 `pwsh -NoProfile -File tools/tests/run-relay-tests.ps1` 全绿；PR CI 三硬门 success。 | AI | E-004、E-005；CI 待最终提交 | 部分：本地是；CI 待 |
+| 6 | 全量回归：`PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_relay_log test_install_skill`（`tools/relay-light/`）与 `pwsh -NoProfile -File tools/tests/run-relay-tests.ps1` 全绿；PR CI 三硬门 success。 | AI | E-004、E-005；CI run 36378500616 三硬门 success | 是 |
 | 7 | 两机同步：合入后 ThinkPad `/home/nash/.claude/skills/relay-light`、`/home/nash/.codex/skills/relay-light` 与 thinkbook `C:\Users\nash\.claude\skills\relay-light`、`C:\Users\nash\.codex\skills\relay-light` 四份副本经 `install_skill.py --all` 同步（用户 2026-09-28 已授权），五文件与 master 源 LF 归一化哈希一致；thinkbook 不可达时如实挂起并报告。 | AI | 合入后执行 | 否（合入后执行） |
 
 **风险放行账表**：无（范围/影响/期限/恢复/去处 —）。
@@ -80,10 +80,25 @@
 **材料齐没齐**：[x] brief / task_plan / progress / 三路复核 / review
 **as-built 更新了没**：[x] `as-built/single-task-实现快照.md`（现役行改 watcher，历史行加注）
 
-→ 当前状态：**待 E10 用户确认**
+→ 当前状态：**E10 已确认，执行合入收口**（verify SHA 合入后回填）
 
 ---
 
+## 自动收口记录
+
+- 任务 ID：RLT_30
+- 开工授权依据：brief「本卡开工授权」——用户 2026-09-28「确认开工」；GitHub 动作与两机同步同日授权
+- 验收执行者：主会话 Claude Code（Opus 5.5）；三路复核 fresh subagent
+- 验收证据：E-001～E-009；PR #71 CI run 36378500616
+- 展示版本：`878502c`
+- 放行结论：全验收通过（H=0；第 7 条两机同步为合入后机械动作）
+- verify 提交 SHA：合入后回填
+
 ## 人类签名区
 
-H=0，无人判项；E10 放行包确认记录收口时填写。
+H=0，无人判项。
+
+### 确认记录（append-only）
+
+- 2026-09-28 E10：用户 AskUserQuestion 点选「已查看证据，认可收口」——授权 PR #71 squash 合入、verify、回填、两机四份副本同步、删 worktree。
+- 2026-09-28 R30 定类：用户点选「认定为规划事件，不算越界」——6 个 RLT-A-15/RLT-B-11 规划文件随同 PR 合入，不计 RLT_30 越界（F-011）。

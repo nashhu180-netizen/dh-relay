@@ -13,7 +13,7 @@
 | F-008 | P3 | 需求复核 RQ-1（冻结面）：watch 通知显示 `monitor#1 -> idle`；未写 `herdr=` 时 watch 按 `monitor-<n>` 猜 Herdr 名，编排若以 `stage-lead-1` 命名 pane 会挂不上 | 后续项：adapter 把 `monitor_launch` note 必写 `herdr=` 升为强约束 |
 | F-009 | P3 | 需求复核 RQ-2：roles.toml 模板注释未写明 `[watcher]` 只管完整模式（现由两 adapter single-task 段承载） | 后续项，顺手补注释 |
 | F-010 | P3 | `dh gate` 报 label-marker-mismatch：DevPlan RLT_30 卡「任务类型」人读标签后接了配方说明，解析器要求标签严格等于「常规」（B-11 审核未发现） | 已把说明拆到独立「复核配方」行，内容不变、仅格式；gate 复跑 |
-| F-011 | P2 | `dh relay-light` R30：按整条分支 `origin/master...HEAD` 计算，RLT_30 名下多出 6 个允许路径外文件——均为 RLT-A-15 / RLT-B-11 规划事件产物（design/01、design/README、drafts/A15 两件、evidence/15、dev_plan/drafts/RLT-B-11），提交于 D-start 前（`197a54a`～`18540c7`），用户 2026-09-28 定「RLT_30 在 plan/RLT_A_15 施工、同 PR #71 合入」；RLT_30 施工 diff `18540c7..HEAD` 全在允许路径内（code_review 核 25 文件）。同理 RLT_27 也被误挂 | 规则要求停下由用户定类：E10 提请用户确认「规划事件文件随同 PR 合入、不计入 RLT_30 越界」 |
+| F-011 | P2 | `dh relay-light` R30：按整条分支 `origin/master...HEAD` 计算，RLT_30 名下多出 6 个允许路径外文件——均为 RLT-A-15 / RLT-B-11 规划事件产物（design/01、design/README、drafts/A15 两件、evidence/15、dev_plan/drafts/RLT-B-11），提交于 D-start 前（`197a54a`～`18540c7`），用户 2026-09-28 定「RLT_30 在 plan/RLT_A_15 施工、同 PR #71 合入」；RLT_30 施工 diff `18540c7..HEAD` 全在允许路径内（code_review 核 25 文件）。同理 RLT_27 也被误挂 | 已闭合：用户 2026-09-28 点选「认定为规划事件，不算越界」 |
 | F-012 | 信息 | `dh relay-light` R14：解析器只认 `> DH_nn 计划` 卡头，RLT_ 卡一律报「找不到验收口径」 | 工具覆盖面限制；brief 完成条件已逐字复制卡验收（人工核） |
 
 ## 可恢复的下一步

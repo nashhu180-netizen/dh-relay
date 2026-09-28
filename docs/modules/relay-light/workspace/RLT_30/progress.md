@@ -12,6 +12,7 @@
 | 2026-09-28 | S4 | 全量回归两路绿；施工提交 `db103a8` |
 | 2026-09-28 | S5 | 有效单测两处变异施加→断言失败→还原→绿 |
 | 2026-09-28 | S6 | 三路 fresh 复核：code_review approved、需求 PASS、教训 LES-1 纠正后闭合；P3 登记 F-004～F-009；dh gate label-marker-mismatch 修卡格式（F-010） |
+| 2026-09-28 | E10 | CI run 36378500616 三硬门 success；用户点选「已查看证据，认可收口」与 R30「认定为规划事件，不算越界」 |
 
 ## 证据账本 (Evidence Ledger)
 
