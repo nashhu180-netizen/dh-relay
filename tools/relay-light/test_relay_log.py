@@ -8753,7 +8753,7 @@ def _watch_subprocess_violations(
 # RLT_18 batch 2 — RED 有效性对照用 pinned 基线（任务卡开工时的 master）。
 # 与 RLT_24 同款纪律：CI 浅克隆可能缺该对象，取不到时调用方必须 fail，
 # 不得静默 skip——基线对照是 RED 断言的证据力所在。
-RLT18_BASELINE_SHA = "5ab3bba"
+RLT18_BASELINE_SHA = "5ab3bbab42f1cce78862f2c08185648debe5a2dc"  # full SHA: `git fetch origin <sha>` rejects abbreviations
 
 
 def fetch_baseline_text(relpath: str) -> str | None:

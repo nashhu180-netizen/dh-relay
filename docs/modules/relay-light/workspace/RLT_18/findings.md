@@ -61,3 +61,9 @@ builder 观察（不是裁决）：A 和 D 不改 design 字面；B、C 属设�
 | ID | 级别 | 问题 | 证据 | 处理 | 状态 |
 |---|---|---|---|---|---|
 | F-016 | P3（后续项，不阻塞 H12） | U2 实测中两 watcher（claude/codex）读 brief 后均未自启 10 分钟节拍，各需 driver 轻推一次；codex 侧因此首个检查间隔 ≈14 min（17:03→17:17），越过 10 分钟上界（启动伪影，非稳态）。 | `evidence/ud3-h12/H12.md`「操作者介入」与 H12-B；raw/nudge-1.txt | 用户 2026-09-28 人判 H12 接受并列为知悉项；后续改 watcher brief / adapter 派单，使 watcher 无需确认即自启节拍。本卡不改 | 已登记（backlog） |
+
+## 收口 CI 回流（2026-09-28 主控）
+
+| ID | 级别 | 问题 | 证据 | 处理 | 状态 |
+|---|---|---|---|---|---|
+| F-017 | P1（CI 阻塞，收口后发现） | PR #68 CI `relay-tests (ubuntu-latest)` 3 项 FAIL：`test_a83_adapter_contract_red_baseline`×2、`test_a83_13_skill_ud2_wording`。根因：`RLT18_BASELINE_SHA="5ab3bba"` 为短 SHA，`git fetch --depth=1 origin <sha>` 只接受完整 SHA，CI 浅克隆取不到基线对象；本地全量克隆 `git cat-file -e` 直接命中，各轮复核均在全量克隆下跑，未暴露。 | CI run 36366169179 job 108752918493；本地浅克隆复现 `fatal: 无法找到远程引用 5ab3bba` | 主控直修：常量改完整 SHA `5ab3bbab42f1cce78862f2c08185648debe5a2dc`（只改 test_relay_log.py 一行）；新鲜浅克隆（对象缺失前提已核）下两用例 OK，工作区 SkillAdapterTests+SkillCoreDocTests 全绿；以 PR CI 复跑为准。改动在用户确认放行包之后，属测试基建一行修正、不改被测行为，未另派复核，如实登记 | 已修（待 CI） |
