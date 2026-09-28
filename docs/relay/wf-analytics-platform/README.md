@@ -1,6 +1,8 @@
 # wf-analytics-platform 接力计划总入口
 
-每个子目录 `<模块>/<plan_id>/` 一份计划：`relay_plan.md`（计划）、`relay_log.jsonl`（账本，运行时生成）、`orchestrator-prompt.md`（人拉编排的派单文案）、`config/`（本计划 roles.toml + dh-mapping.toml，所有 relay_log 调用的 `--config-dir`）。
+每个子目录 `<模块>/<plan_id>/` 一份 `relay_plan.md`。只记录卡间衔接时，使用[单卡接力总表模板](../templates/card-chain.md)，跨模块放在牵头模块下，只维护一份；无需其他配套文件。
+
+完整执行计划另配：`relay_log.jsonl`（账本，运行时生成）、`orchestrator-prompt.md`（人拉编排的派单文案）、`config/`（本计划 roles.toml + dh-mapping.toml，所有 relay_log 调用的 `--config-dir`）。
 
 ## RLT_29 试跑：监工拆成「阶段主控 + watcher」
 
