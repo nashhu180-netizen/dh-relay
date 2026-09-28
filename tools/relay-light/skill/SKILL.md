@@ -17,7 +17,7 @@ relay-light 是一套接力编排协议，有两种互斥模式（选法见下�
 
 - 用户没点名模式、上表又不能唯一判定时，**先问用户走哪种，再动手**；不得自行默认完整模式，也不得按记忆里的旧配方直接开跑。
 - 用户贴出的多角色分工表就是 `single-task` 的角色与模型提案：照它进 `single-task` 的 model-allocation gate，派单用 `[relay-light:single-task]` 标头，不另起一套 `dispatch/*.md` brief + `progress.md` `DONE` 信号的手动派活流程（那是 `single-task` 正式化之前的临时做法，已由本模式取代）。
-- 分工表里的「监督 / 监控 / monitor」对应 `single-task` 的 `phase=monitor`，即 watcher（只观察、只报信），不是完整模式的 stage-lead。
+- 分工表里的「监督 / 监控 / monitor」对应 `single-task` 的 `phase=watcher`，即 watcher（只观察、只报信），不是完整模式的 stage-lead；这是自然语言别名映射，不是标头 phase 值。
 
 ## 适用边界：交互型任务走单会话
 
@@ -49,7 +49,7 @@ relay-light 的 worker 不回头问用户，卡住只能写 `blocked` 交 decide
 | decider 决策 | stage-lead | 按需 | 施工 `blocked` 时产出可落地方案；不改任何文件，可在方案文件提出「需要改计划」并写明改动内容（改计划工作流见「planner-amend 改计划模板」） |
 | reviewer | stage-lead | 单路 | R 阶段各路复核，路数由 Recipe 决定 |
 | strategist 全局决策 | stage-lead | 按需 | 返工到轮数上限仍不过时产出全局方案；不改任何文件，可同样提出「需要改计划」（见「planner-amend 改计划模板」） |
-| watcher（旁路） | 编排或 stage-lead | 一个终端空间 | 只观察、只报信给本空间派活方；不派活、不写账本、不改文件。完整 relay 模式：盯 agent 状态变化与 20 分钟 tick 由 `relay_log.py watch` 程序承担，watcher agent 每终端空间一个、每 10 分钟只读核本空间 watch 存活，缺席即报信本空间派活方（stage-lead/编排）重拉；`single-task` 模式无账本不接 watch，`phase=monitor` 角色以 120 秒节拍盯 agent 状态变化 |
+| watcher（旁路） | 编排或 stage-lead | 一个终端空间 | 只观察、只报信给本空间派活方；不派活、不写账本、不改文件。完整 relay 模式：盯 agent 状态变化与 20 分钟 tick 由 `relay_log.py watch` 程序承担，watcher agent 每终端空间一个、每 10 分钟只读核本空间 watch 存活，缺席即报信本空间派活方（stage-lead/编排）重拉；`single-task` 模式无账本不接 watch，`phase=watcher` 角色以 120 秒节拍盯 agent 状态变化 |
 
 拉取顺序固定：**编排拉 stage-lead，stage-lead 拉其余**。编排不越级拉 agent；stage-lead 不跨阶段存活；规划不参与运行。checker / decider / strategist 都不写账本、不做复核、不改文件。
 
@@ -310,13 +310,13 @@ relay_log.py lint --plan <plan_dir> --amend-check after  --repo <repo> --snapsho
 ### 标头与 phase 闭集
 
 - worker 派单 prompt 首行固定为 `[relay-light:single-task] worker · phase=<phase> · agent=<role>#<instance> · batch=<n|na> · round=<n> · workspace=<repo-relative-path>`；与完整 relay 的 `[relay-light] worker · node=...` 标头互斥，两套流水不交叉执行。
-- phase 闭集：`plan` / `plan-review` / `batch` / `batch-review` / `workflow-final` / `e2-code-review` / `decision` / `monitor` / `human-acceptance`；`batch=1|2|3|na`。
-- `RELAY_RECEIPT` fail closed 分流：进程环境存在 `RELAY_RECEIPT` 时，产出型 builder/coder/reviewer/decider 只写本角色精确 `BLOCKED.*.md` 单行 signal 后立即停止；monitor 保持 repo/workspace 零写入，只用 Herdr prompt 非 durable 通知 orchestrator 后立即停止，不写 `BLOCKED`。两个分支均不得清除任何 `RELAY_*` 环境变量。
+- phase 闭集：`plan` / `plan-review` / `batch` / `batch-review` / `workflow-final` / `e2-code-review` / `decision` / `watcher` / `human-acceptance`；`batch=1|2|3|na`。
+- `RELAY_RECEIPT` fail closed 分流：进程环境存在 `RELAY_RECEIPT` 时，产出型 builder/coder/reviewer/decider 只写本角色精确 `BLOCKED.*.md` 单行 signal 后立即停止；watcher 保持 repo/workspace 零写入，只用 Herdr prompt 非 durable 通知 orchestrator 后立即停止，不写 `BLOCKED`。两个分支均不得清除任何 `RELAY_*` 环境变量。
 
 ### model-allocation gate（启动任何 agent 之前的硬闸）
 
 - orchestrator 必须先向用户展示全部拟启动角色/实例的模型与推理档提案表，并明确询问确认；推荐默认仅是提案，不写死模型。用户可逐角色修改；**未获明确确认不得启动任何 agent**。
-- 确认后由 orchestrator 机械地把确认来源、角色/实例、模型、推理档写入 `execution_strategy.md`；未启动的 tab/pane 标 pending，启动后补齐实际 Herdr workspace/tab/pane 与观察来源并逐项比对。`execution_strategy.md` 由 orchestrator 在启动/更换角色时维护，monitor 与其它角色只读。
+- 确认后由 orchestrator 机械地把确认来源、角色/实例、模型、推理档写入 `execution_strategy.md`；未启动的 tab/pane 标 pending，启动后补齐实际 Herdr workspace/tab/pane 与观察来源并逐项比对。`execution_strategy.md` 由 orchestrator 在启动/更换角色时维护，watcher 与其它角色只读。
 - 恢复时可沿用已有明确确认且分配未变的快照；新增/更换角色或实例、换模型或推理档必须再次询问确认。超时、静默或最大工具权限均不推定确认；最大工具权限不扩张 commit/push/PR/merge/deploy/verify/人验授权。
 
 ### 生命周期与计数
@@ -330,25 +330,25 @@ relay_log.py lint --plan <plan_dir> --amend-check after  --repo <repo> --snapsho
 ### batch PASS 后会话清理闸
 
 - 仅当该批 batch reviewer 的 durable signal 为 PASS **且**本批工件齐全（本批交付物、验证证据、coder signal、review 产物、reviewer durable PASS）后，orchestrator 对本批 coder 与 batch reviewer **各执行一次 `/clear`** 并分别复验已清理，之后才启动下一批。终端 idle/done 或 coder DONE 不替代此门。
-- FAIL/整改期间禁止 `/clear`，保持原 coder/原 reviewer session，不借清理清零整改计数；清理失败或无法复验时不得启动下一批，也不盲目重复发送 `/clear`。monitor 常驻、不 clear；decider 按需拉起，不纳入每批固定 clear。
+- FAIL/整改期间禁止 `/clear`，保持原 coder/原 reviewer session，不借清理清零整改计数；清理失败或无法复验时不得启动下一批，也不盲目重复发送 `/clear`。watcher 常驻、不 clear；decider 按需拉起，不纳入每批固定 clear。
 
 ### durable signal 与写者边界
 
 - 每个产出型 worker 的收口物是单行 signal：`DONE`/`BLOCKED` + `task phase agent batch path review_round remediation_count verdict evidence`（BLOCKED 另含 `reason=<snake_case>`），值无空白、证据为 repo 相对路径逗号分隔；写完即停，不等 `node_closed`，不碰完整模式 plan/log。
-- sole writer：`execution_strategy.md` 仅 orchestrator 写；各 review/check/decision 工件由对应 reviewer/decider 自写；`progress.md` 仅由当前顺序执行的 batch coder 在自己 batch 完成时追加**一条**简洁施工里程碑 + 证据引用——不记 pane/agent 状态、轮询、通知或终端输出；reviewer/monitor/orchestrator 不写 progress。
-- monitor 对 repo/workspace **完全只读**：不写 signal/progress/execution_strategy/轮询日志/通知日志或任何文档；不路由、不分派、不启动 agent。
+- sole writer：`execution_strategy.md` 仅 orchestrator 写；各 review/check/decision 工件由对应 reviewer/decider 自写；`progress.md` 仅由当前顺序执行的 batch coder 在自己 batch 完成时追加**一条**简洁施工里程碑 + 证据引用——不记 pane/agent 状态、轮询、通知或终端输出；reviewer/watcher/orchestrator 不写 progress。
+- watcher 对 repo/workspace **完全只读**：不写 signal/progress/execution_strategy/轮询日志/通知日志或任何文档；不路由、不分派、不启动 agent。
 
-### monitor 节拍与安全 Enter
+### watcher 节拍与安全 Enter
 
-本模式的 `monitor` 角色就是角色表里的 **watcher**——只观察、只报信，与完整模式的 stage-lead 不是同一角色，也与账本控制事件里的 `monitor#<n>` 无关（本模式不写账本）。`phase=monitor` 这个词沿用历史合同不改。
+本模式的常驻观察者是角色表里的 **watcher**（`phase=watcher`）——只观察、只报信，与完整模式的 stage-lead 不是同一角色（本模式不写账本）。分工表里用户自写的「监督 / 监控 / monitor」自然语言叫法即指它，这是别名映射，不是标头 phase 值。
 
-- monitor 常驻，只做 Herdr wait/get/read：每 120 秒观察一次，无状态变化静默，有变化即时用 Herdr prompt 通知 orchestrator（通知不是 durable artifact）。
+- watcher 常驻，只做 Herdr wait/get/read：每 120 秒观察一次，无状态变化静默，有变化即时用 Herdr prompt 通知 orchestrator（通知不是 durable artifact）。
 - 安全 Enter：仅当三条件**同时**成立才发送一次并复验——①本次派单文本仍停在输入框（含 Devin queued 指令仍排队未发出）；②`state_change_seq` 未推进；③当前界面不是审批/确认 UI。任一不满足即不按；一次仍失败则通知 orchestrator 并换 fresh 实例，禁止连按。
-- monitor 命中 `RELAY_RECEIPT` 时同样 repo 零写入，只 prompt 通知 orchestrator 后停止。
+- watcher 命中 `RELAY_RECEIPT` 时同样 repo 零写入，只 prompt 通知 orchestrator 后停止。
 
 ### 恢复依据
 
-恢复权威只有四类：worker/reviewer/decider 自写的 durable signals、独立 review/decision 工件、orchestrator 维护的 `execution_strategy.md`、Herdr 实态。`progress.md` 只是施工证据索引、monitor 通知只是即时提示，二者都不是运行真相；恢复/重启时从四类权威重建，不依赖终端存活状态。
+恢复权威只有四类：worker/reviewer/decider 自写的 durable signals、独立 review/decision 工件、orchestrator 维护的 `execution_strategy.md`、Herdr 实态。`progress.md` 只是施工证据索引、watcher 通知只是即时提示，二者都不是运行真相；恢复/重启时从四类权威重建，不依赖终端存活状态。
 
 ## 放弃项
 

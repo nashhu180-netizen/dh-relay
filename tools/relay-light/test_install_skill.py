@@ -2,7 +2,7 @@
 
 RLT_29 batch-3 adds pure-text structural assertions over SKILL.md and both
 adapters for the `single-task` contract (model-allocation gate, RELAY_RECEIPT
-fail-closed split, monitor read-only, topology, signal schema, recovery). The
+fail-closed split, watcher read-only, topology, signal schema, recovery). The
 doc root can be redirected with RELAY_LIGHT_SKILL_DIR so the same assertions
 can be replayed against a pre-single-task snapshot to demonstrate they bite
 (RED) before passing on the implemented docs (GREEN).
@@ -154,7 +154,7 @@ ADAPTER_DOCS = (
 ALL_SINGLE_TASK_DOCS = (SKILL_DOC,) + ADAPTER_DOCS
 NINE_PHASE_SET = (
     "`plan` / `plan-review` / `batch` / `batch-review` / `workflow-final` / "
-    "`e2-code-review` / `decision` / `monitor` / `human-acceptance`"
+    "`e2-code-review` / `decision` / `watcher` / `human-acceptance`"
 )
 
 
@@ -203,6 +203,9 @@ class SingleTaskStructureTests(unittest.TestCase):
             self.assertIn("[relay-light:single-task] worker · phase=", text, rel)
             # design §7.5.5 legacy five-value example is not the phase oracle
             self.assertNotIn("plan|batch|final|decision|monitor", text, rel)
+            # RLT-A-15: the observer phase is `watcher`; `monitor` is not a phase value
+            self.assertNotIn("/ `monitor` /", text, rel)
+            self.assertNotIn("phase=monitor", text, rel)
 
     def test_model_allocation_gate_hard_contract(self) -> None:
         for rel in ALL_SINGLE_TASK_DOCS:
@@ -257,22 +260,23 @@ class SingleTaskStructureTests(unittest.TestCase):
                 rel,
             )
 
-    def test_relay_receipt_fail_closed_split_monitor_vs_producers(self) -> None:
+    def test_relay_receipt_fail_closed_split_watcher_vs_producers(self) -> None:
         for rel in ALL_SINGLE_TASK_DOCS:
             line = self.line_with(skill_doc(rel), "RELAY_RECEIPT` fail closed 分流")
             # producers keep their exact per-role BLOCKED duty
             self.assertIn("builder/coder/reviewer/decider", line, rel)
             self.assertIn("本角色精确 `BLOCKED.*.md` 单行 signal", line, rel)
-            # monitor exception: prompt-only, zero writes, no BLOCKED
-            self.assertRegex(line, r"monitor[^；;]*零写入")
+            # watcher exception: prompt-only, zero writes, no BLOCKED
+            self.assertRegex(line, r"watcher[^；;]*零写入")
             self.assertIn("Herdr prompt", line)
             self.assertRegex(line, r"不写 `?BLOCKED`?")
             # neither branch may clear RELAY_* env
             self.assertRegex(line, r"不得清除任何 `?RELAY_\*`?")
 
-    def test_monitor_repo_workspace_zero_write(self) -> None:
+    def test_watcher_repo_workspace_zero_write(self) -> None:
         for rel in ALL_SINGLE_TASK_DOCS:
             line = self.line_with(skill_doc(rel), "完全只读")
+            self.assertIn("watcher", line, rel)
             self.assertIn("不写 signal", line, rel)
             for tok in ("progress", "execution_strategy", "轮询日志", "通知日志"):
                 self.assertIn(tok, line, rel)

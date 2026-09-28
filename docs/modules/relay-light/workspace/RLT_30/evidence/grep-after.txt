@@ -1,0 +1,10 @@
+[1] 监工:
+  count=0
+[2] monitor residual (after frozen regex):
+  [W2] tools/relay-light/skill/SKILL.md:20: - 分工表里的「监督 / 监控 / monitor」对应 `single-task` 的 `phase=watcher`，即 watcher（只观察、只报信），不是完整模式的 stage-lead；这是自然语言别名映射，不是标头 phase 值。
+  [W2] tools/relay-light/skill/SKILL.md:343: 本模式的常驻观察者是角色表里的 **watcher**（`phase=watcher`）——只观察、只报信，与完整模式的 stage-lead 不是同一角色（本模式不写账本）。分工表里用户自写的「监督 / 监控 / monitor」自然语言叫法即指它，这是别名映射，不是标头 ph
+  [W1+W4] AGENTS.md:42: > 被 relay-light stage-lead（原名 monitor，2026-09-23 更名；账本标识仍是 `monitor#<n>`）派进本仓的 agent 读本段；与下方 Runner「编排协议段（worker 铁律）」并列、互不隶属，两套流水不交叉执行。
+  whitelisted=3 residual=0
+[3] roles.toml [monitor] section header:
+  count=0
+RESULT: PASS

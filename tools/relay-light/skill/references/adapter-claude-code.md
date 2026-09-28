@@ -44,7 +44,7 @@ bash -lc "python3 <RELAY_LOG> status --plan <plan_dir> --json --config-dir <plan
 - **codex kind**：`herdr agent start <名> --kind codex --pane <pane_id> -- -m <model> -c model_reasoning_effort=<e> --dangerously-bypass-approvals-and-sandbox`。ThinkPad Linux 上 codex 的任何 `--sandbox`（read-only / workspace-write）都撞 bwrap（`RTM_NEWADDR Operation not permitted`），跑不了 shell，所以 编排/stage-lead 位为 `claude` kind 时也一律 bypass 启动（2026-09-21 用户裁决：codex 无限制）；只读角色（plan-reviewer / checker / reviewer）的只读约束由派单 prompt 明文承担（「不改任何文件、只读被审对象」），stage-lead 在其 `agent_launch.note` 记 `launch_fix=codex_bypass_bwrap`。不要后台跑 `codex exec`（stdin 挂死）。
 - **devin kind**：`herdr agent start <名> --kind devin --pane <pane_id> -- --model swe-2-max|swe-2-medium --permission-mode dangerous`。
 - **omp kind**：`herdr agent start <名> --kind omp --pane <pane_id> -- --model opencode-go/deepseek-flash --thinking <off|low|medium|high|xhigh|max>`。
-- 角色 → 发起方式查本计划 `config/roles.toml`，本文件不写死模型。派单 prompt 只发 ASCII 指针（读 `<文件>` 并照做），长中文提示词写文件。
+- 角色 → 发起方式查本计划 `config/roles.toml`，本文件不写死模型。stage-lead 取 `[stage-lead]` 段；已开计划的 `config/roles.toml` 若只有旧名 `[monitor]` 段，按 `[monitor]` 取档（旧名兼容）。派单 prompt 只发 ASCII 指针（读 `<文件>` 并照做），长中文提示词写文件。
 
 ## 环境预检（拉起前）
 
@@ -76,7 +76,7 @@ bash -lc "python3 <RELAY_LOG> status --plan <plan_dir> --json --config-dir <plan
 
 ## 拉起 watcher 的 prompt 片段
 
-派活方**先起 watch 后起 watcher**——stage-lead 拉本阶段终端空间的一个、编排拉编排终端空间的一个（每终端空间一个）。watcher 拉起后立即检查一次（看不到即报），随后进入 10 分钟节拍。watcher 用低档，缺省沿用 `roles.toml` `[monitor]` 档，由派活方拉起时指定。派单片段：
+派活方**先起 watch 后起 watcher**——stage-lead 拉本阶段终端空间的一个、编排拉编排终端空间的一个（每终端空间一个）。watcher 拉起后立即检查一次（看不到即报），随后进入 10 分钟节拍。watcher 用低档，缺省取 `roles.toml` `[watcher]` 档；已开计划的 `config/roles.toml` 无 `[watcher]` 时依次取 `[stage-lead]`、旧名 `[monitor]` 档（旧名兼容），由派活方拉起时指定。派单片段：
 
 ```text
 [relay-light] watcher · space=<stage_id|orchestrator> · notify=<派活方 Herdr 名> · plan=<plan_dir>
@@ -155,12 +155,12 @@ ledger_silent → 核 Herdr 状态 + pane 末行 + 允许路径产出 三者是�
 
 ## single-task 单卡接力模式（本侧适配）
 
-> 协议语义以 `SKILL.md` 的「`single-task` 单卡接力模式」一节为准；本节只冻结 Claude Code 侧的启动、派单、monitor 节拍与恢复写法。single-task 不创建或读写 `relay_plan.md` / `relay_log.jsonl`，不使用 W/C/R/X/F；上方账本命令模板不适用于本模式，`relay_log` 账本与 `progress.md` 都不是本模式的运行真相。
+> 协议语义以 `SKILL.md` 的「`single-task` 单卡接力模式」一节为准；本节只冻结 Claude Code 侧的启动、派单、watcher 节拍与恢复写法。single-task 不创建或读写 `relay_plan.md` / `relay_log.jsonl`，不使用 W/C/R/X/F；上方账本命令模板不适用于本模式，`relay_log` 账本与 `progress.md` 都不是本模式的运行真相。
 
 ### 启动前 model-allocation gate
 
 - 拉起任何 agent 之前，orchestrator 先向用户展示全部拟启动角色/实例的模型与推理档提案表并明确询问确认；推荐默认仅是提案、不写死模型，用户可逐角色修改。**未获明确确认不得启动任何 agent**——缺询问、先启动后补确认、按未确认的默认选择直接拉起、角色/实例/模型/推理档变更免确认，均属违规。
-- 确认后由 orchestrator 机械地把确认来源、角色/实例、模型、推理档写入任务工作区 `execution_strategy.md`；未启动的 tab/pane 标 pending，启动后补齐实际 Herdr workspace/tab/pane 与观察来源并逐项比对。`execution_strategy.md` 仅 orchestrator 在启动/更换角色时维护，其余角色与 monitor 只读；`roles.toml` 仍只是完整模式缺省模板，不为本模式写死模型。
+- 确认后由 orchestrator 机械地把确认来源、角色/实例、模型、推理档写入任务工作区 `execution_strategy.md`；未启动的 tab/pane 标 pending，启动后补齐实际 Herdr workspace/tab/pane 与观察来源并逐项比对。`execution_strategy.md` 仅 orchestrator 在启动/更换角色时维护，其余角色与 watcher 只读；`roles.toml` 仍只是完整模式缺省模板，不为本模式写死模型。
 - 恢复时可沿用已有明确确认且分配未变的快照；新增/更换角色或实例、换模型或推理档必须再次询问确认。超时、静默或最大工具权限均不推定确认；最大工具权限不扩张 commit/push/PR/merge/deploy/verify/人验授权。询问由当前主会话执行，不为询问另启 agent。
 
 ### 拓扑与拉起
@@ -179,19 +179,19 @@ ledger_silent → 核 Herdr 状态 + pane 末行 + 允许路径产出 三者是�
 不创建/读写 relay_plan.md、relay_log.jsonl。
 ```
 
-- phase 闭集：`plan` / `plan-review` / `batch` / `batch-review` / `workflow-final` / `e2-code-review` / `decision` / `monitor` / `human-acceptance`；`batch=1|2|3|na`。本标头与上方 `[relay-light] worker · node=...` 互斥：见 single-task 标头不进入完整流水，见完整标头不适用本节。
+- phase 闭集：`plan` / `plan-review` / `batch` / `batch-review` / `workflow-final` / `e2-code-review` / `decision` / `watcher` / `human-acceptance`；`batch=1|2|3|na`。本标头与上方 `[relay-light] worker · node=...` 互斥：见 single-task 标头不进入完整流水，见完整标头不适用本节。
 - durable signal 单行 schema：`DONE|BLOCKED task=<t> phase=<p> agent=<r>#<i> batch=<1|2|3|na> path=<path|na> review_round=<n> remediation_count=<0|1|2> verdict=<v> evidence=<repo 相对路径[,...]>`，BLOCKED 另含 `reason=<snake_case>`；值无空白。产出型 builder/coder/reviewer/decider 写完 signal 即停；orchestrator 只按 durable signal 与独立 review/decision 工件机械分发/路由，不把终端状态当真相。
-- `RELAY_RECEIPT` fail closed 分流：产出型 builder/coder/reviewer/decider 命中时只写本角色精确 `BLOCKED.*.md` 单行 signal 后立即停止；monitor 命中保持 repo/workspace 零写入，只用 Herdr prompt 非 durable 通知 orchestrator 后停、不写 BLOCKED。两分支均不得清除任何 `RELAY_*`。
+- `RELAY_RECEIPT` fail closed 分流：产出型 builder/coder/reviewer/decider 命中时只写本角色精确 `BLOCKED.*.md` 单行 signal 后立即停止；watcher 命中保持 repo/workspace 零写入，只用 Herdr prompt 非 durable 通知 orchestrator 后停、不写 BLOCKED。两分支均不得清除任何 `RELAY_*`。
 
-### monitor 节拍与安全 Enter
+### watcher 节拍与安全 Enter
 
-- monitor 常驻，对 repo/workspace **完全只读**：只做 `herdr agent wait` / `agent get` / `agent read` 与 prompt 通知；不写 signal/progress/execution_strategy/轮询日志/通知日志或任何文档，不路由、不分派、不启动 agent。
+- watcher 常驻，对 repo/workspace **完全只读**：只做 `herdr agent wait` / `agent get` / `agent read` 与 prompt 通知；不写 signal/progress/execution_strategy/轮询日志/通知日志或任何文档，不路由、不分派、不启动 agent。
 - 节拍：每 120 秒一轮——`herdr agent wait <名> --timeout 120000` 返回后 `agent get` + `agent read` 核对状态；无变化静默不发通知，有变化即时 `herdr agent prompt` 通知 orchestrator（通知非 durable，不落盘）。
 - 安全 Enter：仅当三条件**同时**成立才发一次 `send-keys enter` 并复验——①本次派单文本仍停在输入框（含 Devin `queued` 指令仍排队未发出）；②`state_change_seq` 未推进；③当前界面不是审批/确认 UI。任一不满足即不按；一次仍失败则通知 orchestrator 并换 fresh 实例，禁止连按。
 
 ### 恢复依据
 
-恢复权威只有四类：worker/reviewer/decider 自写的 durable signals、独立 review/decision 工件、orchestrator 维护的 `execution_strategy.md`、Herdr 实态。`progress.md` 只是施工证据索引、monitor 通知只是即时提示，二者都不是运行真相；本模式不存在 relay 账本。恢复/重启从四类权威重建，不依赖终端存活状态。
+恢复权威只有四类：worker/reviewer/decider 自写的 durable signals、独立 review/decision 工件、orchestrator 维护的 `execution_strategy.md`、Herdr 实态。`progress.md` 只是施工证据索引、watcher 通知只是即时提示，二者都不是运行真相；本模式不存在 relay 账本。恢复/重启从四类权威重建，不依赖终端存活状态。
 
 ## 红线
 

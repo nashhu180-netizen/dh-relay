@@ -1,6 +1,8 @@
 # 缺省角色路由模板：每个计划复制到自己的 config/roles.toml 后按需改，计划级 config 才是运行时唯一来源。
 # 2026-09-21 用户裁决：relay 派的所有 agent 一律无限制模式（codex bypass、claude skip-permissions、devin dangerous），
 # 只读角色的只读约束由派单 prompt 承担；沙箱型启动在 ThinkPad Linux 撞 bwrap 起不来。
+# RLT-A-15（2026-09-28）：阶段主管段名为 [stage-lead]，旁路观察者为 [watcher]（档位按需可换、不写死）。
+# 已开计划的旧 config 若仍只有 `[monitor]` 段，编排按 adapter 旧名兼容取档，本模板不再带该段。
 
 [planner]
 model = "fable medium"
@@ -10,9 +12,13 @@ launch = "claude --model fable --effort medium --dangerously-skip-permissions"
 model = "opus medium"
 launch = "claude --model opus --effort medium --dangerously-skip-permissions"
 
-[monitor]
+[stage-lead]
 model = "codex sol medium"
 launch = "codex -m gpt-5.6-sol -c model_reasoning_effort=medium --dangerously-bypass-approvals-and-sandbox"
+
+[watcher]
+model = "codex luna medium"
+launch = "codex -m gpt-5.6-luna -c model_reasoning_effort=medium --dangerously-bypass-approvals-and-sandbox"
 
 [builder]
 model = "codex luna medium"
