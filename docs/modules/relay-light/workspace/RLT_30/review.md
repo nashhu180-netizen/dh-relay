@@ -24,7 +24,8 @@
 
 | 变异点锚点(生产代码 path:line) | 原值→变异值 | 语义类别 | 对应测试 ID | 运行命令 | 施加 hash | 还原 hash | 登记人 | 施加后结果 |
 |---|---|---|---|---|---|---|---|---|
-| 待填 | | | | | | | | |
+| `tools/relay-light/relay_log.py:1725`（`_writer_display_name`） | `"stage-lead" if writer == "monitor" else writer` → `writer` | 改返回值 | `test_design_10_3_text_snapshot_is_reproduced_line_by_line`、`test_status_reports_the_last_writer_and_silence_without_driving_actions` | `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest <两测试>`（`tools/relay-light/`） | 76636bc9ffb81c06f0ea8498ec4e767e55af5c0f | 716329a66000449511e122b84aaaf86b155f8b0a | 主会话（施工方；normal 卡不强制轮 2 选点，复核实例核对） | 断言失败 |
+| `tools/relay-light/relay_log.py:1721`（`_writer_label`） | `"stage-lead (by=monitor)" if writer == "monitor" else writer` → `writer` | 改返回值 | `test_writer_consistency_exits_two_for_every_frozen_owner`、`test_a155_status_warnings_preserve_old_a85_a93`、`test_rlt30_close_writer_messages_name_stage_lead_with_ledger_value` | 同上（三测试） | 4ea55d174c24474fef19fe1be46943ace389b34c | 716329a66000449511e122b84aaaf86b155f8b0a | 主会话（同上） | 断言失败 |
 
 **需求复核结论**：待填
 
