@@ -49,6 +49,7 @@
 
 - 判定：派单 prompt 首行是 `[relay-light:single-task] worker · phase=<phase> · agent=<角色>#<实例> · batch=<n|na> · round=<n> · workspace=<任务工作区>` 时按本段执行；该标头与上方 `[relay-light] worker · node=...` 互斥——见 single-task 标头不进入 full relay 流水，见 full 标头不适用本段。
 - 分工与停止：本模式无 stage-lead——orchestrator 就是派活位，`phase=watcher` 那个角色是 watcher（只观察只报信）。orchestrator 只按 durable signal 分发/路由；产出型 builder/coder/reviewer/decider 只完成派单指向的一件事，写出 `DONE`/`BLOCKED` 单行 signal 后立即停止——不等 `node_closed`，不创建/读写 `relay_plan.md`/`relay_log.jsonl`，不越位派活、不回头问用户、不自行续节点。watcher 对 repo/workspace 完全只读，只在 Herdr wait/get/read 并 prompt 通知 orchestrator，不写任何 signal/progress/日志、不路由不分派。
+- 卡级总表：上述禁读写执行计划不禁止登记的维护会话维护卡级衔接总表；按 [relay-light 技能](tools/relay-light/skill/SKILL.md)「卡级总表维护与交棒核对」执行。启动/恢复登记总表路径与唯一维护会话，等待/结果变化/停下/交棒时更新，交棒前核对行状态、证据、下一步与日期；无法更新报告“总表待同步”，不宣称已交棒。worker/watcher 写入边界不变，总表不授予下一卡开工权限。
 - RELAY_RECEIPT fail closed 分流：进程环境存在 `RELAY_RECEIPT` 时，产出型角色只写本角色精确 `BLOCKED.*.md` 单行 signal 后停止；watcher 保持 repo/workspace 零写入，只用 Herdr prompt 非 durable 通知 orchestrator 后停止，不写 BLOCKED。两个分支都不得清除任何 `RELAY_*` 环境变量。
 
 ## 编排协议段（worker 铁律 · 被派进本仓的 agent 必读）

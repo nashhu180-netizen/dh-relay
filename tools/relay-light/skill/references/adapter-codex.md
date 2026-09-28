@@ -157,12 +157,16 @@ ledger_silent → 核 Herdr 状态 + pane 末行 + 允许路径产出 三者是�
 
 ## single-task 单卡接力模式（本侧适配）
 
-> 协议语义以 `SKILL.md` 的「`single-task` 单卡接力模式」一节为准；本节只冻结 Codex 侧的启动、派单、watcher 节拍与恢复写法。single-task 不创建或读写 `relay_plan.md` / `relay_log.jsonl`，不使用 W/C/R/X/F；上方账本命令模板不适用于本模式，`relay_log` 账本与 `progress.md` 都不是本模式的运行真相。
+> 协议语义以 `SKILL.md` 的「`single-task` 单卡接力模式」一节为准；本节只冻结 Codex 侧的启动、派单、watcher 节拍与恢复写法。single-task 对完整模式执行计划不创建或读写 `relay_plan.md` / `relay_log.jsonl`，不使用 W/C/R/X/F；上方账本命令模板不适用于本模式，`relay_log` 账本与 `progress.md` 都不是本模式的运行真相。
+
+### 总表关联与交棒
+
+启动/恢复时先执行 `SKILL.md`「卡级总表维护与交棒核对」：在已有 `execution_strategy.md` 登记总表路径和唯一维护会话，无关联则明确记无。等待、卡级结果改变、停下及交棒时由维护会话更新总表；交棒前核对状态、下一步、证据及日期，无法完成则报告“总表待同步”，不宣称已交棒。这里允许维护会话读写卡级总表，不允许 worker/watcher 读写完整执行计划或更新总表，也不启动新角色。总表不是运行真相，恢复仍以本节四类权威为准。
 
 ### 启动前 model-allocation gate
 
 - 拉起任何 agent 之前，orchestrator 先向用户展示全部拟启动角色/实例的模型与推理档提案表并明确询问确认；推荐默认仅是提案、不写死模型，用户可逐角色修改。**未获明确确认不得启动任何 agent**——缺询问、先启动后补确认、按未确认的默认选择直接拉起、角色/实例/模型/推理档变更免确认，均属违规。
-- 确认后由 orchestrator 机械地把确认来源、角色/实例、模型、推理档写入任务工作区 `execution_strategy.md`；未启动的 tab/pane 标 pending，启动后补齐实际 Herdr workspace/tab/pane 与观察来源并逐项比对。`execution_strategy.md` 仅 orchestrator 在启动/更换角色时维护，其余角色与 watcher 只读；`roles.toml` 仍只是完整模式缺省模板，不为本模式写死模型。
+- 确认后由 orchestrator 机械地把确认来源、角色/实例、模型、推理档写入任务工作区 `execution_strategy.md`；未启动的 tab/pane 标 pending，启动后补齐实际 Herdr workspace/tab/pane 与观察来源并逐项比对。`execution_strategy.md` 仅 orchestrator 在启动/更换角色及关联总表/维护人交接时维护，其余角色与 watcher 只读；`roles.toml` 仍只是完整模式缺省模板，不为本模式写死模型。
 - 恢复时可沿用已有明确确认且分配未变的快照；新增/更换角色或实例、换模型或推理档必须再次询问确认。超时、静默或最大工具权限均不推定确认；最大工具权限不扩张 commit/push/PR/merge/deploy/verify/人验授权。询问由当前主会话执行，不为询问另启 agent。
 
 ### 拓扑与拉起
