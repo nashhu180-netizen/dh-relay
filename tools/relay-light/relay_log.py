@@ -1711,6 +1711,20 @@ def _writer_from_agent(agent: str) -> str:
     return "orchestrator" if agent.startswith("orchestrator#") else "monitor"
 
 
+# RLT-A-15: the ledger value `monitor` is the frozen identifier of the stage-lead.
+# Display text names the role and carries the raw ledger value in parentheses;
+# every comparison keeps using the raw value.
+STAGE_LEAD_INSTANCE_LABEL = "stage-lead (monitor#<n>)"
+
+
+def _writer_label(writer: str) -> str:
+    return "stage-lead (by=monitor)" if writer == "monitor" else writer
+
+
+def _writer_display_name(writer: str) -> str:
+    return "stage-lead" if writer == "monitor" else writer
+
+
 def _agent_parts(agent: str) -> tuple[str, int]:
     name, attempt = agent.rsplit("#", 1)
     return name, int(attempt)
@@ -1773,9 +1787,13 @@ def _authorize_agent(plan: Plan, node: NodeSpec, event: str, agent: str) -> None
         if name not in CONTROL_AGENT_NAMES:
             if event == "plan_amend":
                 raise _error(
-                    "HC-RL-A119", f"plan_amend must be written by monitor#<n>: {agent}"
+                    "HC-RL-A119",
+                    f"plan_amend must be written by {STAGE_LEAD_INSTANCE_LABEL}: {agent}",
                 )
-            raise _error("HC-RL-A69", f"control event requires orchestrator or monitor: {event}")
+            raise _error(
+                "HC-RL-A69",
+                f"control event requires orchestrator or {STAGE_LEAD_INSTANCE_LABEL}: {event}",
+            )
         return
     if name in RELAUNCH_EXEMPT_AGENT_NAMES:
         # HC-RL-A122: planner-amend never writes blocked/escalate — an out-of-scope
@@ -2428,7 +2446,7 @@ def _validate_close_row(
         raise _error(
             "HC-RL-A85",
             f"resource_close object_type={fields['object_type']} must be written by "
-            f"{owner}, not {by}",
+            f"{_writer_label(owner)}, not {_writer_label(by)}",
         )
     _validate_close_node(plan, node, fields)
 
@@ -2501,7 +2519,10 @@ def _validate_writer(event: str, agent: str) -> None:
     owner = WRITER_BY_EVENT[event]
     actual = _writer_from_agent(agent)
     if actual != owner:
-        raise _error("HC-RL-A85", f"{event} must be written by {owner}, not {actual}")
+        raise _error(
+            "HC-RL-A85",
+            f"{event} must be written by {_writer_label(owner)}, not {_writer_label(actual)}",
+        )
 
 
 def _stage_instances(plan: Plan) -> dict[str, tuple[NodeSpec, ...]]:
@@ -2968,7 +2989,7 @@ def _ledger_warnings(
             if name not in CONTROL_AGENT_NAMES:
                 warnings.append(
                     f"seq {entry['seq']}: HC-RL-A69 {event} requires orchestrator or "
-                    f"monitor agent: {entry['agent']}"
+                    f"{STAGE_LEAD_INSTANCE_LABEL} agent: {entry['agent']}"
                 )
                 continue
             try:
@@ -2981,14 +3002,16 @@ def _ledger_warnings(
             if actual != owner or _writer_from_agent(str(entry["agent"])) != owner:
                 warnings.append(
                     f"seq {entry['seq']}: HC-RL-A85 {event} object_type="
-                    f"{fields['object_type']} must be written by {owner}, not {actual}"
+                    f"{fields['object_type']} must be written by {_writer_label(owner)}, "
+                    f"not {_writer_label(actual)}"
                 )
             continue
         owner = WRITER_BY_EVENT[event]
         actual = str(entry["by"])
         if actual != owner:
             warnings.append(
-                f"seq {entry['seq']}: HC-RL-A85 {event} must be written by {owner}, not {actual}"
+                f"seq {entry['seq']}: HC-RL-A85 {event} must be written by "
+                f"{_writer_label(owner)}, not {_writer_label(actual)}"
             )
     closes: dict[str, int] = {}
     starts: set[str] = set()
@@ -3471,7 +3494,8 @@ def render_status_text(status: Status, plan_dir: str) -> str:
         f"      decision_mode={status.plan.decision_mode}",
         (
             "当班写入者：—" if status.last_writer is None
-            else f"当班写入者：{status.last_writer}（{status.last_writer_stage}）"
+            else f"当班写入者：{_writer_display_name(status.last_writer)}"
+            f"（{status.last_writer_stage}）"
         ),
         "",
     ]

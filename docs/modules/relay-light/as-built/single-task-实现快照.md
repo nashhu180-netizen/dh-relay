@@ -3,16 +3,17 @@
 > 记录时点：RLT_29 batch-3 施工结束点（2026-09-23）。本快照只写**已实现 / 已实跑**的事实；未发生的一律标「未发生」，不预写 PASS。
 > 证据基线：`docs/modules/relay-light/workspace/RLT_29/evidence/batch-3/`（post/、red/、green/、install-consistency/、herdr/、model-allocation.md）。
 > 合同源：`tools/relay-light/skill/SKILL.md`「`single-task` 单卡接力模式」节 + `references/adapter-claude-code.md` / `adapter-codex.md` 同节。
+> 2026-09-28 RLT_30（RLT-A-15 角色名统一）：§1 现役合同行已改为观察者 phase `watcher`；§3 为 RLT_29 实跑历史证据，当时 phase 名为 monitor（现 watcher），原文不改写。
 
 ## 1. 已实现（文档合同）
 
 | 合同点 | 落点 | 结构断言 |
 |---|---|---|
 | 与完整 relay 并列互斥；不创建/读写 `relay_plan.md`/`relay_log.jsonl`；不用 W/C/R/X/F | SKILL.md `## \`single-task\` 单卡接力模式`；双 adapter 同节 | `test_single_task_mode_declared_parallel_and_exclusive` |
-| 派单标头 `[relay-light:single-task] worker · phase=…`；phase 九值闭集 + `batch=1|2|3|na` | 三文档同文 | `test_phase_closed_set_is_nine_phases_not_legacy_five`（显式排除 design §7.5.5 旧 5 值示例 `plan|batch|final|decision|monitor` 作为 oracle） |
+| 派单标头 `[relay-light:single-task] worker · phase=…`；phase 九值闭集（观察者为 `watcher`，不含 `monitor`）+ `batch=1|2|3|na` | 三文档同文 | `test_phase_closed_set_is_nine_phases_not_legacy_five`（显式排除 design §7.5.5 旧 5 值示例 `plan|batch|final|decision|monitor` 作为 oracle；RLT_30 起另断言不含 `/ \`monitor\` /` 与 `phase=monitor`） |
 | model-allocation 硬闸：全角色/实例提案表 → 明确询问 → 未确认零启动；默认仅提案；逐角色可改；确认后机械落 `execution_strategy.md`；未变快照可复用；新增/更换角色实例或换模型/推理档重问；超时/静默/最大权限不推定确认、不扩张授权 | 三文档 `model-allocation gate` 节 | `test_model_allocation_gate_hard_contract`、`test_model_allocation_negative_examples`（双 adapter 含「缺询问/先启动后补确认/未确认默认直接拉起/变更免确认，均属违规」明文反例）、`test_model_allocation_gate_precedes_launch_section`（gate 在拉起段之前） |
-| `RELAY_RECEIPT` fail closed 分流：产出型 builder/coder/reviewer/decider 写本角色精确 `BLOCKED.*.md` 单行 signal 即停；monitor repo/workspace 零写入、仅 Herdr prompt 非 durable 通知、不写 BLOCKED；两分支均不清 `RELAY_*` | 三文档同一行合同 | `test_relay_receipt_fail_closed_split_monitor_vs_producers` |
-| monitor 完全只读：不写 signal/progress/execution_strategy/轮询日志/通知日志/任何文档；不路由不分派不启动 agent；120s wait/get/read + prompt 通知；安全 Enter 三条件 | 三文档 monitor 节 | `test_monitor_repo_workspace_zero_write` |
+| `RELAY_RECEIPT` fail closed 分流：产出型 builder/coder/reviewer/decider 写本角色精确 `BLOCKED.*.md` 单行 signal 即停；watcher repo/workspace 零写入、仅 Herdr prompt 非 durable 通知、不写 BLOCKED；两分支均不清 `RELAY_*` | 三文档同一行合同 | `test_relay_receipt_fail_closed_split_watcher_vs_producers` |
+| watcher 完全只读：不写 signal/progress/execution_strategy/轮询日志/通知日志/任何文档；不路由不分派不启动 agent；120s wait/get/read + prompt 通知；安全 Enter 三条件 | 三文档 watcher 节 | `test_watcher_repo_workspace_zero_write` |
 | 拓扑：一任务一 Herdr workspace；每角色实例独立具名 tab（Claude 侧 `herdr tab create`）/ pane（Codex 侧 `herdr pane split`） | 双 adapter「拓扑与拉起」 | `test_one_workspace_one_named_tab_or_pane_per_instance` |
 | durable signal 单行 schema（DONE/BLOCKED + 九字段，BLOCKED 含 `reason=<snake_case>`）；写完即停 | 三文档 | `test_durable_signal_schema_and_stop` |
 | 恢复权威仅四类：durable signals、review/decision 工件、`execution_strategy.md`、Herdr 实态；不依赖终端存活状态 | 三文档「恢复依据」 | `test_recovery_authorities_are_durable_only` |
@@ -31,6 +32,7 @@
 实测自 `herdr` CLI（原始输出 `herdr/*.json`、`pane-process-argv.txt`）与 `evidence/batch-3/model-allocation.md`：
 
 - 一任务一 workspace：RLT_29 全部实例在 `w41`（11 tab / 11 pane），无第二任务空间。
+- （以下 `monitor` 均为 RLT_29 当时的 phase 名，现 watcher。）
 - 每角色实例独立具名 tab/pane：orchestrator `w41:t1/p1`、builder `t2/p2`、monitor `t3/p3`、plan-reviewer `t4/p4`、decider `t5/p5`、b1-coder `t6/p6`、b1-reviewer `t7/p7`、b2-coder `t8/p8`、b2-reviewer `t9/p9`、b3-coder `tA/pA`、b3-reviewer `tB/pB`。
 - 模型/档位实测 argv 与 `execution_strategy.md`（用户 2026-09-22 明确确认的快照）逐项一致：builder/plan-reviewer `codex -m gpt-5.6-sol … effort=medium`；decider `codex -m gpt-6-astra … medium`；monitor `devin --model swe-2-medium`；b1/b2/b3 coder+reviewer `devin --model swe-2-max`。
 - monitor 零写：batch-1～3 期间 monitor 对 repo/workspace 无写入工件；活动仅 Herdr wait/get/read + prompt 通知。

@@ -1,0 +1,643 @@
+test_a148_mixed_trigger_lanes_judge_independently (test_relay_log.RelayBackwardCompatTests.test_a148_mixed_trigger_lanes_judge_independently)
+One node, both trigger forms: the `on:done:` lane answers to A70, ... ok
+test_a148_rlt12_win_01_ledger_replays_verbatim (test_relay_log.RelayBackwardCompatTests.test_a148_rlt12_win_01_ledger_replays_verbatim)
+All 71 rows of the frozen ledger are accepted through `add`, in ... ok
+test_a148_rlt12_win_01_plan_lints_clean (test_relay_log.RelayBackwardCompatTests.test_a148_rlt12_win_01_plan_lints_clean)
+The pre-A09 plan passes lint unmodified — no migration, no warning. ... ok
+test_fixture_baseline_succeeds_in_utf8_environment (test_relay_log.RelayCliEncodingTests.test_fixture_baseline_succeeds_in_utf8_environment)
+Fixture sanity: identical commands already pass under UTF-8 stdio. ... ok
+test_lint_stderr_and_json_are_utf8_decodable_under_ascii_and_cp1252 (test_relay_log.RelayCliEncodingTests.test_lint_stderr_and_json_are_utf8_decodable_under_ascii_and_cp1252) ... ok
+test_status_stdout_is_utf8_decodable_under_ascii_and_cp1252 (test_relay_log.RelayCliEncodingTests.test_status_stdout_is_utf8_decodable_under_ascii_and_cp1252) ... ok
+test_a_config_without_one_frozen_tier_rejects_plans_using_it (test_relay_log.RelayConfigTests.test_a_config_without_one_frozen_tier_rejects_plans_using_it)
+HC-RL-A116: dropping a tier from the config cannot silently legitimize it either. ... ok
+test_an_r_instance_without_reviewer_rows_is_exempt_from_a116 (test_relay_log.RelayConfigTests.test_an_r_instance_without_reviewer_rows_is_exempt_from_a116)
+HC-RL-A116: a zero-reviewer R instance does not trigger the set check. ... ok
+test_broken_configuration_exits_three_with_the_frozen_rule_ids (test_relay_log.RelayConfigTests.test_broken_configuration_exits_three_with_the_frozen_rule_ids)
+HC-RL-A131/A92: roles and mapping failures are fail-closed on every subcommand. ... ok
+test_cards_override_decision_mode_is_reported_per_card (test_relay_log.RelayConfigTests.test_cards_override_decision_mode_is_reported_per_card)
+HC-RL-A130b: ``cards=<card>:<recipe>:<mode>`` is parsed and shown by the text status. ... ok
+test_cards_override_lets_one_plan_mix_recipe_tiers (test_relay_log.RelayConfigTests.test_cards_override_lets_one_plan_mix_recipe_tiers)
+HC-RL-A116b: ``cards=<card>:<recipe>`` makes that card's R instance follow its own tier. ... ok
+test_cards_override_recipe_is_enforced_per_card (test_relay_log.RelayConfigTests.test_cards_override_recipe_is_enforced_per_card)
+HC-RL-A116b: an overridden card whose reviewer set still follows the default is rejected. ... ok
+test_cards_override_rejects_unknown_recipe_or_mode (test_relay_log.RelayConfigTests.test_cards_override_rejects_unknown_recipe_or_mode)
+HC-RL-A116/A130: bad ``cards=`` suffixes fail at parse time with exit 3. ... ok
+test_default_config_dir_resolution_follows_the_five_cases (test_relay_log.RelayConfigTests.test_default_config_dir_resolution_follows_the_five_cases)
+HC-RL-A135/§6.2.1: single-side auto-detection; two-sided and zero-sided fail closed. ... ok
+test_each_recipe_tier_lints_a_matching_r_instance (test_relay_log.RelayConfigTests.test_each_recipe_tier_lints_a_matching_r_instance)
+HC-RL-A115/A116: each tier accepts its configured reviewer set regardless of row order. ... ok
+test_each_subcommand_help_exposes_config_dir (test_relay_log.RelayConfigTests.test_each_subcommand_help_exposes_config_dir)
+HC-RL-A135: add/status/lint each advertise --config-dir; the command set stays frozen. ... ok
+test_explicit_config_dir_is_normalized_and_percent_encoded (test_relay_log.RelayConfigTests.test_explicit_config_dir_is_normalized_and_percent_encoded)
+HC-RL-A135: `~/...` expands, normalizes to an absolute path and is recorded encoded. ... ok
+test_missing_explicit_config_dir_fails_closed (test_relay_log.RelayConfigTests.test_missing_explicit_config_dir_fails_closed)
+HC-RL-A135: an explicit config dir that does not exist exits 3 with no ledger write. ... ok
+test_one_mismatched_r_instance_rejects_the_whole_plan (test_relay_log.RelayConfigTests.test_one_mismatched_r_instance_rejects_the_whole_plan)
+HC-RL-A116: every active R instance is checked, not only the first one. ... ok
+test_plan_loaded_provenance_is_rebuilt_from_the_real_resolver (test_relay_log.RelayConfigTests.test_plan_loaded_provenance_is_rebuilt_from_the_real_resolver)
+HC-RL-A135/§6.2.1: forged config_dir/plan tokens never survive into the ledger. ... ok
+test_plan_loaded_records_the_normalized_absolute_plan_dir (test_relay_log.RelayConfigTests.test_plan_loaded_records_the_normalized_absolute_plan_dir)
+HC-RL-A135: a relative --plan is recorded as its normalized absolute path. ... ok
+test_recipe_reviewer_mismatch_is_rejected_as_a116 (test_relay_log.RelayConfigTests.test_recipe_reviewer_mismatch_is_rejected_as_a116)
+HC-RL-A116: an R instance whose reviewer set differs from its recipe is rejected. ... ok
+test_recipe_tiers_stay_within_the_frozen_three_value_enum (test_relay_log.RelayConfigTests.test_recipe_tiers_stay_within_the_frozen_three_value_enum)
+HC-RL-A116: adding a tier to the config must not legitimize recipe=<new tier>. ... ok
+test_recipe_value_must_name_a_configured_tier (test_relay_log.RelayConfigTests.test_recipe_value_must_name_a_configured_tier)
+HC-RL-A116: the marker recipe must name a configured tier even without R instances. ... ok
+test_shipped_dh_mapping_carries_the_four_frozen_content_classes (test_relay_log.RelayConfigTests.test_shipped_dh_mapping_carries_the_four_frozen_content_classes)
+HC-RL-A92: stages/recipes/limits/on_exceed are present and E11-E13 stay out of relay. ... ok
+test_shipped_recipes_match_the_dev_harness_node_table (test_relay_log.RelayConfigTests.test_shipped_recipes_match_the_dev_harness_node_table)
+HC-RL-A115: heavy/normal/light carry exactly the frozen reviewer paths. ... ok
+test_shipped_roles_toml_has_the_twelve_design_roles (test_relay_log.RelayConfigTests.test_shipped_roles_toml_has_the_twelve_design_roles)
+HC-RL-A131 (RLT-A-15): roles.toml keys equal design §6.3 — 12 roles incl. ... FAIL
+test_structural_lint_precedes_the_recipe_check (test_relay_log.RelayConfigTests.test_structural_lint_precedes_the_recipe_check)
+HC-RL-A116: a mismatching R instance is still reported under the structural rule. ... ok
+test_a139_launch_fix_is_freeform_note_token_exposed_in_status_json (test_relay_log.RelayLaunchFixStatusTests.test_a139_launch_fix_is_freeform_note_token_exposed_in_status_json)
+agent_launch.note 可含 launch_fix=<token>：add 不校验计划 launch 列、 ... ok
+test_a139_lint_ignores_launch_column_vs_ledger_mismatch (test_relay_log.RelayLaunchFixStatusTests.test_a139_lint_ignores_launch_column_vs_ledger_mismatch)
+lint 不因计划 launch 列与账本 launch_fix 事实不一致而失败。 ... ok
+test_a140_ledger_silent_marks_only_live_agents_over_threshold (test_relay_log.RelayLedgerSilenceTests.test_a140_ledger_silent_marks_only_live_agents_over_threshold)
+打桩时钟：账本最近事件超过阈值的在场 agent 标 ledger_silent； ... ok
+test_a140_monitor_templates_carry_silence_protocol (test_relay_log.RelayLedgerSilenceTests.test_a140_monitor_templates_carry_silence_protocol)
+SKILL.md 与两份 adapter 都含 ledger_silent 处置原文的四个关键锚点。 ... ok
+test_a140_silence_timeout_loads_with_default_and_override (test_relay_log.RelayLedgerSilenceTests.test_a140_silence_timeout_loads_with_default_and_override)
+dh-mapping.toml 可加载 limits.silence_timeout_min；缺省 30；非法类型拒。 ... ok
+test_a123_binds_plan_amend_whose_carrier_was_superseded (test_relay_log.RelayLifecycleTests.test_a123_binds_plan_amend_whose_carrier_was_superseded)
+HC-RL-A123: superseding the plan_amend carrier node must not orphan the binding. ... ok
+test_a89_lint_rejects_a_backward_cross_stage_dependency (test_relay_log.RelayLifecycleTests.test_a89_lint_rejects_a_backward_cross_stage_dependency)
+HC-RL-A89: a later stage may never be a dependency of an earlier stage (exact id). ... ok
+test_blocked_and_cancelled_finales_follow_the_frozen_rules (test_relay_log.RelayLifecycleTests.test_blocked_and_cancelled_finales_follow_the_frozen_rules)
+HC-RL-A118: blocked cannot close; cancelled must cite user_decision; both终局 then close. ... ok
+test_current_stage_prefers_the_open_instance_awaiting_close (test_relay_log.RelayLifecycleTests.test_current_stage_prefers_the_open_instance_awaiting_close)
+HC-RL-A106/A61: a started instance whose result awaits stage_close outranks a ... ok
+test_design_10_2_sequence_is_accepted_in_order_with_writer_runs (test_relay_log.RelayLifecycleTests.test_design_10_2_sequence_is_accepted_in_order_with_writer_runs)
+HC-RL-A89/A93/A105/A112: the §10.2 sequence is accepted row by row, in partition order. ... ok
+test_four_outcomes_drive_suggested_action_and_relaunch_count (test_relay_log.RelayLifecycleTests.test_four_outcomes_drive_suggested_action_and_relaunch_count)
+HC-RL-A106/A105: outcome → suggested_action, with failed relaunching the monitor once. ... ok
+test_monitor_owned_events_need_their_instances_stage_start (test_relay_log.RelayLifecycleTests.test_monitor_owned_events_need_their_instances_stage_start)
+HC-RL-A93: monitor writes only inside the instance's stage_start..stage_close window. ... ok
+test_monitor_relaunch_count_counts_only_failed_caused_relaunches (test_relay_log.RelayLifecycleTests.test_monitor_relaunch_count_counts_only_failed_caused_relaunches)
+HC-RL-A106/§3.5: only a launch after a `failed` result is a failed-caused relaunch. ... ok
+test_node_scoped_events_cannot_claim_a_foreign_stage (test_relay_log.RelayLifecycleTests.test_node_scoped_events_cannot_claim_a_foreign_stage)
+HC-RL-A93: a `stage_id=` note cannot reattribute a node's row to another instance. ... ok
+test_open_stages_lists_cross_card_parallel_instances (test_relay_log.RelayLifecycleTests.test_open_stages_lists_cross_card_parallel_instances)
+HC-RL-A111: two cards may hold an open instance each without any alert. ... ok
+test_plan_amend_requires_monitor_and_complete_note_and_is_repeatable (test_relay_log.RelayLifecycleTests.test_plan_amend_requires_monitor_and_complete_note_and_is_repeatable)
+HC-RL-A119: monitor#<n> writes it, note carries filename + nodes=, repeats freely. ... FAIL
+test_planner_amend_out_of_scope_lifecycle_contract (test_relay_log.RelayLifecycleTests.test_planner_amend_out_of_scope_lifecycle_contract)
+HC-RL-A122: planner-amend 只走 agent_launch → done；out-of-scope done.note ... ok
+test_repeated_stage_instances_stay_independent_and_alert_on_double_open (test_relay_log.RelayLifecycleTests.test_repeated_stage_instances_stay_independent_and_alert_on_double_open)
+HC-RL-A110/A111: R#1 and R#2 keep their own results; same-card double open是报警项. ... ok
+test_stage_close_requires_a_monitor_launch (test_relay_log.RelayLifecycleTests.test_stage_close_requires_a_monitor_launch)
+HC-RL-A89/§3.4: an instance needs at least one monitor_launch before it can close. ... ok
+test_stage_result_amend_summary_matches_stage_history (test_relay_log.RelayLifecycleTests.test_stage_result_amend_summary_matches_stage_history)
+HC-RL-A123: the amend summary is required iff this instance recorded a plan_amend. ... ok
+test_stage_result_and_close_preconditions_exit_two (test_relay_log.RelayLifecycleTests.test_stage_result_and_close_preconditions_exit_two)
+HC-RL-A112/A89/A105: result-before-close and illegal stage_close are fail closed. ... ok
+test_status_alerts_writer_and_handoff_violations_read_only (test_relay_log.RelayLifecycleTests.test_status_alerts_writer_and_handoff_violations_read_only)
+HC-RL-A85/A93: a legacy ledger is reported, never rewritten or rejected. ... ok
+test_status_mirrors_pre_start_and_attribution_warnings (test_relay_log.RelayLifecycleTests.test_status_mirrors_pre_start_and_attribution_warnings)
+HC-RL-A93/A89: legacy pre-start writes, foreign labels, launch-less closes are reported. ... ok
+test_writer_consistency_exits_two_for_every_frozen_owner (test_relay_log.RelayLifecycleTests.test_writer_consistency_exits_two_for_every_frozen_owner)
+HC-RL-A85: each event has exactly one legal writer, checked before it is appended. ... FAIL
+test_writer_handoff_forbids_writes_after_the_instance_closed (test_relay_log.RelayLifecycleTests.test_writer_handoff_forbids_writes_after_the_instance_closed)
+HC-RL-A93: stage_close ends the instance's write window. ... ok
+test_a147_review_rounds_is_a_projection_never_a_write_gate (test_relay_log.RelayLimitsTests.test_a147_review_rounds_is_a_projection_never_a_write_gate)
+HC-RL-A147: the third counter exhausts at the configured round count, ... ok
+test_attempt_and_x_loss_stops_trigger_independently (test_relay_log.RelayLimitsTests.test_attempt_and_x_loss_stops_trigger_independently)
+HC-RL-A107: each counter hits its own limit and opens the strategist exit alone. ... ok
+test_attempt_loss_stop_counts_stage_failed_relaunch_debt (test_relay_log.RelayLimitsTests.test_attempt_loss_stop_counts_stage_failed_relaunch_debt)
+HC-RL-A107: a stage failed after the last attempt also spends the counter. ... ok
+test_decider_chain_resume_stays_gate_free_in_auto_mode (test_relay_log.RelayLimitsTests.test_decider_chain_resume_stays_gate_free_in_auto_mode)
+HC-RL-A97: the decider chain keeps its own gate — auto mode adds no user_decision. ... ok
+test_plan_loaded_note_carries_config_dir_and_plan_keys (test_relay_log.RelayLimitsTests.test_plan_loaded_note_carries_config_dir_and_plan_keys)
+HC-RL-A99/§6.2.1: a caller note without the provenance keys still lands with both. ... ok
+test_plan_x_rounds_length_and_ids_come_from_the_loaded_config (test_relay_log.RelayLimitsTests.test_plan_x_rounds_length_and_ids_come_from_the_loaded_config)
+HC-RL-A99: one unchanged binary plans 2 or 3 X rounds purely from the config. ... ok
+test_strategist_chain_finales_require_a_user_decision_in_every_mode (test_relay_log.RelayLimitsTests.test_strategist_chain_finales_require_a_user_decision_in_every_mode)
+HC-RL-A97: resume/cancelled of a strategist chain need user_decision — auto too. ... ok
+test_strategist_chain_with_user_decision_runs_both_finales (test_relay_log.RelayLimitsTests.test_strategist_chain_with_user_decision_runs_both_finales)
+HC-RL-A97: user_decision unlocks resume; the cancelled finale stops the card. ... ok
+test_x_rounds_beyond_the_configured_limit_are_rejected_as_a97 (test_relay_log.RelayLimitsTests.test_x_rounds_beyond_the_configured_limit_are_rejected_as_a97)
+HC-RL-A97: a plan whose only violation is an X round over the limit fails exactly. ... ok
+test_a138_not_run_exhaustion_rejects_next_launch_a107 (test_relay_log.RelayNotRunRetryTests.test_a138_not_run_exhaustion_rejects_next_launch_a107)
+连续 attempt_max 条 NOT_RUN agent_lost 后，下一条 agent_launch 退 2 报 A107； ... ok
+test_a138_second_fix_group_and_premature_authorization_rejected (test_relay_log.RelayNotRunRetryTests.test_a138_second_fix_group_and_premature_authorization_rejected)
+每个 (node,agent) 至多一个 launch_fix 组；未止损时的授权 user_decision 同样退 2。 ... ok
+test_a138_status_reasons_list_not_run_count_and_fix_group (test_relay_log.RelayNotRunRetryTests.test_a138_status_reasons_list_not_run_count_and_fix_group)
+status 不可关原因列出 NOT_RUN 计数与 fix 组（未授权 / 已授权两态）。 ... ok
+test_a138_user_decision_authorizes_one_fix_group (test_relay_log.RelayNotRunRetryTests.test_a138_user_decision_authorizes_one_fix_group)
+user_decision launch_fix=<token> 记在被止损 agent 名下，授权一组重拉预算； ... ok
+test_allowlist_classes_and_precheck_rejections (test_relay_log.RelayPlanAmendGuardTests.test_allowlist_classes_and_precheck_rejections)
+三类白名单逐项通过；design/新卡/越界/绝对/穿越/重复/目录各例拒绝。 ... ok
+test_amend_after_lint_failure_restores_plan (test_relay_log.RelayPlanAmendGuardTests.test_amend_after_lint_failure_restores_plan)
+actual == proposed 但普通 lint 失败 → 从仓外副本恢复，lint 规则号透传。 ... ok
+test_before_rejects_bad_snapshot_dir (test_relay_log.RelayPlanAmendGuardTests.test_before_rejects_bad_snapshot_dir)
+snapshot-dir：必须绝对、未存在、无 symlink 父链、在仓与 git 元数据之外。 ... ok
+test_external_mutation_between_phases_fails_closed (test_relay_log.RelayPlanAmendGuardTests.test_external_mutation_between_phases_fails_closed)
+静默区破坏：HEAD/index/object database 任一变化与 before 双采样不一致都 fail closed。 ... ok
+test_failed_amend_restores_raw_bytes_mode_and_symlink_across_clean_eol_filter (test_relay_log.RelayPlanAmendGuardTests.test_failed_amend_restores_raw_bytes_mode_and_symlink_across_clean_eol_filter)
+clean/EOL filter 不参与快照与恢复：失败时还原的是工作树原始 bytes/mode/target。 ... ok
+test_mixed_forbidden_proposal_leaves_targets_and_proposal_unchanged (test_relay_log.RelayPlanAmendGuardTests.test_mixed_forbidden_proposal_leaves_targets_and_proposal_unchanged)
+禁区混合：预检整份拒绝，全部计划目标与输入方案文件原始状态零变化。 ... ok
+test_normal_lint_and_argument_contract (test_relay_log.RelayPlanAmendGuardTests.test_normal_lint_and_argument_contract)
+普通 lint 合同不变；amend-check 缺件按参数错误收口；顶层子命令仍三个。 ... ok
+test_sensitive_untracked_stays_out_of_object_database_and_durable_evidence (test_relay_log.RelayPlanAmendGuardTests.test_sensitive_untracked_stays_out_of_object_database_and_durable_evidence)
+敏感 untracked 的正文/文件名/哈希不进 object database，也不回显到进程输出。 ... ok
+test_snapshot_diff_captures_tracked_untracked_and_dirty_same_path_without_git_objects (test_relay_log.RelayPlanAmendGuardTests.test_snapshot_diff_captures_tracked_untracked_and_dirty_same_path_without_git_objects)
+P1-02 矩阵：改前 dirty 不混入、同路径二次修改不漏报、tracked/untracked 三态、 ... ok
+test_snapshot_dir_tolerates_realpath_name_expansion (test_relay_log.RelayPlanAmendGuardTests.test_snapshot_dir_tolerates_realpath_name_expansion)
+Windows 8.3 短路径等效形态：realpath 展开后字符串变化但父链无 symlink ... lint: amend-check before ok (1 proposed path(s))
+ok
+test_success_requires_actual_equal_proposed (test_relay_log.RelayPlanAmendGuardTests.test_success_requires_actual_equal_proposed)
+成功的唯一判据 actual == proposed：多路径=越界、少路径=no-op 都 fail closed。 ... ok
+test_a120_allows_append_and_superseded_separation (test_relay_log.RelayPlanLintTests.test_a120_allows_append_and_superseded_separation)
+HC-RL-A120: same-stage tail append and superseded separation pass lint. ... ok
+test_a120_keeps_four_hard_constraints (test_relay_log.RelayPlanLintTests.test_a120_keeps_four_hard_constraints)
+HC-RL-A120: a legal tail append does not relax A46/A72/A89/A109. ... ok
+test_a150_lint_mapping_table_binds_review_ready_rows (test_relay_log.RelayPlanLintTests.test_a150_lint_mapping_table_binds_review_ready_rows)
+A150: the §3.5 lint-rule mapping table binds both `on:review_ready:` rows. ... ok
+test_add_is_append_only_with_twenty_fixed_schema_events (test_relay_log.RelayPlanLintTests.test_add_is_append_only_with_twenty_fixed_schema_events) ... ok
+test_add_rejects_unknown_and_case_changed_events_without_writing (test_relay_log.RelayPlanLintTests.test_add_rejects_unknown_and_case_changed_events_without_writing) ... ok
+test_add_reports_genuine_append_failure_as_exit_four (test_relay_log.RelayPlanLintTests.test_add_reports_genuine_append_failure_as_exit_four) ... ok
+test_add_reports_ledger_read_failure_as_exit_four (test_relay_log.RelayPlanLintTests.test_add_reports_ledger_read_failure_as_exit_four) ... ok
+test_agent_authorization_has_four_exempt_prefixes_and_active_nodes (test_relay_log.RelayPlanLintTests.test_agent_authorization_has_four_exempt_prefixes_and_active_nodes) ... FAIL
+test_agent_launch_requires_node_start_and_terminal_agents_are_sealed (test_relay_log.RelayPlanLintTests.test_agent_launch_requires_node_start_and_terminal_agents_are_sealed) ... ok
+test_agent_rows_reference_existing_nodes_with_unique_names (test_relay_log.RelayPlanLintTests.test_agent_rows_reference_existing_nodes_with_unique_names) ... ok
+test_agent_state_transition_table_rejects_invalid_next_events (test_relay_log.RelayPlanLintTests.test_agent_state_transition_table_rejects_invalid_next_events) ... ok
+test_all_twenty_event_words_pass_lexical_validation (test_relay_log.RelayPlanLintTests.test_all_twenty_event_words_pass_lexical_validation)
+HC-RL-A2 (RLT_24): the frozen vocabulary is twenty words including ... ok
+test_attempts_are_keyed_by_node_and_agent_name (test_relay_log.RelayPlanLintTests.test_attempts_are_keyed_by_node_and_agent_name) ... ok
+test_attempts_are_per_node_and_only_relaunch_after_authorized_causes (test_relay_log.RelayPlanLintTests.test_attempts_are_per_node_and_only_relaunch_after_authorized_causes) ... ok
+test_by_is_derived_from_agent_prefix_under_the_frozen_writer_contract (test_relay_log.RelayPlanLintTests.test_by_is_derived_from_agent_prefix_under_the_frozen_writer_contract)
+HC-RL-A85: `by` mirrors the agent prefix, and only the owner may write the event. ... ok
+test_card_and_node_type_are_limited (test_relay_log.RelayPlanLintTests.test_card_and_node_type_are_limited) ... ok
+test_close_requires_an_active_agent_of_its_node (test_relay_log.RelayPlanLintTests.test_close_requires_an_active_agent_of_its_node) ... ok
+test_decider_and_strategist_escalations_stay_with_the_triggering_agent (test_relay_log.RelayPlanLintTests.test_decider_and_strategist_escalations_stay_with_the_triggering_agent) ... ok
+test_decision_and_user_decision_must_resume_before_original_agent_done (test_relay_log.RelayPlanLintTests.test_decision_and_user_decision_must_resume_before_original_agent_done) ... ok
+test_decision_mode_accepts_frozen_values_and_rejects_others (test_relay_log.RelayPlanLintTests.test_decision_mode_accepts_frozen_values_and_rejects_others) ... ok
+test_decision_repeats_helper_while_user_decision_uses_frozen_note_shape (test_relay_log.RelayPlanLintTests.test_decision_repeats_helper_while_user_decision_uses_frozen_note_shape)
+HC-RL-A69: decision repeats the helper; user_decision retains the design note shape. ... ok
+test_deep_acyclic_dependencies_do_not_raise_recursion_error (test_relay_log.RelayPlanLintTests.test_deep_acyclic_dependencies_do_not_raise_recursion_error) ... ok
+test_dependencies_cannot_target_superseded_nodes (test_relay_log.RelayPlanLintTests.test_dependencies_cannot_target_superseded_nodes) ... ok
+test_dependencies_must_exist_and_be_acyclic (test_relay_log.RelayPlanLintTests.test_dependencies_must_exist_and_be_acyclic) ... ok
+test_each_active_node_needs_an_active_agent (test_relay_log.RelayPlanLintTests.test_each_active_node_needs_an_active_agent) ... ok
+test_empty_and_bad_ledger_follow_status_and_add_exit_contracts (test_relay_log.RelayPlanLintTests.test_empty_and_bad_ledger_follow_status_and_add_exit_contracts) ... ok
+test_empty_cards_is_a_plan_parse_error_in_the_lint_cli (test_relay_log.RelayPlanLintTests.test_empty_cards_is_a_plan_parse_error_in_the_lint_cli) ... ok
+test_empty_ledger_pending_nodes_exclude_superseded_rows (test_relay_log.RelayPlanLintTests.test_empty_ledger_pending_nodes_exclude_superseded_rows)
+HC-RL-A128/A84: superseded rows are absent from empty-ledger pending_nodes. ... ok
+test_escalate_requires_exactly_one_matching_helper_token (test_relay_log.RelayPlanLintTests.test_escalate_requires_exactly_one_matching_helper_token)
+HC-RL-A69: escalate note must carry exactly one kind-matched helper token. ... ok
+test_fixed_tables_and_cells_fail_closed (test_relay_log.RelayPlanLintTests.test_fixed_tables_and_cells_fail_closed) ... ok
+test_forbidden_types_are_the_sole_violation_in_legal_plans (test_relay_log.RelayPlanLintTests.test_forbidden_types_are_the_sole_violation_in_legal_plans)
+HC-RL-A126: the forbidden type is the only violation in these fixtures. ... ok
+test_help_lists_exactly_the_frozen_subcommands (test_relay_log.RelayPlanLintTests.test_help_lists_exactly_the_frozen_subcommands) ... ok
+test_ledger_read_rejects_extra_keys_and_noncontinuous_seq (test_relay_log.RelayPlanLintTests.test_ledger_read_rejects_extra_keys_and_noncontinuous_seq) ... ok
+test_lint_and_default_dependencies_skip_superseded_rows (test_relay_log.RelayPlanLintTests.test_lint_and_default_dependencies_skip_superseded_rows)
+HC-RL-A128: lint ignores superseded rows and default dependencies skip them. ... ok
+test_lint_cli_exit_stderr_and_json_contract (test_relay_log.RelayPlanLintTests.test_lint_cli_exit_stderr_and_json_contract)
+HC-RL-A80: lint signature, exit codes 0/2/3, stderr shape, --json document. ... ok
+test_lint_cli_smoke_uses_success_and_plan_error_contracts (test_relay_log.RelayPlanLintTests.test_lint_cli_smoke_uses_success_and_plan_error_contracts) ... ok
+test_marker_requires_only_frozen_fields_and_allows_missing_generated (test_relay_log.RelayPlanLintTests.test_marker_requires_only_frozen_fields_and_allows_missing_generated) ... ok
+test_missing_and_zero_byte_ledgers_match_for_status_and_lint (test_relay_log.RelayPlanLintTests.test_missing_and_zero_byte_ledgers_match_for_status_and_lint)
+HC-RL-A84: a zero-byte ledger behaves exactly like an absent ledger. ... ok
+test_node_close_ignores_an_untriggered_agent (test_relay_log.RelayPlanLintTests.test_node_close_ignores_an_untriggered_agent) ... ok
+test_node_close_names_a_nonterminal_launched_agent_even_when_close_agent_is_done (test_relay_log.RelayPlanLintTests.test_node_close_names_a_nonterminal_launched_agent_even_when_close_agent_is_done) ... ok
+test_node_close_requires_all_terminals_and_configured_agent_done (test_relay_log.RelayPlanLintTests.test_node_close_requires_all_terminals_and_configured_agent_done) ... ok
+test_node_number_is_unique_even_when_superseded (test_relay_log.RelayPlanLintTests.test_node_number_is_unique_even_when_superseded) ... ok
+test_non_newline_terminated_ledger_is_rejected_without_append (test_relay_log.RelayPlanLintTests.test_non_newline_terminated_ledger_is_rejected_without_append) ... ok
+test_plan_loaded_note_requires_non_empty_skill_token (test_relay_log.RelayPlanLintTests.test_plan_loaded_note_requires_non_empty_skill_token)
+HC-RL-A18: plan_loaded must carry a non-empty skill=<version-or-token>. ... ok
+test_relaunch_attempt_increment_is_exact_after_terminal_causes (test_relay_log.RelayPlanLintTests.test_relaunch_attempt_increment_is_exact_after_terminal_causes) ... ok
+test_relay_log_imports_are_stdlib_only (test_relay_log.RelayPlanLintTests.test_relay_log_imports_are_stdlib_only)
+HC-RL-A16: every top-level import in relay_log.py is stdlib. ... ok
+test_runtime_plan_semantic_errors_map_to_exit_three_while_lint_is_two (test_relay_log.RelayPlanLintTests.test_runtime_plan_semantic_errors_map_to_exit_three_while_lint_is_two) ... ok
+test_runtime_trigger_and_dependency_gates (test_relay_log.RelayPlanLintTests.test_runtime_trigger_and_dependency_gates) ... ok
+test_same_card_stages_are_serial_but_cards_can_be_parallel (test_relay_log.RelayPlanLintTests.test_same_card_stages_are_serial_but_cards_can_be_parallel) ... ok
+test_stage_id_card_and_instance_are_structural (test_relay_log.RelayPlanLintTests.test_stage_id_card_and_instance_are_structural) ... ok
+test_stage_must_be_known_and_grouped_contiguously (test_relay_log.RelayPlanLintTests.test_stage_must_be_known_and_grouped_contiguously) ... ok
+test_static_forbidden_primitive_and_pane_guards (test_relay_log.RelayPlanLintTests.test_static_forbidden_primitive_and_pane_guards) ... ok
+test_status_and_lint_match_with_and_without_superseded_rows (test_relay_log.RelayPlanLintTests.test_status_and_lint_match_with_and_without_superseded_rows)
+HC-RL-A128/A73: superseded rows leave lint untouched and status observables equal, ... ok
+test_superseded_by_cannot_target_another_superseded_node (test_relay_log.RelayPlanLintTests.test_superseded_by_cannot_target_another_superseded_node) ... ok
+test_superseded_forms_are_exact_and_point_to_an_existing_node (test_relay_log.RelayPlanLintTests.test_superseded_forms_are_exact_and_point_to_an_existing_node) ... ok
+test_trigger_values_and_same_node_done_references_are_checked (test_relay_log.RelayPlanLintTests.test_trigger_values_and_same_node_done_references_are_checked) ... ok
+test_unicode_line_separators_round_trip_as_json_string_content (test_relay_log.RelayPlanLintTests.test_unicode_line_separators_round_trip_as_json_string_content)
+HC-RL-A38/A56: a successful add must remain one readable JSONL row. ... ok
+test_unreadable_ledger_status_exits_four (test_relay_log.RelayPlanLintTests.test_unreadable_ledger_status_exits_four)
+HC-RL-A45: status over an unreadable ledger exits 4 with a ledger error. ... ok
+test_valid_plan_defaults_decision_mode_and_resolves_default_dependency (test_relay_log.RelayPlanLintTests.test_valid_plan_defaults_decision_mode_and_resolves_default_dependency) ... ok
+test_a158_close_row_fixture_lints_and_preserves_projection (test_relay_log.RelayResourceCloseBackwardCompatTests.test_a158_close_row_fixture_lints_and_preserves_projection)
+Legal close rows appended to the terminal 71-row copy lint clean and ... ok
+test_a158_historical_source_bytes_and_71_row_replay (test_relay_log.RelayResourceCloseBackwardCompatTests.test_a158_historical_source_bytes_and_71_row_replay)
+SHA-256 the canonical source before and after; all 71 rows are ... ok
+test_a158_old_and_new_status_stable_fields_equal (test_relay_log.RelayResourceCloseBackwardCompatTests.test_a158_old_and_new_status_stable_fields_equal)
+The pinned-baseline (19-word) implementation and the new one ... ok
+test_a155_after_terminal_and_repeated_close_preserve_projection (test_relay_log.RelayResourceCloseTests.test_a155_after_terminal_and_repeated_close_preserve_projection)
+Close rows stay legal after node_close/stage_close and on never-started ... ok
+test_a155_blank_id_invalid_type_and_outcome_add_and_lint (test_relay_log.RelayResourceCloseTests.test_a155_blank_id_invalid_type_and_outcome_add_and_lint)
+§3.4: blank/whitespace ids, enum case-sensitivity, and a relative ... ok
+test_a155_duplicate_unknown_and_non_string_note_add_and_lint (test_relay_log.RelayResourceCloseTests.test_a155_duplicate_unknown_and_non_string_note_add_and_lint)
+§3.4: duplicate keys (even same-value), unknown keys, and trailing free ... ok
+test_a155_missing_base_keys_add_and_injected_lint (test_relay_log.RelayResourceCloseTests.test_a155_missing_base_keys_add_and_injected_lint)
+§3.4: each missing required key fails add and lint, naming the key. ... ok
+test_a155_status_warnings_preserve_old_a85_a93 (test_relay_log.RelayResourceCloseTests.test_a155_status_warnings_preserve_old_a85_a93)
+The close-row exemption in `_ledger_warnings` must not relax old checks: ... FAIL
+test_a155_three_ok_object_types_add_and_injected_lint (test_relay_log.RelayResourceCloseTests.test_a155_three_ok_object_types_add_and_injected_lint)
+§3.4: legal pane/workspace/worktree `ok` close rows — add 0, lint 0, ... ok
+test_a155_wire_encoding_and_token_grammar_add_and_lint (test_relay_log.RelayResourceCloseTests.test_a155_wire_encoding_and_token_grammar_add_and_lint)
+§3.4 wire format: single-pass %-decoding, one ASCII space per token, ... ok
+test_a155_wrong_writer_and_node_add_and_lint (test_relay_log.RelayResourceCloseTests.test_a155_wrong_writer_and_node_add_and_lint)
+§3.4: the writer follows the decoded object_type, and the node must be ... ok
+test_a156_failed_reason_search_and_status_schema (test_relay_log.RelayResourceCloseTests.test_a156_failed_reason_search_and_status_schema)
+HC-RL-A156: a legal `failed` row is a queryable fact — add/lint 0, ... ok
+test_a156_five_reason_rejections_add_and_injected_lint (test_relay_log.RelayResourceCloseTests.test_a156_five_reason_rejections_add_and_injected_lint)
+HC-RL-A156: with the three base fields legal, `failed` requires a ... ok
+test_a2_all_twenty_events_in_legal_runtime_contexts (test_relay_log.RelayResourceCloseTests.test_a2_all_twenty_events_in_legal_runtime_contexts)
+HC-RL-A2: each of the twenty event words succeeds through `add` in a ... ok
+test_rlt30_close_writer_messages_name_stage_lead_with_ledger_value (test_relay_log.RelayResourceCloseTests.test_rlt30_close_writer_messages_name_stage_lead_with_ledger_value)
+RLT-A-15 / RLT_30: A69/A85 close-writer messages (add, lint and status ... FAIL
+test_a144_launch_gate_replaces_b1_placeholder (test_relay_log.RelayReviewReadySignalTests.test_a144_launch_gate_replaces_b1_placeholder)
+A144 (B2): a current-instance signal arms the launch; without one the ... ok
+test_a144_rejects_without_a_current_instance_signal (test_relay_log.RelayReviewReadySignalTests.test_a144_rejects_without_a_current_instance_signal)
+A144's nine rejections each exit 2 as A144 — never A70. ... ok
+test_a145_helper_scan_sees_decider_only (test_relay_log.RelayReviewReadySignalTests.test_a145_helper_scan_sees_decider_only)
+A69's helper-token scan does not claim `ready_for_review=`: a note ... ok
+test_a145_ready_signal_write_contract (test_relay_log.RelayReviewReadySignalTests.test_a145_ready_signal_write_contract)
+A145: one `ready_for_review=` token per note, naming a same-node ... ok
+test_a145_signals_burn_no_attempt_and_have_no_add_cap (test_relay_log.RelayReviewReadySignalTests.test_a145_signals_burn_no_attempt_and_have_no_add_cap)
+A145/A102: signals accompany no agent_launch, keep attempt at 1, and ... ok
+test_a146_gate_is_inert_without_a_signal_for_this_agent (test_relay_log.RelayReviewReadySignalTests.test_a146_gate_is_inert_without_a_signal_for_this_agent)
+No signal naming this agent → no gate: R-shaped reviewers and every ... ok
+test_a146_malformed_ready_seq_exits_two_not_crash (test_relay_log.RelayReviewReadySignalTests.test_a146_malformed_ready_seq_exits_two_not_crash)
+P2-1: `ready_seq` values that `str.isdigit()` accepts but `int()` ... ok
+test_a146_pairing_done_accepted_in_order (test_relay_log.RelayReviewReadySignalTests.test_a146_pairing_done_accepted_in_order)
+A146 positive: after PASS the sender seals first, then the reviewer's ... ok
+test_a146_pairing_gate_rejections (test_relay_log.RelayReviewReadySignalTests.test_a146_pairing_gate_rejections)
+A146's seven rejections each exit 2 as A146 — at done-write time. ... ok
+test_a146_rejects_at_done_write_time (test_relay_log.RelayReviewReadySignalTests.test_a146_rejects_at_done_write_time)
+The pairing gate fires on the `done` write itself — the row never ... ok
+test_a146_two_lanes_bind_their_own_ready_seq (test_relay_log.RelayReviewReadySignalTests.test_a146_two_lanes_bind_their_own_ready_seq)
+X node, two reviewer lanes — each `done` pairs with its own latest ... ok
+test_a137_blocked_with_valid_ref_accepted_while_nodes_open (test_relay_log.RelayStageResultRefTests.test_a137_blocked_with_valid_ref_accepted_while_nodes_open)
+节点未关 + blocked + 合法 ref= → 接受；同场景 done 仍拒 A112。 ... ok
+test_a137_fully_closed_stage_result_still_requires_ref (test_relay_log.RelayStageResultRefTests.test_a137_fully_closed_stage_result_still_requires_ref)
+全节点已关时 blocked/failed 同样强制合法最新 ref——缺 ref 各退 2 报 A137。 ... ok
+test_a137_missing_ref_and_unknown_instance_each_exit_two (test_relay_log.RelayStageResultRefTests.test_a137_missing_ref_and_unknown_instance_each_exit_two)
+缺 ref=、ref 指向本实例内不存在的 agent、跨实例引用，各退 2 报 A137。 ... ok
+test_a137_ref_overridden_by_resume_or_terminal_each_exit_two (test_relay_log.RelayStageResultRefTests.test_a137_ref_overridden_by_resume_or_terminal_each_exit_two)
+ref 引用已不是该 agent 最新事件（resume / 终态覆盖）各退 2 报 A137。 ... ok
+test_a137_stage_close_after_blocked_still_rejected (test_relay_log.RelayStageResultRefTests.test_a137_stage_close_after_blocked_still_rejected)
+blocked stage_result 被接受后，stage_close 仍被拒——A118 先于节点全关前置检查。 ... ok
+test_closed_reads_only_node_close_and_closable_is_independent (test_relay_log.RelayStatusProjectionTests.test_closed_reads_only_node_close_and_closable_is_independent)
+HC-RL-A81: closed comes from node_close alone; closable is derived separately. ... ok
+test_current_node_and_node_states_follow_the_frozen_table (test_relay_log.RelayStatusProjectionTests.test_current_node_and_node_states_follow_the_frozen_table)
+HC-RL-A61: dependency-unclosed=pending, node_start=open, otherwise ready. ... ok
+test_design_10_3_text_snapshot_is_reproduced_line_by_line (test_relay_log.RelayStatusProjectionTests.test_design_10_3_text_snapshot_is_reproduced_line_by_line)
+HC-RL-A43: six items, plan/skill/session, cards, writer, stage/node/agent detail. ... FAIL
+test_design_fixture_projects_the_complete_document (test_relay_log.RelayStatusProjectionTests.test_design_fixture_projects_the_complete_document)
+HC-RL-A62/A65/A81: the §10.1+§10.2 fixture has one exact full document. ... ok
+test_plan_without_checker_passes_lint_and_status_without_a_dangling_agent (test_relay_log.RelayStatusProjectionTests.test_plan_without_checker_passes_lint_and_status_without_a_dangling_agent)
+HC-RL-A134: a C plan with the checker removed still lints and projects cleanly. ... ok
+test_stage_result_projection_carries_five_keys_with_and_without_amend (test_relay_log.RelayStatusProjectionTests.test_stage_result_projection_carries_five_keys_with_and_without_amend)
+HC-RL-A62: top-level `last_stage_result` freezes three keys; `stages[].result` five. ... ok
+test_status_is_read_only_and_never_rejects_ledger_problems (test_relay_log.RelayStatusProjectionTests.test_status_is_read_only_and_never_rejects_ledger_problems)
+HC-RL-A44: status adds nothing, judges nothing, and reports anomalies without failing. ... ok
+test_status_json_schema_keys_types_and_order_are_exact (test_relay_log.RelayStatusProjectionTests.test_status_json_schema_keys_types_and_order_are_exact)
+HC-RL-A62: frozen top-level and nested key contracts, types, ordering and counts. ... ok
+test_status_reports_the_last_writer_and_silence_without_driving_actions (test_relay_log.RelayStatusProjectionTests.test_status_reports_the_last_writer_and_silence_without_driving_actions)
+HC-RL-A43: the on-duty writer and per-agent silence are ledger facts, not commands. ... FAIL
+test_status_rereads_appended_stage_in_plan_order (test_relay_log.RelayStatusProjectionTests.test_status_rereads_appended_stage_in_plan_order)
+HC-RL-A121: status re-reads the same plan; an appended X instance lands in plan order. ... ok
+test_status_wording_carries_no_quality_judgement (test_relay_log.RelayStatusProjectionTests.test_status_wording_carries_no_quality_judgement)
+HC-RL-A44: status restates ledger facts; no produce-quality verdict vocabulary. ... ok
+test_superseded_rows_only_change_the_ignored_count (test_relay_log.RelayStatusProjectionTests.test_superseded_rows_only_change_the_ignored_count)
+HC-RL-A73: superseded rows leave every other projection field identical. ... ok
+test_unlaunched_agents_are_never_reported_as_dangling (test_relay_log.RelayStatusProjectionTests.test_unlaunched_agents_are_never_reported_as_dangling)
+HC-RL-A65: a node whose coder is non-terminal does not make its scribe expected. ... ok
+test_a12_five_files_filled_not_skeleton (test_relay_log.SkillAdapterTests.test_a12_five_files_filled_not_skeleton) ... ok
+test_a136_every_call_carries_side_config_dir (test_relay_log.SkillAdapterTests.test_a136_every_call_carries_side_config_dir)
+枚举两 adapter 全部 relay_log.py 调用（命令模板写作 <RELAY_LOG> 占位）： ... ok
+test_a141_dispatch_wait_and_sandbox_fallback_discipline (test_relay_log.SkillAdapterTests.test_a141_dispatch_wait_and_sandbox_fallback_discipline)
+HC-RL-A141: 两 adapter 各含三段原文—— ... ok
+test_a21_wait_receiver_and_three_methods (test_relay_log.SkillAdapterTests.test_a21_wait_receiver_and_three_methods) ... ok
+test_a26_command_forms_claude_kind_and_stalled (test_relay_log.SkillAdapterTests.test_a26_command_forms_claude_kind_and_stalled) ... ok
+test_a27_dispatch_template_credential_ban (test_relay_log.SkillAdapterTests.test_a27_dispatch_template_credential_ban) ... ok
+test_a83_adapter_contract_red_baseline (test_relay_log.SkillAdapterTests.test_a83_adapter_contract_red_baseline)
+R-A83-9：同一套 watch 合同断言在 5ab3bba 版 adapter 上必须 FAIL—— ... ok
+test_c1_1_liveness_check_excludes_calling_shell (test_relay_log.SkillAdapterTests.test_c1_1_liveness_check_excludes_calling_shell)
+C1-1：自匹配机制实测（真 pgrep，非文本断言）—— ... ok
+test_dispatch_template_header_and_completion (test_relay_log.SkillAdapterTests.test_dispatch_template_header_and_completion)
+派活模板首行 = A34 冻结标头形态；relay-light 无 node_closed，完成即停。 ... ok
+test_planner_amend_reference_isomorphic (test_relay_log.SkillAdapterTests.test_planner_amend_reference_isomorphic)
+RLT_09 B4 / A122：两 adapter 只保留指向 SKILL.md 核心模板的同构引用行。 ... ok
+test_r_u3_1_orchestrator_slot_no_watch_liveness_reconcile (test_relay_log.SkillAdapterTests.test_r_u3_1_orchestrator_slot_no_watch_liveness_reconcile)
+R-U3-1（UD-3/D14③/D17）：编排位「收到 `[relay-light] tick`」所在句 ... ok
+test_r_u3_2_watcher_dispatch_fragment_complete (test_relay_log.SkillAdapterTests.test_r_u3_2_watcher_dispatch_fragment_complete)
+R-U3-2（UD-3）：「拉起 watcher 的 prompt 片段」逐件齐备——D23 首行 ... ok
+test_r_u3_3_watch_down_notifications_ascii_single_line (test_relay_log.SkillAdapterTests.test_r_u3_3_watch_down_notifications_ascii_single_line)
+R-U3-3（UD-3/D19）：两份 adapter 全部 `"[relay-light] watch-down …"` ... ok
+test_r_u3_5_death_verdict_keys_documented_and_real (test_relay_log.SkillAdapterTests.test_r_u3_5_death_verdict_keys_documented_and_real)
+R-U3-5（UD-3/D18）：① watcher 片段的判死口径引用键名 ... ok
+test_watch_subcommand_documented (test_relay_log.SkillAdapterTests.test_watch_subcommand_documented)
+R-A83-8：两份 adapter 的 watch 合同——默认 watch + 无 watch 回退 + ... ok
+test_a100_terminology_not_mixed (test_relay_log.SkillCoreDocTests.test_a100_terminology_not_mixed) ... ok
+test_a117_recipe_sourced_from_task_type_only (test_relay_log.SkillCoreDocTests.test_a117_recipe_sourced_from_task_type_only) ... ok
+test_a12_five_files_present (test_relay_log.SkillCoreDocTests.test_a12_five_files_present) ... ok
+test_a12_required_sections (test_relay_log.SkillCoreDocTests.test_a12_required_sections) ... ok
+test_a132_no_hardcoded_model_names (test_relay_log.SkillCoreDocTests.test_a132_no_hardcoded_model_names) ... ok
+test_a143_light_plan_review_severity_classification (test_relay_log.SkillCoreDocTests.test_a143_light_plan_review_severity_classification)
+HC-RL-A143: SKILL.md 的 plan-reviewer 模板写明 light 档两级分级—— ... ok
+test_a19_linux_direct_test_before_closeout (test_relay_log.SkillCoreDocTests.test_a19_linux_direct_test_before_closeout) ... ok
+test_a27_credential_values_never_written (test_relay_log.SkillCoreDocTests.test_a27_credential_values_never_written) ... ok
+test_a66_coder_four_line_summary (test_relay_log.SkillCoreDocTests.test_a66_coder_four_line_summary) ... ok
+test_a66_scribe_materials_and_boundary (test_relay_log.SkillCoreDocTests.test_a66_scribe_materials_and_boundary) ... ok
+test_a67_writer_mapping (test_relay_log.SkillCoreDocTests.test_a67_writer_mapping) ... ok
+test_a83_13_skill_ud2_wording (test_relay_log.SkillCoreDocTests.test_a83_13_skill_ud2_wording)
+UD-2：watcher 行改写、硬规则 8、放弃项 5——三处收口措辞在文档层钉住； ... ok
+test_a98_plan_ledger_live_in_module_relay_dir (test_relay_log.SkillCoreDocTests.test_a98_plan_ledger_live_in_module_relay_dir) ... ok
+test_ledger_note_contract_documented (test_relay_log.SkillCoreDocTests.test_ledger_note_contract_documented)
+add 强制的 note 合同、控制事件写入者与决策归属必须在 SKILL.md 可查（一致性 P1 整改钉住）。 ... ok
+test_planner_amend_template_contract (test_relay_log.SkillCoreDocTests.test_planner_amend_template_contract)
+RLT_09 B4 / HC-RL-A122：SKILL.md 必须给出可执行的 planner-amend 模板—— ... ok
+test_r_u3_4_skill_ud3_watcher_wording (test_relay_log.SkillCoreDocTests.test_r_u3_4_skill_ud3_watcher_wording)
+R-U3-4（UD-3）：SKILL 两处定稿措辞——watcher 行分模式表述含 ... ok
+test_a102_checkpoint_round_trips_do_not_burn_attempts (test_relay_log.SkillTemplateTests.test_a102_checkpoint_round_trips_do_not_burn_attempts)
+A102: checkpoint 往返不消耗 attempt——lost 后重拉仍是 #2 而非更高号。 ... ok
+test_a103_rework_node_starts_fresh_attempt (test_relay_log.SkillTemplateTests.test_a103_rework_node_starts_fresh_attempt)
+A103: X 是新节点实例——C 节点 coder 到 #2，X1 内 coder 仍从 #1 起且互不干扰。 ... ok
+test_a113_attempt_only_after_lost_or_cancelled (test_relay_log.SkillTemplateTests.test_a113_attempt_only_after_lost_or_cancelled)
+A113: done 终态不允许重拉；agent_lost / cancelled 之后 attempt+1 合法。 ... ok
+test_a114_auto_mode_rejects_user_decision_on_decider_chain (test_relay_log.SkillTemplateTests.test_a114_auto_mode_rejects_user_decision_on_decider_chain) ... ok
+test_a114_cancelled_uses_triggering_agent (test_relay_log.SkillTemplateTests.test_a114_cancelled_uses_triggering_agent)
+A142: cancelled 纳入 A69 决策归属闸——触发 coder 名下可写，非触发 agent 退 2。 ... ok
+test_a114_consult_resume_without_user_decision_rejected (test_relay_log.SkillTemplateTests.test_a114_consult_resume_without_user_decision_rejected) ... ok
+test_a114_strategist_chain_cancelled_finale (test_relay_log.SkillTemplateTests.test_a114_strategist_chain_cancelled_finale)
+A114 strategist 链终局之二：user_decision 后 cancelled 记回原 coder。 ... ok
+test_a114_strategist_chain_on_rework_template (test_relay_log.SkillTemplateTests.test_a114_strategist_chain_on_rework_template)
+A114 strategist 链：记在触发 coder 名下、user_decision 永必需、无 blocked 起头。 ... ok
+test_a127_no_kickoff_or_verify_node_types (test_relay_log.SkillTemplateTests.test_a127_no_kickoff_or_verify_node_types) ... ok
+test_a149_c_minimal_ledger_fail_reviews_same_instance (test_relay_log.SkillTemplateTests.test_a149_c_minimal_ledger_fail_reviews_same_instance)
+A149/C: checker#1 FAILs over its own checkpoint routed back to ... ok
+test_a149_dh_mapping_note_names_three_counters (test_relay_log.SkillTemplateTests.test_a149_dh_mapping_note_names_three_counters)
+A149: `[limits.on_exceed].note` says three counters and names the ... ok
+test_a149_review_sealing_discipline_verbatim (test_relay_log.SkillTemplateTests.test_a149_review_sealing_discipline_verbatim)
+A149: the sealing discipline paragraph lands verbatim in SKILL.md's ... ok
+test_a149_w_and_x_triggers_switch_r_template_verbatim (test_relay_log.SkillTemplateTests.test_a149_w_and_x_triggers_switch_r_template_verbatim)
+A149: W's plan-reviewer and X's bounced lane take `on:review_ready:`; ... ok
+test_a149_w_minimal_ledger_relaunch_reconsumes_fresh_signal (test_relay_log.SkillTemplateTests.test_a149_w_minimal_ledger_relaunch_reconsumes_fresh_signal)
+A149/W: plan-reviewer#1 is lost; A49 relaunches #2 off the builder's ... ok
+test_a149_x_minimal_ledger_one_lane_fails_one_passes (test_relay_log.SkillTemplateTests.test_a149_x_minimal_ledger_one_lane_fails_one_passes)
+A149/X: two reviewer lanes on the X trigger — one FAILs and ... ok
+test_a95_a133_c_template_shape (test_relay_log.SkillTemplateTests.test_a95_a133_c_template_shape)
+A95/A133: C node carries coder+checker+scribe+decider with frozen triggers/close. ... ok
+test_a96_a114_decider_chain_positive_legs (test_relay_log.SkillTemplateTests.test_a96_a114_decider_chain_positive_legs)
+A96/A114 正例腿：两模式 resume 都记回原 coder#1，不新增 agent_launch。 ... ok
+test_five_stage_templates_extract (test_relay_log.SkillTemplateTests.test_five_stage_templates_extract) ... ok
+test_templates_lint_clean (test_relay_log.SkillTemplateTests.test_templates_lint_clean)
+Assembled main chain and rework chain both pass lint for every recipe tier. ... ok
+test_a101_1_watch_closure_has_no_writes (test_relay_log.WatchTests.test_a101_1_watch_closure_has_no_writes) ... ok
+test_a101_2_checker_flags_injected_write (test_relay_log.WatchTests.test_a101_2_checker_flags_injected_write) ... ok
+test_a101_3_watch_run_leaves_plan_and_ledger_bytes (test_relay_log.WatchTests.test_a101_3_watch_run_leaves_plan_and_ledger_bytes) ... ok
+test_a101_4_checker_flags_injected_bypass_writes (test_relay_log.WatchTests.test_a101_4_checker_flags_injected_bypass_writes)
+P2-2 oracle 自证：watch 闭包内注入 Path.open/unlink、os.remove、 ... ok
+test_a82_10_failed_prompt_retries_next_observation (test_relay_log.WatchTests.test_a82_10_failed_prompt_retries_next_observation) ... watch: herdr prompt to lead-1 failed for '[relay-light] coder#1 -> idle'
+ok
+test_a82_11a_early_wait_failure_backs_off (test_relay_log.WatchTests.test_a82_11a_early_wait_failure_backs_off) ... ok
+test_a82_11b_wait_timeout_reattaches_immediately (test_relay_log.WatchTests.test_a82_11b_wait_timeout_reattaches_immediately) ... ok
+test_a82_12_thread_beats_do_not_stack (test_relay_log.WatchTests.test_a82_12_thread_beats_do_not_stack) ... ok
+test_a82_13a_non_ascii_state_not_sent (test_relay_log.WatchTests.test_a82_13a_non_ascii_state_not_sent) ... ok
+test_a82_13b_newline_state_not_sent (test_relay_log.WatchTests.test_a82_13b_newline_state_not_sent) ... ok
+test_a82_13c_bad_agent_name_skipped (test_relay_log.WatchTests.test_a82_13c_bad_agent_name_skipped) ... ok
+test_a82_14_runtime_ledger_half_line_tolerated (test_relay_log.WatchTests.test_a82_14_runtime_ledger_half_line_tolerated) ... ok
+test_a82_15_runtime_plan_lint_failure_tolerated (test_relay_log.WatchTests.test_a82_15_runtime_plan_lint_failure_tolerated) ... ok
+test_a82_1_wait_return_sends_prompt (test_relay_log.WatchTests.test_a82_1_wait_return_sends_prompt) ... ok
+test_a82_2_no_immediate_reattach_after_notify (test_relay_log.WatchTests.test_a82_2_no_immediate_reattach_after_notify) ... ok
+test_a82_3_get_polling_every_30_seconds (test_relay_log.WatchTests.test_a82_3_get_polling_every_30_seconds) ... ok
+test_a82_4a_done_exits_thread (test_relay_log.WatchTests.test_a82_4a_done_exits_thread) ... ok
+test_a82_4b_agent_lost_exits_thread (test_relay_log.WatchTests.test_a82_4b_agent_lost_exits_thread) ... ok
+test_a82_4c_cancelled_exits_thread (test_relay_log.WatchTests.test_a82_4c_cancelled_exits_thread) ... ok
+test_a82_5_working_reattaches_and_renotifies (test_relay_log.WatchTests.test_a82_5_working_reattaches_and_renotifies) ... ok
+test_a82_6_same_transition_notified_once (test_relay_log.WatchTests.test_a82_6_same_transition_notified_once) ... ok
+test_a82_7_each_agent_own_thread_and_join (test_relay_log.WatchTests.test_a82_7_each_agent_own_thread_and_join) ... ok
+test_a82_8_new_present_agent_gets_thread (test_relay_log.WatchTests.test_a82_8_new_present_agent_gets_thread) ... ok
+test_a82_9_herdr_name_resolution (test_relay_log.WatchTests.test_a82_9_herdr_name_resolution) ... ok
+test_a83_10_plan_level_never_prompts_workers (test_relay_log.WatchTests.test_a83_10_plan_level_never_prompts_workers)
+编排级只对 stage-lead 挂 wait/get，对 worker agent 零 Herdr 调用。 ... ok
+test_a83_11_empty_stage_never_exits (test_relay_log.WatchTests.test_a83_11_empty_stage_never_exits)
+绑定 stage 节点未启动/全部 superseded → 永不退出（绑定对象不在）； ... ok
+test_a83_12a_completion_exit_zero (test_relay_log.WatchTests.test_a83_12a_completion_exit_zero)
+绑定 stage 已全 close：main() 返回 0（逐字同完成路径）。 ... ok
+test_a83_12b_args_and_no_open_stage_exit_two (test_relay_log.WatchTests.test_a83_12b_args_and_no_open_stage_exit_two)
+参数错误/无 open stage → 2。 ... ok
+test_a83_12c_plan_and_config_exit_three (test_relay_log.WatchTests.test_a83_12c_plan_and_config_exit_three)
+plan lint 失败 → 3（启动期重试两次后退出）；配置目录无效 → 3。 ... ok
+test_a83_12d_ledger_failure_retries_then_exit_four (test_relay_log.WatchTests.test_a83_12d_ledger_failure_retries_then_exit_four)
+启动期账本半行：两次 2 秒重试（无真 sleep）后退出 4。 ... ok
+test_a83_12e_startup_half_line_recovers (test_relay_log.WatchTests.test_a83_12e_startup_half_line_recovers)
+启动期半行修复后正常进入——不退出，agent 线程按原有行为工作。 ... ok
+test_a83_12f_uncaught_exception_not_in_stop_set (test_relay_log.WatchTests.test_a83_12f_uncaught_exception_not_in_stop_set)
+run_watch 抛未捕获异常 → 不由 stop-set 收口（异常外抛，非 0/2/3/4）。 ... ok
+test_a83_14_monitor_relaunch_replaces_thread (test_relay_log.WatchTests.test_a83_14_monitor_relaunch_replaces_thread)
+§7.3 监工重拉：第二条 monitor_launch 使 monitor#1 线程退出（ ... ok
+test_a83_15_monitor_restart_after_relaunch (test_relay_log.WatchTests.test_a83_15_monitor_restart_after_relaunch)
+§7.3 完整序：第二条 monitor_launch + 新监工 monitor_restart → ... ok
+test_a83_1_tick_cadence (test_relay_log.WatchTests.test_a83_1_tick_cadence)
+主循环每 1200 虚拟秒发一次 [relay-light] tick——1200/2400/3600 恰三次。 ... ok
+test_a83_2_tick_independent_of_state_prompts (test_relay_log.WatchTests.test_a83_2_tick_independent_of_state_prompts)
+tick 与状态通知相互独立：状态提示照常按去重规则发，tick 到点发。 ... ok
+test_a83_3_stage_exit_on_final_node_close (test_relay_log.WatchTests.test_a83_3_stage_exit_on_final_node_close)
+绑定 stage 末节点 node_close → 退出 0 并 join 线程；无关/非末节点不退出。 ... ok
+test_a83_4_plan_amend_extends_bound_stage (test_relay_log.WatchTests.test_a83_4_plan_amend_extends_bound_stage)
+plan_amend 给绑定 stage 加节点 → 原「末节点」close 不再触发退出； ... ok
+test_a83_5_plan_level_exits_on_last_stage_close (test_relay_log.WatchTests.test_a83_5_plan_level_exits_on_last_stage_close)
+编排级：前一 stage_close 不退出、末 stage_close 退出 0。 ... ok
+test_a83_6_plan_level_watches_stage_lead (test_relay_log.WatchTests.test_a83_6_plan_level_watches_stage_lead)
+编排级存在 monitor#1 线程、idle 变化 prompt 发给 --notify 方； ... ok
+test_a83_7_no_prompts_after_exit (test_relay_log.WatchTests.test_a83_7_no_prompts_after_exit)
+退出后跨 tick 点不再产生任何通知——tick 与状态通知都不发。 ... ok
+test_c1_2_thread_respawn_inherits_dedup (test_relay_log.WatchTests.test_c1_2_thread_respawn_inherits_dedup)
+C1-2：agent 线程异常死亡 → 主循环重生 → 新线程继承已通知状态， ... ok
+test_c2_1_baseline_fetch_reads_bytes_decodes_utf8 (test_relay_log.WatchTests.test_c2_1_baseline_fetch_reads_bytes_decodes_utf8)
+C2-1 同族：`fetch_baseline_text` 的 `git show` 字节级 capture + ... ok
+test_c2_1_herdr_client_reads_bytes_decodes_utf8 (test_relay_log.WatchTests.test_c2_1_herdr_client_reads_bytes_decodes_utf8)
+C2-1：`HerdrClient._run` 按 `_git_readonly` 惯例字节级 capture + ... ok
+test_cli_watch_argument_contract (test_relay_log.WatchTests.test_cli_watch_argument_contract) ... ok
+test_all_installs_five_files_to_both_sides (test_install_skill.InstallSkillTests.test_all_installs_five_files_to_both_sides) ... ok
+test_cli_requires_all_flag (test_install_skill.InstallSkillTests.test_cli_requires_all_flag) ... usage: install_skill.py [-h] --all
+install_skill.py: error: the following arguments are required: --all
+usage: install_skill.py [-h] --all
+install_skill.py: error: the following arguments are required: --all
+usage: install_skill.py [-h] --all
+install_skill.py: error: the following arguments are required: --all
+usage: install_skill.py [-h] --all
+install_skill.py: error: unrecognized arguments: extra
+ok
+test_five_file_set_is_closed_and_present (test_install_skill.InstallSkillTests.test_five_file_set_is_closed_and_present) ... ok
+test_manifest_fields_after_success (test_install_skill.InstallSkillTests.test_manifest_fields_after_success) ... ok
+test_mid_copy_failure_is_nonzero_and_rerun_converges (test_install_skill.InstallSkillTests.test_mid_copy_failure_is_nonzero_and_rerun_converges)
+HC-RL-A124: tamper one side, inject a mid-copy failure, rerun to converge. ... error: injected mid-copy failure
+ok
+test_overwrites_stale_replica (test_install_skill.InstallSkillTests.test_overwrites_stale_replica) ... ok
+test_roles_toml_replica_bytes_identical_to_source (test_install_skill.InstallSkillTests.test_roles_toml_replica_bytes_identical_to_source) ... ok
+test_source_missing_file_fails_closed (test_install_skill.InstallSkillTests.test_source_missing_file_fails_closed) ... error: skill source incomplete, missing: dh-mapping.toml
+ok
+test_durable_signal_schema_and_stop (test_install_skill.SingleTaskStructureTests.test_durable_signal_schema_and_stop) ... ok
+test_model_allocation_gate_hard_contract (test_install_skill.SingleTaskStructureTests.test_model_allocation_gate_hard_contract) ... ok
+test_model_allocation_gate_precedes_launch_section (test_install_skill.SingleTaskStructureTests.test_model_allocation_gate_precedes_launch_section) ... ok
+test_model_allocation_negative_examples (test_install_skill.SingleTaskStructureTests.test_model_allocation_negative_examples) ... ok
+test_one_workspace_one_named_tab_or_pane_per_instance (test_install_skill.SingleTaskStructureTests.test_one_workspace_one_named_tab_or_pane_per_instance) ... ok
+test_phase_closed_set_is_nine_phases_not_legacy_five (test_install_skill.SingleTaskStructureTests.test_phase_closed_set_is_nine_phases_not_legacy_five) ... FAIL
+test_recovery_authorities_are_durable_only (test_install_skill.SingleTaskStructureTests.test_recovery_authorities_are_durable_only) ... ok
+test_relay_receipt_fail_closed_split_watcher_vs_producers (test_install_skill.SingleTaskStructureTests.test_relay_receipt_fail_closed_split_watcher_vs_producers) ... FAIL
+test_roles_toml_stays_full_relay_default_template (test_install_skill.SingleTaskStructureTests.test_roles_toml_stays_full_relay_default_template) ... ok
+test_single_task_mode_declared_parallel_and_exclusive (test_install_skill.SingleTaskStructureTests.test_single_task_mode_declared_parallel_and_exclusive) ... ok
+test_watcher_repo_workspace_zero_write (test_install_skill.SingleTaskStructureTests.test_watcher_repo_workspace_zero_write) ... FAIL
+
+======================================================================
+FAIL: test_shipped_roles_toml_has_the_twelve_design_roles (test_relay_log.RelayConfigTests.test_shipped_roles_toml_has_the_twelve_design_roles)
+HC-RL-A131 (RLT-A-15): roles.toml keys equal design §6.3 — 12 roles incl.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/nash/work/dh-relay/.dh-worktrees/RLT_A_15/tools/relay-light/test_relay_log.py", line 2482, in test_shipped_roles_toml_has_the_twelve_design_roles
+    self.assertEqual(
+AssertionError: Items in the first set but not the second:
+'stage-lead'
+'watcher'
+Items in the second set but not the first:
+'monitor'
+
+======================================================================
+FAIL: test_plan_amend_requires_monitor_and_complete_note_and_is_repeatable (test_relay_log.RelayLifecycleTests.test_plan_amend_requires_monitor_and_complete_note_and_is_repeatable)
+HC-RL-A119: monitor#<n> writes it, note carries filename + nodes=, repeats freely.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/nash/work/dh-relay/.dh-worktrees/RLT_A_15/tools/relay-light/test_relay_log.py", line 4218, in test_plan_amend_requires_monitor_and_complete_note_and_is_repeatable
+    self.assertIn(
+AssertionError: 'plan_amend must be written by stage-lead (monitor#<n>): coder#1' not found in 'error: HC-RL-A119 plan_amend must be written by monitor#<n>: coder#1\n'
+
+======================================================================
+FAIL: test_writer_consistency_exits_two_for_every_frozen_owner (test_relay_log.RelayLifecycleTests.test_writer_consistency_exits_two_for_every_frozen_owner)
+HC-RL-A85: each event has exactly one legal writer, checked before it is appended.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/nash/work/dh-relay/.dh-worktrees/RLT_A_15/tools/relay-light/test_relay_log.py", line 3804, in test_writer_consistency_exits_two_for_every_frozen_owner
+    self.assertIn(
+AssertionError: 'plan_loaded must be written by orchestrator, not stage-lead (by=monitor)' not found in 'error: HC-RL-A85 plan_loaded must be written by orchestrator, not monitor\n'
+
+======================================================================
+FAIL: test_agent_authorization_has_four_exempt_prefixes_and_active_nodes (test_relay_log.RelayPlanLintTests.test_agent_authorization_has_four_exempt_prefixes_and_active_nodes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/nash/work/dh-relay/.dh-worktrees/RLT_A_15/tools/relay-light/test_relay_log.py", line 1418, in test_agent_authorization_has_four_exempt_prefixes_and_active_nodes
+    self.assertIn(
+AssertionError: 'control event requires orchestrator or stage-lead (monitor#<n>): node_start' not found in 'error: HC-RL-A69 control event requires orchestrator or monitor: node_start\n'
+
+======================================================================
+FAIL: test_a155_status_warnings_preserve_old_a85_a93 (test_relay_log.RelayResourceCloseTests.test_a155_status_warnings_preserve_old_a85_a93)
+The close-row exemption in `_ledger_warnings` must not relax old checks:
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/nash/work/dh-relay/.dh-worktrees/RLT_A_15/tools/relay-light/test_relay_log.py", line 7943, in test_a155_status_warnings_preserve_old_a85_a93
+    self.assertEqual(
+AssertionError: Lists differ: ['seq[39 chars]n by stage-lead (by=monitor), not orchestrator[81 chars]q 6'] != ['seq[39 chars]n by monitor, not orchestrator', 'seq 7: HC-RL[65 chars]q 6']
+
+First differing element 0:
+'seq [22 chars]t must be written by stage-lead (by=monitor), not orchestrator'
+'seq [22 chars]t must be written by monitor, not orchestrator'
+
+- ['seq 4: HC-RL-A85 node_start must be written by stage-lead (by=monitor), not '
+?                                                  ---------------       -
+
++ ['seq 4: HC-RL-A85 node_start must be written by monitor, not orchestrator',
+?                                                               ++++++++++++ +
+
+-  'orchestrator',
+   'seq 7: HC-RL-A93 monitor_restart for DHR_90:W#1 follows its stage_close at '
+   'seq 6']
+
+======================================================================
+FAIL: test_rlt30_close_writer_messages_name_stage_lead_with_ledger_value (test_relay_log.RelayResourceCloseTests.test_rlt30_close_writer_messages_name_stage_lead_with_ledger_value)
+RLT-A-15 / RLT_30: A69/A85 close-writer messages (add, lint and status
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/nash/work/dh-relay/.dh-worktrees/RLT_A_15/tools/relay-light/test_relay_log.py", line 7783, in test_rlt30_close_writer_messages_name_stage_lead_with_ledger_value
+    self.assert_close_rejected_both(
+  File "/home/nash/work/dh-relay/.dh-worktrees/RLT_A_15/tools/relay-light/test_relay_log.py", line 7494, in assert_close_rejected_both
+    self.assertIn(needle, result.stderr)
+AssertionError: 'resource_close object_type=pane must be written by stage-lead (by=monitor), not orchestrator' not found in 'error: HC-RL-A85 resource_close object_type=pane must be written by monitor, not orchestrator\n'
+
+======================================================================
+FAIL: test_design_10_3_text_snapshot_is_reproduced_line_by_line (test_relay_log.RelayStatusProjectionTests.test_design_10_3_text_snapshot_is_reproduced_line_by_line)
+HC-RL-A43: six items, plan/skill/session, cards, writer, stage/node/agent detail.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/nash/work/dh-relay/.dh-worktrees/RLT_A_15/tools/relay-light/test_relay_log.py", line 3065, in test_design_10_3_text_snapshot_is_reproduced_line_by_line
+    self.assertEqual(STATUS_10_3_TEXT, relay_log.render_status_text(status, PLAN_10_1_DIR))
+AssertionError: '计划：d[116 chars]班写入者：stage-lead（DHR_90:C#1）\n\n阶段 DHR_90:W#1  [245 chars]ng\n' != '计划：d[116 chars]班写入者：monitor（DHR_90:C#1）\n\n阶段 DHR_90:W#1  clo[242 chars]ng\n'
+  计划：docs/modules/dh-relay/relay/wave-2026-09/   skill=0.1.0   session=app
+  卡：DHR_90, DHR_91      decision_mode=consult
+- 当班写入者：stage-lead（DHR_90:C#1）
++ 当班写入者：monitor（DHR_90:C#1）
+  
+  阶段 DHR_90:W#1  closed   result=done
+  阶段 DHR_90:C#1  open     result=—
+    节点 C1 construction   open
+      不可关：coder#1 无终态事件
+      在场 agent：coder#1  最近 checkpoint @ 10:31:12（静默 00:12:40）
+    节点 C2 construction   pending
+  阶段 DHR_90:R#1  pending
+  阶段 DHR_90:F#1  pending
+
+
+======================================================================
+FAIL: test_status_reports_the_last_writer_and_silence_without_driving_actions (test_relay_log.RelayStatusProjectionTests.test_status_reports_the_last_writer_and_silence_without_driving_actions)
+HC-RL-A43: the on-duty writer and per-agent silence are ledger facts, not commands.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/nash/work/dh-relay/.dh-worktrees/RLT_A_15/tools/relay-light/test_relay_log.py", line 3475, in test_status_reports_the_last_writer_and_silence_without_driving_actions
+    self.assertIn("当班写入者：stage-lead（DHR_90:C#1）", rendered)
+AssertionError: '当班写入者：stage-lead（DHR_90:C#1）' not found in '计划：docs/modules/dh-relay/relay/wave-2026-09/   skill=0.1.0   session=app\n卡：DHR_90, DHR_91      decision_mode=consult\n当班写入者：monitor（DHR_90:C#1）\n\n阶段 DHR_90:W#1  closed   result=done\n阶段 DHR_90:C#1  open     result=—\n  节点 C1 construction   open\n    不可关：coder#1 无终态事件\n    在场 agent：coder#1  最近 checkpoint @ 10:31:12（静默 00:12:40）\n  节点 C2 construction   pending\n阶段 DHR_90:R#1  pending\n阶段 DHR_90:F#1  pending\n'
+
+======================================================================
+FAIL: test_phase_closed_set_is_nine_phases_not_legacy_five (test_install_skill.SingleTaskStructureTests.test_phase_closed_set_is_nine_phases_not_legacy_five)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/nash/work/dh-relay/.dh-worktrees/RLT_A_15/tools/relay-light/test_install_skill.py", line 201, in test_phase_closed_set_is_nine_phases_not_legacy_five
+    self.assertIn(NINE_PHASE_SET, text, rel)
+AssertionError: '`plan` / `plan-review` / `batch` / `batch-review` / `workflow-final` / `e2-code-review` / `decision` / `watcher` / `human-acceptance`' not found in '---\nname: relay-light\ndescription: 轻量接力编排（relay-light / relay-lite / 简单版接力），两种模式：完整模式（relay_plan + relay_log.py 账本 + W/C/R/X/F 五阶段，多卡计划）与 single-task 单卡接力（编排只分发、builder/coder/审核/决策/复核分派、watcher 巡检，无账本）。触发：用户点名 relay-light/relay-lite/接力/简单版；或贴出多角色分工表（编排/施工/建 workspace 与 task_plan/审核/决策/复核/监督）让你「按分工开工 / 派活 / 拉 agent」；或要执行 relay_plan.md。交互型任务不进本 skill，走单会话。\n---\n\n# relay-light\n\nrelay-light 是一套接力编排协议，有两种互斥模式（选法见下节「模式选择」）：**完整模式**由人拉起规划与编排，编排在每个阶段开一个终端空间并拉起 stage-lead，stage-lead 拉起该阶段所有 agent，全部状态只以 `relay_log.py` 账本为准；**`single-task` 单卡接力**由编排直接分派各角色、watcher 旁路巡检，不建账本（见文末同名一节）。本文件是协议核心；两侧运行时的派活/等待命令写法见 `references/adapter-claude-code.md` 与 `references/adapter-codex.md`。\n\n## 模式选择（先定模式，再拉任何 agent）\n\n| 情形 | 走哪种 |\n|---|---|\n| 多张卡、要按依赖排进一份 `relay_plan.md` 执行 | 完整模式（五阶段 + 账本） |\n| 一张已落户的卡，用户给了多角色分工（编排只分发、建 workspace/task_plan、施工、审核、决策、复核、监督等），或说「简单版 / relay-lite / 单卡接力」 | **`single-task`** |\n| 命中下方「交互型任务」任一信号 | 不进 relay-light，走单会话 |\n\n- 用户没点名模式、上表又不能唯一判定时，**先问用户走哪种，再动手**；不得自行默认完整模式，也不得按记忆里的旧配方直接开跑。\n- 用户贴出的多角色分工表就是 `single-task` 的角色与模型提案：照它进 `single-task` 的 model-allocation gate，派单用 `[relay-light:single-task]` 标头，不另起一套 `dispatch/*.md` brief + `progress.md` `DONE` 信号的手动派活流程（那是 `single-task` 正式化之前的临时做法，已由本模式取代）。\n- 分工表里的「监督 / 监控 / monitor」对应 `single-task` 的 `phase=monitor`，即 watcher（只观察、只报信），不是完整模式的 stage-lead。\n\n## 适用边界：交互型任务走单会话\n\nrelay-light 的 worker 不回头问用户，卡住只能写 `blocked` 交 decider / strategist。需要与用户高频交互的任务放进来只会反复 `blocked → escalate → resume`，还白开 checker / scribe 等角色，因此**不进 relay-light**（完整模式与 `single-task` 都不进），改由**单个 Agent 会话**按 dev-harness 与用户直接对话推进（2026-09-23 用户裁决，#63）。\n\n判定信号，任一命中即走单会话：\n\n- 需要用户在测试环境 / 跳板机 / 生产机上亲手执行命令或贴回输出；\n- 需要用户输入凭据、扫码或做物理操作（凭据值仍按硬规则 1 不入任何工件）；\n- 预计与用户来回确认 **≥3 次**；\n- 下一步取决于上一步的现场输出，无法预先拆成批次与 `task_plan`。\n\n单会话只替代「多 agent 施工」这一段：dev-harness 的入口闸、Recipe 复核（施工者不复核自己的卡）、verify、需求境证据照常生效；过程与证据由该会话写进任务工作区 `progress.md`。多卡计划中混入一张交互卡时，本版不在节点表里建模：把该卡移出本计划、单会话做完后再作为后续计划的前置条件（交互节点类型暂缓，见 #63）。\n\n## 角色表\n\n十二个角色（含旁路 watcher）。**模型档全部写在 `roles.toml`**，这里只写职责与拉取关系，不写死模型。\n\n| 角色 | 谁拉起 | 生命周期 | 只做这些事 |\n|---|---|---|---|\n| 规划 planner | 人；改计划实例由当班 stage-lead 拉起 | 一次性，产出计划后自行关闭 | 读任务卡、`dh-mapping.toml`，定档，生成 `relay_plan.md`；不参与运行 |\n| 编排 orchestrator | 人 | 常驻整个计划，独占一个终端空间 | 只做三件事：重读计划并为阶段建终端空间拉 stage-lead；等 stage-lead；读 `stage_result` 按 `outcome` 机械分路 |\n| **stage-lead**（阶段主管） | 编排 | 按阶段实例独立，阶段结束随终端空间关闭 | **任务派发与沟通**：派本阶段所有 agent、确认派单投递、按明文判据判活、把判定方 FAIL 结论路由回同一送审方、按 trigger 触发升级、写节点与阶段事件。账本 `agent` 标识沿用 `monitor#<n>`（历史兼容，见「术语与判断分层」） |\n| builder | stage-lead | 单节点 | W 阶段建任务工作区七件套与 `task_plan` |\n| plan-reviewer | stage-lead | 单节点 | W 阶段审 `task_plan` |\n| coder | stage-lead | 批内持续在场，本批 checker 通过后才收工 | 写代码、提交；自己在 `findings.md` / `lesson_candidates.md` 追加一两行；每轮写完打四行小结 |\n| scribe | stage-lead | 单节点 | 只写 `progress.md`；R/F 阶段还跑脚本与汇总 |\n| checker 方向评估 | stage-lead | 批内持续在场，与 coder 同生共死 | 核对本批是否偏离 `task_plan`；不做复核 |\n| decider 决策 | stage-lead | 按需 | 施工 `blocked` 时产出可落地方案；不改任何文件，可在方案文件提出「需要改计划」并写明改动内容（改计划工作流见「planner-amend 改计划模板」） |\n| reviewer | stage-lead | 单路 | R 阶段各路复核，路数由 Recipe 决定 |\n| strategist 全局决策 | stage-lead | 按需 | 返工到轮数上限仍不过时产出全局方案；不改任何文件，可同样提出「需要改计划」（见「planner-amend 改计划模板」） |\n| watcher（旁路） | 编排或 stage-lead | 一个终端空间 | 只观察、只报信给本空间派活方；不派活、不写账本、不改文件。完整 relay 模式：盯 agent 状态变化与 20 分钟 tick 由 `relay_log.py watch` 程序承担，watcher agent 每终端空间一个、每 10 分钟只读核本空间 watch 存活，缺席即报信本空间派活方（stage-lead/编排）重拉；`single-task` 模式无账本不接 watch，`phase=monitor` 角色以 120 秒节拍盯 agent 状态变化 |\n\n拉取顺序固定：**编排拉 stage-lead，stage-lead 拉其余**。编排不越级拉 agent；stage-lead 不跨阶段存活；规划不参与运行。checker / decider / strategist 都不写账本、不做复核、不改文件。\n\n### 术语与判断分层\n\n**判断分三档，stage-lead 只占最浅那一档**：\n\n| 判什么 | 谁判 | 性质 |\n|---|---|---|\n| 产出内容合格不合格 | 判定方——plan-reviewer / checker / reviewer（节点表 `close=agent:<判定方>`） | 内容判定 |\n| 批内卡住怎么绕 | decider（`on:blocked`），`decision_mode=consult` 时报用户 | 小决策 |\n| 扩界 / 改计划 / 新增卡 / 停卡 | strategist 出方案 → `user_decision`（**永远出现、不看 mode**）→ 用户定 | 方向决策 |\n| 谁该上场、投没投递到、是不是挂死、能不能关节点 | **stage-lead** | 程序性判定（全部有明文判据，无自由裁量） |\n\n所以 stage-lead **不做内容判定、不做方向决策、不持有授权权**：越界、push / PR / 合并、超限停卡一律 `user_decision` 升给用户。有判定方的节点（W/C/R/X）里 stage-lead 只读判定方的结论，不自己判内容；没有判定方的节点（F 的 scribe、decider 这类 `close` 就是自己）只做形式核——产出文件存在、非空、落在允许路径内。\n\n**四个非角色概念**，不进角色表、不进账本 `agent` 字段：\n\n| 概念 | 指什么 | 落在哪 |\n|---|---|---|\n| **agent kind** | `claude` / `codex` / `devin` / `omp`——每个 agent 一个属性，决定启动参数与「能不能结束回合靠推送叫醒」 | `roles.toml` 缺省 + 计划 agent 表 `launch` 列；两份 adapter 的差异本质就是编排/stage-lead 位上的 kind 不同 |\n| **终端载体** | 管终端空间与标签页的那个工具，现在是 herdr | 命令写法只出现在两份 adapter 的载体小节，换载体只改那里；协议正文只用「终端空间 / 标签页」这两个抽象词 |\n| **用户** | 裁决与授权：越界放行、push / PR / 合并、超限停卡 | 账本 `user_decision` 事件；`decision_mode=consult` |\n| **开局准备** | 派计划前必须就位的东西：worktree、分支 `wt/<卡>`、基线 SHA、共享目录软链、本计划 `config/roles.toml` | 硬规则 12 + 计划前言，由用户在派计划前完成 |\n\n`主控` 一词在 relay-light 里**已退役**——它以前同时背「哪个 kind 在跑」「谁有授权权」「谁做开局准备」三个意思，现已分别落到上表的 agent kind / 用户 / 开局准备。\n\n**送审信号的账本写法**：agent 表里 `trigger=on:review_ready:<送审方>` 的判定方，只有在送审方**当前实例**最新一条事件是 `checkpoint` 且 note 含 `ready_for_review=<判定方名>` 时才能 `agent_launch`（HC-RL-A144）。送审方交稿时 stage-lead 写的是 `checkpoint --note ready_for_review=plan-reviewer`，**不是 `done`**；`done` 是终态，写了之后判定方拉不起来、送审方也不能重拉（A60/A49），本阶段实例就没有合约内出路，只能 plan_amend 加新实例（2026-09-21 p21-normal 首跑 W1 即此死锁）。硬规则 11 的「判定 PASS 前送审方不记 done」在账本上就是这一条。\n\n**批内不换人**：checker 与 decider 的方案都送回同一个 coder，账本记 `checkpoint`，不新增 attempt。只有节点级返工（X 阶段新节点）才开新实例。\n\n## 派活纪律与 stage-lead 判活\n\n**派活通知投递确认**：向 agent 发通知后必须读 pane 末行确认实际投递；pane 出现 `queued` 排队提示时补 `send-keys enter` 并复核送达；未确认投递不得当作已通知。\n\n**批次收口后清上下文**：C 阶段某批 `node_close` 之后、拉下一批之前，stage-lead 可对本批 coder 与 checker 各执行一次上下文清理并复验已清理；清理的是同一实例的上下文，**不新增 attempt、不算换人**。FAIL / 整改期间禁止清理（不得借清理清零 `checkpoint` 往返计数）；清理失败或无法复验时不得拉下一批，也不盲目重复发送。`single-task` 模式的同名闸更严（见该节「batch PASS 后会话清理闸」）。\n\n**`agent_lost` 判活**：pane 的 `working → done` 不等于 agent 收工（长 `sleep` 中也会被报 `done`）；判 `agent_lost` 前必须同时确认 pane 无 `Running tools` 计时器在走、账本无该 agent 新行、Herdr `agent get` 状态非 working；不得单凭 pane 状态判死重拉。`ledger_silent` 仍按 A140 核 Herdr 状态 + pane 末行 + 允许路径产出：三者均无变化才中断；任一仍在变化不得中断。\n\n**codex 启动档位按机器分叉**：沙箱可用的机器上 codex worker 以默认 sandbox 启动；沙箱撞 bwrap 的机器（ThinkPad Linux，任何 `--sandbox` 都跑不了 shell）一律 `--dangerously-bypass-approvals-and-sandbox` 启动，只读约束由派单 prompt 承担，`agent_launch.note` 记 `launch_fix=codex_bypass_bwrap`（2026-09-21 用户裁决）。编排/stage-lead 位为 codex kind 时沿用既有 bypass 结论；仅在该侧的沙箱型只读启动不可用且账本连续 `NOT_RUN` 时，按环境预检改用 bypass 沙箱启动，提示词明确只读约束，并在 `agent_launch.note` 记录 `launch_fix=<token>`；不得把 bypass 写成无条件全局口径。\n\n## 五阶段模板\n\n五阶段：W 建工作区 → C 施工 → R 复核 → X 返工 → F 收口备料。阶段实例 = 一个终端空间 + 一个 stage-lead；同一阶段可多次进入，用 `#k` 区分。\n\n- **W**：builder 建七件套与 `task_plan`；卡文允许路径写着「实施代码路径开工时另行登记」的，builder 同时把精确代码路径写进 DevPlan 该卡的 `dh:allowed-paths` 块（用户 2026-09-21 裁决：路径登记不需逐次确认），plan-reviewer 审 `task_plan` 并核登记未越出卡文变更范围（越出为 P1）。\n- **W 可省的两种情形**（2026-09-21 用户裁决）：①卡的工作区与 `task_plan` 已预建且基线未变，节点表可不放 W，首个 C 节点 `depends_on` 留空，其批次 0 由 coder 核基线 / 允许路径 / 复现命令；②light 卡可不写 `task_plan`，批次内容、验证命令与停止条件写在该 C 节点的 note 里，checker 以节点 note 为对照。normal / heavy 卡必须有 `task_plan`（checker 的对照物、dh 体检的必查项）。\n- **C**：按 `task_plan` 批次拆 C1..Cn；每批 coder + checker + scribe，decider `on:blocked`。\n- **R**：机器体检与四道闸（scribe 跑脚本）、按 Recipe 档位挂并行 reviewer、miner、收敛（scribe 汇总 `review.md`）。\n- **X**：coder 修 + reviewer 再审；轮数上限读 `dh-mapping.toml`，超限停 → strategist → 用户。**X 节点必须由规划预先放进节点表**（每卡 R 后一个 `X<n>`，`close=agent:<打回路>`，F 依赖 X），R 无返工时编排按 `stage_result` 直接跳过不开该节点；不预置则 R 打回后编排无处可去只能停（2026-09-21 p21-normal 首跑教训）。\n- **F**：as-built、AI 提交区、交付汇报、证据展示区，全部由 scribe 备料。\n\n模板占位符：`<card>` = 卡号；`<prev>` = 上一节点号（首节点留空）；`<n>` = 节点序号；`<k>` = 阶段实例/返工轮次；`<d>` = 卡内决策文件序号（`decision.<d>.md` 全卡递增）；`<reviewer>`/`<路>` = 按 recipe 展开的 reviewer 名与其路名；`<打回路>` = R 阶段打回的那条 reviewer 路名。\n\n### W 阶段模板\n\n```markdown\n| node | card | stage | type | close | depends_on | note |\n|---|---|---|---|---|---|---|\n| W<n> | <card> | <card>:W#<k> | build | agent:plan-reviewer | <prev> | |\n\n| agent | node | role | launch | output | trigger | note |\n|---|---|---|---|---|---|---|\n| builder | W<n> | builder | | 七件套与 task_plan.md | | 交稿记 `checkpoint ready_for_review=plan-reviewer`，PASS 后才记 done |\n| plan-reviewer | W<n> | plan-reviewer | | review.plan.md | on:review_ready:builder | |\n```\n\n**plan-reviewer 分级（light 档）**：light 卡的 `task_plan` 审查按两级严重度分类——纯措辞、格式、引用陈旧项一律 P2 不阻断 PASS；以下四类仍 P1 阻断：allowed-paths 越界；写入者边界（谁写 `progress`/`findings`/`lesson`）；节点/阶段边界缺漏或矛盾；验收命令与完成信号缺失或矛盾。**light 只按此分级，heavy/normal 不变。**\n\n### C 阶段模板\n\n每个施工批次一个节点；coder 与 checker 批内同时在场（trigger 留空），scribe 等 coder done 后拉起，decider 仅在 blocked 时拉起；`close=agent:checker`（checker 通过才进下一批）。判定方判定 PASS 前，送审方与判定方均不记 `done`；FAIL 走 live 判定方的 `checkpoint` 路由回同一送审方；PASS 后按送审方→判定方顺序记终态。\n\n```markdown\n| node | card | stage | type | close | depends_on | note |\n|---|---|---|---|---|---|---|\n| C<n> | <card> | <card>:C#<k> | construction | agent:checker | <prev> | |\n\n| agent | node | role | launch | output | trigger | note |\n|---|---|---|---|---|---|---|\n| coder | C<n> | coder | | 代码与 findings/lesson 行 | | 每批交稿记 `checkpoint ready_for_review=checker`，PASS 后才记 done |\n| checker | C<n> | checker | | check.C<n>.md | | |\n| scribe | C<n> | scribe | | progress.md | on:done:coder | |\n| decider | C<n> | decider | | decision.<d>.md | on:blocked | |\n```\n\n### R 阶段模板\n\nreviewer 行数与名字由 marker `recipe=` 经 `dh-mapping.toml` 的 `[recipes.<档>]` 展开——三档集合不同，模板不写死；每路一行、trigger 留空并行。机器体检、四道闸脚本与 miner 汇总不独占 agent 行——由 scribe 在同一节点内按「先体检、后收敛」执行（§6.1 允许一个 R 实例内分节点展开，展开时各自拆成独立节点行）。scribe 在全部 reviewer `done` 后由 stage-lead 拉起收敛 `review.md`。\n\n```markdown\n| node | card | stage | type | close | depends_on | note |\n|---|---|---|---|---|---|---|\n| R<n> | <card> | <card>:R#<k> | review | agent:scribe | <prev> | |\n\n| agent | node | role | launch | output | trigger | note |\n|---|---|---|---|---|---|---|\n| <reviewer> | R<n> | reviewer | | review.<路>.md | | 按 recipe 展开为并行多行 |\n| scribe | R<n> | scribe | | review.md（含体检/四道闸脚本与 miner 汇总） | | 空 trigger 是约定例外——trigger 词表表达不了「等全员 done」：stage-lead 在全部 reviewer done 后按本 note 拉起 |\n```\n\n### X 阶段模板\n\n节点级返工：开新的 coder 实例（attempt 从该节点 1 起），由被打回的那路 reviewer 再审。\n\n```markdown\n| node | card | stage | type | close | depends_on | note |\n|---|---|---|---|---|---|---|\n| X<n> | <card> | <card>:X#<k> | rework | agent:<打回路> | <prev> | |\n\n| agent | node | role | launch | output | trigger | note |\n|---|---|---|---|---|---|---|\n| coder | X<n> | coder | | rework.<k>.md | | 新实例，attempt 从 1 起 |\n| <打回路> | X<n> | reviewer | | review.rework.<k>.md | on:review_ready:coder | |\n| decider | X<n> | decider | | decision.<d>.md | on:blocked | |\n```\n\n### F 阶段模板\n\n```markdown\n| node | card | stage | type | close | depends_on | note |\n|---|---|---|---|---|---|---|\n| F<n> | <card> | <card>:F#<k> | handoff | agent:scribe | <prev> | |\n\n| agent | node | role | launch | output | trigger | note |\n|---|---|---|---|---|---|---|\n| scribe | F<n> | scribe | | as-built、提交区、汇报与证据区 | | |\n```\n\n**F 阶段收口 checklist**\n\n- [ ] 确认对应 worktree 已删（`git worktree list` / `git branch` 核对），先关终端空间再删树。\n- [ ] Issue 与 MR/PR 收口（2026-09-21 用户要求，实施细节待后续卡）：计划前言登记 Issue 号；F 阶段把分支推到远端并建 MR（GitLab，wf 仓须经 integrator 机）或 PR（GitHub），链接回填 review.md 提交区；合入/verify 仍按各仓授权。\n\n## 账本用法\n\n计划与账本落在 **`docs/modules/<模块>/relay/<plan_id>/`**，不进任务工作区（A98）。计划文件名固定 `relay_plan.md`，第一行是 marker（`skill=` / `session=` / `recipe=` / `cards=` 等），正文为节点表与 agent 表两张固定表头的 markdown 表。\n\n三个子命令：\n\n```text\nrelay_log.py add    --plan <dir> --node <n> --event <e> --agent <a> [--note <text>] [--config-dir <dir>]\nrelay_log.py status --plan <dir> [--json] [--config-dir <dir>]\nrelay_log.py lint   --plan <dir> [--config-dir <dir>]\n```\n\n`lint` 的 `--json` 输出结构（`{"ok","violations":[…]}`）随 RLT_10 落地——当前只 `status` 实现 `--json`，给 lint 传 `--json` 会报参数错。\n\n账本行固定七字段：`seq` / `ts` / `node` / `event` / `agent`（`<名字>#<attempt>`）/ `by` / `note`。\n\n- `add`：写入一行，校验词表与时序。\n- `status`：派生当前阶段、节点状态、在场 agent 与可关闭判定；不判产出合格，只判账本完整性。\n- `lint`：校验计划硬约束（表头、节点号唯一、stage_id 合法、同卡串行、depends_on 合法等）。\n\n**attempt**：`--agent` 传完整 `<名字>#<attempt>`，由 stage-lead 分配 = 该 `(node, 名字)` 已有最大 attempt + 1；`add` 校验 `agent_launch` 的 attempt 必须恰等于最大值 + 1，否则退出 2。只在 `agent_lost` / `cancelled` / 阶段 `failed` 后重拉时 +1，上限读 `dh-mapping.toml`。批内 `checkpoint` 往返不增；节点级返工是新实例、从 1 起。attempt 与 X 轮数两套计数独立、不叠加、不互相重置，任一先到上限即停 → strategist → 用户裁决。\n\n事件状态机：\n\n```text\nagent_launch → checkpoint* → ( blocked → escalate → decision → [user_decision] → resume )* → (done | agent_lost | cancelled)\n```\n\n**控制事件**（`agent` 字段只写 `orchestrator#<n>` / `monitor#<n>`，不进状态机；写入者不符即拒）：\n\n| 事件 | 写入者 | 时序与 note 强制 |\n|---|---|---|\n| `plan_loaded` | 编排 | 账本第 1 行且仅一次；`node` 填第一个非 superseded 节点号；`note` 必须含 `skill=`、`config_dir=<规范化并百分号编码的配置目录>` 与 `plan=<计划目录>` |\n| `stage_start` | 编排 | 每阶段实例仅一次，先于该实例 `monitor_launch`；`note` 带 `stage_id=` |\n| `monitor_launch` | 编排 | 每阶段实例至少一次（重拉 stage-lead 可多次），在本实例 `stage_start` 后；`note` 带 `stage_id=` |\n| `node_start` | stage-lead | 每节点仅一次，先于该节点任何 `agent_launch`；`depends_on` 未全 `closed` 退出 2 |\n| `node_close` | stage-lead | 仅双判据成立才接受（全部在场 agent 有终态 + `close` 列 agent 已 `done`） |\n| `stage_result` | stage-lead | 每阶段实例可多次，`status` 只认最新一条；`note` 必须含 `stage_id=` 与 `outcome=done / blocked / failed / cancelled` 及原因，且在该实例全部节点 `closed` 之后；`outcome=cancelled` 的 `note` 须引用对应 `user_decision`；本阶段发生过 `plan_amend` 时另补 `amend=<方案文件名>` 与 `nodes=`（裸文件名会丢 status 的 `result.amend` 信号） |\n| `stage_close` | 编排 | 每阶段实例一次；`note` 带 `stage_id=`；前置 = 已见本实例 `stage_start`/`monitor_launch`、全部节点 `closed` 且最新 `stage_result` 的 `outcome ∈ {done, cancelled}`，否则退出 2 |\n| `monitor_restart` | stage-lead | 任意位置不限次；`note` 列盘点结果 |\n| `plan_amend` | stage-lead | 运行中改计划完成后写；`note` 必须含方案文件名与 `nodes=<新节点号,…>`（改计划工作流本身见「planner-amend 改计划模板」，此处只冻结账本合同） |\n\n**agent 事件归属**：`escalate` / `decision` / `user_decision` / `resume` / `cancelled`（决策类）记在**被阻塞/被触发的那个 agent** 名下，决策 agent 的标识写进 `note`——`escalate` 与 `decision` 的 `note` 必须**恰含一个** helper token `decider=<名>#<n>` 或 `strategist=<名>#<n>`，且 `decision` 必须复述同一 helper，缺一/多一/不符即拒。decider 与 strategist 自己的 `agent_launch` / `done` 记它们自己名下。`orchestrator#<n>` / `monitor#<n>` / `planner-amend#<n>` / `strategist#<n>` 四名豁免「agent 名在该节点 agent 表中」校验（其余 agent 名必须在表中）；改计划实例 `planner-amend#<n>` 的生命周期事件记它自己名下（工作流见「planner-amend 改计划模板」）。\n\n**决策链两条，顺序固定**：\n\n- **decider 链**（施工 `blocked` 触发）：`blocked` → `escalate` → `decision` → `resume`。`user_decision` 位置固定在 `decision` 与 `resume` 之间，有无由 `decision_mode` 决定——`auto` 没有（出现即拒），`consult` 必有（缺它写 `resume` 即拒）。\n- **strategist 链**（stage-lead 的 attempt / 返工轮数计数触发，**无 `blocked` 起头**——`escalate` 直接作链首）：`escalate`（coder 名下）→ `agent_launch`（strategist 名下）→ `decision`（coder 名下，`note` 复述同一 helper）→ `done`（strategist 名下）→ `user_decision`（coder 名下，**永远出现、不看 mode**）→ `resume`（coder 名下，继续，不新增 attempt）或 `cancelled`（coder 名下，停卡）。\n\n`checkpoint` 是批内往返的唯一载体：可重复任意次，不新增 attempt、不新增 `agent_launch`。\n\n**`ledger_silent` 处置**：`status` 按账本最近事件计算静默，超过 `dh-mapping.toml` 的 `limits.silence_timeout_min`（默认 30 分钟）的在场 agent 标 `ledger_silent`——这是提示、不是挂死判定。处置原文：\n\n```text\nledger_silent → 核 Herdr 状态 + pane 末行 + 允许路径产出 三者是否也无变化 → 三者均无变化才中断并记 agent_lost silent_timeout → 同 pane 重拉 #n+1；任一仍在变化不得中断。\n```\n\n## planner-amend 改计划模板\n\n改计划实例 `planner-amend#<n>` 由当班 stage-lead 在过门后按需拉起，复用 planner 角色档，不发明新角色。输入恰四件：方案文件（decider / strategist 产出，**只读不改**）、当前 `relay_plan.md`、开发方案 `dev_plan/P<N>-*.md`、涉及的已有卡 `docs/modules/<模块>/workspace/<卡号>/task_plan.md`。\n\n**白名单三类闭集**（一律仓相对 POSIX 路径）：\n\n1. 本计划的 `docs/modules/<模块>/relay/<plan_id>/relay_plan.md`（含 marker `cards=`）；\n2. 同模块 `docs/modules/<模块>/dev_plan/P<N>-*.md`；\n3. 改动前 marker `cards=` **已存在**卡的 `docs/modules/<模块>/workspace/<卡号>/task_plan.md`——新卡的 task_plan 由该卡 W 阶段 builder 建，改计划实例写它即判失败，不得在改计划里反向授权。\n\n`docs/modules/<模块>/design/` 整个目录是禁区；禁区或其它路径命中即整份拒绝，**不做部分执行**。\n\n**执行流**（守门挂在现有 `lint` 子命令下，不新增顶层子命令）：\n\n```text\nrelay_log.py lint --plan <plan_dir> --amend-check before --repo <repo> \\\n    --snapshot-dir <运行现场新目录（绝对路径，仓与 .git 之外）> \\\n    --proposed-path <仓相对路径> [--proposed-path <仓相对路径> ...]\nrelay_log.py lint --plan <plan_dir> --amend-check after  --repo <repo> --snapshot-dir <同一目录>\n```\n\n1. planner-amend 先从方案文件列出**完整** proposed paths；stage-lead 跑 `before` 做全量预检 + 原始工作树快照。\n2. 预检不过（含命中 `design/` 禁区、新卡 task_plan、其它任何路径）：**任何文件都不改**——全部计划目标与输入方案文件零变化，planner-amend 只以普通 `done.note` 写 `outcome=out-of-scope proposal=<方案文件名> reason=<原因>` 后停止，由当班 stage-lead 写 `stage_result outcome=blocked` 交用户。planner-amend 不写 `blocked` / `escalate` / `plan_amend`。\n3. 预检通过才**一次改完**全部 proposed 目标。\n4. stage-lead 跑 `after`：before/after 原始快照精确 diff，成功唯一判据 `actual == proposed`；再核 HEAD/真实 index/object database 未变并跑普通 plan lint。任一失败即从仓外原始副本恢复 `actual ∪ proposed` 的 bytes/mode/symlink/存在性，planner-amend 最多修三次；第三次仍失败按同一条「零文件变化 + 结构化 done.note」路径收尾。\n\n`--snapshot-dir` 是运行现场目录（0700/0600），不是 durable evidence，完成或验证恢复后由守门器安全删除。改计划实例不建新卡七件套；敏感 untracked 的正文、文件名与哈希不进入证据。\n\n## 拓扑布局\n\n**终端空间** = 载体侧的 workspace（当前载体 herdr），一个阶段实例一个，cwd 指向该卡的 worktree；编排另独占一个。空间内**一个 agent 一个标签页**，不在同一标签页里 split；一般不超过 4 个同时在场。不同仓库各开各的具名 session，session 名写进 marker。阶段结束关整个终端空间；全计划结束后先关空间再删 worktree。具体建空间 / 建标签页 / 拉 agent 的命令写法只在两份 adapter 的载体小节，协议正文不写载体命令。\n\n**命名规范**（不规范就找不着，多卡并跑时尤甚）：\n\n| 对象 | 命名 | 例 |\n|---|---|---|\n| 编排空间 | `<plan_id>-orch` | `p21-orch` |\n| 阶段实例空间 | `<plan_id>-<卡尾号>-<阶段><k>` | `p21-29-C1`、`p21-29-R2`、`p21-30-W1` |\n| 标签页 | 角色名，重拉带 attempt | `coder`、`reviewer-consistency`、`coder#2` |\n\n空间名与 `stage_id` 一一对应（`p21-29-C1` ↔ `RLT_29:C#1`），出事时用 `stage_id` 反查是哪个空间。空间名里用 `-` 不用 `#`，`#` 只在标签页表 attempt。\n\n**任务工作区** = `docs/modules/<模块>/workspace/<卡>/` 下的七件套工件目录（brief / task_plan / progress / findings / lesson_candidates / review / execution_strategy）。\n\n**「终端空间」与「任务工作区」不是同一个东西，不得混用**：前者是运行现场的终端拓扑，后者是磁盘上的工件目录。\n\n## 硬规则\n\n1. **凭据红线**：密钥 / 凭据值永不写入任何工件、账本、命令模板、派活文案或测试；证据先按白名单过滤。\n2. **档位来源**：Recipe 档位（`heavy` / `normal` / `light`）按卡取自 DevPlan 任务卡的 `任务类型`（`task_type`）字段；marker `recipe=` 是计划默认档，卡与默认不同时在 `cards=` 里按 `<卡>:<档>` 覆盖（多卡计划允许不同档位混排，R 节点 reviewer 集按该卡档位展开）。字段缺失按 `normal` 处理，并在计划前言写明「task_type 缺失，按 normal 起草」（2026-09-21 用户裁决，取代 A117 的停下问用户）。\n3. **落点**：`relay_plan.md`、账本与本计划 `config/`（`roles.toml` + `dh-mapping.toml`）一律落 dh-relay 仓 `docs/relay/<施工仓名>/<模块>/<plan_id>/`，不进施工仓、不进任务工作区（2026-09-21 用户裁决，取代 A98 的施工仓内 `docs/modules/<模块>/relay/`）。计划正文引用施工仓文件用 `<施工仓名>:<仓相对路径>` 前缀。每条 `relay_log.py` 调用的 `--config-dir` 指向该计划的 `config/`；`config/roles.toml` 由用户在派单前定好，是本计划角色启动方式的唯一来源。\n4. **Linux 直跑**：在 Linux 侧收口前必须直跑 python 测试，命令与输出原样记入 `progress.md`（A19）。\n5. **写入者唯一**：`findings.md` / `lesson_candidates.md` 的写入者是 coder；`progress.md` 的写入者是 scribe；reviewer 各写各的 `review.<路>.md`。每份文件在一个节点内只有一个写入者（A67）。\n6. **coder 四行小结**：coder 每轮写完在 pane 打固定四行小结（做了什么 / 证据 / 偏离与 findings / 下一步），缺项写「无」（A66）。\n7. **scribe 素材边界**：scribe 写 `progress.md` 的素材来源按优先级为 ① 账本事件与 note（事实层）② 本批 diff 与 coder 四行小结 ③ checker / decider / 用户裁决的方案文件名与结论；素材里没有的不得发明，且不碰 `findings.md` / `lesson_candidates.md`（A66）。\n8. **等待必须有接收者**：`wait` 是阻塞式 CLI，返回那一刻必须有接收者（watch 推送、前台阻塞循环、或后台退出唤醒三种之一）；有 watch 时允许结束回合、靠 prompt 唤醒，无 watch 时不得结束回合空等。\n9. **不写死模型**：流程文档、模板、派活文案一律引用角色名与档位，模型取值只在本计划 `config/roles.toml`（用户提前定好；skill 副本里的 `roles.toml` 只是缺省模板）。\n12. **建树前置**：编排在每个阶段实例开始前核该卡 worktree 存在、分支为 `wt/<卡>`、基线为计划前言的 SHA，以及施工仓约定的共享目录软链已就位（wf-analytics-platform：v2 `.venv`、`frontend/node_modules`、`backend/data/datasets` 三条指向主仓）；缺任一即 `stage_result outcome=blocked` 交用户，编排不自行建树、不改软链。开局准备（建树与软链）由用户在派计划前完成并写进计划前言。\n13. **决策模式按卡**：marker `decision_mode=` 是计划默认，`cards=` 里可按 `<卡>:<档>:<auto|consult>` 覆盖；不做批次级。\n10. **模板无 kickoff / verify 签字类节点**：节点类型只有 `build` / `construction` / `review` / `rework` / `handoff`。\n11. **判定方封口纪律**：判定方判定 PASS 前，送审方与判定方均不记 `done`；FAIL 走 live 判定方的 `checkpoint` 路由回同一送审方；PASS 后按送审方→判定方顺序记终态。\n\n## `single-task` 单卡接力模式\n\n`single-task` 与上方完整 relay 模式并列、互斥：用于一张已落户任务卡的规划、施工、复核与人验接力，**不创建或读写 `relay_plan.md` / `relay_log.jsonl`，不使用 W/C/R/X/F 阶段词**；本节不改写上方任何完整模式合同，五阶段模板与账本行为不回归。\n\n### 标头与 phase 闭集\n\n- worker 派单 prompt 首行固定为 `[relay-light:single-task] worker · phase=<phase> · agent=<role>#<instance> · batch=<n|na> · round=<n> · workspace=<repo-relative-path>`；与完整 relay 的 `[relay-light] worker · node=...` 标头互斥，两套流水不交叉执行。\n- phase 闭集：`plan` / `plan-review` / `batch` / `batch-review` / `workflow-final` / `e2-code-review` / `decision` / `monitor` / `human-acceptance`；`batch=1|2|3|na`。\n- `RELAY_RECEIPT` fail closed 分流：进程环境存在 `RELAY_RECEIPT` 时，产出型 builder/coder/reviewer/decider 只写本角色精确 `BLOCKED.*.md` 单行 signal 后立即停止；monitor 保持 repo/workspace 零写入，只用 Herdr prompt 非 durable 通知 orchestrator 后立即停止，不写 `BLOCKED`。两个分支均不得清除任何 `RELAY_*` 环境变量。\n\n### model-allocation gate（启动任何 agent 之前的硬闸）\n\n- orchestrator 必须先向用户展示全部拟启动角色/实例的模型与推理档提案表，并明确询问确认；推荐默认仅是提案，不写死模型。用户可逐角色修改；**未获明确确认不得启动任何 agent**。\n- 确认后由 orchestrator 机械地把确认来源、角色/实例、模型、推理档写入 `execution_strategy.md`；未启动的 tab/pane 标 pending，启动后补齐实际 Herdr workspace/tab/pane 与观察来源并逐项比对。`execution_strategy.md` 由 orchestrator 在启动/更换角色时维护，monitor 与其它角色只读。\n- 恢复时可沿用已有明确确认且分配未变的快照；新增/更换角色或实例、换模型或推理档必须再次询问确认。超时、静默或最大工具权限均不推定确认；最大工具权限不扩张 commit/push/PR/merge/deploy/verify/人验授权。\n\n### 生命周期与计数\n\n固定生命周期：任务工作区七件套与 `task_plan.md` → plan review → 分批开发 + batch review → 开发后按 `task_type` Recipe 展开的全量 workflow-final review → E2 code_review → 主会话人验。batch review 与 workflow-final 是**两道独立闸**，batch PASS 不替代 final。\n\n- `review_round` 与 `remediation_count` 分开记：初审 `review_round=1 remediation_count=0`；plan/batch review 各最多整改 2 轮，FAIL 回同一 builder/coder、原 reviewer 复审；超限交 decider，六类方向问题（方向/范围/验收/数据语义/安全/生产影响）交用户。\n- workflow-final 每条适用 path 最多返工 2 轮，**每轮换 fresh reviewer**，不得复用上一轮实例冒充 fresh；E2 `code_review` 初审为完整 fresh，仅出现 open P0/P1 后由**同一 `reviewer_session_id`** 做 targeted attempt 2。两层证据分别登记身份/输入/finding/结论，条件相斥不得合并为一条。\n- 完成谓词：全部适用 `task_type` Recipe path PASS 或有可核查 N/A，最终汇总无 open P0/P1；heavy 五路（code-round1/code-round2/requirement/consistency/lesson）一条不少；单一 final reviewer、batch PASS 或 E2 receipt 均不替代整套 Recipe。施工者不复核自己的施工。\n\n### batch PASS 后会话清理闸\n\n- 仅当该批 batch reviewer 的 durable signal 为 PASS **且**本批工件齐全（本批交付物、验证证据、coder signal、review 产物、reviewer durable PASS）后，orchestrator 对本批 coder 与 batch reviewer **各执行一次 `/clear`** 并分别复验已清理，之后才启动下一批。终端 idle/done 或 coder DONE 不替代此门。\n- FAIL/整改期间禁止 `/clear`，保持原 coder/原 reviewer session，不借清理清零整改计数；清理失败或无法复验时不得启动下一批，也不盲目重复发送 `/clear`。monitor 常驻、不 clear；decider 按需拉起，不纳入每批固定 clear。\n\n### durable signal 与写者边界\n\n- 每个产出型 worker 的收口物是单行 signal：`DONE`/`BLOCKED` + `task phase agent batch path review_round remediation_count verdict evidence`（BLOCKED 另含 `reason=<snake_case>`），值无空白、证据为 repo 相对路径逗号分隔；写完即停，不等 `node_closed`，不碰完整模式 plan/log。\n- sole writer：`execution_strategy.md` 仅 orchestrator 写；各 review/check/decision 工件由对应 reviewer/decider 自写；`progress.md` 仅由当前顺序执行的 batch coder 在自己 batch 完成时追加**一条**简洁施工里程碑 + 证据引用——不记 pane/agent 状态、轮询、通知或终端输出；reviewer/monitor/orchestrator 不写 progress。\n- monitor 对 repo/workspace **完全只读**：不写 signal/progress/execution_strategy/轮询日志/通知日志或任何文档；不路由、不分派、不启动 agent。\n\n### monitor 节拍与安全 Enter\n\n本模式的 `monitor` 角色就是角色表里的 **watcher**——只观察、只报信，与完整模式的 stage-lead 不是同一角色，也与账本控制事件里的 `monitor#<n>` 无关（本模式不写账本）。`phase=monitor` 这个词沿用历史合同不改。\n\n- monitor 常驻，只做 Herdr wait/get/read：每 120 秒观察一次，无状态变化静默，有变化即时用 Herdr prompt 通知 orchestrator（通知不是 durable artifact）。\n- 安全 Enter：仅当三条件**同时**成立才发送一次并复验——①本次派单文本仍停在输入框（含 Devin queued 指令仍排队未发出）；②`state_change_seq` 未推进；③当前界面不是审批/确认 UI。任一不满足即不按；一次仍失败则通知 orchestrator 并换 fresh 实例，禁止连按。\n- monitor 命中 `RELAY_RECEIPT` 时同样 repo 零写入，只 prompt 通知 orchestrator 后停止。\n\n### 恢复依据\n\n恢复权威只有四类：worker/reviewer/decider 自写的 durable signals、独立 review/decision 工件、orchestrator 维护的 `execution_strategy.md`、Herdr 实态。`progress.md` 只是施工证据索引、monitor 通知只是即时提示，二者都不是运行真相；恢复/重启时从四类权威重建，不依赖终端存活状态。\n\n## 放弃项\n\n- 不做身份校验：账本 `by` 字段标称写入者但不验真伪，换取零启动成本。\n- `status` 不判产出是否合格，只判账本完整性。\n- 不设 `all_agents_done` 这类恒真枚举；节点关闭固定双条件合取。\n- 不做原子写、回滚、历史 manifest（安装器侧同此约定）。\n- 不做人肉盯屏：等完成由 `relay_log.py watch`（默认）或前台 `herdr agent wait --timeout 1200000` 承担；状态变化通知、30 秒 `get` 轮询、20 分钟 tick 由程序负责；watch 存活由 watcher 10 分钟只读巡检兜底，编排不做存活对账，程序不做停滞检测。\n- 不允许编排做判断题：`stage_result.outcome` 机械分路，不越级拉 agent，不缓存计划。\n' : SKILL.md
+
+======================================================================
+FAIL: test_relay_receipt_fail_closed_split_watcher_vs_producers (test_install_skill.SingleTaskStructureTests.test_relay_receipt_fail_closed_split_watcher_vs_producers)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/nash/work/dh-relay/.dh-worktrees/RLT_A_15/tools/relay-light/test_install_skill.py", line 270, in test_relay_receipt_fail_closed_split_watcher_vs_producers
+    self.assertRegex(line, r"watcher[^；;]*零写入")
+AssertionError: Regex didn't match: 'watcher[^；;]*零写入' not found in '- `RELAY_RECEIPT` fail closed 分流：进程环境存在 `RELAY_RECEIPT` 时，产出型 builder/coder/reviewer/decider 只写本角色精确 `BLOCKED.*.md` 单行 signal 后立即停止；monitor 保持 repo/workspace 零写入，只用 Herdr prompt 非 durable 通知 orchestrator 后立即停止，不写 `BLOCKED`。两个分支均不得清除任何 `RELAY_*` 环境变量。'
+
+======================================================================
+FAIL: test_watcher_repo_workspace_zero_write (test_install_skill.SingleTaskStructureTests.test_watcher_repo_workspace_zero_write)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/nash/work/dh-relay/.dh-worktrees/RLT_A_15/tools/relay-light/test_install_skill.py", line 279, in test_watcher_repo_workspace_zero_write
+    self.assertIn("watcher", line, rel)
+AssertionError: 'watcher' not found in '- monitor 对 repo/workspace **完全只读**：不写 signal/progress/execution_strategy/轮询日志/通知日志或任何文档；不路由、不分派、不启动 agent。' : SKILL.md
+
+----------------------------------------------------------------------
+Ran 294 tests in 552.472s
+
+FAILED (failures=11)
+installed: /tmp/tmpuq0p5pn2/home/.claude/skills/relay-light
+installed: /tmp/tmpuq0p5pn2/home/.codex/skills/relay-light
+installed: /tmp/tmp34_nx7yl/home/.claude/skills/relay-light
+installed: /tmp/tmp34_nx7yl/home/.codex/skills/relay-light
+installed: /tmp/tmp9lsx8ji_/home/.claude/skills/relay-light
+installed: /tmp/tmp9lsx8ji_/home/.codex/skills/relay-light
+installed: /tmp/tmp9lsx8ji_/home/.claude/skills/relay-light
+installed: /tmp/tmp9lsx8ji_/home/.codex/skills/relay-light
+installed: /tmp/tmpus3abm2c/home/.claude/skills/relay-light
+installed: /tmp/tmpus3abm2c/home/.codex/skills/relay-light
+installed: /tmp/tmpus3abm2c/home/.claude/skills/relay-light
+installed: /tmp/tmpus3abm2c/home/.codex/skills/relay-light
+installed: /tmp/tmp9ko4q2yj/home/.claude/skills/relay-light
+installed: /tmp/tmp9ko4q2yj/home/.codex/skills/relay-light

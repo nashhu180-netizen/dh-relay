@@ -1414,6 +1414,11 @@ class RelayPlanLintTests(RelayCliTestCase):
         control_with_regular_agent = self.run_add("node_start", agent="coder#1")
         self.assertEqual(2, control_with_regular_agent.returncode)
         self.assertRegex(control_with_regular_agent.stderr, r"^error: HC-RL-A69 ")
+        # RLT-A-15: the subject is stage-lead, the ledger value rides in parentheses
+        self.assertIn(
+            "control event requires orchestrator or stage-lead (monitor#<n>): node_start",
+            control_with_regular_agent.stderr,
+        )
         # A85: agent events belong to the monitor, so the on-demand names are exercised
         # there; the orchestrator exemption shows on its own control events (start_ledger
         # already wrote the plan_loaded/stage_start/monitor_launch opening).
@@ -2470,12 +2475,13 @@ class RelayConfigTests(RelayCliTestCase):
             ),
         )
 
-    def test_shipped_roles_toml_has_the_eleven_design_roles(self) -> None:
-        """HC-RL-A131: roles.toml keys equal design §6.3 and every role carries model + launch."""
+    def test_shipped_roles_toml_has_the_twelve_design_roles(self) -> None:
+        """HC-RL-A131 (RLT-A-15): roles.toml keys equal design §6.3 — 12 roles incl.
+        stage-lead and watcher, no legacy [monitor] — and every role carries model + launch."""
         roles = tomllib.loads((SKILL_DIR / "roles.toml").read_text(encoding="utf-8"))
         self.assertEqual(
             {
-                "planner", "orchestrator", "monitor", "builder", "plan-reviewer",
+                "planner", "orchestrator", "stage-lead", "watcher", "builder", "plan-reviewer",
                 "coder", "scribe", "checker", "decider", "reviewer", "strategist",
             },
             set(roles),
@@ -2987,7 +2993,7 @@ FIXED_NOW = datetime(2026, 9, 9, 10, 43, 52, tzinfo=timezone(timedelta(hours=8))
 STATUS_10_3_TEXT = (
     f"计划：{PLAN_10_1_DIR}   skill=0.1.0   session=app\n"
     "卡：DHR_90, DHR_91      decision_mode=consult\n"
-    "当班写入者：monitor（DHR_90:C#1）\n"
+    "当班写入者：stage-lead（DHR_90:C#1）\n"
     "\n"
     "阶段 DHR_90:W#1  closed   result=done\n"
     "阶段 DHR_90:C#1  open     result=—\n"
@@ -3466,7 +3472,8 @@ class RelayStatusProjectionTests(RelayCliTestCase):
         self.assertEqual("DHR_90:C#1", status.last_writer_stage)
         self.assertEqual(760, status.agents[2].idle_seconds)
         rendered = relay_log.render_status_text(status, PLAN_10_1_DIR)
-        self.assertIn("当班写入者：monitor（DHR_90:C#1）", rendered)
+        self.assertIn("当班写入者：stage-lead（DHR_90:C#1）", rendered)
+        self.assertNotIn("当班写入者：monitor", rendered)
         self.assertIn("最近 checkpoint @ 10:31:12（静默 00:12:40）", rendered)
         self.assertIn("不可关：coder#1 无终态事件", rendered)
 
@@ -3790,8 +3797,20 @@ class RelayLifecycleTests(RelayCliTestCase):
     def test_writer_consistency_exits_two_for_every_frozen_owner(self) -> None:
         """HC-RL-A85: each event has exactly one legal writer, checked before it is appended."""
         self.write_stage_plan()
-        self.assert_rejected("plan_loaded", code="HC-RL-A85", agent="monitor#7", note="skill=0.1.0")
+        wrong_plan_loaded = self.assert_rejected(
+            "plan_loaded", code="HC-RL-A85", agent="monitor#7", note="skill=0.1.0"
+        )
+        # RLT-A-15: the display names stage-lead and carries the ledger value by=monitor
+        self.assertIn(
+            "plan_loaded must be written by orchestrator, not stage-lead (by=monitor)",
+            wrong_plan_loaded.stderr,
+        )
         self.drive_closed_w_stage()
+        wrong_node_start = self.assert_rejected("node_start", code="HC-RL-A85", agent="orchestrator#1")
+        self.assertIn(
+            "node_start must be written by stage-lead (by=monitor), not orchestrator",
+            wrong_node_start.stderr,
+        )
         for event, agent, note in (
             ("stage_start", "monitor#1", "stage_id=DHR_90:C#1"),
             ("node_start", "orchestrator#1", ""),
@@ -4192,6 +4211,13 @@ class RelayLifecycleTests(RelayCliTestCase):
                 self.assert_rejected(
                     "plan_amend", code="HC-RL-A119", node="C2", agent=agent, note=note
                 )
+        wrong_writer = self.assert_rejected(
+            "plan_amend", code="HC-RL-A119", node="C2", agent="coder#1",
+            note="decision.2.md nodes=C3",
+        )
+        self.assertIn(
+            "plan_amend must be written by stage-lead (monitor#<n>): coder#1", wrong_writer.stderr
+        )
         before = self.status_payload()
         for _ in range(2):
             self.add_ok("plan_amend", node="C2", note="decision.2.md nodes=C3,C4")
@@ -7748,6 +7774,46 @@ class RelayResourceCloseTests(RelayCliTestCase):
         ):
             self.assert_lint_rejected(row, code="HC-RL-A85")
 
+    def test_rlt30_close_writer_messages_name_stage_lead_with_ledger_value(self) -> None:
+        """RLT-A-15 / RLT_30: A69/A85 close-writer messages (add, lint and status
+        `errors`) name stage-lead and carry the raw ledger value; codes unchanged."""
+        self.write_close_plan()
+        pane = "object_type=pane object_id=pane-7 outcome=ok"
+        workspace = "object_type=workspace object_id=stage-C1 outcome=ok"
+        self.assert_close_rejected_both(
+            note=pane, node="C1", agent="orchestrator#1", code="HC-RL-A85",
+            needle="resource_close object_type=pane must be written by stage-lead (by=monitor), "
+            "not orchestrator",
+        )
+        self.assert_close_rejected_both(
+            note=workspace, node="C1", agent="monitor#1", code="HC-RL-A85",
+            needle="resource_close object_type=workspace must be written by orchestrator, "
+            "not stage-lead (by=monitor)",
+        )
+        self.assert_close_rejected_both(
+            note=pane, node="C1", agent="coder#1", code="HC-RL-A69",
+            needle="orchestrator or stage-lead (monitor#<n>)",
+        )
+        self.reset_ledger()
+        self.lint_seed()
+        outsider = self.append_raw_row(
+            self.close_row(node="C1", agent="coder#1", by="monitor", note=pane)
+        )
+        wrong_owner = self.append_raw_row(
+            self.close_row(node="C1", agent="orchestrator#1", by="orchestrator", note=pane)
+        )
+        errors = self.status_payload()["errors"]
+        self.assertIn(
+            f"seq {outsider}: HC-RL-A69 resource_close requires orchestrator or "
+            "stage-lead (monitor#<n>) agent: coder#1",
+            errors,
+        )
+        self.assertIn(
+            f"seq {wrong_owner}: HC-RL-A85 resource_close object_type=pane must be written by "
+            "stage-lead (by=monitor), not orchestrator",
+            errors,
+        )
+
     def test_a155_after_terminal_and_repeated_close_preserve_projection(self) -> None:
         """Close rows stay legal after node_close/stage_close and on never-started
         stages, repeat freely with their own seq, need no agent_launch, and leave
@@ -7876,7 +7942,7 @@ class RelayResourceCloseTests(RelayCliTestCase):
         payload = self.status_payload()
         self.assertEqual(
             [
-                "seq 4: HC-RL-A85 node_start must be written by monitor, not orchestrator",
+                "seq 4: HC-RL-A85 node_start must be written by stage-lead (by=monitor), not orchestrator",
                 "seq 7: HC-RL-A93 monitor_restart for DHR_90:W#1 follows its "
                 "stage_close at seq 6",
             ],

@@ -1,0 +1,133 @@
+=== M1
+orig hash: 716329a66000449511e122b84aaaf86b155f8b0a
+mutated hash: 76636bc9ffb81c06f0ea8498ec4e767e55af5c0f
+diff --git a/tools/relay-light/relay_log.py b/tools/relay-light/relay_log.py
+index 716329a..76636bc 100644
+--- a/tools/relay-light/relay_log.py
++++ b/tools/relay-light/relay_log.py
+@@ -1722,7 +1722,7 @@ def _writer_label(writer: str) -> str:
+ 
+ 
+ def _writer_display_name(writer: str) -> str:
+-    return "stage-lead" if writer == "monitor" else writer
++    return writer
+ 
+ 
+ def _agent_parts(agent: str) -> tuple[str, int]:
+FF
+======================================================================
+FAIL: test_design_10_3_text_snapshot_is_reproduced_line_by_line (test_relay_log.RelayStatusProjectionTests.test_design_10_3_text_snapshot_is_reproduced_line_by_line)
+HC-RL-A43: six items, plan/skill/session, cards, writer, stage/node/agent detail.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/nash/work/dh-relay/.dh-worktrees/RLT_A_15/tools/relay-light/test_relay_log.py", line 3065, in test_design_10_3_text_snapshot_is_reproduced_line_by_line
+    self.assertEqual(STATUS_10_3_TEXT, relay_log.render_status_text(status, PLAN_10_1_DIR))
+AssertionError: '计划：d[116 chars]班写入者：stage-lead（DHR_90:C#1）\n\n阶段 DHR_90:W#1  [245 chars]ng\n' != '计划：d[116 chars]班写入者：monitor（DHR_90:C#1）\n\n阶段 DHR_90:W#1  clo[242 chars]ng\n'
+  计划：docs/modules/dh-relay/relay/wave-2026-09/   skill=0.1.0   session=app
+  卡：DHR_90, DHR_91      decision_mode=consult
+- 当班写入者：stage-lead（DHR_90:C#1）
++ 当班写入者：monitor（DHR_90:C#1）
+  
+  阶段 DHR_90:W#1  closed   result=done
+  阶段 DHR_90:C#1  open     result=—
+    节点 C1 construction   open
+      不可关：coder#1 无终态事件
+      在场 agent：coder#1  最近 checkpoint @ 10:31:12（静默 00:12:40）
+    节点 C2 construction   pending
+  阶段 DHR_90:R#1  pending
+  阶段 DHR_90:F#1  pending
+
+
+======================================================================
+FAIL: test_status_reports_the_last_writer_and_silence_without_driving_actions (test_relay_log.RelayStatusProjectionTests.test_status_reports_the_last_writer_and_silence_without_driving_actions)
+HC-RL-A43: the on-duty writer and per-agent silence are ledger facts, not commands.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/nash/work/dh-relay/.dh-worktrees/RLT_A_15/tools/relay-light/test_relay_log.py", line 3475, in test_status_reports_the_last_writer_and_silence_without_driving_actions
+    self.assertIn("当班写入者：stage-lead（DHR_90:C#1）", rendered)
+AssertionError: '当班写入者：stage-lead（DHR_90:C#1）' not found in '计划：docs/modules/dh-relay/relay/wave-2026-09/   skill=0.1.0   session=app\n卡：DHR_90, DHR_91      decision_mode=consult\n当班写入者：monitor（DHR_90:C#1）\n\n阶段 DHR_90:W#1  closed   result=done\n阶段 DHR_90:C#1  open     result=—\n  节点 C1 construction   open\n    不可关：coder#1 无终态事件\n    在场 agent：coder#1  最近 checkpoint @ 10:31:12（静默 00:12:40）\n  节点 C2 construction   pending\n阶段 DHR_90:R#1  pending\n阶段 DHR_90:F#1  pending\n'
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.009s
+
+FAILED (failures=2)
+mutated exit=1
+restored hash: 716329a66000449511e122b84aaaf86b155f8b0a
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.007s
+
+OK
+restored exit=0
+=== M2
+orig hash: 716329a66000449511e122b84aaaf86b155f8b0a
+mutated hash: 4ea55d174c24474fef19fe1be46943ace389b34c
+diff --git a/tools/relay-light/relay_log.py b/tools/relay-light/relay_log.py
+index 716329a..4ea55d1 100644
+--- a/tools/relay-light/relay_log.py
++++ b/tools/relay-light/relay_log.py
+@@ -1718,7 +1718,7 @@ STAGE_LEAD_INSTANCE_LABEL = "stage-lead (monitor#<n>)"
+ 
+ 
+ def _writer_label(writer: str) -> str:
+-    return "stage-lead (by=monitor)" if writer == "monitor" else writer
++    return writer
+ 
+ 
+ def _writer_display_name(writer: str) -> str:
+FFF
+======================================================================
+FAIL: test_writer_consistency_exits_two_for_every_frozen_owner (test_relay_log.RelayLifecycleTests.test_writer_consistency_exits_two_for_every_frozen_owner)
+HC-RL-A85: each event has exactly one legal writer, checked before it is appended.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/nash/work/dh-relay/.dh-worktrees/RLT_A_15/tools/relay-light/test_relay_log.py", line 3804, in test_writer_consistency_exits_two_for_every_frozen_owner
+    self.assertIn(
+AssertionError: 'plan_loaded must be written by orchestrator, not stage-lead (by=monitor)' not found in 'error: HC-RL-A85 plan_loaded must be written by orchestrator, not monitor\n'
+
+======================================================================
+FAIL: test_a155_status_warnings_preserve_old_a85_a93 (test_relay_log.RelayResourceCloseTests.test_a155_status_warnings_preserve_old_a85_a93)
+The close-row exemption in `_ledger_warnings` must not relax old checks:
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/nash/work/dh-relay/.dh-worktrees/RLT_A_15/tools/relay-light/test_relay_log.py", line 7943, in test_a155_status_warnings_preserve_old_a85_a93
+    self.assertEqual(
+AssertionError: Lists differ: ['seq[39 chars]n by stage-lead (by=monitor), not orchestrator[81 chars]q 6'] != ['seq[39 chars]n by monitor, not orchestrator', 'seq 7: HC-RL[65 chars]q 6']
+
+First differing element 0:
+'seq [22 chars]t must be written by stage-lead (by=monitor), not orchestrator'
+'seq [22 chars]t must be written by monitor, not orchestrator'
+
+- ['seq 4: HC-RL-A85 node_start must be written by stage-lead (by=monitor), not '
+?                                                  ---------------       -
+
++ ['seq 4: HC-RL-A85 node_start must be written by monitor, not orchestrator',
+?                                                               ++++++++++++ +
+
+-  'orchestrator',
+   'seq 7: HC-RL-A93 monitor_restart for DHR_90:W#1 follows its stage_close at '
+   'seq 6']
+
+======================================================================
+FAIL: test_rlt30_close_writer_messages_name_stage_lead_with_ledger_value (test_relay_log.RelayResourceCloseTests.test_rlt30_close_writer_messages_name_stage_lead_with_ledger_value)
+RLT-A-15 / RLT_30: A69/A85 close-writer messages (add, lint and status
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/nash/work/dh-relay/.dh-worktrees/RLT_A_15/tools/relay-light/test_relay_log.py", line 7783, in test_rlt30_close_writer_messages_name_stage_lead_with_ledger_value
+    self.assert_close_rejected_both(
+  File "/home/nash/work/dh-relay/.dh-worktrees/RLT_A_15/tools/relay-light/test_relay_log.py", line 7494, in assert_close_rejected_both
+    self.assertIn(needle, result.stderr)
+AssertionError: 'resource_close object_type=pane must be written by stage-lead (by=monitor), not orchestrator' not found in 'error: HC-RL-A85 resource_close object_type=pane must be written by monitor, not orchestrator\n'
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.831s
+
+FAILED (failures=3)
+mutated exit=1
+restored hash: 716329a66000449511e122b84aaaf86b155f8b0a
+...
+----------------------------------------------------------------------
+Ran 3 tests in 6.790s
+
+OK
+restored exit=0

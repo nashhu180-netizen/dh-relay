@@ -1,0 +1,41 @@
+[1] 监工:
+  tools/relay-light/skill/dh-mapping.toml:27: silence_timeout_min = 30   # 监工静默提示阈值（分钟）：仅提示非挂死判定
+  tools/relay-light/skill/dh-mapping.toml:34: 监工拉 strategist → strategist 输出全局方案或建议停卡 → 永远交用户裁决。
+  AGENTS.md:42: > 被 relay-light stage-lead（原「监工 monitor」，2026-09-23 更名；账本标识仍是 `monitor#<n>`）派进本仓的 agent 读本段；与下方 Runner「编排协议段（worker 铁律）」并列、互不隶属，两套流水不交叉执行。
+  count=3
+[2] monitor residual (after frozen regex):
+  [W2] tools/relay-light/skill/SKILL.md:20: - 分工表里的「监督 / 监控 / monitor」对应 `single-task` 的 `phase=monitor`，即 watcher（只观察、只报信），不是完整模式的 stage-lead。
+  [W1] AGENTS.md:42: > 被 relay-light stage-lead（原「监工 monitor」，2026-09-23 更名；账本标识仍是 `monitor#<n>`）派进本仓的 agent 读本段；与下方 Runner「编排协议段（worker 铁律）」并列、互不隶属，两套流水不交叉执行。
+  [RESIDUAL] tools/relay-light/skill/SKILL.md:52: | watcher（旁路） | 编排或 stage-lead | 一个终端空间 | 只观察、只报信给本空间派活方；不派活、不写账本、不改文件。完整 relay 模式：盯 agent 状态变化与 20 分钟 tick 由 `relay_log.py watch` 程序承担，watc
+  [RESIDUAL] tools/relay-light/skill/SKILL.md:313: - phase 闭集：`plan` / `plan-review` / `batch` / `batch-review` / `workflow-final` / `e2-code-review` / `decision` / `monitor` / `human-accepta
+  [RESIDUAL] tools/relay-light/skill/SKILL.md:314: - `RELAY_RECEIPT` fail closed 分流：进程环境存在 `RELAY_RECEIPT` 时，产出型 builder/coder/reviewer/decider 只写本角色精确 `BLOCKED.*.md` 单行 signal 后立即停止；monitor 
+  [RESIDUAL] tools/relay-light/skill/SKILL.md:319: - 确认后由 orchestrator 机械地把确认来源、角色/实例、模型、推理档写入 `execution_strategy.md`；未启动的 tab/pane 标 pending，启动后补齐实际 Herdr workspace/tab/pane 与观察来源并逐项比对。`exe
+  [RESIDUAL] tools/relay-light/skill/SKILL.md:333: - FAIL/整改期间禁止 `/clear`，保持原 coder/原 reviewer session，不借清理清零整改计数；清理失败或无法复验时不得启动下一批，也不盲目重复发送 `/clear`。monitor 常驻、不 clear；decider 按需拉起，不纳入每批固定 c
+  [RESIDUAL] tools/relay-light/skill/SKILL.md:338: - sole writer：`execution_strategy.md` 仅 orchestrator 写；各 review/check/decision 工件由对应 reviewer/decider 自写；`progress.md` 仅由当前顺序执行的 batch coder
+  [RESIDUAL] tools/relay-light/skill/SKILL.md:339: - monitor 对 repo/workspace **完全只读**：不写 signal/progress/execution_strategy/轮询日志/通知日志或任何文档；不路由、不分派、不启动 agent。
+  [RESIDUAL] tools/relay-light/skill/SKILL.md:341: ### monitor 节拍与安全 Enter
+  [RESIDUAL] tools/relay-light/skill/SKILL.md:343: 本模式的 `monitor` 角色就是角色表里的 **watcher**——只观察、只报信，与完整模式的 stage-lead 不是同一角色，也与账本控制事件里的 `monitor#<n>` 无关（本模式不写账本）。`phase=monitor` 这个词沿用历史合同不改。
+  [RESIDUAL] tools/relay-light/skill/SKILL.md:345: - monitor 常驻，只做 Herdr wait/get/read：每 120 秒观察一次，无状态变化静默，有变化即时用 Herdr prompt 通知 orchestrator（通知不是 durable artifact）。
+  [RESIDUAL] tools/relay-light/skill/SKILL.md:347: - monitor 命中 `RELAY_RECEIPT` 时同样 repo 零写入，只 prompt 通知 orchestrator 后停止。
+  [RESIDUAL] tools/relay-light/skill/SKILL.md:351: 恢复权威只有四类：worker/reviewer/decider 自写的 durable signals、独立 review/decision 工件、orchestrator 维护的 `execution_strategy.md`、Herdr 实态。`progress.md` 只
+  [RESIDUAL] tools/relay-light/skill/references/adapter-claude-code.md:158: > 协议语义以 `SKILL.md` 的「`single-task` 单卡接力模式」一节为准；本节只冻结 Claude Code 侧的启动、派单、monitor 节拍与恢复写法。single-task 不创建或读写 `relay_plan.md` / `relay_log.jso
+  [RESIDUAL] tools/relay-light/skill/references/adapter-claude-code.md:163: - 确认后由 orchestrator 机械地把确认来源、角色/实例、模型、推理档写入任务工作区 `execution_strategy.md`；未启动的 tab/pane 标 pending，启动后补齐实际 Herdr workspace/tab/pane 与观察来源并逐项比对
+  [RESIDUAL] tools/relay-light/skill/references/adapter-claude-code.md:182: - phase 闭集：`plan` / `plan-review` / `batch` / `batch-review` / `workflow-final` / `e2-code-review` / `decision` / `monitor` / `human-accepta
+  [RESIDUAL] tools/relay-light/skill/references/adapter-claude-code.md:184: - `RELAY_RECEIPT` fail closed 分流：产出型 builder/coder/reviewer/decider 命中时只写本角色精确 `BLOCKED.*.md` 单行 signal 后立即停止；monitor 命中保持 repo/workspace 零写
+  [RESIDUAL] tools/relay-light/skill/references/adapter-claude-code.md:186: ### monitor 节拍与安全 Enter
+  [RESIDUAL] tools/relay-light/skill/references/adapter-claude-code.md:188: - monitor 常驻，对 repo/workspace **完全只读**：只做 `herdr agent wait` / `agent get` / `agent read` 与 prompt 通知；不写 signal/progress/execution_strategy/
+  [RESIDUAL] tools/relay-light/skill/references/adapter-claude-code.md:194: 恢复权威只有四类：worker/reviewer/decider 自写的 durable signals、独立 review/decision 工件、orchestrator 维护的 `execution_strategy.md`、Herdr 实态。`progress.md` 只
+  [RESIDUAL] tools/relay-light/skill/references/adapter-codex.md:160: > 协议语义以 `SKILL.md` 的「`single-task` 单卡接力模式」一节为准；本节只冻结 Codex 侧的启动、派单、monitor 节拍与恢复写法。single-task 不创建或读写 `relay_plan.md` / `relay_log.jsonl`，不使
+  [RESIDUAL] tools/relay-light/skill/references/adapter-codex.md:165: - 确认后由 orchestrator 机械地把确认来源、角色/实例、模型、推理档写入任务工作区 `execution_strategy.md`；未启动的 tab/pane 标 pending，启动后补齐实际 Herdr workspace/tab/pane 与观察来源并逐项比对
+  [RESIDUAL] tools/relay-light/skill/references/adapter-codex.md:184: - phase 闭集：`plan` / `plan-review` / `batch` / `batch-review` / `workflow-final` / `e2-code-review` / `decision` / `monitor` / `human-accepta
+  [RESIDUAL] tools/relay-light/skill/references/adapter-codex.md:186: - `RELAY_RECEIPT` fail closed 分流：产出型 builder/coder/reviewer/decider 命中时只写本角色精确 `BLOCKED.*.md` 单行 signal 后立即停止；monitor 命中保持 repo/workspace 零写
+  [RESIDUAL] tools/relay-light/skill/references/adapter-codex.md:188: ### monitor 节拍与安全 Enter
+  [RESIDUAL] tools/relay-light/skill/references/adapter-codex.md:190: - monitor 常驻，对 repo/workspace **完全只读**：只做 `herdr agent wait` / `agent get` / `agent read` 与 prompt 通知；不写 signal/progress/execution_strategy/
+  [RESIDUAL] tools/relay-light/skill/references/adapter-codex.md:196: 恢复权威只有四类：worker/reviewer/decider 自写的 durable signals、独立 review/decision 工件、orchestrator 维护的 `execution_strategy.md`、Herdr 实态。`progress.md` 只
+  [RESIDUAL] tools/relay-light/skill/roles.toml:13: [monitor]
+  [RESIDUAL] AGENTS.md:51: - 分工与停止：本模式无 stage-lead——orchestrator 就是派活位，`phase=monitor` 那个角色是 watcher（只观察只报信）。orchestrator 只按 durable signal 分发/路由；产出型 builder/coder/rev
+  [RESIDUAL] AGENTS.md:52: - RELAY_RECEIPT fail closed 分流：进程环境存在 `RELAY_RECEIPT` 时，产出型角色只写本角色精确 `BLOCKED.*.md` 单行 signal 后停止；monitor 保持 repo/workspace 零写入，只用 Herdr pro
+  whitelisted=2 residual=29
+[3] roles.toml [monitor] section header:
+  count=1
+RESULT: FAIL (33)
