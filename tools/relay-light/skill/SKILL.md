@@ -5,7 +5,7 @@ description: 轻量接力编排（relay-light / relay-lite / 简单版接力）�
 
 # relay-light
 
-> 版本：v1.0.0
+> 版本：v1.1.0
 
 relay-light 是一套接力编排协议，有两种互斥模式（选法见下节「模式选择」）：**完整模式**由人拉起规划与编排，编排在每个阶段开一个终端空间并拉起 stage-lead，stage-lead 拉起该阶段所有 agent，全部状态只以 `relay_log.py` 账本为准；**`single-task` 单卡接力**由编排直接分派各角色、watcher 旁路巡检，不建账本（见文末同名一节）。本文件是协议核心；两侧运行时的派活/等待命令写法见 `references/adapter-claude-code.md` 与 `references/adapter-codex.md`。
 
@@ -87,7 +87,7 @@ relay-light 的 worker 不回头问用户，卡住只能写 `blocked` 交 decide
 | **agent kind** | `claude` / `codex` / `devin` / `omp`——每个 agent 一个属性，决定启动参数与「能不能结束回合靠推送叫醒」 | `roles.toml` 缺省 + 计划 agent 表 `launch` 列；两份 adapter 的差异本质就是编排/stage-lead 位上的 kind 不同 |
 | **终端载体** | 管终端空间与标签页的那个工具，现在是 herdr | 命令写法只出现在两份 adapter 的载体小节，换载体只改那里；协议正文只用「终端空间 / 标签页」这两个抽象词 |
 | **用户** | 裁决与授权：越界放行、push / PR / 合并、超限停卡 | 账本 `user_decision` 事件；`decision_mode=consult` |
-| **开局准备** | 派计划前必须就位的东西：worktree、分支 `wt/<卡>`、基线 SHA、共享目录软链、本计划 `config/roles.toml` | 硬规则 12 + 计划前言，由用户在派计划前完成 |
+| **开局准备** | 派计划前必须就位的东西：worktree、分支 `wt/<卡>`、基线 SHA、共享目录软链、本计划 `config/roles.toml`；2026-09-30 起新卡另含 Issue、首提交与 Draft MR/PR | 硬规则 12 + 计划前言，由用户在派计划前完成 |
 
 `主控` 一词在 relay-light 里**已退役**——它以前同时背「哪个 kind 在跑」「谁有授权权」「谁做开局准备」三个意思，现已分别落到上表的 agent kind / 用户 / 开局准备。
 
@@ -115,6 +115,8 @@ relay-light 的 worker 不回头问用户，卡住只能写 `blocked` 交 decide
 - **R**：机器体检与四道闸（scribe 跑脚本）、按 Recipe 档位挂并行 reviewer、miner、收敛（scribe 汇总 `review.md`）。
 - **X**：coder 修 + reviewer 再审；轮数上限读 `dh-mapping.toml`，超限停 → strategist → 用户。**X 节点必须由规划预先放进节点表**（每卡 R 后一个 `X<n>`，`close=agent:<打回路>`，F 依赖 X），R 无返工时编排按 `stage_result` 直接跳过不开该节点；不预置则 R 打回后编排无处可去只能停（2026-09-21 p21-normal 首跑教训）。
 - **F**：as-built、AI 提交区、交付汇报、证据展示区，全部由 scribe 备料。
+
+**Issue 与 Draft MR/PR 时机**（2026-09-30 用户裁决，新卡起生效，在途卡按原合同继续）：W 前 Issue 立户；W 首提交（任务分支首个提交）推上去即建 Draft MR（GitLab）/ Draft PR（GitHub）并关联 Issue，MR/PR 号写进计划前言（marker 可加 `mr=`/`pr=`）。完整模式下这三步属开局准备，在派计划前完成；运行中每道闸后的推送与评论须计划前言写明已获授权，未写明时仍按「push / PR / 合并一律 `user_decision` 升给用户」执行。分支基于目标远端 master（不是 relay master）。评论与收口见「F 阶段收口 checklist」。
 
 模板占位符：`<card>` = 卡号；`<prev>` = 上一节点号（首节点留空）；`<n>` = 节点序号；`<k>` = 阶段实例/返工轮次；`<d>` = 卡内决策文件序号（`decision.<d>.md` 全卡递增）；`<reviewer>`/`<路>` = 按 recipe 展开的 reviewer 名与其路名；`<打回路>` = R 阶段打回的那条 reviewer 路名。
 
@@ -196,7 +198,10 @@ reviewer 行数与名字由 marker `recipe=` 经 `dh-mapping.toml` 的 `[recipes
 **F 阶段收口 checklist**
 
 - [ ] 确认对应 worktree 已删（`git worktree list` / `git branch` 核对），先关终端空间再删树。
-- [ ] Issue 与 MR/PR 收口（2026-09-21 用户要求，实施细节待后续卡）：计划前言登记 Issue 号；F 阶段把分支推到远端并建 MR（GitLab，wf 仓须经 integrator 机）或 PR（GitHub），链接回填 review.md 提交区；合入/verify 仍按各仓授权。
+- [ ] Issue 与 MR/PR 收口（2026-09-30 用户裁决，新卡起生效，在途卡按原合同继续）：
+  - **建分支即开 Draft**：Issue 立户后建任务分支，首个提交推上去即建 Draft MR（GitLab，wf 仓须经 integrator 机）/ Draft PR（GitHub）并关联 Issue；号登记在计划前言。具体推送/建 MR 机制按各施工仓自己的协作规则，本 skill 只规定时机与评论，不覆盖各仓规则。
+  - **闸门结论发评论**：plan-review、batch-review、workflow-final 各路、E2 code_review 及人验结论，由当班 stage-lead（完整模式，须计划前言已授权推送与评论）/ orchestrator（single-task）按判定方自写的结论发 MR/PR 评论，内容为闸门名 + verdict + 被审 SHA + P0～P3 计数 + 证据路径；只转述，不代判、不改写结论、不含凭据。评论属通信/协调工件，不构成授权。每道闸通过或返工提交后推送分支，更新 MR/PR。
+  - **基线与合并**：任务分支基于目标远端 master（wf 仓为 GitLab master SHA，不用 relay master）；合并用平台 squash，不再做收口手工 squash 重建。F 阶段：解除 Draft、更新最终描述（改动/验证/风险/Issue），按各仓授权合并；合入/verify 仍按各仓授权。
 
 ## 账本用法
 
@@ -326,6 +331,7 @@ relay_log.py lint --plan <plan_dir> --amend-check after  --repo <repo> --snapsho
 - orchestrator 只负责已授权的派发、通信、运行状态核对、既定信号路由及指定协调工件维护；不自行运行测试、回归、复现、基线对照或业务证据复算，也不为这些工作自行建立临时测试目录/worktree、装配环境。不得以“只读”“临时”“交用户前自核”为例外。
 - 测试和基线取证交当前获派的 coder；独立核验交发现问题的当前复核路径 reviewer（批次内为 batch-reviewer，workflow-final/E2 按下节对应路径），必要时复跑。编排发现缺证或矛盾，退回对应产出方补证，不代产证据、不代判 PASS；补证沿用现有 phase、signal、轮次与写者规则，不新增角色或绕过 model-allocation gate。
 - 编排可读 signal、报告、Git 状态/SHA/diff，核对路径、身份、字段与既有结论是否一致；可解析 JSON 读取已有 verdict/证据引用。重新计算业务结果、判断验收或失败归因属于执行/复核：例如从 ops profile 计算 capability 增删、digest 差异或 manifest hash，或从测试输出推导“既有失败、可放行”，均应派给 coder/reviewer。是否越界按用途判断，不按命令名称或是否写文件判断。
+- Draft MR/PR 与闸门评论（2026-09-30 用户裁决，新卡起生效，在途卡按原合同继续）：Issue 立户、任务分支首个提交推上去后即建 Draft MR（GitLab）/ Draft PR（GitHub）关联 Issue，号登记在 `execution_strategy.md`；分支基于目标远端 master，合并用平台 squash。plan-review、batch-review、workflow-final 各路、E2 code_review 与人验结论，由 orchestrator 按判定方自写结论发评论（闸门名 + verdict + 被审 SHA + P0～P3 计数 + 证据路径），只转述、不代判、不含凭据；每道闸通过或返工提交后推送分支更新 MR/PR。发评论属通信/协调职责，不改变「不代判 PASS」；推送/建 MR 的机制与合并授权仍按各仓协作规则，最终解除 Draft、更新描述并按授权合并。
 - 用户对进行中动作提出原则性纠正时，不自动解释为立即终止或删除现场；停止发起新的同类动作，按明确指令处理在途工作。语义不清由主会话澄清并保留现场；明确要求立即停止或命中既有停止条件时立即执行。终止进程与删除现场分别判断，不以纠正分工为由一并清理证据。
 
 ### 范围外既有失败
