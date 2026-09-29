@@ -1,0 +1,136 @@
+{
+  "date": "2026-09-29",
+  "pr": 87,
+  "issue": 86,
+  "candidate_sha": "06b6e66e90d4bc96e03ac83a92950f6e764d074a",
+  "merge_sha": "e3cad794dbee7bebb4c5787d939bd21afa5c164b",
+  "ci": {
+    "url": "https://github.com/nashhu180-netizen/dh-relay/actions/runs/36508301828",
+    "head_sha": "06b6e66e90d4bc96e03ac83a92950f6e764d074a",
+    "status": "completed",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "name": "relay-light (Python unittest)",
+        "conclusion": "success",
+        "url": "https://github.com/nashhu180-netizen/dh-relay/actions/runs/36508301828/job/109214610449"
+      },
+      {
+        "name": "relay-tests (PowerShell runner, ubuntu-latest)",
+        "conclusion": "success",
+        "url": "https://github.com/nashhu180-netizen/dh-relay/actions/runs/36508301828/job/109214610755"
+      },
+      {
+        "name": "relay-core (Node test)",
+        "conclusion": "failure",
+        "url": "https://github.com/nashhu180-netizen/dh-relay/actions/runs/36508301828/job/109214610779"
+      },
+      {
+        "name": "relay-tests (PowerShell runner, windows-latest)",
+        "conclusion": "success",
+        "url": "https://github.com/nashhu180-netizen/dh-relay/actions/runs/36508301828/job/109214610790"
+      }
+    ]
+  },
+  "merged_tests": {
+    "command": "python3 -m unittest test_install_skill test_relay_log.SkillCoreDocTests test_relay_log.SkillAdapterTests",
+    "cwd": "tools/relay-light",
+    "tests": 50,
+    "exit_code": 0,
+    "log": "merged-tests.log"
+  },
+  "replica_sync": [
+    {
+      "machine": "nash-ThinkPad-E470c",
+      "repo": "/home/nash/work/dh-relay",
+      "head": "e3cad794dbee7bebb4c5787d939bd21afa5c164b",
+      "status": "",
+      "backup": "/tmp/issue86-skill-backup-eq3n3hhc",
+      "replicas": [
+        {
+          "target": "/home/nash/.claude/skills/relay-light",
+          "manifest": "/home/nash/.claude/skills/relay-light/manifest.json",
+          "source_head": "e3cad794dbee7bebb4c5787d939bd21afa5c164b",
+          "normalized_sha256": {
+            "SKILL.md": "da0f52e71fe939f800d8a02fc32b50e55eca2f315450154296e2c805adbc3012",
+            "references/adapter-claude-code.md": "66ea8165d011d16a1e788ef12071b16ab18994c577969c260a9bb0b8d19f4f57",
+            "references/adapter-codex.md": "99e0eb5946fc95a34f306a0b7a9f702eda704d30718c9cde2b32a50eb07c6cf8",
+            "roles.toml": "3e5ce75d4cde9f19d69d0420cfa6e4f024ef16a000287cbf2200e9431ed70985",
+            "dh-mapping.toml": "8f64945ef27517a669b2acbce0fe0876163c73baccc2affd15eb94a18aee31f0"
+          }
+        },
+        {
+          "target": "/home/nash/.codex/skills/relay-light",
+          "manifest": "/home/nash/.codex/skills/relay-light/manifest.json",
+          "source_head": "e3cad794dbee7bebb4c5787d939bd21afa5c164b",
+          "normalized_sha256": {
+            "SKILL.md": "da0f52e71fe939f800d8a02fc32b50e55eca2f315450154296e2c805adbc3012",
+            "references/adapter-claude-code.md": "66ea8165d011d16a1e788ef12071b16ab18994c577969c260a9bb0b8d19f4f57",
+            "references/adapter-codex.md": "99e0eb5946fc95a34f306a0b7a9f702eda704d30718c9cde2b32a50eb07c6cf8",
+            "roles.toml": "3e5ce75d4cde9f19d69d0420cfa6e4f024ef16a000287cbf2200e9431ed70985",
+            "dh-mapping.toml": "8f64945ef27517a669b2acbce0fe0876163c73baccc2affd15eb94a18aee31f0"
+          }
+        },
+        {
+          "target": "/home/nash/.agents/skills/relay-light",
+          "manifest": "/home/nash/.agents/skills/relay-light/manifest.json",
+          "source_head": "e3cad794dbee7bebb4c5787d939bd21afa5c164b",
+          "normalized_sha256": {
+            "SKILL.md": "da0f52e71fe939f800d8a02fc32b50e55eca2f315450154296e2c805adbc3012",
+            "references/adapter-claude-code.md": "66ea8165d011d16a1e788ef12071b16ab18994c577969c260a9bb0b8d19f4f57",
+            "references/adapter-codex.md": "99e0eb5946fc95a34f306a0b7a9f702eda704d30718c9cde2b32a50eb07c6cf8",
+            "roles.toml": "3e5ce75d4cde9f19d69d0420cfa6e4f024ef16a000287cbf2200e9431ed70985",
+            "dh-mapping.toml": "8f64945ef27517a669b2acbce0fe0876163c73baccc2affd15eb94a18aee31f0"
+          }
+        }
+      ]
+    },
+    {
+      "machine": "LAPTOP-P327JFGO",
+      "repo": "D:\\MyFiles\\ai-workflow\\dh-relay",
+      "head": "e3cad794dbee7bebb4c5787d939bd21afa5c164b",
+      "status": "",
+      "backup": "C:\\Users\\nash\\AppData\\Local\\Temp\\issue86-skill-backup-atw6sq_6",
+      "replicas": [
+        {
+          "target": "C:\\Users\\nash\\.claude\\skills\\relay-light",
+          "manifest": "C:\\Users\\nash\\.claude\\skills\\relay-light\\manifest.json",
+          "source_head": "e3cad794dbee7bebb4c5787d939bd21afa5c164b",
+          "normalized_sha256": {
+            "SKILL.md": "da0f52e71fe939f800d8a02fc32b50e55eca2f315450154296e2c805adbc3012",
+            "references/adapter-claude-code.md": "66ea8165d011d16a1e788ef12071b16ab18994c577969c260a9bb0b8d19f4f57",
+            "references/adapter-codex.md": "99e0eb5946fc95a34f306a0b7a9f702eda704d30718c9cde2b32a50eb07c6cf8",
+            "roles.toml": "3e5ce75d4cde9f19d69d0420cfa6e4f024ef16a000287cbf2200e9431ed70985",
+            "dh-mapping.toml": "8f64945ef27517a669b2acbce0fe0876163c73baccc2affd15eb94a18aee31f0"
+          }
+        },
+        {
+          "target": "C:\\Users\\nash\\.codex\\skills\\relay-light",
+          "manifest": "C:\\Users\\nash\\.codex\\skills\\relay-light\\manifest.json",
+          "source_head": "e3cad794dbee7bebb4c5787d939bd21afa5c164b",
+          "normalized_sha256": {
+            "SKILL.md": "da0f52e71fe939f800d8a02fc32b50e55eca2f315450154296e2c805adbc3012",
+            "references/adapter-claude-code.md": "66ea8165d011d16a1e788ef12071b16ab18994c577969c260a9bb0b8d19f4f57",
+            "references/adapter-codex.md": "99e0eb5946fc95a34f306a0b7a9f702eda704d30718c9cde2b32a50eb07c6cf8",
+            "roles.toml": "3e5ce75d4cde9f19d69d0420cfa6e4f024ef16a000287cbf2200e9431ed70985",
+            "dh-mapping.toml": "8f64945ef27517a669b2acbce0fe0876163c73baccc2affd15eb94a18aee31f0"
+          }
+        },
+        {
+          "target": "C:\\Users\\nash\\.agents\\skills\\relay-light",
+          "manifest": "C:\\Users\\nash\\.agents\\skills\\relay-light\\manifest.json",
+          "source_head": "e3cad794dbee7bebb4c5787d939bd21afa5c164b",
+          "normalized_sha256": {
+            "SKILL.md": "da0f52e71fe939f800d8a02fc32b50e55eca2f315450154296e2c805adbc3012",
+            "references/adapter-claude-code.md": "66ea8165d011d16a1e788ef12071b16ab18994c577969c260a9bb0b8d19f4f57",
+            "references/adapter-codex.md": "99e0eb5946fc95a34f306a0b7a9f702eda704d30718c9cde2b32a50eb07c6cf8",
+            "roles.toml": "3e5ce75d4cde9f19d69d0420cfa6e4f024ef16a000287cbf2200e9431ed70985",
+            "dh-mapping.toml": "8f64945ef27517a669b2acbce0fe0876163c73baccc2affd15eb94a18aee31f0"
+          }
+        }
+      ]
+    }
+  ],
+  "cross_machine_normalized_hashes_match": true,
+  "scope": "Evidence at the implementation merge SHA; subsequent closeout PR changes only task records, not installed skill content."
+}
