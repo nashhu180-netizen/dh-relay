@@ -37,3 +37,10 @@
 - 独立复核实例：只读CLI 01a0eb91-ad80-7d31-863a-aa762f1ce3b9 未取得结果；有效实例 /root/review_issue94，两路PASS。
 - 最终提交只含本卡允许路径；提交号以本分支 git log 的 fix(relay-light): keep decisions in findings 为准，避免在同一提交内自引用未知SHA。
 - 不 push/PR/merge/install/cleanup，Issue仍OPEN。
+
+
+## 远端交付恢复
+
+- 授权更新见 findings.md D-94-02；当前本卡源提交17e907a2ddea6e010dc3aca572ccf9362d7f75e4，master仍为a1710e0ae6509220528bee3aac867737b3c846ce。
+- GitHub权限ADMIN，master未配置保护、rulesets为空；仍执行AGENTS要求的三项必需CI，不使用bypass。CI workflow无部署步骤。
+- 安装目标按现有副本核验：ThinkPad和ThinkBook，各.claude/.codex/.agents三个relay-light目录；仅同步既有五文件和manifest，不扩大到其它技能。

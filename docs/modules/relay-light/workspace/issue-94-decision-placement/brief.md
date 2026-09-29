@@ -5,7 +5,13 @@
 - 状态：本地实施与验证、独立复核已完成；2026-09-29 用户在本会话明确“授权继续”；未 PR/合入/安装。
 
 
-## 当前实施合同（2026-09-29，覆盖下方立户阶段停止线）
+## 当前远端交付授权（2026-09-29）
+
+- 用户原话：“合并master，同步安装，继续完成 pr”。本轮明确解除此前不 push/PR/merge/install 的停止线；覆盖本卡分支推送、PR、必要CI与评审、GitHub master 合入与合入态复验、已有 ThinkPad/ThinkBook 多 agent 技能副本同步、证据回填与本卡清理。以实际核验为准，不提前宣称完成。
+- 仓库/源/目标：nashhu180-netizen/dh-relay；docs/issue-94-decision-placement → master。同卡事实收口 PR 在本授权内；不部署业务、不重启环境、不修改无关现场。
+- 本轮允许新增精确证据路径：`docs/modules/relay-light/workspace/issue-94-decision-placement/closeout.md`。
+
+## 实施阶段合同（历史）
 
 - 用户原话：“授权继续”。承接上一轮待实施的 Issue #94，授权本卡实施、验证、独立复核及必要修复；保留原明确“不建 PR、不合入”限制，不安装、不部署、不清理工作树。
 - 档位：轻档；task_type=light。主会话直接实施，非 relay-light 运行，不启动 Herdr 角色或 watcher。独立复核采用 fresh 实例；一致性、教训两路必做。
@@ -26,6 +32,7 @@
 - `docs/modules/relay-light/workspace/issue-94-decision-placement/review.md`
 - `docs/modules/relay-light/workspace/issue-94-decision-placement/execution_strategy.md`
 - `docs/modules/relay-light/workspace/issue-94-decision-placement/review.independent.md`
+- `docs/modules/relay-light/workspace/issue-94-decision-placement/closeout.md`
 
 ## 立户阶段记录（历史）
 
