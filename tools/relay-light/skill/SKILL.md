@@ -307,7 +307,7 @@ relay_log.py lint --plan <plan_dir> --amend-check after  --repo <repo> --snapsho
 4. **Linux 直跑**：在 Linux 侧收口前必须直跑 python 测试，命令与输出原样记入 `progress.md`（A19）。
 5. **写入者唯一**：`findings.md` / `lesson_candidates.md` 的写入者是 coder；`progress.md` 的写入者是 scribe；reviewer 各写各的 `review.<路>.md`。每份文件在一个节点内只有一个写入者（A67）。
 6. **coder 四行小结**：coder 每轮写完在 pane 打固定四行小结（做了什么 / 证据 / 偏离与 findings / 下一步），缺项写「无」（A66）。
-7. **scribe 素材边界**：scribe 写 `progress.md` 的素材来源按优先级为 ① 账本事件与 note（事实层）② 本批 diff 与 coder 四行小结 ③ checker / decider / 用户裁决的方案文件名与结论；素材里没有的不得发明，且不碰 `findings.md` / `lesson_candidates.md`（A66）。
+7. **scribe 素材边界**：scribe 写 `progress.md` 的素材来源按优先级为 ① 账本事件与 note（事实层）② 本批 diff 与 coder 四行小结 ③ checker / decider / 用户裁决的方案文件名与结论；素材里没有的不得发明，且不碰 `findings.md` / `lesson_candidates.md`（A66）。 本条及第 5 条写者规则仅属完整模式：其 progress 可摘录裁决来源与结论；single-task 按下文「决定落点」执行，不把完整模式的 scribe 写权迁入单卡。
 8. **等待必须有接收者**：`wait` 是阻塞式 CLI，返回那一刻必须有接收者（watch 推送、前台阻塞循环、或后台退出唤醒三种之一）；有 watch 时允许结束回合、靠 prompt 唤醒，无 watch 时不得结束回合空等。
 9. **不写死模型**：流程文档、模板、派活文案一律引用角色名与档位，模型取值只在本计划 `config/roles.toml`（用户提前定好；skill 副本里的 `roles.toml` 只是缺省模板）。
 12. **建树前置**：编排在每个阶段实例开始前核该卡 worktree 存在、分支为 `wt/<卡>`、基线为计划前言的 SHA，以及施工仓约定的共享目录软链已就位（wf-analytics-platform：v2 `.venv`、`frontend/node_modules`、`backend/data/datasets` 三条指向主仓）；缺任一即 `stage_result outcome=blocked` 交用户，编排不自行建树、不改软链。开局准备（建树与软链）由用户在派计划前完成并写进计划前言。
@@ -328,7 +328,7 @@ relay_log.py lint --plan <plan_dir> --amend-check after  --repo <repo> --snapsho
 
 ### 范围外既有失败
 
-- **取证与写者**（默认写者；启用文档 agent 时只委托人工落笔，原始取证责任不变）：coder 在首批或首次发现失败的复核路径取证，由对应 reviewer 独立审核。`findings.md` 仅 coder 写，reviewer 只写自己的 review/check 工件；reviewer 发现的基线问题由编排路由 coder 登记，编排不自行登记归因。测试明细放派单指定的证据文件，`progress.md` 仍只由当前 batch coder 在批末写一条里程碑和证据引用。
+- **取证与写者**（默认写者；启用文档 agent 时只委托人工落笔，原始取证责任不变）：coder 在首批或首次发现失败的复核路径取证，由对应 reviewer 独立审核。`findings.md` 中基线取证、归因及其关闭状态仅 coder 写；下文决定记录的追加权不扩大归因写权。reviewer 只写自己的 review/check 工件；reviewer 发现的基线问题由编排路由 coder 登记，编排不自行登记归因。测试明细放派单指定的证据文件，`progress.md` 仍只由当前 batch coder 在批末写一条里程碑和证据引用。
 - **最小证据**：记录基线用途（整卡或批次）、完整 SHA 与选择依据、候选 SHA 及未提交差异标识、精确 cwd/解释器/完整命令、必要环境与依赖条件、实际收集范围和 passed/failed/error/skipped/deselected 数量、退出码、逐项测试标识与失败阶段/原因、证据路径。批次前基线不能冒充整卡开工基线；同一解释器不等于环境可比，缺少资源或导入了候选代码的对照不作有效基线。
 - **临时现场**：由执行者按派单指定位置及权限准备隔离对照环境，优先考虑 `git archive <SHA>`，保留所需文档/配置/资源并核实实际导入路径；依赖 Git 元数据的测试不能强制使用 archive，替代方法须在派单允许范围内。不得修改共享依赖或借临时现场扩张权限。正式验证期间冻结影响被测现场的写入；可能互相污染的测试严格串行，每次取得退出码再继续。先保存白名单过滤后的有效证据，再按派单清理自己建立的临时现场。
 - **归因与放行分开**：证据完整且独立审核通过，才可将归因记为 `closed-as-baseline`；它只表示归因闭合，不表示缺陷修复、验收豁免或 CI 通过。证据缺失/未审核保持待核，不先关闭后补。允许失败集合必须引用明确清单和审核证据，并符合既有验收合同；从“全绿”变为“无新增失败”若改变验收标准，交用户确认，不由编排/coder/reviewer 自行放宽。基线归因不自动降级 P0/P1，不覆盖必需 CI、独立复核、verify 或人验门。
@@ -346,7 +346,7 @@ relay_log.py lint --plan <plan_dir> --amend-check after  --repo <repo> --snapsho
 ### model-allocation gate（启动任何 agent 之前的硬闸）
 
 - orchestrator 必须先向用户展示全部拟启动角色/实例的模型与推理档提案表，并明确询问确认；推荐默认仅是提案，不写死模型。用户可逐角色修改；**未获明确确认不得启动任何 agent**。
-- 确认后由 orchestrator 机械地把确认来源、角色/实例、模型、推理档写入 `execution_strategy.md`；未启动的 tab/pane 标 pending，启动后补齐实际 Herdr workspace/tab/pane 与观察来源并逐项比对。默认由 orchestrator 维护 `execution_strategy.md`，watcher 与其它角色只读；启用 document 时按下文首次建卡/代笔合同登记，由 orchestrator 核对分配事实。
+- 确认后由 orchestrator 机械地把确认来源、角色/实例、模型、推理档写入 `execution_strategy.md`；未启动的 tab/pane 标 pending，启动后补齐实际 Herdr workspace/tab/pane 与观察来源并逐项比对。默认由 orchestrator 维护 `execution_strategy.md`，watcher 与其它角色只读；启用 document 时按下文首次建卡/代笔合同登记，由 orchestrator 核对分配事实。授权与模型确认事实保留在此，业务决定只按下文「决定落点」引用 findings。
 - 恢复时可沿用已有明确确认且分配未变的快照；新增/更换角色或实例、换模型或推理档必须再次询问确认。超时、静默或最大工具权限均不推定确认；最大工具权限不扩张 commit/push/PR/merge/deploy/verify/人验授权。
 
 ### 生命周期与计数
@@ -365,7 +365,11 @@ relay_log.py lint --plan <plan_dir> --amend-check after  --repo <repo> --snapsho
 ### durable signal 与写者边界
 
 - 每个产出型 worker 的收口物是单行 signal：`DONE`/`BLOCKED` + `task phase agent batch path review_round remediation_count verdict evidence`（BLOCKED 另含 `reason=<snake_case>`），值无空白、证据为 repo 相对路径逗号分隔；写完即停，不等 `node_closed`，不碰完整模式 plan/log。
-- sole writer（未启用文档 agent 时）：`execution_strategy.md` 仅 orchestrator 写；各 review/check/decision 工件由对应 reviewer/decider 自写；`progress.md` 仅由当前顺序执行的 batch coder 在自己 batch 完成时追加**一条**简洁施工里程碑 + 证据引用——不记 pane/agent 状态、轮询、通知或终端输出；reviewer/watcher/orchestrator 不写 progress。
+- sole writer（未启用文档 agent 时）：`execution_strategy.md` 仅 orchestrator 写；各 review/check/decision 工件由对应 reviewer/decider 自写；`progress.md` 仅由当前顺序执行的 batch coder 在自己 batch 完成时追加**一条**简洁施工里程碑 + 证据引用——不记决定、pane/agent 状态、轮询、通知或终端输出；reviewer/watcher/orchestrator 不写 progress。
+- **决定落点**：`findings.md` 承载用户裁决（含点选/确认时间与原始来源，未知时间如实标未知）、decider 结论摘要及独立 decision 引用、D 项（待用户决定项）状态、范围外发现与 P3 遗留去处、给用户的知会。遗留须用户明确点头并标去处；未确认保持待决定，不把知会、沉默或编排摘要当作同意，不用记录代替解决。
+- **findings 写者**：orchestrator 只追加已有裁决的来源、摘要、D 项状态、遗留去处和知会，不自行生成业务结论或基线归因；coder 按派单追加发现与证据，基线归因仍遵守上节专属写者及审核闭合流程。同文件由编排安排错开写入，每次派单注明精确章节与唯一写者；复核期间冻结相关候选内容，不并写或覆盖他人记录。仅启用 document 时可按原责任方确认代笔，不强制启用。
+- **执行策略内容**：`execution_strategy.md` 只记编排事实：授权与停止线、角色/模型/实例、总表关联与维护人、派单与路由、批次流转与 clear 闸、提交/checkpoint SHA；业务决定处只放指向 findings 对应条目的指针，不放决定正文。模型确认事实不因此迁出，记录模型来源不等于扩大授权。
+- **人验与恢复**：主会话人验后的用户选择及知会仍落 findings，并指回真实用户来源；decider 摘要不覆盖独立 decision，开工授权不冒充人验。缺来源或摘要与原件冲突时保留待核状态并回原责任方澄清，受影响动作不凭摘要放行；恢复按下文四类权威回查。
 - watcher 对 repo/workspace **完全只读**：不写 signal/progress/execution_strategy/轮询日志/通知日志或任何文档；不路由、不分派、不启动 agent。
 
 ### 文档 agent（single-task 可选分工）
@@ -377,7 +381,7 @@ relay_log.py lint --plan <plan_dir> --amend-check after  --repo <repo> --snapsho
 - **首次建卡**：工作区不存在时，主会话先在派单中给出 Issue/任务来源、已确认模型、精确创建路径、分工和验收输入，再派 document 在 plan 阶段创建任务文档及 execution_strategy。主会话核对登记后再启动依赖该配置的角色；不豁免模型确认或开工授权，不另建账本。
 - **派单**：document 是角色，不是新 phase。沿用文档所属的现有 phase：建卡 plan、施工 batch、审核 plan-review/batch-review/workflow-final/e2-code-review、决策 decision、收口 human-acceptance；不使用 watcher phase，不改九值闭集或 batch 枚举。每次写明请求标识、原阶段/路径、候选版本或文件摘要、结论/证据、精确可写文件和待核责任方。document 的 path=document-<请求标识>，成功 verdict=SYNCED，仅表示已同步；缺证/冲突/过期写 BLOCKED 和 reason。信号文件用独立请求名，如 DONE.<phase>.document-<请求标识>.md；重试另取请求标识，不覆盖历史。SYNCED/READY 不能替代执行、复核或人验 PASS。
 - **复核代笔**：reviewer 独立检查候选并生成原始结果，自写 verdict=READY_FOR_DOCUMENT 的阶段 signal，编排仅据此派文档。document 写报告并发 SYNCED 后，同一 reviewer 核对结论、级别、遗漏、证据和适用版本，再另写该路径确认 signal（不同文件名，原 signal 保留）。仅 reviewer 确认可用于原路径放行；原始 FAIL/REVISE 不得转成 PASS。代笔错误回 document，不重跑施工或重置计数；实质发现改变仍走原路径整改/轮次。文字来源确认不是新增复核轮，也不替代后续 fresh reviewer 独立审候选与原始证据。
-- **其它记录**：机械进度按原始结果回填；方案、决定、模型配置与验收状态由原责任方确认再供后续消费。人验只引用用户真实判断，human-acceptance 不授予代签权。编排核身份、路径、版本和确认引用，不替 reviewer 判断内容。确认记录指向具体章节/结论与版本；无关章节追加不使旧确认失效，修改已确认内容则重新核对。
+- **其它记录**：机械进度按原始结果回填；方案、决定、模型配置与验收状态由原责任方确认再供后续消费。人验只引用用户真实判断，human-acceptance 不授予代签权；决定与知会写入 findings，执行策略只放对应指针，progress 不放决定。编排核身份、路径、版本和确认引用，不替 reviewer 判断内容。确认记录指向具体章节/结论与版本；无关章节追加不使旧确认失效，修改已确认内容则重新核对。
 - **顺序与恢复**：明确委托的人工文档由 document 顺序写，原责任方不再同时写入这些文件；未委托文件保留原写者。可按需复用同一文档会话，写完本次 signal 即停，下次由编排派单，不常驻轮询。验证/复核期间冻结相关候选文件；并发修改、来源漂移、缺证或中断时保留事实及待同步项，不猜、不覆盖他人改动。恢复核原始来源、请求与当前文件，避免重复追加；必要记录未同步不宣称交棒、不清理现场。失联保留待同步，换实例沿用确认规则，不静默恢复多写者。
 - **效果**：由实际执行侧评估准确性、遗漏、及时性/可接续性、交接纠错负担及可得耗时用量，document 只转录。费用未知写未知，无可比基线不声称省钱，不为评估新增台账。这些是可演练、可审计的协议约束，现有工具不提供沙箱隔离或自动阻断保证。
 - **优先级**：仅覆盖 single-task 中明确委托文件的默认 sole writer、取证段中的人工落笔要求及总表代笔要求；决定权、取证、RELAY_RECEIPT、独立复核、授权和 watcher 零写入不变。四类恢复依据保留：原角色 signals、经责任方确认的报告及原始来源、经编排核对的执行策略、Herdr 实态；不能只凭文档摘要恢复。
@@ -392,7 +396,7 @@ relay_log.py lint --plan <plan_dir> --amend-check after  --repo <repo> --snapsho
 
 ### 恢复依据
 
-恢复权威只有四类：原角色自写的 durable signals、独立 review/decision 工件及其原始来源、由 orchestrator 核对的 `execution_strategy.md`、Herdr 实态。`progress.md` 只是施工证据索引、watcher 通知只是即时提示，二者都不是运行真相；恢复/重启时从四类权威重建，不依赖终端存活状态。
+恢复权威只有四类：原角色自写的 durable signals、独立 review/decision 工件及其原始来源、由 orchestrator 核对的 `execution_strategy.md`、Herdr 实态。`progress.md` 只是施工证据索引、watcher 通知只是即时提示，二者都不是运行真相；恢复/重启时从四类权威重建，不依赖终端存活状态。 `findings.md` 是决定与遗留的检索入口，沿其来源引用回查上述独立工件及用户原始裁决，不新增第五类运行权威；摘要缺源、冲突或仍待用户决定时，不推进依赖该决定的动作。
 
 ## 放弃项
 

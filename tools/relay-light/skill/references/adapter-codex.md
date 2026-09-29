@@ -172,7 +172,7 @@ ledger_silent → 核 Herdr 状态 + pane 末行 + 允许路径产出 三者是�
 ### 启动前 model-allocation gate
 
 - 拉起任何 agent 之前，orchestrator 先向用户展示全部拟启动角色/实例的模型与推理档提案表并明确询问确认；推荐默认仅是提案、不写死模型，用户可逐角色修改。**未获明确确认不得启动任何 agent**——缺询问、先启动后补确认、按未确认的默认选择直接拉起、角色/实例/模型/推理档变更免确认，均属违规。
-- 确认后由 orchestrator 机械地把确认来源、角色/实例、模型、推理档写入任务工作区 `execution_strategy.md`；未启动的 tab/pane 标 pending，启动后补齐实际 Herdr workspace/tab/pane 与观察来源并逐项比对。`execution_strategy.md` 仅 orchestrator 在启动/更换角色及关联总表/维护人交接时维护，其余角色与 watcher 默认只读；启用 document 时按核心首次建卡/代笔与核对合同执行，模型决定不转移；`roles.toml` 仍只是完整模式缺省模板，不为本模式写死模型。
+- 确认后由 orchestrator 机械地把确认来源、角色/实例、模型、推理档写入任务工作区 `execution_strategy.md`；未启动的 tab/pane 标 pending，启动后补齐实际 Herdr workspace/tab/pane 与观察来源并逐项比对。`execution_strategy.md` 仅 orchestrator 在授权/停止线、角色/模型/实例、总表关联/维护人、派单路由、批次/clear 闸或提交/checkpoint SHA 变化时维护，其余角色与 watcher 默认只读；启用 document 时按核心首次建卡/代笔与核对合同执行，模型决定不转移；`roles.toml` 仍只是完整模式缺省模板，不为本模式写死模型。
 - 恢复时可沿用已有明确确认且分配未变的快照；新增/更换角色或实例、换模型或推理档必须再次询问确认。超时、静默或最大工具权限均不推定确认；最大工具权限不扩张 commit/push/PR/merge/deploy/verify/人验授权。询问由当前主会话执行，不为询问另启 agent。
 
 ### 拓扑与拉起
@@ -180,6 +180,12 @@ ledger_silent → 核 Herdr 状态 + pane 末行 + 允许路径产出 三者是�
 - 一张任务卡 = 一个 Herdr workspace；每个角色实例一个独立具名 pane：`herdr pane split --current --direction right --cwd <任务 worktree> --no-focus`（第二次 `split` 起显式传目标 pane，不用 `--current`），随后按上方 kind 命令与环境预检拉起；claude kind 仍走 `herdr pane run` + `agent rename` 的 shim 规避。模型/推理档以 `execution_strategy.md` 中用户确认的分配为准。
 
 用户明确要求在当前 space 的标签页执行时，复用已核实的 workspace ID，为本卡角色分别创建具名 tab；不新建 space，不依赖失效的继承 ID 或 UI 焦点。同一 Git 任务仍只用一个 worktree，共享 space 不共享写权。
+
+### 决定落点与写者
+
+执行核心 SKILL「durable signal 与写者边界」：用户裁决（点选/确认时间与原始来源，未知时间标未知）、decider 摘要与独立 decision 引用、D 项状态、范围外发现/P3 去处和给用户的知会统一落 `findings.md`。遗留须用户明确点头并标去处；知会或沉默不是同意。orchestrator 仅记录已有裁决与引用，coder 按派单记发现/证据；基线归因及关闭仍仅 coder 按审核流程回写，编排不代判。编排安排同文件错开写，每次指定章节与唯一写者；复核期间冻结相关候选内容，启用 document 才按原责任方确认代笔。
+
+`execution_strategy.md` 只记上述编排事实，业务决定只放 findings 对应条目的指针；授权/模型确认事实仍在执行策略。`progress.md` 仅当前 batch coder 追加施工里程碑与证据引用，不放决定。主会话人验结果仍引用真实用户来源记录到 findings，不能用开工授权或摘要代签。此段仅适用 single-task；完整模式仍按核心的 coder/scribe 合同记录，不套用本段写权。
 
 ### 文档 agent 派单
 
@@ -199,7 +205,8 @@ ledger_silent → 核 Herdr 状态 + pane 末行 + 允许路径产出 三者是�
 对照基线：<整卡/批次用途；完整 SHA；选择依据；不适用须说明>
 执行合同：<cwd；解释器；完整命令；必要环境/依赖；收集范围；串行要求>
 临时现场：<允许位置/准备方式；所需资源；证据保存与清理责任；无则写无>
-证据与写者：<精确路径及唯一写者；默认 findings 由 coder 写、review 由 reviewer 写；启用 document 时人工文档由其代笔，原始结论/signal 仍由原角色写>
+证据与写者：<精确路径/章节及本次唯一写者；findings 的决定记录由编排或获派 coder 错开追加，基线归因仍仅 coder 写、review 由 reviewer 写；启用 document 时按确认代笔，原始结论/signal 仍由原角色写>
+决定引用：<findings 条目与用户/decision 原始来源；无则写无；缺源/冲突/待决定时不推进依赖动作，回报编排澄清>
 通过/阻塞：<必需通过项；允许失败集合及审核/授权引用；缺证或新增失败的 BLOCKED 出口>
 硬规则：你是 worker：不拉终端、不派活、不回头问用户；先跑 RELAY_RECEIPT preflight；
 卡住写本角色精确 BLOCKED 单行 signal 不憋死；凭据/密钥值永不写进任何工件。
@@ -219,7 +226,7 @@ ledger_silent → 核 Herdr 状态 + pane 末行 + 允许路径产出 三者是�
 
 ### 恢复依据
 
-恢复权威只有四类：原角色自写的 durable signals、独立 review/decision 工件及其原始来源、由 orchestrator 核对的 `execution_strategy.md`、Herdr 实态。`progress.md` 只是施工证据索引、watcher 通知只是即时提示，二者都不是运行真相；本模式不存在 relay 账本。恢复/重启从四类权威重建，不依赖终端存活状态。
+恢复权威只有四类：原角色自写的 durable signals、独立 review/decision 工件及其原始来源、由 orchestrator 核对的 `execution_strategy.md`、Herdr 实态。`progress.md` 只是施工证据索引、watcher 通知只是即时提示，二者都不是运行真相；本模式不存在 relay 账本。恢复/重启从四类权威重建，不依赖终端存活状态。 `findings.md` 是决定与遗留的检索入口，沿其来源引用回查上述独立工件及用户原始裁决，不新增第五类运行权威；摘要缺源、冲突或仍待用户决定时，不推进依赖该决定的动作，回原责任方澄清。
 
 ## 红线
 
