@@ -1,0 +1,102 @@
+{
+  "task": "issue-86",
+  "phase": "workflow-final",
+  "path": "lesson",
+  "review_round": 1,
+  "remediation_count": 0,
+  "reviewer_session": "rlt86-final-lesson (w4K:t7/p7 per execution_strategy.md, swe-2-high)",
+  "reviewer_independence": "fresh session; not involved in construction or process docs; lesson path only — dispatch/evidence lesson recurrence + record honesty, not a repeat of code/consistency review",
+  "head_self_reported": "e92b5356df0026be28abd84176a621870fb562c7",
+  "candidate_sha256": {
+    "AGENTS.md": "ab1e2b0bbf164633fe77950ba6dc89bef827a75919fed48d4317e50df09336f8",
+    "tools/relay-light/skill/SKILL.md": "70b87cace87b2723f51aca6d697cd2fef181827797cad21332af77f0f44b668d",
+    "tools/relay-light/skill/references/adapter-claude-code.md": "91bdcc10fe86ca2202db0036c8e305c4e2fc5d7716f0ad18c35ebf46da3e3614",
+    "tools/relay-light/skill/references/adapter-codex.md": "d8915f1c98b75bdd4c08819544dc39cf60ca9852174a5421c8fecc5a8994b509"
+  },
+  "candidate_hash_match": "CONFIRMED — independent sha256sum of the four worktree files equals evidence/batch-1-codex-revision.json candidate_sha256 byte-for-byte (post-F-B1-revision final candidates)",
+  "independent_verified_facts": [
+    {
+      "id": "VF-1",
+      "claim_checked": "19 structure tests pass on final candidate",
+      "result": "CONFIRMED: own rerun `python3 -m unittest discover -s tools/relay-light -p test_install_skill.py` → 'Ran 19 tests', OK, exit 0"
+    },
+    {
+      "id": "VF-2",
+      "claim_checked": "docs-only scope; no code/config/test change",
+      "result": "CONFIRMED: `git diff HEAD --stat` = AGENTS.md + SKILL.md + two adapters + dev_plan draft tail note only; roles.toml and test_install_skill.py untouched; workspace dir untracked"
+    },
+    {
+      "id": "VF-3",
+      "claim_checked": "source-attribution correction consistency",
+      "result": "PARTIAL: review.md 确认记录 and progress.md 附注纠正 correctly attribute document-role/path/verdict scheme to Codex main session (not user); BUT dev_plan/drafts/issue-86-document-agent.md tail note line 101 still reads '实施方案精简（用户 2026-09-28）' with no adjacent superseded marker — same misattribution survives in a third copy (see F-L1)"
+    },
+    {
+      "id": "VF-4",
+      "claim_checked": "document-effect transcription and signal ordering",
+      "result": "CONFIRMED: review.md 文档委托效果评价 section now carries codex-record-effect.json verbatim (five dimensions + evidence_boundary + judgment + not_claimed); review.md mtime 00:22:45 precedes DONE.human-acceptance.document-effect.md SYNCED 00:22:46 — signal emitted after artifact write, ordering correct"
+    },
+    {
+      "id": "VF-5",
+      "claim_checked": "dispatch integrity for this review (候选-4 non-repeat)",
+      "result": "CONFIRMED: every path named in this dispatch exists — task.md/task_plan.md/findings.md, evidence/batch-1-codex-revision.json, DONE.batch-review.reviewer-confirmed-1.md, docs/modules/dh-relay/knowledge/教训库-候选.md (90 candidates), workspace/RLT_11/findings.md; dispatch used 'diff vs HEAD' + self-report rather than a hard-coded stale range (候选-65 applied)"
+    },
+    {
+      "id": "VF-6",
+      "claim_checked": "module knowledge directory existence",
+      "result": "CONFIRMED ABSENT: docs/modules/relay-light/knowledge/ does not exist — this card's lessons can only land in workspace lesson_candidates.md; dh-relay module has 教训库-候选.md but no adjudicated 正册 教训库.md"
+    },
+    {
+      "id": "VF-7",
+      "claim_checked": "missing-evidence fail path exercised honestly",
+      "result": "CONFIRMED: BLOCKED.batch.document-missing-source.md is a precise single-line signal (reason=missing_evidence); findings F-011 records it as an authorized probe, not disguised as a real card blocker; local 19-test green was not substituted for the missing source"
+    },
+    {
+      "id": "VF-8",
+      "claim_checked": "RELAY_RECEIPT fail-closed branch",
+      "result": "N/A by fact: RELAY_RECEIPT unset in this process env — normal worker path taken; no RELAY_* variable touched"
+    }
+  ],
+  "lesson_recurrence_scan": {
+    "repeated": [
+      {
+        "lesson_family": "候选-34（证据/记录转录不许手抄编造）+ 候选-11（修正只落在被点名的实例）",
+        "instance": "builder#docs 首版 task.md 无依据加入 roles.toml 条件写权、并把 Codex 实施方案记为「用户修正」；两处经主会话/plan-review 指出后在 progress.md+review.md 更正并保留原记录，但 dev_plan 草案尾注（line 101）同一错归因未扫到——转录错误的修正没有覆盖全部同文副本",
+        "already_partially_recorded": "codex-record-effect.json accuracy 维度 + progress.md 附注纠正 + plan-confirm-1.json residual 均如实登记；draft 尾注残留为本路新发现"
+      }
+    ],
+    "applied_not_repeated": [
+      "候选-40（模型身份取证）：执行者/复核者按用户裁决 B 以 fresh 实例+argv 核验 swe-2-high 为准，未把不可核验的模型自报当独立性判据",
+      "候选-87（机器强制只读须探测）：review.md 如实登记「侦测型独立审核，非机器强制只读」，未把命令行参数写成环境事实",
+      "候选-89（同名枚举分层）：SYNCED≠PASS 在 SKILL/双 adapter/AGENTS 四方一致声明，本卡 SYNCED signal 未被当 PASS 路由消费（batch-confirm-1.json objects_checked 明记）",
+      "候选-49/68（终态证据在最终候选上重取）：F-B1 措辞修订后 batch-confirm-1.json 对修订候选复算 hash + 复跑 19 tests，未沿用旧证据",
+      "候选-12/44（结论不超证据、三态如实）：codex-record-effect.json not_claimed 三条 + DA-01~08 部分/待核/人判三态登记；F-B3/F-010 如实记未跑路径",
+      "候选-52（派活事故落账）：w4S→w4K 空间迁移与旧 ID 过期已记 progress/execution_strategy",
+      "RLT_11 F-005（通知投递确认）：SKILL.md line 98 已沉淀为协议规则；F-007（pane 状态≠agent 状态）精神体现在 codex-record-effect「不能从文档摘要推断 agent 仍在工作」"
+    ]
+  },
+  "findings": [
+    {
+      "id": "F-L1",
+      "severity": "P2",
+      "location": "docs/modules/relay-light/dev_plan/drafts/issue-86-document-agent.md 尾注 line 101",
+      "reason": "「实施方案精简（用户 2026-09-28）：document 为 opt-in 新角色…path=document-<id>，verdict=SYNCED」把 Codex 主会话提出的实施方案记为用户口径；该归因错误已在 progress.md/review.md 更正（权威区分存在），但本卡交付 diff 内的这份草案尾注无相邻 superseded/更正标记，读者绕过 review.md 会拿到错误归因",
+      "suggestion": "收口回填时在该尾注追加一行更正标记（append + 指向 review.md 确认记录），不改原文；不必阻塞本批放行"
+    },
+    {
+      "id": "F-L2",
+      "severity": "P3",
+      "location": "docs/modules/relay-light/knowledge/（不存在）",
+      "reason": "relay-light 模块无 knowledge 目录，本卡教训只有 workspace lesson_candidates.md 一个落点，无模块级候选区承接",
+      "suggestion": "如实记录现状；是否给 relay-light 建模块级教训落点属范围外决策，供主会话/用户裁"
+    },
+    {
+      "id": "F-L3",
+      "severity": "P3",
+      "location": "lesson_candidates.md（待登记候选）",
+      "reason": "本卡可复用教训：转录型角色（document）的错误形态不是手抄数字而是「来源归属错记 + 无依据扩写」；派单应冻结「每条关键断言的来源归属」供核对，且更正时必须扫全部同文副本（候选-11 的文档形态）",
+      "suggestion": "收口转录时将该候选登入 lesson_candidates.md；是否升模块教训库按 F-L2 处置"
+    }
+  ],
+  "verdict": "READY_FOR_DOCUMENT",
+  "verdict_basis": "无 P0/P1。本卡对既有派活/证据教训总体是「应用而非重犯」：模型 gate、侦测型如实登记、SYNCED≠PASS 分层、修订候选终态重取证、缺证 BLOCKED 反例闭环均有实证；唯一新发现是候选-34/11 家族的文档形态残留（F-L1，P2——权威更正已存在于 review.md，仅草案尾注缺相邻更正标记）。记录诚实性核验通过：四候选 hash 逐字相符、19 tests 独立复跑绿、docs-only 范围守住、效果原评转录与 signal 时序正确、not_claimed 三条均未越界宣称。"
+}

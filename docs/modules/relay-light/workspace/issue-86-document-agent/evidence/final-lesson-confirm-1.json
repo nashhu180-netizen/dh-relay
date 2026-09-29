@@ -1,0 +1,36 @@
+{
+  "task": "issue-86",
+  "phase": "workflow-final",
+  "path": "lesson",
+  "review_round": 1,
+  "remediation_count": 0,
+  "type": "transcription_confirmation",
+  "reviewer_session": "rlt86-final-lesson (w4K:t7/p7 per execution_strategy.md, swe-2-high)",
+  "head_self_reported": "e92b5356df0026be28abd84176a621870fb562c7",
+  "objects_checked": {
+    "evidence/final-lesson-1.json": "own round-1 artifact, unchanged since write",
+    "DONE.workflow-final.document-final-summary.md": "verdict=SYNCED, path=document-final-summary; correctly cites both final-*.json sources; not consumed as PASS",
+    "review.md": "lesson row records READY_FOR_DOCUMENT (P0/P1=0, 非正式 PASS，待原 reviewer 核对转录) + findings F-L1/L2/L3 with correct severities",
+    "findings.md": "F-013/F-014 added for F-L1/F-L2",
+    "lesson_candidates.md": "L-01 added for F-L3; header summary mirrors 重犯扫描结论",
+    "dev_plan/drafts/issue-86-document-agent.md": "tail note line 102 now carries adjacent 更正 marker per F-L1"
+  },
+  "final_candidate_sha256": {
+    "AGENTS.md": "ab1e2b0bbf164633fe77950ba6dc89bef827a75919fed48d4317e50df09336f8",
+    "tools/relay-light/skill/SKILL.md": "70b87cace87b2723f51aca6d697cd2fef181827797cad21332af77f0f44b668d",
+    "tools/relay-light/skill/references/adapter-claude-code.md": "91bdcc10fe86ca2202db0036c8e305c4e2fc5d7716f0ad18c35ebf46da3e3614",
+    "tools/relay-light/skill/references/adapter-codex.md": "d8915f1c98b75bdd4c08819544dc39cf60ca9852174a5421c8fecc5a8994b509",
+    "drift_check": "unchanged vs final-lesson-1.json round-1 candidates; product files untouched by transcription pass"
+  },
+  "mapping_check": {
+    "verdict_transcription": "faithful — review.md lesson row records READY_FOR_DOCUMENT explicitly as 非正式 PASS pending reviewer confirmation",
+    "findings_transcription": "F-L1→F-013 (P2), F-L2→F-014 (P3), F-L3→lesson_candidates L-01; severities and substance preserved; L-01 fields (分类/现象/根因/可复用做法/建议落点) match final-lesson-1.json F-L3",
+    "f_l1_resolution": "draft tail note line 102 now has adjacent 「更正（2026-09-29，教训复核 F-L1）」 marker stating the document-role/path/verdict scheme was Codex-proposed not user-originated; original text preserved; pointer to review.md 确认记录 — matches F-L1 suggestion (append + superseded marker, no history edit)",
+    "f_c1_honesty": "CONFIRMED unfixed — findings F-012 and review.md consistency row both record F-C1 (adapter-codex pane/tab unit inconsistency) as P2 non-blocking, 主会话决定本轮保留未修; not disguised as resolved",
+    "effect_addendum": "review.md addendum transcribes evidence/codex-record-effect-addendum.json verbatim (producer=Codex main, cites final-lesson-1.json#F-L1); accurately notes repeated-copy miss increases verification burden without changing original assessment",
+    "evidence_links": "all cited paths exist; progress.md E-011/E-012 entries accurate",
+    "no_overclaim": "人类签名区 still 待收口; no user acceptance signed; SYNCED not routed as PASS anywhere"
+  },
+  "verdict": "PASS",
+  "verdict_basis": "Transcription of final-lesson-1.json into review.md/findings.md/lesson_candidates.md is faithful in conclusion, severity levels, sources and evidence mapping; F-L1 adjacent correction verified in draft; F-C1 honestly recorded unfixed; candidate hashes drift-free; no transcription errors and no new P1. PASS routable for lesson path."
+}

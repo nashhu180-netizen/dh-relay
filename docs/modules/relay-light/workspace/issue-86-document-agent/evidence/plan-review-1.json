@@ -1,0 +1,82 @@
+{
+  "task": "issue-86",
+  "phase": "plan-review",
+  "review_round": 1,
+  "remediation_count": 0,
+  "reviewer_session": "plan-reviewer#1 (rlt86-plan-review, w4K:t4/p4, swe-2-high, session=kpi-agg)",
+  "reviewer_independence": "fresh session, not involved in card building or planning; read-only review",
+  "candidates": {
+    "task.md": "sha256:899115dd82242c56082cda7ccebcd45ddfbc26d2017eb871f60ce02d416cfaea",
+    "task_plan.md": "sha256:d4959527e9eb78da0797a1464035c2f4b258ca08997ead730ec499aab6edf900",
+    "execution_strategy.md": "sha256:3ce17703350a924dca662467b101db26dcaa83a9ce6c020adcc03d1d2a4f7045",
+    "progress.md": "sha256:db754ce237dfdb85b8c0b7d00eb0002decb82eea55a6684cc6b76e715139987e",
+    "review.md": "sha256:157d302e9f4477d085c6a90091fff3a0623d8314498fab7701fd402705b7afe8",
+    "findings.md": "sha256:2c8cb1e50860f602fc778bfdaa2295e5a90433d353cae8c42f6882fc4919270f",
+    "lesson_candidates.md": "present (empty template awaiting workflow-final lesson reviewer)",
+    "DONE.plan.builder-docs.md": "sha256:b7ce453b570d5591c229eeb2ee26543cd4d3646dc01b745b1f0c6eca6d231db8"
+  },
+  "independent_verified_facts": [
+    {
+      "id": "VF-1",
+      "claim_checked": "task_plan/task.md claim that nine-value phase closed set is frozen by test_install_skill.py, so document must be a role not a new phase",
+      "result": "CONFIRMED: tools/relay-light/test_install_skill.py:155-158 defines NINE_PHASE_SET with exactly `plan`/`plan-review`/`batch`/`batch-review`/`workflow-final`/`e2-code-review`/`decision`/`watcher`/`human-acceptance`; test_phase_closed_set_is_nine_phases_not_legacy_five (line 198) assertsIn this string in SKILL.md + both adapters. Adding a phase would break the frozen test."
+    },
+    {
+      "id": "VF-2",
+      "claim_checked": "task_plan §1 claim that current SKILL/adapters/AGENTS have no document role, no SYNCED verdict, sole writer unchanged",
+      "result": "CONFIRMED: grep for 'document'/'SYNCED' over tools/relay-light/skill/SKILL.md, references/adapter-claude-code.md, references/adapter-codex.md and AGENTS.md returns 0 matches; sole-writer rule at SKILL.md single-task section still assigns execution_strategy to orchestrator, review artifacts to reviewers, progress to batch coder."
+    },
+    {
+      "id": "VF-3",
+      "claim_checked": "baseline claim in task.md line 7",
+      "result": "CONFIRMED: `git rev-parse HEAD` = e92b5356df0026be28abd84176a621870fb562c7 on branch docs/issue-86-document-agent; worktree dirty only with this card's own artifacts (workspace dir + draft tail note), matching progress.md E-001."
+    },
+    {
+      "id": "VF-4",
+      "claim_checked": "draft tail scope-adjustment note referenced by task.md line 6",
+      "result": "CONFIRMED: dev_plan/drafts/issue-86-document-agent.md ends with '本轮范围调整注记（2026-09-28 追加）' recording light-tier single-task authorization, document-as-role (not phase), path=document-<id>, verdict=SYNCED."
+    },
+    {
+      "id": "VF-5",
+      "claim_checked": "roles.toml nature (relevant to scope carve-out finding F-R1)",
+      "result": "CONFIRMED: tools/relay-light/skill/roles.toml is the default role-routing template shipped inside the skill dir ('每个计划复制到自己的 config/roles.toml 后按需改，计划级 config 才是运行时唯一来源'); it has no [document] section today."
+    }
+  ],
+  "master_session_observations_check": {
+    "old_new_phase_wording_in_plan": "ELIMINATED — task_plan §3 now reads '新增 opt-in document 角色（非 phase）…不新增 document phase' and task.md 协议要点 states '不新增 phase' explicitly.",
+    "roles_toml_conditional_wording_in_task": "PARTIALLY RETAINED — task.md line 54 still carries a bounded conditional ('roles.toml 仅在主会话判定需要登记 document 角色档位时动（属文档/配置边界，施工时明示）'). See finding F-R1."
+  },
+  "findings": [
+    {
+      "id": "F-R1",
+      "severity": "P2",
+      "file": "task.md (lines 52 vs 54)",
+      "issue": "Scope line 52 says '不改运行代码 / 配置 / 测试代码' while line 54 leaves a conditional door open to touch tools/relay-light/skill/roles.toml. roles.toml is the skill-shipped routing template (not runtime config — plan-level copies are the runtime source), and no [document] entry is strictly required since model allocation already goes through the model-allocation gate with explicit user confirmation (this card itself was launched via argv-verified swe-2-high, not roles.toml). The residual wording is bounded and gated, but a reader could still interpret '配置' freeze as covering it.",
+      "suggestion": "At construction prefer NOT touching roles.toml — the protocol text plus model-allocation gate confirmation is sufficient for an opt-in role. If the master session judges a template entry necessary, mark it explicitly in progress.md and the PR body as a skill-template (non-runtime) change; alternatively tighten task.md wording now to 'roles.toml 不动；确需登记时再向用户明示'. Not blocking."
+    },
+    {
+      "id": "F-R2",
+      "severity": "P3",
+      "file": "execution_strategy.md (header note)",
+      "issue": "execution_strategy.md is one of the four recovery authorities per SKILL.md, yet this card has it written by builder#docs under user exception. If a future session recovers mid-card, it will treat a doc-agent-transcribed file as authority.",
+      "suggestion": "Already honestly marked via header note; on recovery, re-verify session/tab/pane claims against Herdr live state (which the protocol already requires). No change needed."
+    },
+    {
+      "id": "F-R3",
+      "severity": "P3",
+      "file": "task_plan.md S5/S6",
+      "issue": "batch-reviewer and both workflow-final reviewers are listed pending with no launch-time model re-confirmation step explicitly restated in the plan table (model-allocation gate covers it via SKILL.md).",
+      "suggestion": "None required — execution_strategy already records 'pending（未启动）' and the gate mandates re-confirmation on new instance launch. Informational only."
+    }
+  ],
+  "completeness_check": {
+    "seven_piece_set": "complete (task/task_plan/execution_strategy/progress/findings/review/lesson_candidates) + DONE.plan.builder-docs.md signal well-formed",
+    "executability": "plan is executable: single batch, S1-S7 ordered, executor per step named, fresh reviewers for all paths, FAIL route back to doc agent (max 2 rounds) consistent with SKILL.md lifecycle",
+    "writer_vs_reviewer_conflicts": "none — producers keep their own signals/structured conclusions; doc agent transcribes only; builder and master session do not self-review; Codex effect evaluation is transcribed verbatim into review.md reserved area",
+    "cost_evaluation_path": "present — DA-07 records only obtainable usage/latency values, no fabricated savings; Codex five-dimension original assessment required as closure input",
+    "recovery_path": "present — findings.md '可恢复的下一步', execution_strategy real-time IDs, four recovery authorities unchanged",
+    "no_overclaim": "DA-01 partial coverage and DA-08 human-judgment gates are explicitly guarded in multiple places; builder DONE used verdict=READY (not PASS), consistent with the not-yet-routable rule"
+  },
+  "verdict": "READY_FOR_DOCUMENT",
+  "verdict_basis": "No P0/P1 findings. Plan is complete, internally consistent with the frozen nine-phase closed set, honest about exception boundaries, and the two master-session observations are resolved (phase wording eliminated) or reduced to a bounded conditional (roles.toml, flagged F-R1/P2)."
+}

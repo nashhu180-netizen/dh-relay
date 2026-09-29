@@ -1,0 +1,51 @@
+{
+  "task": "issue-86",
+  "phase": "batch-review",
+  "batch": 1,
+  "path": "batch",
+  "review_round": 1,
+  "remediation_count": 0,
+  "type": "transcription_confirmation",
+  "reviewer_session": "batch-reviewer#1 (w4K:p5/t5, swe-2-high)",
+  "objects_checked": {
+    "evidence/batch-review-1.json": "sha256:53966679fdf7b3dbefd125230ebe99c7072e8cf7c4797063f48916d88b2d7af6 (unchanged since round-1 write)",
+    "review.md": "sha256:93ce5f8069d6bfaed1d2e36e304a995a558826b7b611ed379c4c367f1ea9b69a",
+    "findings.md": "sha256:ac6c90993c7b4f518354edbc66b993d665864cb70914192b3365e8bffcb7d080",
+    "progress.md": "sha256:86df17b071be02eb6e59020b1999218a712f0dae97aa74e9b70c57fe3ce0eea5",
+    "DONE.batch-review.document-summary1.md": "sha256:f16f0b567719dd08c246a2aa223570778a5aad83af3c3f6cfb8f4ef3cefb386f (verdict=SYNCED, path=document-summary1, correctly not consumed as PASS)"
+  },
+  "final_candidate_sha256": {
+    "AGENTS.md": "ab1e2b0bbf164633fe77950ba6dc89bef827a75919fed48d4317e50df09336f8",
+    "tools/relay-light/skill/SKILL.md": "70b87cace87b2723f51aca6d697cd2fef181827797cad21332af77f0f44b668d",
+    "tools/relay-light/skill/references/adapter-claude-code.md": "91bdcc10fe86ca2202db0036c8e305c4e2fc5d7716f0ad18c35ebf46da3e3614",
+    "tools/relay-light/skill/references/adapter-codex.md": "d8915f1c98b75bdd4c08819544dc39cf60ca9852174a5421c8fecc5a8994b509"
+  },
+  "revision_check": {
+    "F-B1_fix": "CONFIRMED pure wording fix — SKILL.md:380 now '原责任方不再同时写入这些文件' (was '原责任方停止并写'); semantic unchanged, only SKILL.md hash moved (7eb472f…→70b87ca…), other three files identical to round-1 candidates",
+    "revision_evidence": "evidence/batch-1-codex-revision.json candidate_sha256 matches current worktree files byte-for-byte; declares followup 'F-B1措辞修正'",
+    "tests_rerun": "independent rerun on revised candidate: `python3 -m unittest discover -s tools/relay-light -p test_install_skill.py` → Ran 19 tests, OK, exit 0"
+  },
+  "mapping_check": {
+    "verdict_transcription": "review.md batch-review line records READY_FOR_DOCUMENT, P0/P1=0, explicitly marked '非正式 PASS，待责任方核对转录' — faithful to batch-review-1.json verdict",
+    "findings_transcription": "F-B1/F-B2/F-B3 all P3 with substance preserved; findings.md F-008/F-009/F-010 mirror them; F-008 correctly records the resolved wording fix + new hash",
+    "evidence_links": "review.md references evidence/batch-review-1.json + DONE.batch-review.reviewer-1.md correctly; progress.md E-006/E-007 accurate and honestly states '本棒只转录登记，未写 PASS'",
+    "reviewer_id_note": "transcription writes 'w4K:t5/p5' vs my dispatch 'w4K:p5/t5' — same instance identifiers, ordering normalized to match other rows; not material"
+  },
+  "f_b3_fact_correction": {
+    "original_json_unchanged": "batch-review-1.json F-B3 wording kept as written (not retro-edited per dispatch)",
+    "corrected_fact": "plan-review transcription WAS exercised this card — DONE.plan-review.document-plan-summary.md (document SYNCED, path=document-plan-summary) + DONE.plan-review.reviewer-confirmed-1.md (reviewer PASS) both exist and were verified; unexercised transcription paths are e2-code-review/decision (and human-acceptance 收口 not yet reached)",
+    "transcription_status": "review.md batch-review line and findings.md F-010 both carry the corrected fact inline ('勿抄成 plan-review 未覆盖') — correctly attributed to master-session supplement"
+  },
+  "additional_observed_facts": [
+    "document exercised the missing-evidence fail path live: BLOCKED.batch.document-missing-source.md (verdict=BLOCKED, reason=missing_evidence) for a deliberately-missing probe source, then proceeded — consistent with protocol's 缺证→BLOCKED contract (per findings.md F-011 this was an authorized probe, not a real card blocker)",
+    "DONE.batch.document-batch1.md (verdict=SYNCED) shows batch-phase process-doc transcription also exercised before this review"
+  ],
+  "residual_observations": [
+    {
+      "severity": "P3",
+      "note": "F-B2 (adapters' same-space tab-reuse paragraph beyond the four task_plan bullets) and F-B3 residual (e2-code-review/decision transcription unexercised) remain informational for closure-time DA coverage registration; neither blocks this batch."
+    }
+  ],
+  "verdict": "PASS",
+  "verdict_basis": "F-B1 resolved as pure wording fix with hashes and 19-test rerun re-verified on the revised candidate; document SYNCED transcription into review.md/findings.md/progress.md is faithful in conclusion, severity levels and evidence mapping; F-B3 fact corrected via master-session supplement and recorded accurately; no new P1. PASS is routable for batch=1 review path."
+}

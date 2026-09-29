@@ -159,7 +159,7 @@ ledger_silent → 核 Herdr 状态 + pane 末行 + 允许路径产出 三者是�
 
 ### 总表关联与交棒
 
-启动/恢复时先执行 `SKILL.md`「卡级总表维护与交棒核对」：在已有 `execution_strategy.md` 登记总表路径和唯一维护会话，无关联则明确记无。等待、卡级结果改变、停下及交棒时由维护会话更新总表；交棒前核对状态、下一步、证据及日期，无法完成则报告“总表待同步”，不宣称已交棒。这里允许维护会话读写卡级总表，不允许 worker/watcher 读写完整执行计划或更新总表，也不启动新角色。总表不是运行真相，恢复仍以本节四类权威为准。
+启动/恢复时先执行 `SKILL.md`「卡级总表维护与交棒核对」：在已有 `execution_strategy.md` 登记总表路径和唯一维护会话，无关联则明确记无。等待、卡级结果改变、停下及交棒时由维护会话更新总表；交棒前核对状态、下一步、证据及日期，无法完成则报告“总表待同步”，不宣称已交棒。这里允许维护会话读写卡级总表，不允许 worker/watcher 读写完整执行计划；默认不委托总表写入。启用 document 时登记维护方可按核心分工顺序委托总表代笔，watcher 仍零写入。总表不是运行真相，恢复仍以本节四类权威为准。
 
 ### 编排边界与验证派单
 
@@ -170,12 +170,22 @@ ledger_silent → 核 Herdr 状态 + pane 末行 + 允许路径产出 三者是�
 ### 启动前 model-allocation gate
 
 - 拉起任何 agent 之前，orchestrator 先向用户展示全部拟启动角色/实例的模型与推理档提案表并明确询问确认；推荐默认仅是提案、不写死模型，用户可逐角色修改。**未获明确确认不得启动任何 agent**——缺询问、先启动后补确认、按未确认的默认选择直接拉起、角色/实例/模型/推理档变更免确认，均属违规。
-- 确认后由 orchestrator 机械地把确认来源、角色/实例、模型、推理档写入任务工作区 `execution_strategy.md`；未启动的 tab/pane 标 pending，启动后补齐实际 Herdr workspace/tab/pane 与观察来源并逐项比对。`execution_strategy.md` 仅 orchestrator 在启动/更换角色及关联总表/维护人交接时维护，其余角色与 watcher 只读；`roles.toml` 仍只是完整模式缺省模板，不为本模式写死模型。
+- 确认后由 orchestrator 机械地把确认来源、角色/实例、模型、推理档写入任务工作区 `execution_strategy.md`；未启动的 tab/pane 标 pending，启动后补齐实际 Herdr workspace/tab/pane 与观察来源并逐项比对。`execution_strategy.md` 仅 orchestrator 在启动/更换角色及关联总表/维护人交接时维护，其余角色与 watcher 默认只读；启用 document 时按核心首次建卡/代笔与核对合同执行，模型决定不转移；`roles.toml` 仍只是完整模式缺省模板，不为本模式写死模型。
 - 恢复时可沿用已有明确确认且分配未变的快照；新增/更换角色或实例、换模型或推理档必须再次询问确认。超时、静默或最大工具权限均不推定确认；最大工具权限不扩张 commit/push/PR/merge/deploy/verify/人验授权。询问由当前主会话执行，不为询问另启 agent。
 
 ### 拓扑与拉起
 
 - 一张任务卡 = 一个 Herdr workspace；每个角色实例一个独立具名 tab：`herdr tab create --workspace <ws> --cwd <任务 worktree> --label <角色> --no-focus`，取 `root_pane.pane_id` 后按上方 kind 命令与环境预检拉起，不在同一 tab 内 split。模型/推理档以 `execution_strategy.md` 中用户确认的分配为准。
+
+用户明确要求在当前 space 的标签页执行时，复用已核实的 workspace ID，为本卡角色分别创建具名 tab；不新建 space，不依赖失效的继承 ID 或 UI 焦点。同一 Git 任务仍只用一个 worktree，共享 space 不共享写权。
+
+### 文档 agent 派单
+
+默认由原责任方直接写文档，不要求创建独立文档 agent、终端或标签页，不登记 document 实例，也不等待其 SYNCED 信号；缺少 document 配置或信号不构成阻塞。仅在用户明确指定本卡试验时启用，并执行核心 SKILL「文档 agent（single-task 可选分工）」全部合同；以下代笔规则仅在启用时覆盖本侧默认写者描述。document 模型/实例须已确认；可委托全部获授权人工文档，也可按用户指定保留产品文档给执行者、只委托过程记录。首次建卡由主会话先给已确认分工、任务来源与创建路径，再由 document 登记执行策略，不要求先存在该文件。
+
+沿用下方九值 phase：document 是角色，path=document-<请求标识>，成功 verdict=SYNCED，独立请求文件名；不新增 phase/账本或修改 roles.toml。派单附来源版本、原阶段/路径、结论与证据、精确写路径及责任确认方。reviewer 先自写 READY_FOR_DOCUMENT 和原始结构化结果；文档代笔完成后，同一 reviewer 核对映射再另发确认 signal，原 FAIL/REVISE 不得翻成 PASS。document 的 DONE/SYNCED 不用于原路径放行，代笔纠错不算新复核轮；实质改变仍走原复核规则。任何 phase 下 document 都不执行测试、部署、提交或验收。
+
+同一获授权文档顺序写，验证期间冻结相关文件。来源过期/冲突/缺失时 BLOCKED/待同步，保留原始证据，不重跑已完成施工。效果由执行侧评价，document 只转录；恢复核经责任方确认的报告及原始来源，不信单独摘要。以上为协议约束，不是工具或沙箱硬保证。
 
 ### 派单 prompt 模板（orchestrator → worker）
 
@@ -187,7 +197,7 @@ ledger_silent → 核 Herdr 状态 + pane 末行 + 允许路径产出 三者是�
 对照基线：<整卡/批次用途；完整 SHA；选择依据；不适用须说明>
 执行合同：<cwd；解释器；完整命令；必要环境/依赖；收集范围；串行要求>
 临时现场：<允许位置/准备方式；所需资源；证据保存与清理责任；无则写无>
-证据与写者：<精确报告路径及唯一写者；findings 由 coder 写；review 由 reviewer 写>
+证据与写者：<精确路径及唯一写者；默认 findings 由 coder 写、review 由 reviewer 写；启用 document 时人工文档由其代笔，原始结论/signal 仍由原角色写>
 通过/阻塞：<必需通过项；允许失败集合及审核/授权引用；缺证或新增失败的 BLOCKED 出口>
 硬规则：你是 worker：不拉终端、不派活、不回头问用户；先跑 RELAY_RECEIPT preflight；
 卡住写本角色精确 BLOCKED 单行 signal 不憋死；凭据/密钥值永不写进任何工件。
@@ -196,8 +206,8 @@ ledger_silent → 核 Herdr 状态 + pane 末行 + 允许路径产出 三者是�
 ```
 
 - phase 闭集：`plan` / `plan-review` / `batch` / `batch-review` / `workflow-final` / `e2-code-review` / `decision` / `watcher` / `human-acceptance`；`batch=1|2|3|na`。本标头与上方 `[relay-light] worker · node=...` 互斥：见 single-task 标头不进入完整流水，见完整标头不适用本节。
-- durable signal 单行 schema：`DONE|BLOCKED task=<t> phase=<p> agent=<r>#<i> batch=<1|2|3|na> path=<path|na> review_round=<n> remediation_count=<0|1|2> verdict=<v> evidence=<repo 相对路径[,...]>`，BLOCKED 另含 `reason=<snake_case>`；值无空白。产出型 builder/coder/reviewer/decider 写完 signal 即停；orchestrator 只按 durable signal 与独立 review/decision 工件机械分发/路由，不把终端状态当真相。
-- `RELAY_RECEIPT` fail closed 分流：产出型 builder/coder/reviewer/decider 命中时只写本角色精确 `BLOCKED.*.md` 单行 signal 后立即停止；watcher 命中保持 repo/workspace 零写入，只用 Herdr prompt 非 durable 通知 orchestrator 后停、不写 BLOCKED。两分支均不得清除任何 `RELAY_*`。
+- durable signal 单行 schema：`DONE|BLOCKED task=<t> phase=<p> agent=<r>#<i> batch=<1|2|3|na> path=<path|na> review_round=<n> remediation_count=<0|1|2> verdict=<v> evidence=<repo 相对路径[,...]>`，BLOCKED 另含 `reason=<snake_case>`；值无空白。产出型 builder/coder/reviewer/decider（含已启用的 document）写完 signal 即停；orchestrator 只按 durable signal 与独立 review/decision 工件机械分发/路由，不把终端状态当真相。
+- `RELAY_RECEIPT` fail closed 分流：产出型 builder/coder/reviewer/decider（含已启用的 document）命中时只写本角色精确 `BLOCKED.*.md` 单行 signal 后立即停止；watcher 命中保持 repo/workspace 零写入，只用 Herdr prompt 非 durable 通知 orchestrator 后停、不写 BLOCKED。两分支均不得清除任何 `RELAY_*`。
 
 ### watcher 节拍与安全 Enter
 
@@ -207,7 +217,7 @@ ledger_silent → 核 Herdr 状态 + pane 末行 + 允许路径产出 三者是�
 
 ### 恢复依据
 
-恢复权威只有四类：worker/reviewer/decider 自写的 durable signals、独立 review/decision 工件、orchestrator 维护的 `execution_strategy.md`、Herdr 实态。`progress.md` 只是施工证据索引、watcher 通知只是即时提示，二者都不是运行真相；本模式不存在 relay 账本。恢复/重启从四类权威重建，不依赖终端存活状态。
+恢复权威只有四类：原角色自写的 durable signals、独立 review/decision 工件及其原始来源、由 orchestrator 核对的 `execution_strategy.md`、Herdr 实态。`progress.md` 只是施工证据索引、watcher 通知只是即时提示，二者都不是运行真相；本模式不存在 relay 账本。恢复/重启从四类权威重建，不依赖终端存活状态。
 
 ## 红线
 

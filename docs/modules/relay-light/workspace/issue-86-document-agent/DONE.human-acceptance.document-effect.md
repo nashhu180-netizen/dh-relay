@@ -1,0 +1,1 @@
+DONE task=issue-86 phase=human-acceptance agent=document#docs batch=na path=document-effect review_round=1 remediation_count=0 verdict=SYNCED evidence=docs/modules/relay-light/workspace/issue-86-document-agent/evidence/codex-record-effect.json,docs/modules/relay-light/workspace/issue-86-document-agent/DONE.batch-review.reviewer-confirmed-1.md

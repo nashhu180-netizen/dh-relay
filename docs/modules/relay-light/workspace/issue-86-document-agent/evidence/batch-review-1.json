@@ -1,0 +1,79 @@
+{
+  "task": "issue-86",
+  "phase": "batch-review",
+  "batch": 1,
+  "path": "batch",
+  "review_round": 1,
+  "remediation_count": 0,
+  "reviewer_session": "batch-reviewer#1 (w4K:p5/t5, swe-2-high)",
+  "reviewer_independence": "fresh session; not involved in construction or process docs; reviewed only the four product files' diff vs HEAD plus raw evidence",
+  "scope": "product candidate only: AGENTS.md + tools/relay-light/skill/SKILL.md + references/adapter-claude-code.md + references/adapter-codex.md, diff vs HEAD; in-flight process artifacts (progress/findings/review.md 转录区) not reviewed per dispatch",
+  "head": "e92b5356df0026be28abd84176a621870fb562c7",
+  "candidate_sha256": {
+    "AGENTS.md": "ab1e2b0bbf164633fe77950ba6dc89bef827a75919fed48d4317e50df09336f8",
+    "tools/relay-light/skill/SKILL.md": "7eb472f0eb86102eb37d202ffb85ab6dc92dd99faceeca91dcdf09ee3d01f730",
+    "tools/relay-light/skill/references/adapter-claude-code.md": "91bdcc10fe86ca2202db0036c8e305c4e2fc5d7716f0ad18c35ebf46da3e3614",
+    "tools/relay-light/skill/references/adapter-codex.md": "d8915f1c98b75bdd4c08819544dc39cf60ca9852174a5421c8fecc5a8994b509"
+  },
+  "candidate_hash_match": "CONFIRMED — sha256sum of the four worktree files equals batch-1-codex.json candidate_sha256 byte-for-byte; no drift since producer evidence",
+  "independent_verified_facts": [
+    {
+      "id": "VF-1",
+      "claim_checked": "batch-1-codex.json reports 19 tests passing, exit_code 0",
+      "result": "CONFIRMED: independent rerun `python3 -m unittest discover -s tools/relay-light -p test_install_skill.py` → 'Ran 19 tests', OK, exit 0. No user-dir install (tempdirs under /tmp only)."
+    },
+    {
+      "id": "VF-2",
+      "claim_checked": "construction is docs-only; no code/test/config/roles.toml change",
+      "result": "CONFIRMED: `git diff HEAD --stat` shows only AGENTS.md, SKILL.md, two adapter-*.md, plus dev_plan draft tail note (process record, outside the four product files). roles.toml and test_install_skill.py untouched. Workspace dir is untracked."
+    },
+    {
+      "id": "VF-3",
+      "claim_checked": "document is opt-in role, not a new phase; nine-value closed set intact",
+      "result": "CONFIRMED: SKILL.md adds '### 文档 agent（single-task 可选分工）' with 'document 是角色，不是新 phase…不改九值闭集或 batch 枚举'; phase closed-set line unchanged in SKILL and both adapters; test_phase_closed_set still green. sole-writer/取证/总表/execution_strategy rules re-scoped to '未启用/默认' with explicit enablement gates; watcher zero-write, RELAY_RECEIPT fail-closed, model-allocation gate all preserved and extended to document consistently."
+    },
+    {
+      "id": "VF-4",
+      "claim_checked": "READY_FOR_DOCUMENT → SYNCED → original-reviewer-confirm flow, and SYNCED must not route as PASS",
+      "result": "CONFIRMED in all four files: SKILL '复核代笔' requires reviewer self-written READY_FOR_DOCUMENT + raw structured result, document SYNCED, same reviewer separate confirm signal (different filename, original kept); '仅 reviewer 确认可用于原路径放行；原始 FAIL/REVISE 不得转成 PASS'; 'SYNCED/READY 不能替代执行、复核或人验 PASS'. Adapters: 'document 的 DONE/SYNCED 不用于原路径放行'. AGENTS: '文档 SYNCED 不是 PASS'. Matches this card's actual flow (codex READY → this READY_FOR_DOCUMENT → document transcribe → reviewer confirm)."
+    },
+    {
+      "id": "VF-5",
+      "claim_checked": "product/process boundary and failure recovery",
+      "result": "CONFIRMED: SKILL/adapters/AGENTS all allow user to keep product docs with executor and delegate only process records ('文档本身是产品交付物时，用户可指定由执行者编写，document 只记录过程'); missing/conflict/stale input → BLOCKED + reason / 待同步, '不猜、不覆盖他人改动'; lost contact keeps 待同步, no silent multi-writer restore; document cannot construct/test/accept/dispatch/commit."
+    }
+  ],
+  "findings": [
+    {
+      "id": "F-B1",
+      "severity": "P3",
+      "file": "tools/relay-light/skill/SKILL.md (文档 agent · 顺序与恢复)",
+      "issue": "「明确委托的人工文档由 document 顺序写，原责任方停止并写」— '停止并写' is ambiguous on first read (intended sense: original owner stops writing / no parallel writes; confirmed by '不允许多卡并写' and '不静默恢复多写者' elsewhere).",
+      "suggestion": "Optional clarity fix in a later polish pass (e.g. '原责任方停止并行写'); semantics are recoverable from context, not blocking."
+    },
+    {
+      "id": "F-B2",
+      "severity": "P3",
+      "file": "tools/relay-light/skill/references/adapter-claude-code.md / adapter-codex.md (拓扑与拉起)",
+      "issue": "Both adapters add a '当前 space 标签页' tab-reuse paragraph that is a topology generalization beyond the document-agent contract per se. It codifies this card's real user correction ('放当前space，不开新space') and does not conflict, but strictly widens the batch diff beyond the four bullets in task_plan §3.",
+      "suggestion": "None required — content is consistent with existing '一张任务卡 = 一个 Herdr workspace' and '同一 Git 任务仍只用一个 worktree'; flagging for transcription completeness only."
+    },
+    {
+      "id": "F-B3",
+      "severity": "P3",
+      "file": "tools/relay-light/skill/SKILL.md (文档 agent · 派单)",
+      "issue": "SKILL lists document-usable phases as plan/batch/plan-review/batch-review/workflow-final/e2-code-review/decision/human-acceptance — a superset of the phases this card actually exercises (plan/batch/batch-review/human-acceptance per task_plan). This card therefore does not empirically cover plan-review/e2-code-review/decision transcription paths.",
+      "suggestion": "Informational — superset is coherent with '沿用文档所属的现有 phase'; honest coverage registration at closure should note these paths are protocol-defined but unexercised by this card."
+    }
+  ],
+  "cross_file_consistency_check": {
+    "opt_in_gating": "consistent — AGENTS '用户明确启用', SKILL '用户指定文档分工后', adapters '显式启用时'; defaults preserved via 未启用/默认 qualifiers",
+    "writer_boundaries": "consistent — sole writer, findings/progress writers, 总表, execution_strategy all re-scoped to default mode with document delegation carve-out; raw signals/structured conclusions stay with producers in all four files",
+    "synced_not_pass": "consistent — all four files forbid routing document SYNCED/DONE as PASS; only original reviewer's separate confirm signal releases the path",
+    "receipt_watcher_gate": "consistent — RELAY_RECEIPT fail-closed and watcher zero-write extended to '(含…document)' / preserved in SKILL + both adapters + AGENTS",
+    "recovery_authorities": "consistent — four authorities reworded identically in SKILL and both adapters ('原角色 signals、经责任方确认的报告及原始来源、经编排核对的执行策略、Herdr 实态')",
+    "conflicts_with_old_rules": "none found — every unconditional 'sole writer / 仅 X 写 / 不写' statement that could collide was re-scoped to the default mode or explicitly overridden by the new section's 优先级 clause"
+  },
+  "verdict": "READY_FOR_DOCUMENT",
+  "verdict_basis": "No P0/P1 findings. Candidate hashes verified, 19 tests independently re-run green, docs-only scope held (no code/test/config/roles.toml diff), opt-in role semantics and SYNCED≠PASS routing invariants enforced uniformly across SKILL + both adapters + AGENTS, failure/recovery paths specified. Three P3 nits are informational and do not block transcription."
+}
