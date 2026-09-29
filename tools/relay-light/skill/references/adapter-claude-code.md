@@ -181,7 +181,7 @@ ledger_silent → 核 Herdr 状态 + pane 末行 + 允许路径产出 三者是�
 
 ### 文档 agent 派单
 
-显式启用时执行核心 SKILL「文档 agent（single-task 可选分工）」全部合同，代笔规则覆盖本侧默认写者描述。document 模型/实例须已确认；可委托全部获授权人工文档，也可按用户指定保留产品文档给执行者、只委托过程记录。首次建卡由主会话先给已确认分工、任务来源与创建路径，再由 document 登记执行策略，不要求先存在该文件。
+默认由原责任方直接写文档，不要求创建独立文档 agent、终端或标签页，不登记 document 实例，也不等待其 SYNCED 信号；缺少 document 配置或信号不构成阻塞。仅在用户明确指定本卡试验时启用，并执行核心 SKILL「文档 agent（single-task 可选分工）」全部合同；以下代笔规则仅在启用时覆盖本侧默认写者描述。document 模型/实例须已确认；可委托全部获授权人工文档，也可按用户指定保留产品文档给执行者、只委托过程记录。首次建卡由主会话先给已确认分工、任务来源与创建路径，再由 document 登记执行策略，不要求先存在该文件。
 
 沿用下方九值 phase：document 是角色，path=document-<请求标识>，成功 verdict=SYNCED，独立请求文件名；不新增 phase/账本或修改 roles.toml。派单附来源版本、原阶段/路径、结论与证据、精确写路径及责任确认方。reviewer 先自写 READY_FOR_DOCUMENT 和原始结构化结果；文档代笔完成后，同一 reviewer 核对映射再另发确认 signal，原 FAIL/REVISE 不得翻成 PASS。document 的 DONE/SYNCED 不用于原路径放行，代笔纠错不算新复核轮；实质改变仍走原复核规则。任何 phase 下 document 都不执行测试、部署、提交或验收。
 

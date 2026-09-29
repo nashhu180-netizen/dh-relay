@@ -52,7 +52,7 @@
 - 卡级总表：上述禁读写执行计划不禁止登记的维护会话维护卡级衔接总表；按 [relay-light 技能](tools/relay-light/skill/SKILL.md)「卡级总表维护与交棒核对」执行。启动/恢复登记总表路径与唯一维护会话，等待/结果变化/停下/交棒时更新，交棒前核对行状态、证据、下一步与日期；无法更新报告“总表待同步”，不宣称已交棒。worker/watcher 写入边界不变，总表不授予下一卡开工权限。
 - RELAY_RECEIPT fail closed 分流：进程环境存在 `RELAY_RECEIPT` 时，产出型角色（含 document）只写本角色精确 `BLOCKED.*.md` 单行 signal 后停止；watcher 保持 repo/workspace 零写入，只用 Herdr prompt 非 durable 通知 orchestrator 后停止，不写 BLOCKED。两个分支都不得清除任何 `RELAY_*` 环境变量。
 
-- 文档分工：用户明确启用 single-task 文档 agent 时，按仓内 skill「文档 agent（single-task 可选分工）」覆盖本段及下方通用 worker 的默认人工文档写者要求。全部获授权人工文档可委托，产品文档也可按用户指定留给实际执行者、仅委托过程记录。document 不改原始结果/独立 signal，不取代内容责任方、不自审、不派活；复核报告经原 reviewer 核对后，其独立确认 signal 才能放行。文档 SYNCED 不是 PASS，phase 沿用现有闭集，RELAY_RECEIPT 时仍只写精确 BLOCKED。作用仅限本卡明确允许路径，不扩大授权；效果由实际执行侧评估，文档 agent 只转录。
+- 文档分工：默认由原责任方按既有写者规则直接写文档，不要求创建独立文档 agent、终端或标签页；未启用时不登记 document 实例、不等待 document 的 SYNCED 信号，缺少其配置或信号不构成阻塞。仅在用户明确指定本卡试验、启用 single-task 文档 agent 时，按仓内 skill「文档 agent（single-task 可选分工）」覆盖本段及下方通用 worker 的默认人工文档写者要求。全部获授权人工文档可委托，产品文档也可按用户指定留给实际执行者、仅委托过程记录。document 不改原始结果/独立 signal，不取代内容责任方、不自审、不派活；复核报告经原 reviewer 核对后，其独立确认 signal 才能放行。文档 SYNCED 不是 PASS，phase 沿用现有闭集，RELAY_RECEIPT 时仍只写精确 BLOCKED。作用仅限本卡明确允许路径，不扩大授权；效果由实际执行侧评估，文档 agent 只转录。
 
 ## 编排协议段（worker 铁律 · 被派进本仓的 agent 必读）
 

@@ -37,3 +37,11 @@
 - 远端 commit/push/PR/merge 由主会话按 AGENTS 单卡授权核对执行；文档 agent 不做远端操作，只按实际结果回填。
 - PR 关联 `Relates to #86`（高危/需人验项未闭合不关闭 Issue；DA-08 类用户判断未取得前不代签）。
 - 必需 CI：relay-tests-pwsh Windows/Ubuntu、relay-light-python 全 SUCCESS；relay-core 按 workflow continue-on-error 仅观测。
+
+## 2026-09-29 用户修订与收口授权（当前）
+
+- 用户先确认「不作为默认流程」，再要求「现在的协议 做下修改下 不要求开独立的文档agent。现在也没有用这个呀」。协议默认由原责任方写文档，不要求独立 document 实例或 SYNCED；仅在用户明确指定试验时启用可选代笔。
+- 用户随后授权「改完后 更新下 master 同步到两个设备多个agent的skill里面」，并明确「任务也关闭」。本轮覆盖 PR #87 更新、必要复核/CI、GitHub master 合入及复验、ThinkPad/ThinkBook 多 agent skill 同步和任务/Issue #86 关闭；上述最新授权取代旧的“未安装/不自动安装/保留现场”停止边界。
+- 本轮过程文档由 Codex 主会话直接维护，不启用独立文档 agent。既有独立 reviewer 只做本次增量复核并自行写结论，不走 document 转录链。
+- 结案口径为「试跑完成，用户决定不默认采用」。原减负收益未证实，DA-08 不标减负验收通过；未覆盖的协议场景与 F-C1 原有非阻断项保留，不把关闭任务解释为全能力验收通过。
+- 本轮交付状态：协议已修订；19 项安装/结构测试与 skill 校验通过；增量独立复核、最新 CI、远端合入和双设备同步尚待实际完成。最终证据统一归本目录收口记录。

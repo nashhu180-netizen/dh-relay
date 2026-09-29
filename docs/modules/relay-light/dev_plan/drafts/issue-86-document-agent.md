@@ -102,3 +102,7 @@
   - **更正（2026-09-29，教训复核 F-L1）**：上条来源归因有误——document 为角色/path/verdict 方案系 **Codex 主会话提出**，非用户原话；用户该轮冻结的是分工与模型。原文保留不删；权威区分见 [workspace/issue-86-document-agent/review.md](../../workspace/issue-86-document-agent/review.md) 确认记录。
 - PR #87 规划草案未合并、未实现是历史边界；本轮开发为用户另行授权，实际交付/合入按 AGENTS 单卡授权由主会话核对。
 - 本卡任务工作区：[workspace/issue-86-document-agent/](../../workspace/issue-86-document-agent/)（task/task_plan/execution_strategy/progress/findings/review/lesson_candidates 七件由文档 agent `builder#docs` 维护——用户本卡明确例外）。
+
+## 试跑后的采用决定（2026-09-29）
+
+用户已明确：**文档 agent 不作为默认流程，后续仅在用户明确指定试验时启用**。本次未证明效率、成本或执行侧净减负收益，常规文档仍由原责任方编写。原草案与试跑原评保留为历史记录；「适合继续试用」不再作为当前建议。决定来源及证据边界见 [review.md 的最新采用决定](../../workspace/issue-86-document-agent/review.md#最新采用决定2026-09-29)。此决定不表示 DA-08 减负验收通过。

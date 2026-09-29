@@ -42,3 +42,7 @@
 | E-013 | review | workflow-final 一致性路转录确认 PASS：转录 faithful、F-C1 开放如实保留、候选 hash 无漂移 | `evidence/final-consistency-confirm-1.json` + `DONE.workflow-final.consistency-confirmed-1.md` | reviewer#consistency（原 reviewer） |
 | E-014 | review | workflow-final 教训路转录确认 PASS：F-L1 更正核毕、L-01 登记一致、无越界宣称 | `evidence/final-lesson-confirm-1.json` + `DONE.workflow-final.lesson-confirmed-1.md` | rlt86-final-lesson（原 reviewer） |
 | E-015 | eval | Codex 本人确认效果原评与 addendum 转录忠实（MATCH ×2，非人验） | `evidence/codex-effect-confirm.json` + `codex-effect-addendum-confirm.json` | producer=Codex main |
+
+## 2026-09-29 收口续做（Codex 主会话直接记录）
+
+用户已取消默认文档 agent 分工，并授权合入 master、同步双设备多 agent skills、关闭任务。已对 AGENTS / SKILL / 双 adapter 明确默认原责任方直接写、无需 document 配置/SYNCED；`git diff --check`、19 项 `test_install_skill.py`、skill-creator `quick_validate.py` 均 exit 0。本次后续复核/CI/合入/安装证据以实际结果追加，不沿用旧候选 PASS 冒充新候选通过。
