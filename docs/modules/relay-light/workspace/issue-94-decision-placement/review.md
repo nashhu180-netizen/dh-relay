@@ -1,5 +1,7 @@
 # Issue #94 本地交付核验
 
+> 当前交付：PR #95 已合入，双设备六份 skill 已安装并核验；CI/合入态复验/收口边界见 [closeout.md](closeout.md)。下文旧状态按其记录时点保留。
+
 - Issue：https://github.com/nashhu180-netizen/dh-relay/issues/94
 - 授权：brief.md 当前实施合同及 findings.md D-94-01；用户“授权继续”不作为验收结果。
 - 自动核验执行者：本会话 Codex；独立复核：`/root/review_issue94`（非施工者）。

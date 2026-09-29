@@ -1,5 +1,7 @@
 # 立户执行事实
 
+> 当前交付：PR #95 已合入，双设备六份 skill 已安装并核验；CI/合入态复验/收口边界见 [closeout.md](closeout.md)。下文旧状态按其记录时点保留。
+
 - 任务 ID：`issue-94-decision-placement`
 - Issue：https://github.com/nashhu180-netizen/dh-relay/issues/94
 - 状态：本地实施与验证、独立复核已完成；未 PR/合入/安装。
