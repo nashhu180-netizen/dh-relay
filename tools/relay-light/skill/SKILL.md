@@ -5,7 +5,7 @@ description: 轻量接力编排（relay-light / relay-lite / 简单版接力）�
 
 # relay-light
 
-> 版本：v1.1.0
+> 版本：v1.2.0
 
 relay-light 是一套接力编排协议，有两种互斥模式（选法见下节「模式选择」）：**完整模式**由人拉起规划与编排，编排在每个阶段开一个终端空间并拉起 stage-lead，stage-lead 拉起该阶段所有 agent，全部状态只以 `relay_log.py` 账本为准；**`single-task` 单卡接力**由编排直接分派各角色、watcher 旁路巡检，不建账本（见文末同名一节）。本文件是协议核心；两侧运行时的派活/等待命令写法见 `references/adapter-claude-code.md` 与 `references/adapter-codex.md`。
 
