@@ -78,7 +78,7 @@ relay-light 的 worker 不回头问用户，卡住只能写 `blocked` 交 decide
 | 扩界 / 改计划 / 新增卡 / 停卡 | strategist 出方案 → `user_decision`（**永远出现、不看 mode**）→ 用户定 | 方向决策 |
 | 谁该上场、投没投递到、是不是挂死、能不能关节点 | **stage-lead** | 程序性判定（全部有明文判据，无自由裁量） |
 
-所以 stage-lead **不做内容判定、不做方向决策、不持有授权权**：越界、push / PR / 合并、超限停卡一律 `user_decision` 升给用户。有判定方的节点（W/C/R/X）里 stage-lead 只读判定方的结论，不自己判内容；没有判定方的节点（F 的 scribe、decider 这类 `close` 就是自己）只做形式核——产出文件存在、非空、落在允许路径内。
+所以 stage-lead **不做内容判定、不做方向决策、不持有授权权**：越界、push / PR / 合并、超限停卡一律 `user_decision` 升给用户。例外：计划前言已预授权的闸后推送与 MR/PR 评论属于执行已有授权、不是持有授权，stage-lead 在收节点后执行，并在该节点 `node_close` 的 note 追加 `pushed=<SHA>`、`mr_note=<评论 ID 或 URL>`；合并仍按各仓授权。有判定方的节点（W/C/R/X）里 stage-lead 只读判定方的结论，不自己判内容；没有判定方的节点（F 的 scribe、decider 这类 `close` 就是自己）只做形式核——产出文件存在、非空、落在允许路径内。
 
 **四个非角色概念**，不进角色表、不进账本 `agent` 字段：
 
@@ -116,7 +116,7 @@ relay-light 的 worker 不回头问用户，卡住只能写 `blocked` 交 decide
 - **X**：coder 修 + reviewer 再审；轮数上限读 `dh-mapping.toml`，超限停 → strategist → 用户。**X 节点必须由规划预先放进节点表**（每卡 R 后一个 `X<n>`，`close=agent:<打回路>`，F 依赖 X），R 无返工时编排按 `stage_result` 直接跳过不开该节点；不预置则 R 打回后编排无处可去只能停（2026-09-21 p21-normal 首跑教训）。
 - **F**：as-built、AI 提交区、交付汇报、证据展示区，全部由 scribe 备料。
 
-**Issue 与 Draft MR/PR 时机**（2026-09-30 用户裁决，新卡起生效，在途卡按原合同继续）：W 前 Issue 立户；W 首提交（任务分支首个提交）推上去即建 Draft MR（GitLab）/ Draft PR（GitHub）并关联 Issue，MR/PR 号写进计划前言（marker 可加 `mr=`/`pr=`）。完整模式下这三步属开局准备，在派计划前完成；运行中每道闸后的推送与评论须计划前言写明已获授权，未写明时仍按「push / PR / 合并一律 `user_decision` 升给用户」执行。分支基于目标远端 master（不是 relay master）。评论与收口见「F 阶段收口 checklist」。
+**Issue 与 Draft MR/PR 时机**（2026-09-30 用户裁决，新卡起生效，在途卡按原合同继续）：W 前 Issue 立户；任务分支首个提交（开工提交，可为空提交）推上去即建 Draft MR（GitLab）/ Draft PR（GitHub）并关联 Issue，MR/PR 号写进计划前言（marker 可加 `mr=`/`pr=`）。完整模式下这三步属开局准备，由用户在派计划前完成（不是 W 阶段 builder 的提交）；运行中每道闸后的推送与评论须计划前言写明已获授权，未写明时仍按「push / PR / 合并一律 `user_decision` 升给用户」执行。分支基于目标远端 master（不是 relay master）。评论与收口见「F 阶段收口 checklist」。
 
 模板占位符：`<card>` = 卡号；`<prev>` = 上一节点号（首节点留空）；`<n>` = 节点序号；`<k>` = 阶段实例/返工轮次；`<d>` = 卡内决策文件序号（`decision.<d>.md` 全卡递增）；`<reviewer>`/`<路>` = 按 recipe 展开的 reviewer 名与其路名；`<打回路>` = R 阶段打回的那条 reviewer 路名。
 
@@ -200,7 +200,7 @@ reviewer 行数与名字由 marker `recipe=` 经 `dh-mapping.toml` 的 `[recipes
 - [ ] 确认对应 worktree 已删（`git worktree list` / `git branch` 核对），先关终端空间再删树。
 - [ ] Issue 与 MR/PR 收口（2026-09-30 用户裁决，新卡起生效，在途卡按原合同继续）：
   - **建分支即开 Draft**：Issue 立户后建任务分支，首个提交推上去即建 Draft MR（GitLab，wf 仓须经 integrator 机）/ Draft PR（GitHub）并关联 Issue；号登记在计划前言。具体推送/建 MR 机制按各施工仓自己的协作规则，本 skill 只规定时机与评论，不覆盖各仓规则。
-  - **闸门结论发评论**：plan-review、batch-review、workflow-final 各路、E2 code_review 及人验结论，由当班 stage-lead（完整模式，须计划前言已授权推送与评论）/ orchestrator（single-task）按判定方自写的结论发 MR/PR 评论，内容为闸门名 + verdict + 被审 SHA + P0～P3 计数 + 证据路径；只转述，不代判、不改写结论、不含凭据。评论属通信/协调工件，不构成授权。每道闸通过或返工提交后推送分支，更新 MR/PR。
+  - **闸门结论发评论**：plan-review、batch-review、workflow-final 各路、E2 code_review 及人验结论，由当班 stage-lead（完整模式，须计划前言已授权推送与评论）/ orchestrator（single-task）按判定方自写的结论发 MR/PR 评论，内容为闸门名 + verdict + 被审 SHA + P0～P3 计数 + 证据路径；只转述，不代判、不改写结论、不含凭据。评论属通信/协调工件，不构成授权。每道闸通过或返工提交后推送分支，更新 MR/PR。完整模式的闸门对照：W 的 plan-reviewer、每个 C 批次的 checker、R 每路 reviewer、X 再审路的结论，由对应阶段 stage-lead 在收节点时发；完整模式没有 E2，人验在接力流程外，由主会话或用户发。
   - **基线与合并**：任务分支基于目标远端 master（wf 仓为 GitLab master SHA，不用 relay master）；合并用平台 squash，不再做收口手工 squash 重建。F 阶段：解除 Draft、更新最终描述（改动/验证/风险/Issue），按各仓授权合并；合入/verify 仍按各仓授权。
 
 ## 账本用法
@@ -317,7 +317,7 @@ relay_log.py lint --plan <plan_dir> --amend-check after  --repo <repo> --snapsho
 7. **scribe 素材边界**：scribe 写 `progress.md` 的素材来源按优先级为 ① 账本事件与 note（事实层）② 本批 diff 与 coder 四行小结 ③ checker / decider / 用户裁决的方案文件名与结论；素材里没有的不得发明，且不碰 `findings.md` / `lesson_candidates.md`（A66）。 本条及第 5 条中的 findings/progress 写者规则仅属完整模式：其 progress 可摘录裁决来源与结论；single-task 按下文「决定落点」执行，不把完整模式的 scribe 写权迁入单卡。
 8. **等待必须有接收者**：`wait` 是阻塞式 CLI，返回那一刻必须有接收者（watch 推送、前台阻塞循环、或后台退出唤醒三种之一）；有 watch 时允许结束回合、靠 prompt 唤醒，无 watch 时不得结束回合空等。
 9. **不写死模型**：流程文档、模板、派活文案一律引用角色名与档位，模型取值只在本计划 `config/roles.toml`（用户提前定好；skill 副本里的 `roles.toml` 只是缺省模板）。
-12. **建树前置**：编排在每个阶段实例开始前核该卡 worktree 存在、分支为 `wt/<卡>`、基线为计划前言的 SHA，以及施工仓约定的共享目录软链已就位（wf-analytics-platform：v2 `.venv`、`frontend/node_modules`、`backend/data/datasets` 三条指向主仓）；缺任一即 `stage_result outcome=blocked` 交用户，编排不自行建树、不改软链。开局准备（建树与软链）由用户在派计划前完成并写进计划前言。
+12. **建树前置**：编排在每个阶段实例开始前核该卡 worktree 存在、分支为 `wt/<卡>`、基线为计划前言的 SHA（指任务分支起点，即 `git merge-base HEAD <基线SHA>` 等于该 SHA；开工首提交与后续提交使 HEAD 前进不算不符），以及施工仓约定的共享目录软链已就位（wf-analytics-platform：v2 `.venv`、`frontend/node_modules`、`backend/data/datasets` 三条指向主仓）；缺任一即 `stage_result outcome=blocked` 交用户，编排不自行建树、不改软链。开局准备（建树与软链）由用户在派计划前完成并写进计划前言。
 13. **决策模式按卡**：marker `decision_mode=` 是计划默认，`cards=` 里可按 `<卡>:<档>:<auto|consult>` 覆盖；不做批次级。
 10. **模板无 kickoff / verify 签字类节点**：节点类型只有 `build` / `construction` / `review` / `rework` / `handoff`。
 11. **判定方封口纪律**：判定方判定 PASS 前，送审方与判定方均不记 `done`；FAIL 走 live 判定方的 `checkpoint` 路由回同一送审方；PASS 后按送审方→判定方顺序记终态。
