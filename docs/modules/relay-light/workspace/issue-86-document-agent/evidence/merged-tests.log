@@ -1,0 +1,29 @@
+.usage: install_skill.py [-h] --all
+install_skill.py: error: the following arguments are required: --all
+usage: install_skill.py [-h] --all
+install_skill.py: error: the following arguments are required: --all
+usage: install_skill.py [-h] --all
+install_skill.py: error: the following arguments are required: --all
+usage: install_skill.py [-h] --all
+install_skill.py: error: unrecognized arguments: extra
+...error: injected mid-copy failure
+...error: skill source incomplete, missing: dh-mapping.toml
+...........................................
+----------------------------------------------------------------------
+Ran 50 tests in 2.626s
+
+OK
+installed: /tmp/tmptbnwmjl0/home/.claude/skills/relay-light
+installed: /tmp/tmptbnwmjl0/home/.codex/skills/relay-light
+installed: /tmp/tmp3y63_rfy/home/.claude/skills/relay-light
+installed: /tmp/tmp3y63_rfy/home/.codex/skills/relay-light
+installed: /tmp/tmp5lkjk9c8/home/.claude/skills/relay-light
+installed: /tmp/tmp5lkjk9c8/home/.codex/skills/relay-light
+installed: /tmp/tmp5lkjk9c8/home/.claude/skills/relay-light
+installed: /tmp/tmp5lkjk9c8/home/.codex/skills/relay-light
+installed: /tmp/tmpn05oy2ta/home/.claude/skills/relay-light
+installed: /tmp/tmpn05oy2ta/home/.codex/skills/relay-light
+installed: /tmp/tmpn05oy2ta/home/.claude/skills/relay-light
+installed: /tmp/tmpn05oy2ta/home/.codex/skills/relay-light
+installed: /tmp/tmpt4l7vi14/home/.claude/skills/relay-light
+installed: /tmp/tmpt4l7vi14/home/.codex/skills/relay-light

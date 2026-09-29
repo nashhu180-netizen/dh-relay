@@ -1,7 +1,9 @@
 <!-- progress.md — 施工日志 + 证据账本 -->
 # progress — Issue #86
 
-> 例外：现役 sole writer 规定 progress 仅当前 batch coder 写；本卡用户明确将过程文档委托文档 agent，本文件由 builder#docs 按实际事件回填，不记 pane 状态/轮询/通知。
+> 当前结案：**试跑完成，不默认采用文档 agent**。交付、增量复核、双设备六份 skill 同步及遗留边界见 [收口记录](closeout.md)；下文旧状态按其记录时点保留。
+
+> 例外：现役 sole writer 规定 progress 仅当前 batch coder 写；本卡用户明确将过程文档委托文档 agent，试跑阶段由 builder#docs 按实际事件回填，本轮收口由 Codex 主会话直接记录，不记 pane 状态/轮询/通知。
 
 ## 日志 (Log)
 
@@ -46,3 +48,5 @@
 ## 2026-09-29 收口续做（Codex 主会话直接记录）
 
 用户已取消默认文档 agent 分工，并授权合入 master、同步双设备多 agent skills、关闭任务。已对 AGENTS / SKILL / 双 adapter 明确默认原责任方直接写、无需 document 配置/SYNCED；`git diff --check`、19 项 `test_install_skill.py`、skill-creator `quick_validate.py` 均 exit 0。本次后续复核/CI/合入/安装证据以实际结果追加，不沿用旧候选 PASS 冒充新候选通过。
+
+- 2026-09-29 收口回填：PR #87 已合入 `e3cad794dbee7bebb4c5787d939bd21afa5c164b`，最新增量两路复核 PASS、三个必需 CI SUCCESS、合入态 50 tests OK、双设备六份 skill 哈希一致。当前结案与待执行的平台关闭/清理顺序统一见 [closeout.md](closeout.md)。

@@ -1,7 +1,9 @@
 <!-- dh:v1 · review.md — Issue #86 验收靶与复核登记。 -->
 # review — Issue #86
 
-> 本文件由文档 agent 代笔登记（用户例外）；各路复核结论由对应独立 reviewer 自写工件、本表只引用其结果与 signal，不代写结论、不预写 PASS。
+> 当前结案：**试跑完成，不默认采用文档 agent**。交付、增量复核、双设备六份 skill 同步及遗留边界见 [收口记录](closeout.md)；下文旧状态按其记录时点保留。
+
+> 试跑阶段由文档 agent 代笔登记（用户例外），2026-09-29 采用决定及本轮收口由 Codex 主会话直接记录；各路复核结论由对应独立 reviewer 自写工件、本表只引用其结果与 signal，不代写结论、不预写 PASS。
 
 ## 最新采用决定（2026-09-29）
 
@@ -103,3 +105,5 @@
 - 2026-09-28：用户确认——文档/复核/watcher 角色全部用 Devin SWE-2 high、按单卡流程执行；「放当前space不开新space」（w4S→w4K 迁移）。另：九 phase 沿用/document 为角色非 phase/path=document-<id>/verdict=SYNCED 为 **Codex 主会话提供的实施方案**（非用户原话），用户本轮冻结的是分工与模型。
 
 - 2026-09-29：用户确认「好的，那就不作为默认流程了」，并要求「文档里更新下」。Codex 主会话据此直接补记上方「最新采用决定」；未委托文档 agent，未代签减负验收。
+
+- 2026-09-29 收口回填：PR #87 已合入 `e3cad794dbee7bebb4c5787d939bd21afa5c164b`，最新增量两路复核 PASS、三个必需 CI SUCCESS、合入态 50 tests OK、双设备六份 skill 哈希一致。当前结案与待执行的平台关闭/清理顺序统一见 [closeout.md](closeout.md)。

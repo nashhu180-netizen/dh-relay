@@ -1,6 +1,8 @@
 <!-- dh:v1 · task.md -->
 # task — Issue #86 · single-task 文档 agent 分工入协议 + 本卡试跑
 
+> 当前结案：**试跑完成，不默认采用文档 agent**。交付、增量复核、双设备六份 skill 同步及遗留边界见 [收口记录](closeout.md)；下文旧状态按其记录时点保留。
+
 - Issue：<https://github.com/nashhu180-netizen/dh-relay/issues/86>；规划 PR：#87（`Relates to #86`，规划草案未合并、未实现是历史边界；本轮用户已另行授权开发）。
 - 档位：轻档；task_type=light；一批（batch=1）；复核 Recipe=教训 + 一致性两路；E2 code_review 因本卡无运行代码改动如实记 N/A。
 - 任务来源：草案 [dev_plan/drafts/issue-86-document-agent.md](../../dev_plan/drafts/issue-86-document-agent.md) 及独立审核记录 [issue-86-document-agent-review.md](../../dev_plan/drafts/issue-86-document-agent-review.md)；草案末尾有本轮范围调整注记。
@@ -66,3 +68,5 @@
 - 本轮过程文档由 Codex 主会话直接维护，不启用独立文档 agent。既有独立 reviewer 只做本次增量复核并自行写结论，不走 document 转录链。
 - 结案口径为「试跑完成，用户决定不默认采用」。原减负收益未证实，DA-08 不标减负验收通过；未覆盖的协议场景与 F-C1 原有非阻断项保留，不把关闭任务解释为全能力验收通过。
 - 本轮交付状态：协议已修订；19 项安装/结构测试与 skill 校验通过；增量独立复核、最新 CI、远端合入和双设备同步尚待实际完成。最终证据统一归本目录收口记录。
+
+- 2026-09-29 收口回填：PR #87 已合入 `e3cad794dbee7bebb4c5787d939bd21afa5c164b`，最新增量两路复核 PASS、三个必需 CI SUCCESS、合入态 50 tests OK、双设备六份 skill 哈希一致。当前结案与待执行的平台关闭/清理顺序统一见 [closeout.md](closeout.md)。
