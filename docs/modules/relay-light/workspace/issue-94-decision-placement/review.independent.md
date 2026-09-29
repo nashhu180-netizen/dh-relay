@@ -59,3 +59,23 @@
 - `tools/relay-light/skill/SKILL.md`：`792bcc179442c1aa04c11fcd689d89a1abb52a8db6f32dfb81acd7521b5709d7`
 - `tools/relay-light/skill/references/adapter-claude-code.md`：`f624df39f56bfdf6bedcfa6001a4ca0b1be9830b81ac72e44f8204c928c96034`
 - `tools/relay-light/skill/references/adapter-codex.md`：`7256a7cdf24b355f2e7e9388657566cfb5e1dd19696c5d7bb6f1119cd458e6f6`
+
+
+## F-94-01 定向复核（原实例 /root/review_issue94）
+
+P2 定向复核：**PASS，无新 P0/P1/P2 冲突。**
+
+**一致性增量**
+
+- `SKILL.md:310` 已将完整模式限定收窄为第 5 条中的 `findings/progress` 写者规则；`lesson_candidates.md` 不再被误排除出 single-task。
+- `SKILL.md:368` 明确 single-task 中 `lesson_candidates.md` 仅能由 coder 按派单追加，补回唯一写者合同。
+- 双 adapter 同步且文字一致：`adapter-claude-code.md:186`、`adapter-codex.md:188`；均保留 single-task 的 progress 禁记决定，并明确 lesson candidates 仅 coder 按派单追加。
+- 触发例：single-task 的 orchestrator 为记录用户裁决追加 findings 时，不取得对 `lesson_candidates.md` 的写权；即使存在决定记录，也须由获派 coder 追加教训候选。现文本能阻断该越权。
+
+**教训增量**
+
+- **PASS。** `教训库-候选.md:96-102`（候选-11）要求同类目标逐项同步核验；本次核心与两份 adapter 都已同步该唯一写者边界。
+- `教训库-候选.md:112-118`（候选-13）区分 lesson candidates 的记录与后续执行检查；将其保留为 coder 的派单产物，未因 findings 决定落点而交给编排，边界一致。
+- 无需新增或编造教训 ID。
+
+宿主核验：定向复核前后HEAD、status及三产品文件哈希无变化；仍是事后侦测，非机器隔离。

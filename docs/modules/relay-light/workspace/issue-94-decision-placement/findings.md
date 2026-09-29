@@ -60,3 +60,10 @@ relay-light `single-task` 模式对工作区文档的写者/内容边界没写�
 - 日期/来源：2026-09-29，本会话用户“合并master，同步安装，继续完成 pr”。
 - 状态：本卡远端交付和技能安装已授权，取代 D-94-01 的旧停止线；不代表CI/合入/安装已通过。
 - 下一步：PR → 必需CI/评审 → 服务端合入 → 合入态复验 → 已有双设备副本同步 → 证据归档及本卡清理。
+
+
+## F-94-01 · GitHub review P2：教训候选写者缺口
+
+- 来源：PR #95 review comment 4130001297，候选df21eea。完整模式范围注释覆盖了第5条全部内容，可能取消single-task的lesson_candidates写者。
+- 修复：模式例外只限定findings/progress；single-task显式保留lesson_candidates仅coder按派单追加，双adapter同步。
+- 状态：已修，原独立实例定向复核一致性/教训PASS；19项安装契约重跑OK，待最新CI。不沿用旧候选PASS冒充新候选通过。

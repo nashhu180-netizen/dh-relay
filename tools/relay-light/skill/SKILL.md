@@ -307,7 +307,7 @@ relay_log.py lint --plan <plan_dir> --amend-check after  --repo <repo> --snapsho
 4. **Linux 直跑**：在 Linux 侧收口前必须直跑 python 测试，命令与输出原样记入 `progress.md`（A19）。
 5. **写入者唯一**：`findings.md` / `lesson_candidates.md` 的写入者是 coder；`progress.md` 的写入者是 scribe；reviewer 各写各的 `review.<路>.md`。每份文件在一个节点内只有一个写入者（A67）。
 6. **coder 四行小结**：coder 每轮写完在 pane 打固定四行小结（做了什么 / 证据 / 偏离与 findings / 下一步），缺项写「无」（A66）。
-7. **scribe 素材边界**：scribe 写 `progress.md` 的素材来源按优先级为 ① 账本事件与 note（事实层）② 本批 diff 与 coder 四行小结 ③ checker / decider / 用户裁决的方案文件名与结论；素材里没有的不得发明，且不碰 `findings.md` / `lesson_candidates.md`（A66）。 本条及第 5 条写者规则仅属完整模式：其 progress 可摘录裁决来源与结论；single-task 按下文「决定落点」执行，不把完整模式的 scribe 写权迁入单卡。
+7. **scribe 素材边界**：scribe 写 `progress.md` 的素材来源按优先级为 ① 账本事件与 note（事实层）② 本批 diff 与 coder 四行小结 ③ checker / decider / 用户裁决的方案文件名与结论；素材里没有的不得发明，且不碰 `findings.md` / `lesson_candidates.md`（A66）。 本条及第 5 条中的 findings/progress 写者规则仅属完整模式：其 progress 可摘录裁决来源与结论；single-task 按下文「决定落点」执行，不把完整模式的 scribe 写权迁入单卡。
 8. **等待必须有接收者**：`wait` 是阻塞式 CLI，返回那一刻必须有接收者（watch 推送、前台阻塞循环、或后台退出唤醒三种之一）；有 watch 时允许结束回合、靠 prompt 唤醒，无 watch 时不得结束回合空等。
 9. **不写死模型**：流程文档、模板、派活文案一律引用角色名与档位，模型取值只在本计划 `config/roles.toml`（用户提前定好；skill 副本里的 `roles.toml` 只是缺省模板）。
 12. **建树前置**：编排在每个阶段实例开始前核该卡 worktree 存在、分支为 `wt/<卡>`、基线为计划前言的 SHA，以及施工仓约定的共享目录软链已就位（wf-analytics-platform：v2 `.venv`、`frontend/node_modules`、`backend/data/datasets` 三条指向主仓）；缺任一即 `stage_result outcome=blocked` 交用户，编排不自行建树、不改软链。开局准备（建树与软链）由用户在派计划前完成并写进计划前言。
@@ -365,7 +365,7 @@ relay_log.py lint --plan <plan_dir> --amend-check after  --repo <repo> --snapsho
 ### durable signal 与写者边界
 
 - 每个产出型 worker 的收口物是单行 signal：`DONE`/`BLOCKED` + `task phase agent batch path review_round remediation_count verdict evidence`（BLOCKED 另含 `reason=<snake_case>`），值无空白、证据为 repo 相对路径逗号分隔；写完即停，不等 `node_closed`，不碰完整模式 plan/log。
-- sole writer（未启用文档 agent 时）：`execution_strategy.md` 仅 orchestrator 写；各 review/check/decision 工件由对应 reviewer/decider 自写；`progress.md` 仅由当前顺序执行的 batch coder 在自己 batch 完成时追加**一条**简洁施工里程碑 + 证据引用——不记决定、pane/agent 状态、轮询、通知或终端输出；reviewer/watcher/orchestrator 不写 progress。
+- sole writer（未启用文档 agent 时）：`execution_strategy.md` 仅 orchestrator 写；各 review/check/decision 工件由对应 reviewer/decider 自写；`lesson_candidates.md` 仅 coder 按派单追加；`progress.md` 仅由当前顺序执行的 batch coder 在自己 batch 完成时追加**一条**简洁施工里程碑 + 证据引用——不记决定、pane/agent 状态、轮询、通知或终端输出；reviewer/watcher/orchestrator 不写 progress。
 - **决定落点**：`findings.md` 承载用户裁决（含点选/确认时间与原始来源，未知时间如实标未知）、decider 结论摘要及独立 decision 引用、D 项（待用户决定项）状态、范围外发现与 P3 遗留去处、给用户的知会。遗留须用户明确点头并标去处；未确认保持待决定，不把知会、沉默或编排摘要当作同意，不用记录代替解决。
 - **findings 写者**：orchestrator 只追加已有裁决的来源、摘要、D 项状态、遗留去处和知会，不自行生成业务结论或基线归因；coder 按派单追加发现与证据，基线归因仍遵守上节专属写者及审核闭合流程。同文件由编排安排错开写入，每次派单注明精确章节与唯一写者；复核期间冻结相关候选内容，不并写或覆盖他人记录。仅启用 document 时可按原责任方确认代笔，不强制启用。
 - **执行策略内容**：`execution_strategy.md` 只记编排事实：授权与停止线、角色/模型/实例、总表关联与维护人、派单与路由、批次流转与 clear 闸、提交/checkpoint SHA；业务决定处只放指向 findings 对应条目的指针，不放决定正文。模型确认事实不因此迁出，记录模型来源不等于扩大授权。

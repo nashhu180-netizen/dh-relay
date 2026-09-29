@@ -185,7 +185,7 @@ ledger_silent → 核 Herdr 状态 + pane 末行 + 允许路径产出 三者是�
 
 执行核心 SKILL「durable signal 与写者边界」：用户裁决（点选/确认时间与原始来源，未知时间标未知）、decider 摘要与独立 decision 引用、D 项状态、范围外发现/P3 去处和给用户的知会统一落 `findings.md`。遗留须用户明确点头并标去处；知会或沉默不是同意。orchestrator 仅记录已有裁决与引用，coder 按派单记发现/证据；基线归因及关闭仍仅 coder 按审核流程回写，编排不代判。编排安排同文件错开写，每次指定章节与唯一写者；复核期间冻结相关候选内容，启用 document 才按原责任方确认代笔。
 
-`execution_strategy.md` 只记上述编排事实，业务决定只放 findings 对应条目的指针；授权/模型确认事实仍在执行策略。`progress.md` 仅当前 batch coder 追加施工里程碑与证据引用，不放决定。主会话人验结果仍引用真实用户来源记录到 findings，不能用开工授权或摘要代签。此段仅适用 single-task；完整模式仍按核心的 coder/scribe 合同记录，不套用本段写权。
+`execution_strategy.md` 只记上述编排事实，业务决定只放 findings 对应条目的指针；授权/模型确认事实仍在执行策略。`progress.md` 仅当前 batch coder 追加施工里程碑与证据引用，不放决定；`lesson_candidates.md` 仍仅 coder 按派单追加。主会话人验结果仍引用真实用户来源记录到 findings，不能用开工授权或摘要代签。此段仅适用 single-task；完整模式仍按核心的 coder/scribe 合同记录，不套用本段写权。
 
 ### 文档 agent 派单
 
