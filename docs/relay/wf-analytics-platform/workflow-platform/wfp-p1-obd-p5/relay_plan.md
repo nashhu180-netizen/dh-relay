@@ -10,6 +10,8 @@
 
 **维护会话（唯一写入者）**：OBD_44 单卡 orchestrator `obd44-orch`（Herdr `w52:t1`/`w52:p1`，空间 OBD_44，Claude Code 会话 `ae88ebf0-4bcb-4c60-bda2-684a8ed51334`）；2026-09-30 07:57 由 wfp04-orch 按「维护人卡收口前移交」移交并收到确认（登记见 OBD_44 工作区 execution_strategy「卡级总表」）。历史：2026-09-29 Wfp03主控 → wfp04-orch（会话 `c7595b97…`/`dd12ecff…`）→ 2026-09-30 obd44-orch。
 
+**自动接续授权**：本列 2026-09-30 由用户指示主会话代填加列，初值全部「否」（用户原话「好的 你帮我加下」，指针为本次 dh-relay 提交）；改「是」只由用户写定，写「是」须带 `orchestrator=<模型>/<推理档>`；维护会话与各卡 orchestrator 只读本列。规则见 relay-light SKILL「自动接续」（v1.3.0）。
+
 ## 权威来源与恢复入口
 
 - **WFP P1**：`wf-analytics-platform:poc_core_kpi_web/poc_core_kpi_web_v2/docs/modules/workflow-platform/dev_plan/P1-Prefect双轨平台-开发方案.md`；§2.3/§2.4 交接合同、§3.1 依赖及各原卡。
@@ -25,26 +27,26 @@
 
 行序便于阅读，**不是强制串行排程**。例如 OBD_42 交付后，WFP_04 与 OBD_43 没有相互新增依赖；是否分别开工仍需原卡授权。
 
-| 任务 ID / 原卡与恢复入口 | 接棒条件 | 接力情况 | 下一步 / 交棒去向 |
-|---|---|---|---|
-| **WFP_01** 环境与归属基线；WFP P1 原卡及 workspace | 目标环境、版本、归属及底座验收 | 已交棒：原卡已完成，verify `0c5c2a44b` | WFP_02；下游继续引用原环境/归属证据 |
-| **OBD_41** 大奉 SQL 与源对数；OBD P5 原卡及 workspace | SQL 写前/写后用户确认及源对数 | 已交棒：原卡已完成，verify `1133cf3dd` | OBD_42 消费已审 SQL/表合同及对数证据 |
-| **WFP_02** 请求事实、幂等提交与最小 CLI；WFP P1 原卡，恢复入口见上 | WFP_01 验收及本卡既有开工授权 | 已交棒：原卡已完成，verify `8cfec8cb7` | WFP_03 消费；OBD_42 提供接口/测试/SHA：交棒包 `wf-analytics-platform:poc_core_kpi_web/poc_core_kpi_web_v2/docs/modules/workflow-platform/workspace/02-WFP_02-产品请求事实与幂等提交/handoff-WFP_03-OBD_42.md`（随 wf 仓 `wt/WFP_02-closeout` 文档收口落地）；实现合入 MR !114 `c94160ef4`；`deploy/test` 已同步未构建、test 未验证 |
-| **WFP_03** 委托权限、开跑核验与发布准入；WFP P1 原卡 | WFP_02 验收（已满足，verify `8cfec8cb7`） | 已交棒：原卡已完成，verify `3f75d9b21`（2026-09-29 13:51，Verification=risk-accepted，Risk-Count 2：发布 test 后内部桥未配时 WFP_02 wfp-isolated-verify 开跑闸 FAILED；D1 真实服务身份未定，WFP_06 首业务接线前由用户决定）；wf 仓 GitLab MR !113 于 2026-09-29 13:50 合入 master `a2d5af06f`；Issue #62 随收尾 MR 关闭；B1～B3 batch-review PASS，workflow-final heavy 五路 PASS（含一轮返工、round2 fresh 复审），E2 code_review PASS，人验 P3 小修复核 PASS；未发布 test | 验收接口/测试/SHA 交 OBD_42；权限/准入接口（内部 `/start` `/admit` `/cleanup`、一次准入、受限收尾）交 WFP_04/05/06/07/10；遗留去处：资源名全局唯一→WFP_05/06/10，deployment 映射缓存→WFP_07，D1→WFP_06 首业务接线前 |
-| **OBD_42** 查询与暂存业务部件；OBD P5 原卡 | OBD_41；WFP_02（已交棒）、WFP_03（已交棒）已验收接口/测试/SHA | 已交棒：原卡已完成，verify `cd19869b2`（2026-09-29 20:47，Verification=full，Risk-Count 0，全验收通过）；wf 仓 GitLab MR !121 于 2026-09-29 20:41 合入 master `f39312a07`（复核对象 `04cbad663`，合入态复验 335 passed）；Issue #64 随收尾 MR !122（`6d835f238`，2026-09-29 20:51）关闭；plan-review、B1～B3 batch-review、workflow-final heavy 五路、E2 code_review PASS；真实取证（项目 36，2026-09-21～22）登录 7267 行/激活 6193 行，B4 对照 6 项 ±1/+2 用户人验接受、根因带到 OBD_45；数数取消能力未证实；未发布 test | 交棒包 `wf-analytics-platform:poc_core_kpi_web/poc_core_kpi_web_v2/docs/modules/base-data/workspace/23-OBD_42-query-staging/handoff-WFP_04-OBD_43.md`：查询/暂存/安全清理及源能力证据交 WFP_04（P3 遗留归 WFP_04 装配时定）；业务部件交 OBD_43/44 | 查询/暂存/安全清理及源能力证据交 WFP_04；业务部件交 OBD_43/44 |
-| **WFP_04** 查询与暂存的平台接线；WFP P1 原卡 | WFP_03、OBD_42；已确认表合同及源能力证据 | 已交棒：原卡已完成，verify `784300123`（2026-09-30，Verification=full，Risk-Count 0）；MR !126 合入 master（merge `a94e6b5e1`，squash `bed60b4bb`；生产代码复核对象 `440848b8d`，补测 `440d37e42`、`a50859761`）；收口 MR !128 `54a6770a8`；Issue #65 已关闭；relay `wt/WFP_04*` 已删（保留合并 `30f6e08da`）；范围外：共享夹具 resolve → Issue #68，E2 P3-5 → WFP_05 | 已校验暂存、外部请求/query ID/unknown/owner 事实交 WFP_05/06 |
-| **OBD_43** 原子发布、实际读取与基础回收；OBD P5 原卡 | OBD_42；实际读入口、保留规则确认 | 已交棒：原卡已完成，verify `574a98c66`（2026-09-30，Verification=full，Risk-Count 0；MR !124 merge `66a84787f`，最终复核代码对象 `68d5e8f5b`，合入态复验 565 passed）；收口 MR !125 `b3ef1878c`；交接 `handoff-WFP_05-OBD_44-WFP_10.md` | Store/读取/基础回收及分项证据交 WFP_05；部件交 OBD_44；WFP_10 复用回收 |
-| **WFP_05** 发布、读取与回收的准入接线；WFP P1 原卡 | WFP_04、OBD_43；WFP_03 准入接口；实际消费者/外部引用及保留期 | 进行中：2026-09-30 08:56 开工，建树 `wt/WFP_05` @ GitLab master `784300123`（WFP_04 verify），用户授权开工（工作区 findings U1～U6：消费者=WFP_06/08/10 平台调用方、外部引用空集、保留期沿 OBD_43 U2「发布即回收」；无真源、无 test；WFP_04 E2 P3-5 随本卡顺带修）；single-task 单卡接力，工作区 `workflow-platform/workspace/05-WFP_05-发布读取回收准入接线`，HEAD `e0cbb81b5`（建档 + watcher/builder 实例登记）；Issue/Draft MR 待 integrator 机上线后补建；plan 阶段进行中 | 真实发布/读/回收接线与结果引用交 WFP_06/08/10 |
-| **OBD_44** 每日与范围补跑业务入口；OBD P5 原卡 | OBD_42、OBD_43；每日窗口确认 | 进行中：2026-09-30 开工（每日窗口用户确认 T-3～T-1、数据时区口径，见工作区 findings U2/U3；U5 早于 history_start 整单拒绝，补更早历史为 D1 本卡不做）；single-task 单卡接力，relay 分支 `wt/OBD_44`（基于 GitLab master `a94e6b5e1`），工作区 `base-data/workspace/25-OBD_44-range-entry`；GitLab Issue #69 / Draft MR !127；plan-review r1 FAIL（P1×2）→ 整改 → r2 PASS（`1b2eb213a`）；B1 参数模型与范围计算已施工（候选 `b272ec55f`，670 passed），batch-review-1 进行中；MR 闸门评论待 integrator 机恢复后补发 | 同一套业务步骤/参数/窗口/覆盖合同交 WFP_06/07 |
-| **WFP_06** 首业务 Flow 装配与联合验收；WFP P1 原卡 | WFP_05、OBD_44；消费 WFP_02/03 已验收接口；不等 OBD_45 最终签收 | 等待：WFP_05、OBD_44 | 先登记技术就绪 SHA/接口/隔离证据供 OBD_45 同次取证；双方证据齐后交 WFP_07 |
-| **OBD_45** 真实联合运行与业务对数；OBD P5 原卡 | OBD_41～44；WFP_06 技术装配就绪，非最终验收 | 等待：业务部件及 WFP_06 技术装配 | 与 WFP_06 共用真实运行，分别取证/验收；业务对数、人判及平台证据齐后满足 WFP_07/13 的相关前置 |
-| **WFP_07** 计划配置、每日更新与范围补跑；WFP P1 原卡 | WFP_06、OBD_45；每日窗口确认 | 等待：两侧联合验收 | 计划版本/实例快照/补跑摘要交 WFP_08；日常正式启用仍等 WFP_13 |
-| **WFP_08** 网页与 CLI 运维闭环；WFP P1 原卡 | WFP_07 验收 | 等待：WFP_07 | 真实 UI/CLI/运行及 H1/H2/H3 证据；可操作业务交 WFP_09 |
-| **WFP_09** 平台五并发、业务单槽与资源预算；WFP P1 原卡 | WFP_08 验收；复用 WFP_01 环境与 WFP_05 资源锁 | 等待：WFP_08 | 受控 Flow 五并发/第六排队、多 Worker 上限、首业务全局单槽及资源证据交 WFP_10 |
-| **WFP_10** 周期回收与记录保留；WFP P1 原卡 | WFP_09；各类保留期确认；复用 WFP_04/05 回收及 WFP_03 权限 | 等待：WFP_09 及保留期确认 | 完整新侧回收/保留链及异常证据交 WFP_11 |
-| **WFP_11** 备份恢复与跨服务故障演练；WFP P1 原卡 | WFP_10；维护人、备份保留期、RPO/RTO 等恢复目标确认 | 等待：WFP_10 及恢复目标确认 | 真实恢复/故障证据交 WFP_12 |
-| **WFP_12** 新旧语义与旧侧装配回归；WFP P1 原卡 | WFP_11 验收 | 等待：WFP_11 | 最终真实装配兼容回归交 WFP_13；各前卡仍随改动做兼容检查 |
-| **WFP_13** 首类受控启用、回退与观察；WFP P1 原卡 | WFP_12、OBD_45；精确启用授权及观察标准 | 等待：完整前置验收和用户启用授权 | 按原卡完成受控启用、回退和收益观察，不授权旧四组迁移或其它业务开工 |
+| 任务 ID / 原卡与恢复入口 | 接棒条件 | 自动接续 | 接力情况 | 下一步 / 交棒去向 |
+|---|---|---|---|---|
+| **WFP_01** 环境与归属基线；WFP P1 原卡及 workspace | 目标环境、版本、归属及底座验收 | 否 | 已交棒：原卡已完成，verify `0c5c2a44b` | WFP_02；下游继续引用原环境/归属证据 |
+| **OBD_41** 大奉 SQL 与源对数；OBD P5 原卡及 workspace | SQL 写前/写后用户确认及源对数 | 否 | 已交棒：原卡已完成，verify `1133cf3dd` | OBD_42 消费已审 SQL/表合同及对数证据 |
+| **WFP_02** 请求事实、幂等提交与最小 CLI；WFP P1 原卡，恢复入口见上 | WFP_01 验收及本卡既有开工授权 | 否 | 已交棒：原卡已完成，verify `8cfec8cb7` | WFP_03 消费；OBD_42 提供接口/测试/SHA：交棒包 `wf-analytics-platform:poc_core_kpi_web/poc_core_kpi_web_v2/docs/modules/workflow-platform/workspace/02-WFP_02-产品请求事实与幂等提交/handoff-WFP_03-OBD_42.md`（随 wf 仓 `wt/WFP_02-closeout` 文档收口落地）；实现合入 MR !114 `c94160ef4`；`deploy/test` 已同步未构建、test 未验证 |
+| **WFP_03** 委托权限、开跑核验与发布准入；WFP P1 原卡 | WFP_02 验收（已满足，verify `8cfec8cb7`） | 否 | 已交棒：原卡已完成，verify `3f75d9b21`（2026-09-29 13:51，Verification=risk-accepted，Risk-Count 2：发布 test 后内部桥未配时 WFP_02 wfp-isolated-verify 开跑闸 FAILED；D1 真实服务身份未定，WFP_06 首业务接线前由用户决定）；wf 仓 GitLab MR !113 于 2026-09-29 13:50 合入 master `a2d5af06f`；Issue #62 随收尾 MR 关闭；B1～B3 batch-review PASS，workflow-final heavy 五路 PASS（含一轮返工、round2 fresh 复审），E2 code_review PASS，人验 P3 小修复核 PASS；未发布 test | 验收接口/测试/SHA 交 OBD_42；权限/准入接口（内部 `/start` `/admit` `/cleanup`、一次准入、受限收尾）交 WFP_04/05/06/07/10；遗留去处：资源名全局唯一→WFP_05/06/10，deployment 映射缓存→WFP_07，D1→WFP_06 首业务接线前 |
+| **OBD_42** 查询与暂存业务部件；OBD P5 原卡 | OBD_41；WFP_02（已交棒）、WFP_03（已交棒）已验收接口/测试/SHA | 否 | 已交棒：原卡已完成，verify `cd19869b2`（2026-09-29 20:47，Verification=full，Risk-Count 0，全验收通过）；wf 仓 GitLab MR !121 于 2026-09-29 20:41 合入 master `f39312a07`（复核对象 `04cbad663`，合入态复验 335 passed）；Issue #64 随收尾 MR !122（`6d835f238`，2026-09-29 20:51）关闭；plan-review、B1～B3 batch-review、workflow-final heavy 五路、E2 code_review PASS；真实取证（项目 36，2026-09-21～22）登录 7267 行/激活 6193 行，B4 对照 6 项 ±1/+2 用户人验接受、根因带到 OBD_45；数数取消能力未证实；未发布 test | 交棒包 `wf-analytics-platform:poc_core_kpi_web/poc_core_kpi_web_v2/docs/modules/base-data/workspace/23-OBD_42-query-staging/handoff-WFP_04-OBD_43.md`：查询/暂存/安全清理及源能力证据交 WFP_04（P3 遗留归 WFP_04 装配时定）；业务部件交 OBD_43/44 | 查询/暂存/安全清理及源能力证据交 WFP_04；业务部件交 OBD_43/44 |
+| **WFP_04** 查询与暂存的平台接线；WFP P1 原卡 | WFP_03、OBD_42；已确认表合同及源能力证据 | 否 | 已交棒：原卡已完成，verify `784300123`（2026-09-30，Verification=full，Risk-Count 0）；MR !126 合入 master（merge `a94e6b5e1`，squash `bed60b4bb`；生产代码复核对象 `440848b8d`，补测 `440d37e42`、`a50859761`）；收口 MR !128 `54a6770a8`；Issue #65 已关闭；relay `wt/WFP_04*` 已删（保留合并 `30f6e08da`）；范围外：共享夹具 resolve → Issue #68，E2 P3-5 → WFP_05 | 已校验暂存、外部请求/query ID/unknown/owner 事实交 WFP_05/06 |
+| **OBD_43** 原子发布、实际读取与基础回收；OBD P5 原卡 | OBD_42；实际读入口、保留规则确认 | 否 | 已交棒：原卡已完成，verify `574a98c66`（2026-09-30，Verification=full，Risk-Count 0；MR !124 merge `66a84787f`，最终复核代码对象 `68d5e8f5b`，合入态复验 565 passed）；收口 MR !125 `b3ef1878c`；交接 `handoff-WFP_05-OBD_44-WFP_10.md` | Store/读取/基础回收及分项证据交 WFP_05；部件交 OBD_44；WFP_10 复用回收 |
+| **WFP_05** 发布、读取与回收的准入接线；WFP P1 原卡 | WFP_04、OBD_43；WFP_03 准入接口；实际消费者/外部引用及保留期 | 否 | 进行中：2026-09-30 08:56 开工，建树 `wt/WFP_05` @ GitLab master `784300123`（WFP_04 verify），用户授权开工（工作区 findings U1～U6：消费者=WFP_06/08/10 平台调用方、外部引用空集、保留期沿 OBD_43 U2「发布即回收」；无真源、无 test；WFP_04 E2 P3-5 随本卡顺带修）；single-task 单卡接力，工作区 `workflow-platform/workspace/05-WFP_05-发布读取回收准入接线`，HEAD `e0cbb81b5`（建档 + watcher/builder 实例登记）；Issue/Draft MR 待 integrator 机上线后补建；plan 阶段进行中 | 真实发布/读/回收接线与结果引用交 WFP_06/08/10 |
+| **OBD_44** 每日与范围补跑业务入口；OBD P5 原卡 | OBD_42、OBD_43；每日窗口确认 | 否 | 进行中：2026-09-30 开工（每日窗口用户确认 T-3～T-1、数据时区口径，见工作区 findings U2/U3；U5 早于 history_start 整单拒绝，补更早历史为 D1 本卡不做）；single-task 单卡接力，relay 分支 `wt/OBD_44`（基于 GitLab master `a94e6b5e1`），工作区 `base-data/workspace/25-OBD_44-range-entry`；GitLab Issue #69 / Draft MR !127；plan-review r1 FAIL（P1×2）→ 整改 → r2 PASS（`1b2eb213a`）；B1 参数模型与范围计算已施工（候选 `b272ec55f`，670 passed），batch-review-1 进行中；MR 闸门评论待 integrator 机恢复后补发 | 同一套业务步骤/参数/窗口/覆盖合同交 WFP_06/07 |
+| **WFP_06** 首业务 Flow 装配与联合验收；WFP P1 原卡 | WFP_05、OBD_44；消费 WFP_02/03 已验收接口；不等 OBD_45 最终签收 | 否 | 等待：WFP_05、OBD_44 | 先登记技术就绪 SHA/接口/隔离证据供 OBD_45 同次取证；双方证据齐后交 WFP_07 |
+| **OBD_45** 真实联合运行与业务对数；OBD P5 原卡 | OBD_41～44；WFP_06 技术装配就绪，非最终验收 | 否 | 等待：业务部件及 WFP_06 技术装配 | 与 WFP_06 共用真实运行，分别取证/验收；业务对数、人判及平台证据齐后满足 WFP_07/13 的相关前置 |
+| **WFP_07** 计划配置、每日更新与范围补跑；WFP P1 原卡 | WFP_06、OBD_45；每日窗口确认 | 否 | 等待：两侧联合验收 | 计划版本/实例快照/补跑摘要交 WFP_08；日常正式启用仍等 WFP_13 |
+| **WFP_08** 网页与 CLI 运维闭环；WFP P1 原卡 | WFP_07 验收 | 否 | 等待：WFP_07 | 真实 UI/CLI/运行及 H1/H2/H3 证据；可操作业务交 WFP_09 |
+| **WFP_09** 平台五并发、业务单槽与资源预算；WFP P1 原卡 | WFP_08 验收；复用 WFP_01 环境与 WFP_05 资源锁 | 否 | 等待：WFP_08 | 受控 Flow 五并发/第六排队、多 Worker 上限、首业务全局单槽及资源证据交 WFP_10 |
+| **WFP_10** 周期回收与记录保留；WFP P1 原卡 | WFP_09；各类保留期确认；复用 WFP_04/05 回收及 WFP_03 权限 | 否 | 等待：WFP_09 及保留期确认 | 完整新侧回收/保留链及异常证据交 WFP_11 |
+| **WFP_11** 备份恢复与跨服务故障演练；WFP P1 原卡 | WFP_10；维护人、备份保留期、RPO/RTO 等恢复目标确认 | 否 | 等待：WFP_10 及恢复目标确认 | 真实恢复/故障证据交 WFP_12 |
+| **WFP_12** 新旧语义与旧侧装配回归；WFP P1 原卡 | WFP_11 验收 | 否 | 等待：WFP_11 | 最终真实装配兼容回归交 WFP_13；各前卡仍随改动做兼容检查 |
+| **WFP_13** 首类受控启用、回退与观察；WFP P1 原卡 | WFP_12、OBD_45；精确启用授权及观察标准 | 否 | 等待：完整前置验收和用户启用授权 | 按原卡完成受控启用、回退和收益观察，不授权旧四组迁移或其它业务开工 |
 
 ## 联合取证与停止边界
 
