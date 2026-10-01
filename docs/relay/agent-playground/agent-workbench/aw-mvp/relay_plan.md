@@ -7,7 +7,7 @@ Issue：豁免（本表不单独立 Issue；各卡在 agent-playground 自建 Is
 自动接续授权：用户 2026-10-01 在 agent-playground 主控会话原话「按建议建总表，开新的任务时，新建个space进行。一个任务一个space」，确认主控上一条提议（AW_04–AW_06 写「是」、AW_07 写「否」，分工沿用 AW_03 最终配置）；本栏由主控按该指示代填
 最近核对：2026-10-01
 
-分工（「是」行共用，写定即视为该卡 model-allocation gate 确认）：orchestrator=Claude Opus 5.5/medium；builder=Codex gpt-6-astra/medium；coder=Codex gpt-6-astra/medium；batch-reviewer=Codex gpt-6-astra/high；final-reviewer=Codex gpt-6-astra/medium（每轮 fresh）；decider=Claude Fable 5.1/medium；watcher=Devin SWE-2/medium。每张卡独立新建一个 Herdr workspace（用户：一个任务一个 space）。
+分工（「是」行共用，写定即视为该卡 model-allocation gate 确认）：orchestrator=Claude Opus 5.5/medium；builder=Codex gpt-6-astra/medium；plan-reviewer=Codex gpt-6-astra/medium（fresh；用户 2026-10-01 原话「总表分工里把 plan-reviewer 补上，用 astra medium」，经主控转达）；coder=Codex gpt-6-astra/medium；batch-reviewer=Codex gpt-6-astra/high；final-reviewer=Codex gpt-6-astra/medium（每轮 fresh）；decider=Claude Fable 5.1/medium；watcher=Devin SWE-2/medium。每张卡独立新建一个 Herdr workspace（用户：一个任务一个 space）。
 
 | 任务 ID / 原卡与恢复入口 | 接棒条件 | 自动接续 | 接力情况 | 下一步 / 交棒去向 |
 |---|---|---|---|---|
