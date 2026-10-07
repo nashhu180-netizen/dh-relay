@@ -31,7 +31,8 @@ jobs:
           cache: npm
           cache-dependency-path: relay-core/package-lock.json
       - run: npm ci
-      - run: npm test
+      # The paused module is observation-only; bound its known hanging test process.
+      - run: timeout 180s npm test
 
   relay-tests-pwsh:
     name: relay-tests (PowerShell runner, ${{ matrix.os }})
