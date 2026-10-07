@@ -1,4 +1,7 @@
-# 缺省角色路由模板：每个计划复制到自己的 config/roles.toml 后按需改，计划级 config 才是运行时唯一来源。
+# 缺省角色路由模板：完整模式复制到计划 config/roles.toml 后使用，计划级 config 才是运行时唯一来源。
+# 单卡模式仅参考默认提案，确认后的 execution_strategy.md 才是该卡分配来源。
+# 单卡 batch-reviewer 的默认模型/推理档与启动参数沿用 [coder]；只读约束靠 prompt。
+# 2026-10-07 用户更新 watcher / coder / batch-reviewer / decider / reviewer 默认档；在途已确认分配不自动覆盖。
 # 2026-09-21 用户裁决：relay 派的所有 agent 一律无限制模式（codex bypass、claude skip-permissions、devin dangerous），
 # 只读角色的只读约束由派单 prompt 承担；沙箱型启动在 ThinkPad Linux 撞 bwrap 起不来。
 # RLT-A-15（2026-09-28）：阶段主管段名为 [stage-lead]，旁路观察者为 [watcher]（档位按需可换、不写死）。
@@ -17,8 +20,8 @@ model = "codex sol medium"
 launch = "codex -m gpt-5.6-sol -c model_reasoning_effort=medium --dangerously-bypass-approvals-and-sandbox"
 
 [watcher]
-model = "codex luna medium"
-launch = "codex -m gpt-5.6-luna -c model_reasoning_effort=medium --dangerously-bypass-approvals-and-sandbox"
+model = "codex gpt-6-luna medium"
+launch = "codex -m gpt-6-luna -c model_reasoning_effort=medium --dangerously-bypass-approvals-and-sandbox"
 
 [builder]
 model = "codex luna medium"
@@ -29,8 +32,8 @@ model = "codex luna medium（只读约束靠 prompt）"
 launch = "codex -m gpt-5.6-luna -c model_reasoning_effort=medium --dangerously-bypass-approvals-and-sandbox"
 
 [coder]
-model = "codex luna high"
-launch = "codex -m gpt-5.6-luna -c model_reasoning_effort=high --dangerously-bypass-approvals-and-sandbox"
+model = "codex gpt-6.1-sol high"
+launch = "codex -m gpt-6.1-sol -c model_reasoning_effort=high --dangerously-bypass-approvals-and-sandbox"
 
 [scribe]
 model = "codex luna medium"
@@ -41,12 +44,12 @@ model = "codex luna medium（只读约束靠 prompt）"
 launch = "codex -m gpt-5.6-luna -c model_reasoning_effort=medium --dangerously-bypass-approvals-and-sandbox"
 
 [decider]
-model = "fable medium"
-launch = "claude --model fable --effort medium --dangerously-skip-permissions"
+model = "codex gpt-6-astra medium"
+launch = "codex -m gpt-6-astra -c model_reasoning_effort=medium --dangerously-bypass-approvals-and-sandbox"
 
 [reviewer]
-model = "codex luna medium（只读约束靠 prompt）"
-launch = "codex -m gpt-5.6-luna -c model_reasoning_effort=medium --dangerously-bypass-approvals-and-sandbox"
+model = "codex gpt-6.1-sol high"
+launch = "codex -m gpt-6.1-sol -c model_reasoning_effort=high --dangerously-bypass-approvals-and-sandbox"
 
 [strategist]
 model = "fable medium"
