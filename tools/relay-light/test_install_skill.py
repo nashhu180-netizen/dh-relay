@@ -24,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 import install_skill
 
 SKILL_DIR = (Path(__file__).parent / "skill").resolve()
-FIVE_FILES = install_skill.SKILL_FILES
+PACKAGE_FILES = install_skill.SKILL_FILES
 
 
 def sha256(path: Path) -> str:
@@ -48,10 +48,10 @@ class InstallSkillTests(unittest.TestCase):
 
     def assert_sides_match_source(self) -> None:
         for target in self.targets():
-            for rel in FIVE_FILES:
+            for rel in PACKAGE_FILES:
                 self.assertEqual(
                     sha256(target / rel),
-                    sha256(SKILL_DIR / rel),
+                    sha256(install_skill._source_file(SKILL_DIR, rel)),
                     f"{target}:{rel}",
                 )
 
@@ -61,7 +61,7 @@ class InstallSkillTests(unittest.TestCase):
                 install_skill.main(argv, home=self.home)
             self.assertEqual(2, ctx.exception.code, argv)
 
-    def test_five_file_set_is_closed_and_present(self) -> None:
+    def test_package_set_is_closed_and_present(self) -> None:
         self.assertEqual(
             (
                 "SKILL.md",
@@ -69,13 +69,14 @@ class InstallSkillTests(unittest.TestCase):
                 "references/adapter-codex.md",
                 "roles.toml",
                 "dh-mapping.toml",
+                "space_watch.py",
             ),
-            FIVE_FILES,
+            PACKAGE_FILES,
         )
-        for rel in FIVE_FILES:
-            self.assertTrue((SKILL_DIR / rel).is_file(), rel)
+        for rel in PACKAGE_FILES:
+            self.assertTrue(install_skill._source_file(SKILL_DIR, rel).is_file(), rel)
 
-    def test_all_installs_five_files_to_both_sides(self) -> None:
+    def test_all_installs_package_to_both_sides(self) -> None:
         self.assertEqual(0, install_skill.main(["--all"], home=self.home))
         self.assert_sides_match_source()
 
@@ -88,9 +89,9 @@ class InstallSkillTests(unittest.TestCase):
                 set(manifest),
             )
             self.assertEqual(str(target), manifest["installed_to"])
-            self.assertEqual(set(FIVE_FILES), set(manifest["files"]))
+            self.assertEqual(set(PACKAGE_FILES), set(manifest["files"]))
             for rel, digest in manifest["files"].items():
-                self.assertEqual(sha256(SKILL_DIR / rel), digest, rel)
+                self.assertEqual(sha256(install_skill._source_file(SKILL_DIR, rel)), digest, rel)
             self.assertIsNotNone(datetime.fromisoformat(manifest["installed_at"]))
             self.assertTrue(manifest["source_head"] is None or isinstance(manifest["source_head"], str))
             self.assertTrue(manifest["source_dirty"] is None or isinstance(manifest["source_dirty"], bool))
@@ -108,7 +109,7 @@ class InstallSkillTests(unittest.TestCase):
         tampered = self.targets()[1] / "SKILL.md"
         tampered.write_text("tampered replica\n", encoding="utf-8")
 
-        source_hashes = {rel: sha256(SKILL_DIR / rel) for rel in FIVE_FILES}
+        source_hashes = {rel: sha256(install_skill._source_file(SKILL_DIR, rel)) for rel in PACKAGE_FILES}
         calls = {"n": 0}
         real_copy = install_skill._copy_file
 
@@ -121,7 +122,7 @@ class InstallSkillTests(unittest.TestCase):
         with mock.patch.object(install_skill, "_copy_file", side_effect=flaky_copy):
             self.assertNotEqual(0, install_skill.main(["--all"], home=self.home))
 
-        self.assertEqual(source_hashes, {rel: sha256(SKILL_DIR / rel) for rel in FIVE_FILES})
+        self.assertEqual(source_hashes, {rel: sha256(install_skill._source_file(SKILL_DIR, rel)) for rel in PACKAGE_FILES})
         self.assertEqual(0, install_skill.main(["--all"], home=self.home))
         self.assert_sides_match_source()
         for target in self.targets():
@@ -130,7 +131,7 @@ class InstallSkillTests(unittest.TestCase):
     def test_source_missing_file_fails_closed(self) -> None:
         with tempfile.TemporaryDirectory() as src_dir:
             src = Path(src_dir)
-            for rel in FIVE_FILES[:-1]:
+            for rel in PACKAGE_FILES[:-1]:
                 dst = src / rel
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 dst.write_text("x\n", encoding="utf-8")

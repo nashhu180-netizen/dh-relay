@@ -3,7 +3,7 @@
 
 `--all` derives two fixed targets from the current user home
 (`~/.claude/skills/relay-light/` and `~/.codex/skills/relay-light/`), copies all
-five skill files from the in-repo source `tools/relay-light/skill/` over them,
+skill files and observer script from the in-repo source `tools/relay-light/skill/` over them,
 verifies sha256 per file, then writes one parseable current manifest per
 target. Any step failing exits non-zero; there is no atomicity, rollback, or
 resume — after a failure the two sides may be temporarily out of sync; fix the
@@ -27,6 +27,7 @@ SKILL_FILES = (
     "references/adapter-codex.md",
     "roles.toml",
     "dh-mapping.toml",
+    "space_watch.py",
 )
 TARGETS = (".claude/skills/relay-light", ".codex/skills/relay-light")
 MANIFEST_NAME = "manifest.json"
@@ -63,19 +64,27 @@ def _git(source_dir: Path, *args: str) -> str | None:
 
 
 def _source_fields(source_dir: Path) -> dict:
-    dirty_raw = _git(source_dir, "status", "--porcelain", "--", ".")
+    dirty_raw = _git(source_dir, "status", "--porcelain", "--", ".", "../space_watch.py")
     return {
         "source_head": _git(source_dir, "rev-parse", "HEAD"),
         "source_dirty": None if dirty_raw is None else bool(dirty_raw),
     }
 
 
+def _source_file(source_dir: Path, rel: str) -> Path:
+    # Script source stays at the requested tools/relay-light path; replicas are
+    # self-contained. Custom source dirs may provide their own packaged script.
+    if rel == "space_watch.py" and not (source_dir / rel).is_file():
+        return source_dir.parent / rel
+    return source_dir / rel
+
+
 def _sync_target(source_dir: Path, target: Path) -> Path:
     for rel in SKILL_FILES:
-        _copy_file(source_dir / rel, target / rel)
+        _copy_file(_source_file(source_dir, rel), target / rel)
     files: dict[str, str] = {}
     for rel in SKILL_FILES:
-        src_hash = _sha256(source_dir / rel)
+        src_hash = _sha256(_source_file(source_dir, rel))
         if _sha256(target / rel) != src_hash:
             raise InstallError(f"hash mismatch after copy: {target / rel}")
         files[rel] = src_hash
@@ -93,7 +102,7 @@ def _sync_target(source_dir: Path, target: Path) -> Path:
 
 
 def install_all(source_dir: Path, home: Path) -> list[Path]:
-    missing = [rel for rel in SKILL_FILES if not (source_dir / rel).is_file()]
+    missing = [rel for rel in SKILL_FILES if not _source_file(source_dir, rel).is_file()]
     if missing:
         raise InstallError(f"skill source incomplete, missing: {', '.join(missing)}")
     return [_sync_target(source_dir, target) for target in _targets_for_home(home)]
@@ -102,13 +111,13 @@ def install_all(source_dir: Path, home: Path) -> list[Path]:
 def main(argv: list[str] | None = None, *, home: Path | None = None, source_dir: Path | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="install_skill.py",
-        description="Sync the five-file relay-light skill source to both user-level replicas.",
+        description="Sync the skill-and-script relay-light skill source to both user-level replicas.",
     )
     parser.add_argument(
         "--all",
         action="store_true",
         required=True,
-        help="overwrite all five files under ~/.claude/skills/relay-light/ and ~/.codex/skills/relay-light/",
+        help="overwrite all skill files and the observer script under ~/.claude/skills/relay-light/ and ~/.codex/skills/relay-light/",
     )
     parser.parse_args(argv)
     source = source_dir or (Path(__file__).resolve().parent / "skill")
