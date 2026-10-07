@@ -18,3 +18,5 @@
 - 同步AGENTS single-task watcher单句，解决入口只列wait/get/read与新脚本职责冲突；先补登记允许路径，再改摘要，不扩大watcher写权或通知权限。
 
 - 仓级PowerShell回归：RELAY ALL PASS (SKIPPED: 1)。该启动在整改前，运行尾部读取到了已整改文档/安装器；最终整包版本仍以最新head CI为准。入口摘要独立review-entry-sync.md PASS，未增加watcher写权。
+
+- 2026-10-07用户补充确认AGENTS watcher入口可优化；主会话压缩为宪章摘要+skill索引，原职责与监控集合不变。入口报告原作者补记录行，原字节前缀保留，消除EOF空白。

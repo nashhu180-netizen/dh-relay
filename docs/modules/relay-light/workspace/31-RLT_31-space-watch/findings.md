@@ -15,3 +15,5 @@
 - F-004/F-005（resolved）：review-code-recheck.md、review-requirement-recheck.md 独立 PASS，原失败报告/信号保持原字节。去回声窗口聚合边界已写入三份协议，不以“排除编排”规避。
 
 - F-009（resolved / 同源入口摘要）：仓根AGENTS.md仍将watcher限定为wait/get/read，与用户明确“只起脚本与巡检”新合同冲突。将AGENTS watcher单句同步纳入本维护卡文档范围，先登记精确允许路径再修改；不增角色写权、不改完整模式、不改变用户目标/验收，派需求reviewer核同源入口。
+
+- F-009授权补充：用户明确“AGENTS.md 的 watcher 入口不合适的可以优化”。摘要只留职责/范围/零写入，投递细则以仓内skill为单源，不在AGENTS重复方法论。

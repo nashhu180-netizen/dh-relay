@@ -21,3 +21,5 @@ worktree=/home/nash/work/dh-relay/.dh-worktrees/RLT_31；client=codex-cli。
 | SW6 | 真实 Herdr workspace 状态变化与通知送达验证 | Herdr 管理会话实跑 | 机器 |
 
 真实 w68 演练保留历史漏报；SW6 无环境不可假称 PASS，mock 与实跑分开。通知不是 durable 放行信号，不推动下一节点。
+
+授权补充（2026-10-07用户）：AGENTS.md 的 watcher 入口不合适的可以优化。仅整理 watcher 入口摘要，不改变其它宪章/角色职责。

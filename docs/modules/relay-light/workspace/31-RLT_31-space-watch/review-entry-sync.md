@@ -11,3 +11,5 @@
 
 RLT_31 DevPlan 已在修改前将 `AGENTS.md` 纳入精确允许路径；brief 范围和 findings F-009 均留有对应说明。该同步限于 single-task，不改变完整模式或既有 SW6 实态验证边界。
 
+记录：以上为本轮独立原始结论，历史结果保留。
+最终摘要补核：PASS。压缩后的入口仍明确全 workspace、仅排 watcher 自身、脚本每 120 秒负责监控，watcher 仅启动与巡检且保持零写入、不路由不派活；链接 `tools/relay-light/skill/SKILL.md` 正确。
