@@ -987,3 +987,5 @@ A′ 增补的裁决过程见 [`design/evidence/01-交叉审核记录-RelayLight
 ## RLT_33 · 独立仓迁出（Issue #156 / relay-lite #1）
 
 标准档高危迁移，heavy；用户 2026-10-07 “建个issue 后开工”。产品合同/实施与复核在独立仓 docs/modules/relay-lite/；本源仓负责迁出入口和CI复验，不改变任何旧卡状态/签名。源工作区 workspace/33-RLT_33-independent/，目标 master，经 PR#157 交付。状态：进行中。
+
+2026-10-07 RLT_33 源侧交付记录：迁出实现PR157/8cbff63已合入，合入态PASS，两维护者新路径确认齐；本次有限证据PR携带verify(dh-relay)，其远端merge SHA为最终可查询验收提交。旧模块与在途原卡只留历史，本登记不代签旧卡；本卡清理及Issue关闭以实际有限收口PR归主干为准。完整主合同在独立relay-lite RLT_33工作区。
