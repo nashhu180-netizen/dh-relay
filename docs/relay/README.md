@@ -1,10 +1,3 @@
-# 接力计划
+# 接力计划已迁出
 
-计划统一放在 `<施工仓名>/<模块>/<plan_id>/relay_plan.md`。跨模块计划选一个牵头模块存放，各模块引用同一份，不复制总表。
-
-按用途选择：
-
-- **卡级衔接总表**：记住哪些卡要接着做、在等什么。复制 [单卡接力总表模板](templates/card-chain.md) 到上述位置，一行一张卡；每张卡内部使用单卡接力或交互单会话处理。
-- **完整执行计划**：需要按节点自动接力时，按 [relay-light 技能](../../tools/relay-light/skill/SKILL.md) 编写节点表与 agent 表，并配置账本及角色。
-
-总表只需一个 Markdown 文件；不需要账本、角色配置或常驻 agent，也不传给 `relay_log.py`。它不改变单卡的开工、复核、验收要求。
+现役卡级总表与模板由独立 [relay-lite 仓](https://github.com/nashhu180-netizen/relay-lite/tree/master/docs/relay) 维护，本仓不再并写计划。原始计划/日志见该仓 archive/dh-relay/docs/relay/，源冻结 SHA 2246b16cb82f86a594f7b2c36365e7851fe11263 亦保留 Git 历史。不执行旧完整模式，不变更原卡授权或人验。

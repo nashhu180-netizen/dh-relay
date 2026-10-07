@@ -9,7 +9,7 @@
 - 技术栈：PowerShell 7 脚本 + Markdown 工件；终端后端默认 psmux（PATH 命令，不在本仓）
 - 仓库形态：单仓 · 独立仓（2026-08-17 从 `dh-crew` 用 `git filter-repo` 拆出，保留全部 31 笔历史；拆分始末见 [docs/modules/dh-relay/backlog.md](docs/modules/dh-relay/backlog.md) `DHR-BL-5`）
 - 默认分支：master
-- dev-harness 模块：slug=`dh-relay`，模块根 `docs/modules/dh-relay/`；slug=`relay-light`，模块根 `docs/modules/relay-light/`（本仓两个现役模块，均保留 `docs/modules/<slug>/` 这一层——`dh` 工具链按它解析模块）
+- dev-harness 模块：slug=`dh-relay`，模块根 `docs/modules/dh-relay/`；relay-light 历史模块根 `docs/modules/relay-light/` 只保留历史；现役 relay-lite 已迁独立仓。
 
 ## GitHub 协作默认流程（可由用户明确豁免）
 
@@ -18,7 +18,7 @@
 1. **Issue 先立户**：凡新增设计方案、开发方案或任务卡，在创建对应受跟踪工件前必须先建 GitHub Issue，写明目标、范围、验收、档位/风险与停止边界。同一工作项的设计、DevPlan、任务卡与实现可共用一个 Issue；目标或验收边界独立的工作项不得借用无关 Issue。设计、DevPlan 和 workspace 必须记录 Issue 号；除第 7 条的用户明确豁免外，无 Issue 时 fail closed，不先写文件后补号。
 2. **任务分支 / worktree**：Issue 建立后，从已核对的 `master` 基线创建与 Issue/任务 ID 关联的分支；任务卡施工仍严格执行“一卡一 worktree”。设计、计划、任务工作区、代码与测试的实质变更不得直接提交到 `master`。任务分支上的规划确认仍不等于 D-start。
 3. **PR 请求合入**：任务分支 push 到 GitHub `origin` 后，必须创建目标为 `master` 的 Pull Request。PR 必须关联 Issue（按收口条件使用 `Closes #N` 或 `Relates to #N`），并写明任务/卡号、最终差异、验证证据、风险、未完成闸与范围外发现。dev-harness 独立复核不替代 GitHub PR 检查。
-4. **CI 必须通过**：PR 必须等待 `.github/workflows/ci.yml` 完成；`relay-tests-pwsh` 的 Windows/Ubuntu matrix 与 `relay-light-python` 必须成功，失败不得合并。`relay-core` 在 dh-relay 模块暂停期按 workflow 中的 `continue-on-error` 只作观测；暂停解除并去掉该配置后自动恢复为硬门。本地测试、PR 列表中出现 workflow 或某个非必须 job 绿，都不能代替上述完整 CI 结论。
+4. **CI 必须通过**：PR 必须等待 `.github/workflows/ci.yml` 完成；`relay-tests-pwsh` 的 Windows/Ubuntu matrix 与 `relay-light-python`（迁出后静态退役核对）必须成功，失败不得合并。`relay-core` 在 dh-relay 模块暂停期按 workflow 中的 `continue-on-error` 只作观测；暂停解除并去掉该配置后自动恢复为硬门。本地测试、PR 列表中出现 workflow 或某个非必须 job 绿，都不能代替上述完整 CI 结论。
 5. **单卡授权与合并**：新任务说明目标、范围、验收及目标仓库/任务或交付分支/目标主干后，用户开工授权覆盖本卡 Issue 创建/关联、精确 commit、push、PR 创建/更新、必要 CI/评审后的 GitHub 服务端合并、实际合入态复验、本地同步、verify、回填与本任务工作树/分支清理，不逐项重复索权。执行前核目标、权限、分支保护与副作用，不绕过必要审批/CI，不默认 force push；PR 合并后仍须按证据完成验收及收口。真实人判、新风险、范围/验收变化或事实阻塞才沟通；部署、发布、重启、环境/生产操作、无关清理与下一卡不随包授权。存量卡仅承接原授权，用户缩窄优先，不用新规则追溯扩权。
 6. **故障与 Issue 关闭**：同一授权目标的 source/target SHA 前进时重核最新版本与受影响检查，不重新索权；目标仓库/分支改变、权限不足、GitHub 不可达或必需 CI 无结论时保留现场，报告具体阻塞，不绕过、不伪造远端证据。范围内 CI 失败/冲突继续修复复验；网络超时先查实际远端状态，不盲目重试合并。普通任务只在 PR 合并已满足全部完成条件时可自动关联关闭；高危或仍需合入后 verify/人验的任务只写 `Relates to #N`，待出口闸真正闭合后再关 Issue。
 7. **用户可明确豁免**：用户可在对话中明确同意某一工作项不执行本节全部或指定的 GitHub 协作步骤（如 Issue、push、PR、Actions CI、服务端合并）；agent 必须按用户实际同意的范围执行，不得把单项豁免扩张为全流程豁免。豁免范围与日期须记入最近的设计、DevPlan、workspace 或进度工件；未建 Issue 时以 `GitHub-flow: user-waived (YYYY-MM-DD, scope=...)` 代替 Issue 号。该豁免只作用于本节，不授权 D-start、commit、复核代签、verify、验收、部署、发布或清理，也不取消“一卡一 worktree”等其他宪章硬规则。
@@ -37,22 +37,9 @@
 6. **【密钥红线】** 密钥 / 凭据值永不入任何工件（findings / progress / 设计文档 / commit）。进仓的窗口枚举、截图类证据先按白名单过滤，不能事后靠扫描凭据兜底。
 7. **【worktree 纪律】** 一个任务卡 = 一个 worktree。远端模式必须先 PR 实际合入、合入态复验、本地同步及必要证据/回填归目标主干，再清理本任务树/分支；不得用本地 squash 提前删树。必要的同卡证据收口 PR 仍在原授权内，不递归生成收口 PR；Issue 在约定交付全部完成后关闭。用户明确仅本地或保留现场时从其限制。worker 进场第一动作自 rebase master，节点/角色写权不因单卡授权扩大。
 
-## relay-light 编排协议段
+## relay-lite 已独立迁出
 
-> 被 relay-light stage-lead（原名 monitor，2026-09-23 更名；账本标识仍是 `monitor#<n>`）派进本仓的 agent 读本段；与下方 Runner「编排协议段（worker 铁律）」并列、互不隶属，两套流水不交叉执行。
-
-- 判定：stage-lead 派活 prompt 首行必须是 `[relay-light] worker · node=<n> · agent=<角色>#<实例> · workspace=<任务工作区>`（四字段样式：node、agent 角色、agent 实例、workspace）。见此标头即完成即停不等 node_closed，有 RELAY_RECEIPT 即冻结 Runner 流水。
-- 分工：编排管阶段，stage-lead 管本阶段节点（只派发与沟通，不做内容判定/方向决策/授权），worker 只完成当前节点；写完完成信号即停，无 node_closed，不越位派活、不回头问用户、不自行续节点。
-- 计划例外：relay-light 运行中的白名单追加有意绕过 B-adjust；例外只覆盖任务卡、开发方案任务行与接力计划追加，设计与验收仍走 dev-harness。
-
-### single-task 单卡接力段（与上方 full relay 标头互斥）
-
-- 判定：派单 prompt 首行是 `[relay-light:single-task] worker · phase=<phase> · agent=<角色>#<实例> · batch=<n|na> · round=<n> · workspace=<任务工作区>` 时按本段执行；该标头与上方 `[relay-light] worker · node=...` 互斥——见 single-task 标头不进入 full relay 流水，见 full 标头不适用本段。
-- 分工与停止：本模式无 stage-lead——orchestrator 就是派活位，`phase=watcher` 那个角色是 watcher（只观察只报信）。orchestrator 只按 durable signal 分发/路由；产出型 builder/coder/reviewer/decider（含明确启用的 document）只完成派单指向的一件事，写出 `DONE`/`BLOCKED` 单行 signal 后立即停止——不等 `node_closed`，不创建/读写 `relay_plan.md`/`relay_log.jsonl`，不越位派活、不回头问用户、不自行续节点。watcher 对 repo/workspace 完全只读：由 `space_watch.py` 每 120 秒按 `workspace_id` 动态监控本 Herdr workspace 其他 agent，排除 watcher 自身和主编排（通知对象）；watcher 只启动脚本和巡检存活，不再自行比对状态。通知与投递确认、派单模板见仓内 [relay-light 技能](tools/relay-light/skill/SKILL.md)；不写任何 signal/progress/日志，不路由不分派。
-- 卡级总表：上述禁读写执行计划不禁止登记的维护会话维护卡级衔接总表；按 [relay-light 技能](tools/relay-light/skill/SKILL.md)「卡级总表维护与交棒核对」执行。启动/恢复登记总表路径与唯一维护会话，等待/结果变化/停下/交棒时更新，交棒前核对行状态、证据、下一步与日期；无法更新报告“总表待同步”，不宣称已交棒。非维护卡写好待同步行后由其 orchestrator 通知维护会话，维护人所在卡收口前须先移交维护权。worker/watcher 写入边界不变；总表核对本身不授予下一卡开工权限，下一卡自动开工只按该行「自动接续」栏（用户写定）由维护会话（所在卡收口前，或收到非维护卡收口通知时）按 SKILL「自动接续」执行；接棒条件互不依赖的多张「是」卡可按 SKILL「并行开卡」同时各开 space，维护权仍单一。single-task orchestrator 的非方向小决策交 decider、需问用户的事项攒齐一次问，白名单与闭集见 SKILL「编排职责与执行边界」。多卡接力默认走总表 + 逐卡 single-task；完整模式（五阶段 + 账本）2026-09-30 起冻结，仅在途计划继续。
-- RELAY_RECEIPT fail closed 分流：进程环境存在 `RELAY_RECEIPT` 时，产出型角色（含 document）只写本角色精确 `BLOCKED.*.md` 单行 signal 后停止；watcher 保持 repo/workspace 零写入，只用 Herdr prompt 非 durable 通知 orchestrator 后停止，不写 BLOCKED。两个分支都不得清除任何 `RELAY_*` 环境变量。
-
-- 文档分工：默认由原责任方按既有写者规则直接写文档，不要求创建独立文档 agent、终端或标签页；未启用时不登记 document 实例、不等待 document 的 SYNCED 信号，缺少其配置或信号不构成阻塞。仅在用户明确指定本卡试验、启用 single-task 文档 agent 时，按仓内 skill「文档 agent（single-task 可选分工）」覆盖本段及下方通用 worker 的默认人工文档写者要求。全部获授权人工文档可委托，产品文档也可按用户指定留给实际执行者、仅委托过程记录。document 不改原始结果/独立 signal，不取代内容责任方、不自审、不派活；复核报告经原 reviewer 核对后，其独立确认 signal 才能放行。文档 SYNCED 不是 PASS，phase 沿用现有闭集，RELAY_RECEIPT 时仍只写精确 BLOCKED。作用仅限本卡明确允许路径，不扩大授权；效果由实际执行侧评估，文档 agent 只转录。
+2026-10-07 起 relay-lite 产品入口、单卡分工、安装器与接力计划由独立仓 [https://github.com/nashhu180-netizen/relay-lite](https://github.com/nashhu180-netizen/relay-lite) 维护，本仓不再分发 relay-light 完整模式或产品代码。新仓只保留单卡接力与跨卡接力计划，执行角色英文名 executor。历史模块 docs/modules/relay-light/ 留作只读/在途恢复材料；RLT_31/#151、RLT_32/#153、设计 #154 的原合同与在途现场不由迁移卡代收口。既有 RELAY_RECEIPT 与 Runner 的闸门不改变。
 
 ## 编排协议段（worker 铁律 · 被派进本仓的 agent 必读）
 
@@ -63,7 +50,7 @@
 ### 通用铁律（施工 / 复核都适用）
 
 1. **你是 worker，不是主控**：禁止再拉终端 / 派活 / 起 watcher，禁止调 AskUserQuestion 或以任何方式回头问用户。relay流水下只完成Work Item Ticket指向的当前Node；手动派活下只完成brief/review-brief指向的这一件事。
-2. **Ticket 定位，workspace 给业务合同**：收到Ticket时，先按Ticket进入精确worktree，读仓根AGENTS，再读Ticket指向的workspace `brief.md` / `task_plan.md` / `progress.md` / `findings.md`与Handoff；Ticket不重抄业务全文，workspace才是节点工作内容的权威来源。尚未启用Ticket的手动派活继续以brief/review-brief作为完整指令集。两种模式下都别自己加载dev-harness skill，也别满仓库寻找额外“流程框架”。棒次协议归属先看标记：有 RELAY_RECEIPT 即冻结 Runner 流水（Runner 体系冻结在 P6 现状、不删不迁；本句是流水归属判定，不是让本棒停摆），不交叉执行 relay-light（其标头判定见上段）。
+2. **Ticket 定位，workspace 给业务合同**：收到Ticket时，先按Ticket进入精确worktree，读仓根AGENTS，再读Ticket指向的workspace `brief.md` / `task_plan.md` / `progress.md` / `findings.md`与Handoff；Ticket不重抄业务全文，workspace才是节点工作内容的权威来源。尚未启用Ticket的手动派活继续以brief/review-brief作为完整指令集。两种模式下都别自己加载dev-harness skill，也别满仓库寻找额外“流程框架”。棒次协议归属先看标记：有 RELAY_RECEIPT 即冻结 Runner 流水（Runner 体系冻结在 P6 现状、不删不迁；本句是流水归属判定，不是让本棒停摆），不交叉执行 relay-light（独立仓的标头判定见该仓 skill）。
 3. **硬节点边界**：施工、复核、验证、诊断是不同 Node。当前 Node durable 收口并收到 `node_closed` 后立即停止；不得自行调用 `continue`、启动下一 Worker、把施工会话变成复核会话，或把测试通过解释为复核开始。
 4. **卡住必须落信号、不许憋死**：遇到阻塞 / 有疑问 / 缺信息，不要停在原地等——按 Ticket/workspace 规定的方式把 `blocked` 写出去（relay 流水下 = 写 checkpoint / result；手动派活下 = 写结构化 DONE）。单向憋在交互态里不写任何文件 = 主控在超时前完全看不见你。
 5. **范围外新想法记 findings/backlog，不顺手做**——哪怕看起来只是顺手一行改动。
@@ -96,14 +83,13 @@
 | 未排期的需求与已知坑 | [docs/modules/dh-relay/backlog.md](docs/modules/dh-relay/backlog.md) |
 | 踩过的坑 | [docs/modules/dh-relay/knowledge/教训库-候选.md](docs/modules/dh-relay/knowledge/教训库-候选.md) |
 | 主控派活（Windows 默认走 Herdr 拉交互式终端；claude kind 有 PATH shim 坑） | [docs/modules/dh-relay/knowledge/herdr-派活操作.md](docs/modules/dh-relay/knowledge/herdr-派活操作.md)（2026-08-28 用户指示 + 实测） |
-| relay-light 规划 / 编排 / 账本 / 三层执行 | [tools/relay-light/skill/SKILL.md](tools/relay-light/skill/SKILL.md) + 按编排/stage-lead 位的 agent kind 选 `references/adapter-claude-code.md` / `adapter-codex.md` |
 
 ## dev-harness 落点 / slug
 
 - 模块工件归 `docs/modules/dh-relay/`：`design/` 设计与验收、`dev_plan/` 计划与状态、`workspace/<卡>/` 任务工作区、`as-built/` 实现快照、`knowledge/` 教训、`backlog.md` 需求池。**与拆分前同路径**——历史留痕里的 doc 路径引用继续有效。
-- 生产代码落点 `tools/`（拆仓时由 `tools/relay/` **提级一层**——彼时独立仓只有 relay 一份代码，再套 `relay/` 是冗余；relay-light 代码根见下行 `tools/relay-light/`）；测试入口 `tools/tests/run-relay-tests.ps1`（本仓自带，与任何外部 run-all 无关）。
+- 生产代码落点 `tools/`（拆仓时由 `tools/relay/` **提级一层**——彼时独立仓只有 relay 一份代码，再套 `relay/` 是冗余；relay-lite 已迁独立仓）；测试入口 `tools/tests/run-relay-tests.ps1`（本仓自带，与任何外部 run-all 无关）。
 - verify scope = `dh-relay`；状态以 `docs/modules/dh-relay/dev_plan/` 为权威，本文件只登记不抄状态。
-- relay-light 模块：slug=`relay-light`，文档根 `docs/modules/relay-light/`，代码根 `tools/relay-light/`，verify scope = `relay-light`。
+- relay-light 历史模块仍归 `docs/modules/relay-light/`；后续产品维护归独立 relay-lite 仓，slug 与 verify scope 均为 `relay-lite`。
 - **运行现场不入业务仓**：P1 的 `.dh-runtime/relay/` 与历史 `<repo>/.dh-relay/<run_id>/` 仅作 legacy 读取，不原地迁移。新正式根统一为独立 PlanHome `D:/MyFiles/ai-workflow/02-agent-workspace/dh-relay-workspace`：tracked `plans/<plan_id>/plan.yaml`、`registry/projects.yaml`、`archive/`，ignored `runtime/<run_id>/`、`local/`；但 resolver 迁移验收前禁止初始化或 start。跨仓 run 索引仍在用户级 `~/.dh-relay/`，只做定位。
 
 ### `dh` 命令
@@ -111,8 +97,8 @@
 `dh` 全局装在 `AppData\Roaming\npm\dh.cmd`（指向 `D:\MyFiles\ai-workflow\dev-harness\tools\dh-check.mjs`，两个仓都不在）。本仓保留了 `docs/modules/<slug>/` 这一层，所以它的模块解析正常：
 
 - `dh dh-relay` —— 按 dh-relay slug 解析
-- `dh relay-light` —— 按 relay-light slug 解析
-- `dh` —— 不给参数时，本仓有多个模块，须显式指定
+- `dh relay-light` —— 仅历史模块查询；现役产品请到独立 relay-lite 仓
+- `dh` —— 不给参数时，本仓保留多个历史模块目录，操作现役 Runner 时须显式指定 dh-relay
 
 体检报出的存量失败项与拆分前在 dh-crew 里跑的结果一致（不是拆仓引入的）。
 
