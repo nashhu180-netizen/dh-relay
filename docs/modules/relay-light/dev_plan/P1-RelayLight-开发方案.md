@@ -951,3 +951,35 @@ A′ 增补的裁决过程见 [`design/evidence/01-交叉审核记录-RelayLight
 - [ ] §6 的 **143 条机器验收 + 16 条人验 = 159 条**全部有等价证据；RLT_29 单独交付 A159～A168/H19。
 - [ ] Windows/Linux × Claude Code/Codex 既有矩阵与 single-task heavy 自举证据齐全；用户完成全部 16 条人判。
 - [ ] `verify(relay-light):` 只能在用户查看证据并明确授权后提交；RLT_29 虽有批量版本授权，E10 后人验结论仍须用户确认。
+
+
+## 维护登记：RLT_31（2026-10-07，Issue #151）
+
+标准档，task_type=normal；状态：进行中；工作区：[31-RLT_31-space-watch](../workspace/31-RLT_31-space-watch/)。目标/根因：single-task 监控名单临场选择及模型目测导致漏报，改为固定全 workspace 动态发现与程序 diff。用户交接中的“继续操作”授权本范围，独立维护卡不调整旧计划批次，不解冻完整模式。
+<!-- dh:task-type:v1 task=RLT_31 type=normal -->
+
+### 验收（用户交接 / Issue #151）
+
+| ID | 命题 | 事实证明方式 | 谁验 |
+|---|---|---|---|
+| SW1 | 按 workspace_id 每轮重新列本space的其他 agent，排除 watcher 自身和主编排（按实际pane身份）；主编排只收通知 | 单元测试、CLI fixture | 机器 |
+| SW2 | agent_status 或 state_change_seq 改变、新增/离开机械通知；无变化静默 | 状态序列 fixture | 机器 |
+| SW3 | 通知提交确认；失败不提交比较基线，不自动 Enter | subprocess/失败注入 | 机器 |
+| SW4 | watcher 只起脚本和巡检；三份文档和派单模板一致；安装器提供脚本 | 文本检查、临时 home 安装 | 机器 |
+| SW5 | 环境/RELAY_RECEIPT fail closed，零日志写入，独立复核和必需 CI PASS | 注入测试、复核、GitHub CI | 机器 |
+| SW6 | 真实 Herdr workspace 状态变化与通知送达验证 | Herdr 管理会话实跑 | 机器 |
+
+### 允许路径
+<!-- dh:allowed-paths:v1 task=RLT_31 -->
+- `AGENTS.md`
+- `tools/relay-light/space_watch.py`
+- `tools/relay-light/test_space_watch.py`
+- `tools/relay-light/install_skill.py`
+- `tools/relay-light/test_install_skill.py`
+- `tools/relay-light/skill/SKILL.md`
+- `tools/relay-light/skill/references/adapter-codex.md`
+- `tools/relay-light/skill/references/adapter-claude-code.md`
+- `docs/modules/relay-light/dev_plan/P1-RelayLight-开发方案.md`
+- `docs/modules/relay-light/workspace/31-RLT_31-space-watch/**`
+
+停止边界：SW6 无真实 Herdr 管理 pane 不得虚报通过/合入收口；不改完整模式/业务仓/现役模型分配、不发布部署、不代人验、不清除 RELAY_*。复核按 normal 三路与有效单测，未完成闸如实保留。

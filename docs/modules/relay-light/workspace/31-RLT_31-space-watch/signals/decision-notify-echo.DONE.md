@@ -1,0 +1,1 @@
+DECIDED: successful in-workspace notify may advance only that target's next comparison baseline to its confirmed after-state; preserve all other members, fail closed on target pane mismatch, and require the listed regression tests.

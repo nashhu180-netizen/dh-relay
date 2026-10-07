@@ -5,7 +5,7 @@ description: 轻量接力编排（relay-light / relay-lite / 简单版接力）�
 
 # relay-light
 
-> 版本：v1.4.0
+> 版本：v1.4.1
 
 relay-light 是一套接力编排协议，有两种互斥模式（选法见下节「模式选择」）：**完整模式**（2026-09-30 起冻结：新计划不再使用，在途计划按原合同跑完；合同正文与 `relay_log.py` 保留不删）由人拉起规划与编排，编排在每个阶段开一个终端空间并拉起 stage-lead，stage-lead 拉起该阶段所有 agent，全部状态只以 `relay_log.py` 账本为准；**`single-task` 单卡接力**由编排直接分派各角色、watcher 旁路巡检，不建账本（见文末同名一节）。本文件是协议核心；两侧运行时的派活/等待命令写法见 `references/adapter-claude-code.md` 与 `references/adapter-codex.md`。
 
@@ -67,7 +67,7 @@ relay-light 的 worker 不回头问用户，卡住只能写 `blocked` 交 decide
 | decider 决策 | stage-lead | 按需 | 施工 `blocked` 时产出可落地方案；不改任何文件，可在方案文件提出「需要改计划」并写明改动内容（改计划工作流见「planner-amend 改计划模板」） |
 | reviewer | stage-lead | 单路 | R 阶段各路复核，路数由 Recipe 决定 |
 | strategist 全局决策 | stage-lead | 按需 | 返工到轮数上限仍不过时产出全局方案；不改任何文件，可同样提出「需要改计划」（见「planner-amend 改计划模板」） |
-| watcher（旁路） | 编排或 stage-lead | 一个终端空间 | 只观察、只报信给本空间派活方；不派活、不写账本、不改文件。完整 relay 模式：盯 agent 状态变化与 20 分钟 tick 由 `relay_log.py watch` 程序承担，watcher agent 每终端空间一个、每 10 分钟只读核本空间 watch 存活，缺席即报信本空间派活方（stage-lead/编排）重拉；`single-task` 模式无账本不接 watch，`phase=watcher` 角色以 120 秒节拍盯 agent 状态变化 |
+| watcher（旁路） | 编排或 stage-lead | 一个终端空间 | 只观察、只报信给本空间派活方；不派活、不写账本、不改文件。完整 relay 模式：盯 agent 状态变化与 20 分钟 tick 由 `relay_log.py watch` 程序承担，watcher agent 每终端空间一个、每 10 分钟只读核本空间 watch 存活，缺席即报信本空间派活方（stage-lead/编排）重拉；`single-task` 模式无账本不接 ledger watch；`space_watch.py` 每 120 秒动态发现本 Herdr workspace 全部 agent（排除 watcher 自身和主编排）并机械比对状态，`phase=watcher` 只启动脚本与巡检存活 |
 
 拉取顺序固定：**编排拉 stage-lead，stage-lead 拉其余**。编排不越级拉 agent；stage-lead 不跨阶段存活；规划不参与运行。checker / decider / strategist 都不写账本、不做复核、不改文件。
 
@@ -401,11 +401,14 @@ relay_log.py lint --plan <plan_dir> --amend-check after  --repo <repo> --snapsho
 
 ### watcher 节拍与安全 Enter
 
-本模式的常驻观察者是角色表里的 **watcher**（`phase=watcher`）——只观察、只报信，与完整模式的 stage-lead 不是同一角色（本模式不写账本）。分工表里用户自写的「监督 / 监控 / monitor」自然语言叫法即指它，这是别名映射，不是标头 phase 值。
+本模式的常驻观察者是 **watcher**（`phase=watcher`），只启动固定观察脚本与巡检，只报信。角色表中的「监督 / 监控 / monitor」是它的自然语言别名。
 
-- watcher 常驻，只做 Herdr wait/get/read：每 120 秒观察一次，无状态变化静默，有变化即时用 Herdr prompt 通知 orchestrator（通知不是 durable artifact）。
-- 安全 Enter：仅当三条件**同时**成立才发送一次并复验——①本次派单文本仍停在输入框（含 Devin queued 指令仍排队未发出）；②`state_change_seq` 未推进；③当前界面不是审批/确认 UI。任一不满足即不按；一次仍失败则通知 orchestrator 并换 fresh 实例，禁止连按。
-- watcher 命中 `RELAY_RECEIPT` 时同样 repo 零写入，只 prompt 通知 orchestrator 后停止。
+- 监控范围固定（2026-10-07 用户修订）：所在 Herdr workspace 的其他 agent，每轮按 `workspace_id` 重新发现，新拉起的角色自动纳入；排除 watcher 自身和主编排，不按名字前缀或派单名单筛选。主编排始终只作通知对象，无论是否在这个 space；每轮 `get <编排名>` 解析 `--notify` 对应主编排的实际 pane 身份后排除该 pane，不靠模型猜角色，不静默排除其它角色。
+- 固定脚本负责比对：`python3 <SPACE_WATCH> --workspace <Herdr_workspace_id> --notify <编排名> --self <watcher_Herdr名>`。`SPACE_WATCH` 在仓内为 `tools/relay-light/space_watch.py`，安装后为 `<skill目录>/space_watch.py`；Herdr workspace ID 与标头里的任务文档 workspace 路径分别填写，不能混用。第一轮成功快照建基线，随后每 120 秒 list 全部 agent、按 workspace_id 筛选并按 pane ID get 状态（`agent` 是 kind，不是名字；未命名成员同样按 pane 监控）；新增/离开、`agent_status` 或 `state_change_seq` 有变化即通知，无变化静默。通知只是即时提示，不是 durable signal。
+- 投递确认由脚本执行 `herdr agent prompt --wait --until working --timeout 5000` 并核通知对象同 pane、最终 `working` 与 `state_change_seq` 推进（极快结束未捕获 working 也保守报未确认）；失败/超时/未确认不提交比较基线，输出固定 `SPACE_WATCH_BLOCKED reason=...`、仅白名单状态 diff 的 `UNCONFIRMED` 提示并非零退出，交 watcher 报信。脚本不读取/保存终端正文，不发送 Enter、不盲目重发。watcher 需人工核实际投递结果后由编排恢复，可能已送达的未知结果不得当成未发送再补发。
+- watcher 常驻，对 repo/workspace **完全只读**：只拉起已批准的脚本子进程并巡检其存活，不再由模型自己目测比较状态；不写 signal/progress/execution_strategy/轮询日志/通知日志或任何文档，不路由、不分派、不启动 agent。快照仅在脚本内存，无日志文件，stdout/stderr 不重定向进仓或任务工作区。启动后立即核脚本进程，再每 120 秒核 PID/退出码；正常运行静默，退出则一次 Herdr prompt 通知 orchestrator 并核投递，无法送达明确报告 blocked 后停止，不自行重拉 agent 或无限重启。检查精确子进程 PID，不以包含脚本路径的 shell 命令文本作为存活证据。
+- 启动前核 `HERDR_ENV=1` 与当前 watcher 身份；默认可按 `HERDR_PANE_ID` 自动定位，自填 `--self` 也必须在目标 workspace 且与已提供的 pane 身份一致。`RELAY_RECEIPT` 存在（含空值）时不启动脚本，watcher 只按既有 fail closed 规则通知并停止，不清除环境变量。
+- 安全 Enter：仅当三条件**同时**成立才由 watcher 发一次并复验——①本次派单文本仍停在输入框（含 Devin queued 指令仍排队未发出）；②`state_change_seq` 未推进；③当前界面不是审批/确认 UI。任一不满足即不按；一次仍失败则通知 orchestrator 并交编排换 fresh 实例，禁止连按。脚本不承担安全 Enter 判断。
 
 ### 恢复依据
 
