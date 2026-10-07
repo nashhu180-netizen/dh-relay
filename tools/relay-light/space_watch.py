@@ -128,10 +128,18 @@ class SpaceWatch:
         self.own_name = agent_name(own[0])
         if self.notify == self.own_name:
             raise WatchError("watcher_cannot_notify_self")
+        target = self.client.get(self.notify)
+        target_pane = target.get("pane_id")
+        if not isinstance(target_pane, str) or not target_pane:
+            raise WatchError("notification_target_identity_missing")
+        if target_pane == own[0].get("pane_id"):
+            raise WatchError("watcher_cannot_notify_self")
         snapshot = {}
         for member in members:
             name = agent_name(member)
-            if name == self.own_name:
+            # The principal orchestrator is the recipient, never monitored.
+            # Resolve its actual pane on each poll rather than using a prefix.
+            if name == self.own_name or member.get("pane_id") == target_pane:
                 continue
             if name in snapshot:
                 raise WatchError("herdr_duplicate_agent")
@@ -158,16 +166,7 @@ class SpaceWatch:
             changes.append(f"{name} {label(old)} -> {label(new)}")
         if changes:
             self.pending_message = f"[relay-light] space-change {self.workspace} " + "; ".join(changes)
-            after = self.client.notify(self.notify, self.pending_message)
-            # Consume only the target state already observed by delivery's oracle.
-            # Other members keep their pre-notification snapshot so their changes
-            # during submission will still be detected on the next poll.
-            target_key = next((key for key, value in current.items()
-                               if value.pane_id == after.pane_id), None)
-            if self.notify in current and current[self.notify].pane_id != after.pane_id:
-                raise WatchError("notification_target_replaced")
-            if target_key is not None:
-                current[target_key] = after
+            self.client.notify(self.notify, self.pending_message)
         # Failed delivery/observation raises before this assignment: baseline survives.
         self.previous = current
         self.pending_message = None

@@ -20,3 +20,9 @@
 - 仓级PowerShell回归：RELAY ALL PASS (SKIPPED: 1)。该启动在整改前，运行尾部读取到了已整改文档/安装器；最终整包版本仍以最新head CI为准。入口摘要独立review-entry-sync.md PASS，未增加watcher写权。
 
 - 2026-10-07用户补充确认AGENTS watcher入口可优化；主会话压缩为宪章摘要+skill索引，原职责与监控集合不变。入口报告原作者补记录行，原字节前缀保留，消除EOF空白。
+
+- ECHO-01补测暴露同space通知完成回声，见delayed-echo.md；本卡新增开放P1/方向项F-010，保留前序独立PASS及其覆盖范围，不把它们升格为整卡PASS。已问用户拓扑选择；当前仍不合入/verify。
+
+- 用户对通知拓扑给出新范围：不监控主编排，监控同space其它agent；同步DevPlan→brief、AGENTS/skill/adapter与脚本。每轮解析通知对象实际pane以排除；删除after-state局部回声合并；新增完整通知生命周期和接收方身份重发现测试，历史RED保留。task_plan原施工基线不回写，执行偏离以本条和findings F-010承接。
+
+- 用户最终范围的25 watcher+19 installer测试PASS；删除主编排排除条件的业务mutation RED、精确恢复GREEN。代码/需求定向独立复查PASS，教训适用PASS。前一head 2820184的完整CI已结束success：Windows/Ubuntu PowerShell与Python均成功，暂停期Node观测失败；最终范围修订需新head重跑CI。SW6仍缺真实Herdr证据，PR #152保持Draft，不合并/verify/清理。

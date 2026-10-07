@@ -222,7 +222,7 @@ ledger_silent → 核 Herdr 状态 + pane 末行 + 允许路径产出 三者是�
 
 ### watcher 节拍与安全 Enter
 
-- 监控范围固定：所在 Herdr workspace 的全部 agent，每轮按 `workspace_id` 重新发现，新拉起的角色自动纳入；只排除 watcher 自己，不按名字或派单名单筛选。通知对象 orchestrator 不在这个 space 时只作通知对象；在本 space 时也属于被监控成员；仅把本次确认送达时读到的通知目标 after-state 同步为下一轮基线以去除回声，其他成员快照不变。目标在投递窗口内并发变化按同一次聚合状态观察，当前 API 不提供事件级因果归因，不宣称逐事件上报。
+- 监控范围固定（2026-10-07 用户修订）：所在 Herdr workspace 的其他 agent，每轮按 `workspace_id` 重新发现，新拉起的角色自动纳入；排除 watcher 自身和主编排，不按名字前缀或派单名单筛选。主编排始终只作通知对象，无论是否在这个 space；每轮 `get <编排名>` 解析 `--notify` 对应主编排的实际 pane 身份后排除该 pane，不靠模型猜角色，不静默排除其它角色。
 - 固定脚本负责比对：`python3 <SPACE_WATCH> --workspace <Herdr_workspace_id> --notify <编排名> --self <watcher_Herdr名>`。`SPACE_WATCH` 在仓内为 `tools/relay-light/space_watch.py`，安装后为 `<skill目录>/space_watch.py`；Herdr workspace ID 与标头里的任务文档 workspace 路径分别填写，不能混用。第一轮成功快照建基线，随后每 120 秒 list 全部 agent、按 workspace_id 筛选并按 pane ID get 状态（`agent` 是 kind，不是名字；未命名成员同样按 pane 监控）；新增/离开、`agent_status` 或 `state_change_seq` 有变化即通知，无变化静默。通知只是即时提示，不是 durable signal。
 - 投递确认由脚本执行 `herdr agent prompt --wait --until working --timeout 5000` 并核通知对象同 pane、最终 `working` 与 `state_change_seq` 推进（极快结束未捕获 working 也保守报未确认）；失败/超时/未确认不提交比较基线，输出固定 `SPACE_WATCH_BLOCKED reason=...`、仅白名单状态 diff 的 `UNCONFIRMED` 提示并非零退出，交 watcher 报信。脚本不读取/保存终端正文，不发送 Enter、不盲目重发。watcher 需人工核实际投递结果后由编排恢复，可能已送达的未知结果不得当成未发送再补发。
 - watcher 常驻，对 repo/workspace **完全只读**：只拉起已批准的脚本子进程并巡检其存活，不再由模型自己目测比较状态；不写 signal/progress/execution_strategy/轮询日志/通知日志或任何文档，不路由、不分派、不启动 agent。快照仅在脚本内存，无日志文件，stdout/stderr 不重定向进仓或任务工作区。启动后立即核脚本进程，再每 120 秒核 PID/退出码；正常运行静默，退出则一次 Herdr prompt 通知 orchestrator 并核投递，无法送达明确报告 blocked 后停止，不自行重拉 agent 或无限重启。检查精确子进程 PID，不以包含脚本路径的 shell 命令文本作为存活证据。
@@ -237,7 +237,7 @@ ledger_silent → 核 Herdr 状态 + pane 末行 + 允许路径产出 三者是�
 Herdr workspace_id=<真实 space ID>；notify=<编排名>；self=<watcher Herdr 名>。
 读 AGENTS.md 与本节 watcher 合同；RELAY_RECEIPT preflight，HERDR_ENV 必须为 1。
 只启动：python3 <SPACE_WATCH> --workspace <真实 space ID> --notify <编排名> --self <watcher Herdr 名>
-监控集合固定为本 workspace 全部 agent，只排除 watcher 自己；不接受角色名单或名字过滤。
+监控集合固定为本 workspace 的其他 agent，排除 watcher 自身和主编排；不接受角色名单或名字过滤。
 启动后立即核子进程存活，随后每 120 秒查 PID/退出码；不再自己比对 agent 状态。
 正常运行静默；退出一次通知编排并确认送达，无法送达报告 blocked 后停；不自动重发未知通知。
 不写任何仓库或任务工作区文件，不输出/保存终端正文，不路由、不派活、不启动 agent。

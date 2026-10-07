@@ -17,3 +17,9 @@
 - F-009（resolved / 同源入口摘要）：仓根AGENTS.md仍将watcher限定为wait/get/read，与用户明确“只起脚本与巡检”新合同冲突。将AGENTS watcher单句同步纳入本维护卡文档范围，先登记精确允许路径再修改；不增角色写权、不改完整模式、不改变用户目标/验收，派需求reviewer核同源入口。
 
 - F-009授权补充：用户明确“AGENTS.md 的 watcher 入口不合适的可以优化”。摘要只留职责/范围/零写入，投递细则以仓内skill为单源，不在AGENTS重复方法论。
+
+- F-010（open / P1通知拓扑）：delayed-echo.md ECHO-01 实际复现仅一次worker事件产生4条通知；同space目标从working变done会继续自激。此前F-004修复及其PASS只闭合瞬时seq回声，不能覆盖整个通知生命周期。已向用户集中问拓扑选择，不能擅自新增排除项或假称可靠因果归因；答复前不改依赖该决定的代码/协议。
+
+- F-010（用户已裁决，整改中）：2026-10-07用户明确“watcher 不用监控 主编排，他监控 同 space 里面其他的标签页的agent”。新合同排除自身+主编排，主编排由--notify精确身份/pane识别，不按前缀、仍动态发现全部其他成员。该原始用户裁决覆盖此前只排自身的口径；去除after-state回声合并，不采用同space拒绝/新因果回执方案。delayed-echo.md历史RED保持不改，新增完整生命周期回归验证整改；待独立复查。
+
+- F-010整改闭合（本地候选）：用户新范围已同步代码/入口/两adapter/模板/DevPlan与brief，完整通知生命周期回归、独立代码/需求定向复查PASS；delayed-echo.md保留历史RED并追加新业务mutation精确恢复GREEN。F-001真实环境缺口不受本地闭合影响；最终head CI待核。

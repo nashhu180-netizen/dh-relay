@@ -55,7 +55,7 @@ class SpaceWatchTests(unittest.TestCase):
         self.assertEqual(2, self.client.list_calls)
         self.assertNotIn("orch", self.watch.previous)
         self.assertNotIn("watcher2", self.watch.previous)
-        self.assertEqual(["pane-toy-builder", "pane-toy-builder"], self.client.get_calls)
+        self.assertEqual(["orch", "pane-toy-builder", "orch", "pane-toy-builder"], self.client.get_calls)
 
     def test_dynamic_new_final_including_names_without_prefix(self):
         self.watch.poll()
@@ -85,25 +85,30 @@ class SpaceWatchTests(unittest.TestCase):
         self.client.rows[1]["agent_status"] = "done"
         self.assertEqual(1, len(self.watch.poll()))
 
-    def test_only_self_excluded_even_notify_inside_workspace(self):
+    def test_self_and_principal_orchestrator_are_excluded_inside_workspace(self):
         self.client.rows[2]["workspace_id"] = "w68"
         self.watch.poll()
         self.client.rows[0]["state_change_seq"] += 1
         self.client.rows[2]["state_change_seq"] += 1
+        self.client.rows[2]["agent_status"] = "done"
+        self.assertEqual([], self.watch.poll())
+        self.assertEqual([], self.client.sent)
+        self.assertNotIn("orch", self.watch.previous)
+        self.assertNotIn("watcher2", self.watch.previous)
+        # A worker with a similar name is still monitored, no prefix filtering.
+        self.client.rows.append(agent("orch-reviewer"))
         self.assertEqual(1, len(self.watch.poll()))
-        self.assertIn("orch", self.client.sent[0][1])
-        self.assertNotIn("watcher2", self.client.sent[0][1])
 
-    def test_notification_echo_is_silent_and_target_still_monitored(self):
+    def test_full_notification_lifecycle_has_no_orchestrator_echo(self):
         self.client.rows[2]["workspace_id"] = "w68"
         self.watch.poll()
         self.client.rows[1]["agent_status"] = "done"
         self.assertEqual(1, len(self.watch.poll()))
-        self.assertEqual([], self.watch.poll())
-        self.client.rows[2]["agent_status"] = "done"
-        self.assertEqual(1, len(self.watch.poll()))
-        self.assertEqual([], self.watch.poll())
-        self.assertEqual(2, len(self.client.sent))
+        for _ in range(3):
+            self.client.rows[2].update(agent_status="done",
+                                      state_change_seq=self.client.rows[2]["state_change_seq"] + 1)
+            self.assertEqual([], self.watch.poll())
+        self.assertEqual(1, len(self.client.sent))
 
     def test_other_worker_changed_during_notify_is_reported_next_poll(self):
         self.client.rows[2]["workspace_id"] = "w68"
@@ -117,16 +122,25 @@ class SpaceWatchTests(unittest.TestCase):
             self.watch.poll()
         self.assertEqual(1, len(self.watch.poll()))
 
-    def test_notify_target_replaced_since_snapshot_preserves_baseline(self):
+    def test_recipient_identity_rediscovered_after_replacement(self):
         self.client.rows[2]["workspace_id"] = "w68"
         self.watch.poll()
-        baseline = self.watch.previous.copy()
-        self.client.rows[1]["agent_status"] = "done"
-        with patch.object(self.client, "notify", return_value=sw.AgentState("replacement", "working", 10)):
-            with self.assertRaisesRegex(sw.WatchError, "notification_target_replaced"):
-                self.watch.poll()
-        self.assertEqual(baseline, self.watch.previous)
-        self.assertIsNotNone(self.watch.pending_message)
+        self.client.rows[2]["pane_id"] = "replacement"
+        self.assertEqual([], self.watch.poll())
+        self.assertNotIn("orch", self.watch.previous)
+
+    def test_recipient_excluded_by_pane_even_when_list_has_no_name(self):
+        self.client.rows[2]["workspace_id"] = "w68"
+        original = self.client.agents
+        def inventory():
+            rows = original()
+            rows[2].pop("name")
+            return rows
+        with patch.object(self.client, "agents", side_effect=inventory):
+            self.watch.poll()
+            self.client.rows[2]["state_change_seq"] += 1
+            self.assertEqual([], self.watch.poll())
+        self.assertNotIn("pane-orch", self.watch.previous)
 
     def test_unnamed_agents_use_pane_not_kind_labels(self):
         self.client.rows.extend([agent("anonymous-a"), agent("anonymous-b")])
@@ -181,7 +195,12 @@ class SpaceWatchTests(unittest.TestCase):
 
     def test_list_get_race_is_not_false_disappearance(self):
         self.watch.poll()
-        with patch.object(self.client, "get", return_value=agent("toy-builder", workspace="elsewhere")):
+        get = self.client.get
+        def moved_member(name):
+            if name == "pane-toy-builder":
+                return agent("toy-builder", workspace="elsewhere")
+            return get(name)
+        with patch.object(self.client, "get", side_effect=moved_member):
             with self.assertRaises(sw.WatchError):
                 self.watch.poll()
         self.assertEqual([], self.client.sent)
@@ -256,9 +275,9 @@ class ProtocolTests(unittest.TestCase):
         for rel in ["SKILL.md", "references/adapter-codex.md", "references/adapter-claude-code.md"]:
             text = (root / rel).read_text()
             section = text.split("### watcher 节拍与安全 Enter", 1)[1].split("### 恢复依据", 1)[0]
-            for token in ["space_watch.py", "workspace_id", "只排除 watcher 自己", "--workspace", "--notify", "120", "存活", "不再"]:
+            for token in ["space_watch.py", "workspace_id", "排除 watcher 自身和主编排", "--workspace", "--notify", "120", "存活", "不再"]:
                 self.assertIn(token, section, rel)
-            self.assertNotIn("按名字前缀", section)
+            self.assertIn("不按名字前缀", section)
             if rel != "SKILL.md":
                 self.assertIn("phase=watcher", section)
                 self.assertIn("--self", section)

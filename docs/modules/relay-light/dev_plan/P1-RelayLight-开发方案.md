@@ -962,7 +962,7 @@ A′ 增补的裁决过程见 [`design/evidence/01-交叉审核记录-RelayLight
 
 | ID | 命题 | 事实证明方式 | 谁验 |
 |---|---|---|---|
-| SW1 | 按 workspace_id 每轮重新列全部 agent，只排除 watcher 自己；外部通知对象不纳入 | 单元测试、CLI fixture | 机器 |
+| SW1 | 按 workspace_id 每轮重新列本space的其他 agent，排除 watcher 自身和主编排（按实际pane身份）；主编排只收通知 | 单元测试、CLI fixture | 机器 |
 | SW2 | agent_status 或 state_change_seq 改变、新增/离开机械通知；无变化静默 | 状态序列 fixture | 机器 |
 | SW3 | 通知提交确认；失败不提交比较基线，不自动 Enter | subprocess/失败注入 | 机器 |
 | SW4 | watcher 只起脚本和巡检；三份文档和派单模板一致；安装器提供脚本 | 文本检查、临时 home 安装 | 机器 |
