@@ -32,3 +32,4 @@
 - 施工验证：5 个角色条目的 TOML/model/launch 对齐与真实 CLI --version 参数解析通过；未点名角色与基线逐项相等。安装器初次回归 18/19 通过、1 个结构检查失败（模板注释出现 single-task 字样）；保留完整模式模板定位，单卡仅参考提案，修正注释后复验。
 - 修正后安装器 19/19 回归通过；git diff --check 通过。结构检查保留完整模式模板定位与既有确认语义；本卡按 light Recipe 派独立 reviewer 分别做一致性/教训复核，复核 pending。
 - 独立 reviewer /rlt32_review 对候选 7d89f0606b88b0a537af14258cdccd03a6ca8ce2 完成两路复核：consistency_review PASS，无 P0-P3；lessons PASS，模块 knowledge 不存在，记录 lessons-absent / N/A。证据见 review.md；尚待当前精确 head 的远端必需 CI、实际合入与安装同步。
+- 远端全量 Python 初次失败证据：run 37592138630 的 test_shipped_roles_toml_has_the_twelve_design_roles 发现新增 batch-reviewer 段违反完整模式 12 角色闭集（319 项，318 pass / 1 fail）。修正为单卡 batch-reviewer 默认参考 [coder] 模型/推理档/launch，核心表与两 adapter 显式登记；移除新增的完整模式角色段，不改测试或设计闭集。五个单卡角色的四组默认值仍满足用户要求。

@@ -367,7 +367,7 @@ relay_log.py lint --plan <plan_dir> --amend-check after  --repo <repo> --snapsho
 | decider | `gpt-6-astra` | `medium` |
 | reviewer | `gpt-6.1-sol` | `high` |
 
-`reviewer gpt-6.1-sol-high` 按模型 `gpt-6.1-sol` 与推理档 `high` 分开填写，不把后缀当模型 ID。相应启动模板见随 skill 安装的 `roles.toml`：`codex -m <模型> -c model_reasoning_effort=<推理档> --dangerously-bypass-approvals-and-sandbox`。未列出的角色保持原有默认或用户指定；本表是新建分配的默认提案，不覆盖在途卡的明确确认，不替代下方启动确认闸。single-task 确认后的分配仍写入 `execution_strategy.md`，不创建完整模式的计划级 config。
+`reviewer gpt-6.1-sol-high` 按模型 `gpt-6.1-sol` 与推理档 `high` 分开填写，不把后缀当模型 ID。`batch-reviewer` 默认参考 `roles.toml` 的 `[coder]` 模型、推理档和启动参数，其只读约束由派单 prompt 承担；不新增完整模式角色。相应启动模板见随 skill 安装的 `roles.toml`：`codex -m <模型> -c model_reasoning_effort=<推理档> --dangerously-bypass-approvals-and-sandbox`。未列出的角色保持原有默认或用户指定；本表是新建分配的默认提案，不覆盖在途卡的明确确认，不替代下方启动确认闸。single-task 确认后的分配仍写入 `execution_strategy.md`，不创建完整模式的计划级 config。
 
 - orchestrator 必须先向用户展示全部拟启动角色/实例的模型与推理档提案表，并明确询问确认；推荐默认仅是提案，不写死模型。用户可逐角色修改；**未获明确确认不得启动任何 agent**。唯一例外：卡级总表「自动接续」栏由用户写定的分配（见该节），视为对应角色的明确确认，其余角色仍照本条询问。
 - 确认后由 orchestrator 机械地把确认来源、角色/实例、模型、推理档写入 `execution_strategy.md`；未启动的 tab/pane 标 pending，启动后补齐实际 Herdr workspace/tab/pane 与观察来源并逐项比对。默认由 orchestrator 维护 `execution_strategy.md`，watcher 与其它角色只读；启用 document 时按下文首次建卡/代笔合同登记，由 orchestrator 核对分配事实。授权与模型确认事实保留在此，业务决定只按下文「决定落点」引用 findings。
