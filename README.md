@@ -67,3 +67,7 @@ pwsh tools/host/run-dogfood.ps1 -Scenario decision -ScreenshotOnLaunch -Screensh
 2026-08-17 从 `dh-crew` 仓用 `git filter-repo` 拆出，保留全部 31 笔提交历史。文档 `docs/modules/dh-relay/` **保持原路径**（`dh` 工具链按这一层解析模块）；代码 `tools/relay/` **提级为 `tools/`**（独立仓里只有 relay 一份代码）。拆分的可行性核查、执行记录与踩到的坑见 [docs/modules/dh-relay/backlog.md](docs/modules/dh-relay/backlog.md) `DHR-BL-5`。
 
 `docs/modules/dh-relay/workspace/DHR_*/` 与 `docs/modules/dh-relay/design/evidence/` 是**历史留痕**，拆仓时未做路径改写。里面的 doc 路径继续有效；只有 `tools/relay/` 是 dh-crew 时期的旧地址，本仓对应 `tools/`。
+
+## relay-lite 已迁出
+
+单卡接力分工和接力计划现由独立仓 [relay-lite](https://github.com/nashhu180-netizen/relay-lite) 维护，角色 coder 更名 executor。源产品代码和完整模式入口已退役，历史模块文件保留供原卡恢复，迁移不改变 Runner。出处与库存见源 Issue #156 / 新仓 Issue #1。

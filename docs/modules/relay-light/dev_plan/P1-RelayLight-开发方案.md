@@ -983,3 +983,7 @@ A′ 增补的裁决过程见 [`design/evidence/01-交叉审核记录-RelayLight
 - `docs/modules/relay-light/workspace/31-RLT_31-space-watch/**`
 
 停止边界：SW6 无真实 Herdr 管理 pane 不得虚报通过/合入收口；不改完整模式/业务仓/现役模型分配、不发布部署、不代人验、不清除 RELAY_*。复核按 normal 三路与有效单测，未完成闸如实保留。
+
+## RLT_33 · 独立仓迁出（Issue #156 / relay-lite #1）
+
+标准档高危迁移，heavy；用户 2026-10-07 “建个issue 后开工”。产品合同/实施与复核在独立仓 docs/modules/relay-lite/；本源仓负责迁出入口和CI复验，不改变任何旧卡状态/签名。源工作区 workspace/33-RLT_33-independent/，目标 master，经 PR#157 交付。状态：进行中。
