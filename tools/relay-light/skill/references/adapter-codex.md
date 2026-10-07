@@ -173,8 +173,10 @@ ledger_silent → 核 Herdr 状态 + pane 末行 + 允许路径产出 三者是�
 
 ### 启动前 model-allocation gate
 
+- 默认模型与推理档提案统一取核心 `SKILL.md`「model-allocation gate」表及 `roles.toml` 对应角色：watcher=`gpt-6-luna`/`medium`，coder 与 batch-reviewer=`gpt-6.1-sol`/`high`，decider=`gpt-6-astra`/`medium`，reviewer=`gpt-6.1-sol`/`high`；派单记录模型与推理档两个字段，`gpt-6.1-sol-high` 不作为模型 ID。默认不覆盖在途已确认分配，启动仍遵守下方确认闸。
+
 - 拉起任何 agent 之前，orchestrator 先向用户展示全部拟启动角色/实例的模型与推理档提案表并明确询问确认；推荐默认仅是提案、不写死模型，用户可逐角色修改。**未获明确确认不得启动任何 agent**——缺询问、先启动后补确认、按未确认的默认选择直接拉起、角色/实例/模型/推理档变更免确认，均属违规。
-- 确认后由 orchestrator 机械地把确认来源、角色/实例、模型、推理档写入任务工作区 `execution_strategy.md`；未启动的 tab/pane 标 pending，启动后补齐实际 Herdr workspace/tab/pane 与观察来源并逐项比对。`execution_strategy.md` 仅 orchestrator 在授权/停止线、角色/模型/实例、总表关联/维护人、派单路由、批次/clear 闸或提交/checkpoint SHA 变化时维护，其余角色与 watcher 默认只读；启用 document 时按核心首次建卡/代笔与核对合同执行，模型决定不转移；`roles.toml` 仍只是完整模式缺省模板，不为本模式写死模型。
+- 确认后由 orchestrator 机械地把确认来源、角色/实例、模型、推理档写入任务工作区 `execution_strategy.md`；未启动的 tab/pane 标 pending，启动后补齐实际 Herdr workspace/tab/pane 与观察来源并逐项比对。`execution_strategy.md` 仅 orchestrator 在授权/停止线、角色/模型/实例、总表关联/维护人、派单路由、批次/clear 闸或提交/checkpoint SHA 变化时维护，其余角色与 watcher 默认只读；启用 document 时按核心首次建卡/代笔与核对合同执行，模型决定不转移；`roles.toml` 仍只是完整模式缺省模板，不为本模式写死模型；本模式可参考其中默认模型提案与启动写法，运行时采用用户确认后的 `execution_strategy.md` 分配，不把模板直接当作本卡授权。
 - 恢复时可沿用已有明确确认且分配未变的快照；新增/更换角色或实例、换模型或推理档必须再次询问确认。超时、静默或最大工具权限均不推定确认；最大工具权限不扩张 commit/push/PR/merge/deploy/verify/人验授权。询问由当前主会话执行，不为询问另启 agent。
 
 ### 拓扑与拉起
