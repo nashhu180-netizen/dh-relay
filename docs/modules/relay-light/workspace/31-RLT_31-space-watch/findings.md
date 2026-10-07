@@ -13,3 +13,5 @@
 - F-008（resolved / CLI 字段核实）：现役/历史 Herdr fixture 表明 list.agent 为 kind（codex/claude），不是姓名；因此成员 get 使用 pane_id，未命名成员的快照 key 也用 pane。脚本仍严格要求 get 中 seq，缺字段报 blocked，待 SW6 实态核字段兼容性。
 
 - F-004/F-005（resolved）：review-code-recheck.md、review-requirement-recheck.md 独立 PASS，原失败报告/信号保持原字节。去回声窗口聚合边界已写入三份协议，不以“排除编排”规避。
+
+- F-009（resolved / 同源入口摘要）：仓根AGENTS.md仍将watcher限定为wait/get/read，与用户明确“只起脚本与巡检”新合同冲突。将AGENTS watcher单句同步纳入本维护卡文档范围，先登记精确允许路径再修改；不增角色写权、不改完整模式、不改变用户目标/验收，派需求reviewer核同源入口。

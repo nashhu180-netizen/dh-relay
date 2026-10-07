@@ -7,7 +7,7 @@ Issue: #151 https://github.com/nashhu180-netizen/dh-relay/issues/151
 授权：2026-10-07 用户交接明确方案并说“claude 被冻结了，这是最后的留言，继续操作”。承接方案 1–3 与 GitHub Issue/任务分支/worktree/PR/CI/master 交付。此前未落户的新维护卡现在落户，不重启/接管 w68，真实运行仍依环境闸。
 目标仓库：nashhu180-netizen/dh-relay；remote=origin；分支=wt/RLT_31-issue-151；目标=master。
 worktree=/home/nash/work/dh-relay/.dh-worktrees/RLT_31；client=codex-cli。
-范围：脚本、行为测试、SKILL/两 adapter watcher 片段和派单模板、安装器与对应安装测试、本卡工件与 DevPlan。完整模式、业务仓、生产/部署、模型分配不在范围。
+范围：脚本、行为测试、AGENTS watcher 入口摘要、SKILL/两 adapter watcher 片段和派单模板、安装器与对应安装测试、本卡工件与 DevPlan。完整模式、业务仓、生产/部署、模型分配不在范围。
 
 ## 完成条件（来源：P1 DevPlan RLT_31，用户交接 / Issue #151）
 

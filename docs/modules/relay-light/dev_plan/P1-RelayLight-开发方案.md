@@ -971,6 +971,7 @@ A′ 增补的裁决过程见 [`design/evidence/01-交叉审核记录-RelayLight
 
 ### 允许路径
 <!-- dh:allowed-paths:v1 task=RLT_31 -->
+- `AGENTS.md`
 - `tools/relay-light/space_watch.py`
 - `tools/relay-light/test_space_watch.py`
 - `tools/relay-light/install_skill.py`
