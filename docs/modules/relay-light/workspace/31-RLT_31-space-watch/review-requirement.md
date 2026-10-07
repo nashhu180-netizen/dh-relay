@@ -18,3 +18,4 @@
 - SW4 文档和两侧派单模板均指定固定 `--workspace --notify --self`、120 秒和仅启动/巡检；安装器把脚本复制并校验哈希。隔离运行 `cd tools/relay-light && python3 -m unittest test_space_watch.py test_install_skill.py`：38 tests, OK。
 - SW5 的 `HERDR_ENV=1` / `RELAY_RECEIPT` preflight 和无文件写入测试存在；本会话无 `HERDR_ENV`，未触发 Herdr，SW6 仍未覆盖，不能视为 PASS。
 
+记录：以上为本轮独立原始结论，历史结果保留。
